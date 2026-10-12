@@ -17,7 +17,7 @@ Assumptions this plan makes:
 
 Confirmed decisions:
 
-- Platform: NeoForge 26.3, as an addon for Encoded Logistics and Arcforge. Encoded Logistics is co-developed with this mod and will be expanded to support it, so changes there are in scope.
+- Platform: NeoForge 26.3, as an addon for Encoded Logistics and Arcforge.
 - Chips are recipe ingredients with a fixed speed and thread count per tier. The end yield check is pass/fail, chips are stackable with no grades, and failed chips become scrap that can be recycled. Target speeds follow historical values, and the pass/fail check follows each tier's yield percentage (a 90% yield process needs a cumulative roll above 0.10), both configurable.
 - The four chip types replace Encoded Logistics' existing chip implementations: logic is a simple crafting ingredient, compute lets servers process more items at a time, memory lets servers hold more items in memory (larger craft jobs), and NAND allows higher-density storage disks.
 - Fab utilities run on FE and reuse Arcforge where possible; power numbers are config values to balance later.
