@@ -1,0 +1,13 @@
+{
+  "id": "T5",
+  "index": 5,
+  "display_name": "ArF immersion",
+  "light_source": "193 nm, water immersion",
+  "resolution_nm": 28,
+  "overlay_nm": 4,
+  "throughput_wph": 250,
+  "layers": 42,
+  "default_yield_percent": 93.0,
+  "target_speed_mhz": 3400,
+  "optional": false
+}

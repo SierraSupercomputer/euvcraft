@@ -1,0 +1,13 @@
+{
+  "id": "T4",
+  "index": 4,
+  "display_name": "ArF dry",
+  "light_source": "193 nm excimer laser",
+  "resolution_nm": 65,
+  "overlay_nm": 15,
+  "throughput_wph": 110,
+  "layers": 32,
+  "default_yield_percent": 92.0,
+  "target_speed_mhz": 2600,
+  "optional": false
+}

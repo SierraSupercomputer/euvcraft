@@ -1,0 +1,14 @@
+{
+  "id": "T7",
+  "index": 7,
+  "display_name": "EUV",
+  "light_source": "13.5 nm tin plasma",
+  "resolution_nm": 13,
+  "overlay_nm": 2,
+  "throughput_wph": 140,
+  "layers": 80,
+  "default_yield_percent": 85.0,
+  "target_speed_mhz": 5000,
+  "comfortable_cores": 8,
+  "optional": false
+}

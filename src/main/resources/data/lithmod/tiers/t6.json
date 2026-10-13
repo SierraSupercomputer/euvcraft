@@ -1,0 +1,14 @@
+{
+  "id": "T6",
+  "index": 6,
+  "display_name": "Multi-patterned",
+  "light_source": "193 nm, several passes",
+  "resolution_nm": 7,
+  "overlay_nm": 3,
+  "throughput_wph": 125,
+  "layers": 70,
+  "default_yield_percent": 85.0,
+  "target_speed_mhz": 3900,
+  "comfortable_cores": 4,
+  "optional": true
+}

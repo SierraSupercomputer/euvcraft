@@ -1,0 +1,13 @@
+{
+  "id": "T3",
+  "index": 3,
+  "display_name": "KrF DUV",
+  "light_source": "248 nm excimer laser",
+  "resolution_nm": 180,
+  "overlay_nm": 40,
+  "throughput_wph": 80,
+  "layers": 24,
+  "default_yield_percent": 90.0,
+  "target_speed_mhz": 600,
+  "optional": false
+}

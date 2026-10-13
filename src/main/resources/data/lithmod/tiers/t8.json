@@ -1,0 +1,14 @@
+{
+  "id": "T8",
+  "index": 8,
+  "display_name": "High-NA EUV",
+  "light_source": "13.5 nm tin plasma, NA 0.55",
+  "resolution_nm": 8,
+  "overlay_nm": 1,
+  "throughput_wph": 170,
+  "layers": 90,
+  "default_yield_percent": 80.0,
+  "target_speed_mhz": 5500,
+  "comfortable_cores": 12,
+  "optional": false
+}
