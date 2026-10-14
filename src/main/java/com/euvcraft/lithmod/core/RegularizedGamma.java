@@ -107,7 +107,7 @@ final class RegularizedGamma {
             series += LANCZOS[i] / (shifted + i);
         }
         double pivot = shifted + LANCZOS_G + 0.5;
-        return HALF_LN_TWO_PI + (shifted + 0.5) * Math.log(pivot) - pivot + Math.log(series);
+        return HALF_LN_TWO_PI + (shifted + 0.5) * StrictMath.log(pivot) - pivot + StrictMath.log(series);
     }
 
     /**
@@ -138,7 +138,7 @@ final class RegularizedGamma {
             high *= 2.0;
         }
 
-        for (int step = 0; step < BISECTION_STEPS && (high - low) > BISECTION_TOLERANCE * high; step++) {
+        for (int step = 0; step < BISECTION_STEPS && StrictMath.abs(high - low) > BISECTION_TOLERANCE * high; step++) {
             double middle = 0.5 * (low + high);
             if (lowerRegularized(shape, middle) < probability) {
                 low = middle;
@@ -164,11 +164,11 @@ final class RegularizedGamma {
             argument += 1.0;
             term *= x / argument;
             sum += term;
-            if (Math.abs(term) < Math.abs(sum) * EPSILON) {
+            if (StrictMath.abs(term) < StrictMath.abs(sum) * EPSILON) {
                 break;
             }
         }
-        return sum * Math.exp(-x + shape * Math.log(x) - logGamma(shape + 1.0));
+        return sum * StrictMath.exp(-x + shape * StrictMath.log(x) - logGamma(shape + 1.0));
     }
 
     /**
@@ -184,20 +184,20 @@ final class RegularizedGamma {
             double an = -step * (step - shape);
             b += 2.0;
             d = an * d + b;
-            if (Math.abs(d) < TINY) {
+            if (StrictMath.abs(d) < TINY) {
                 d = TINY;
             }
             c = b + an / c;
-            if (Math.abs(c) < TINY) {
+            if (StrictMath.abs(c) < TINY) {
                 c = TINY;
             }
             d = 1.0 / d;
             double delta = d * c;
             h *= delta;
-            if (Math.abs(delta - 1.0) < EPSILON) {
+            if (StrictMath.abs(delta - 1.0) < EPSILON) {
                 break;
             }
         }
-        return Math.exp(-x + shape * Math.log(x) - logGamma(shape)) * h;
+        return StrictMath.exp(-x + shape * StrictMath.log(x) - logGamma(shape)) * h;
     }
 }

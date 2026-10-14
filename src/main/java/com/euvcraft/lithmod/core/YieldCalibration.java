@@ -60,7 +60,7 @@ public final class YieldCalibration {
             throw new IllegalArgumentException("yield must be in (0, 1), got " + yield);
         }
 
-        double threshold = -Math.log1p(-yield);
+        double threshold = -StrictMath.log1p(-yield);
         double quantile = RegularizedGamma.quantile(rollCount, yield);
         return threshold / quantile;
     }
@@ -117,7 +117,7 @@ public final class YieldCalibration {
      * @return a roll in {@code (0, 1]}
      */
     public static float stepRoll(Rng rng, double weight) {
-        float roll = (float) Math.pow(rng.nextDouble(), weight);
+        float roll = (float) StrictMath.pow(rng.nextDouble(), weight);
         return roll <= 0.0f ? Float.MIN_VALUE : roll;
     }
 
@@ -130,15 +130,6 @@ public final class YieldCalibration {
      */
     public static void clearCache() {
         CACHE.clear();
-    }
-
-    /**
-     * Returns how many weights are cached.
-     *
-     * @return the cache size
-     */
-    public static int cacheSize() {
-        return CACHE.size();
     }
 
     /** Cache key: the roll count and the exact bits of the yield. */

@@ -6,8 +6,9 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * The immutable contents of one sealed lot: a {@link UUID} lot id, a capacity and the
- * ordered list of {@link Wafer}s inside it.
+ * The immutable contents of one sealed lot: a {@link UUID} lot id, a capacity, the
+ * ordered list of {@link Wafer}s inside it and the {@link RunSpec} it was processed
+ * under.
  *
  * <p>The wafer order is the slot order inside the FOUP and is stable across saving,
  * loading and inventory moves, because the wafer index is part of the roll context
@@ -15,18 +16,39 @@ import java.util.UUID;
  * item; this record is the only way one exists.</p>
  *
  * <p>The record is immutable: the wafer list is copied on construction and every
- * {@code with...} method returns a new instance. The hidden
- * {@link Wafer#cumulativeRoll()} and {@link Wafer#flags()} values are reachable from
- * the accessors, so this type must only ever be used on the server. What may leave
- * the server is {@link #publicView()}.</p>
+ * {@code with...} method returns a new instance. The hidden {@link Wafer#cumulativeRoll()},
+ * {@link Wafer#flags()} and {@link RunSpec} values are reachable from the accessors, so
+ * this type must only ever be used on the server. What may leave the server is
+ * {@link #publicView()}.</p>
+ *
+ * <p>The run spec is {@code null} until the lot takes its first layer, which is what
+ * "not started" means: a fresh lot has none, and a lot that has been through at least
+ * one layer always has one.</p>
  *
  * <p>This record has no Minecraft or NeoForge dependencies.</p>
  *
  * @param lotId    server-assigned identifier of the sealed lot
  * @param capacity maximum number of wafers this lot holds, {@code >= 1}
  * @param wafers   wafers in the lot, in slot order, at most {@code capacity} entries
+ * @param run      the parameters the lot was processed under, or {@code null} when it
+ *                 has not been started
  */
-public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers) {
+public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec run) {
+
+    /**
+     * Creates a lot that has not been started, which is the common case for a fresh FOUP.
+     *
+     * @param lotId    server-assigned identifier of the sealed lot
+     * @param capacity maximum number of wafers this lot holds, {@code >= 1}
+     * @param wafers   wafers in the lot, in slot order, at most {@code capacity} entries
+     * @throws NullPointerException     if {@code lotId} or {@code wafers} is null, or
+     *                                  the wafer list holds a null entry
+     * @throws IllegalArgumentException if the capacity is below one or the lot holds
+     *                                  more wafers than its capacity
+     */
+    public FoupContents(UUID lotId, int capacity, List<Wafer> wafers) {
+        this(lotId, capacity, wafers, null);
+    }
 
     /**
      * Validates the lot and makes the wafer list immutable.
@@ -91,7 +113,7 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers) {
      * Returns a copy of this lot with one more wafer appended.
      *
      * @param wafer the wafer to add, not null
-     * @return a new lot with the wafer appended
+     * @return a new lot with the wafer appended, carrying the same run spec
      * @throws IllegalStateException if the lot is already full
      */
     public FoupContents withWafer(Wafer wafer) {
@@ -101,14 +123,14 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers) {
         }
         List<Wafer> grown = new ArrayList<>(this.wafers);
         grown.add(wafer);
-        return new FoupContents(this.lotId, this.capacity, grown);
+        return new FoupContents(this.lotId, this.capacity, grown, this.run);
     }
 
     /**
      * Returns a copy of this lot with the given wafers appended.
      *
      * @param newWafers the wafers to add, no null entries
-     * @return a new lot with the wafers appended
+     * @return a new lot with the wafers appended, carrying the same run spec
      * @throws IllegalStateException if the result would exceed the capacity
      */
     public FoupContents withWafers(List<Wafer> newWafers) {
@@ -119,14 +141,14 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers) {
         }
         List<Wafer> grown = new ArrayList<>(this.wafers);
         grown.addAll(newWafers);
-        return new FoupContents(this.lotId, this.capacity, grown);
+        return new FoupContents(this.lotId, this.capacity, grown, this.run);
     }
 
     /**
      * Returns a copy of this lot without the wafer at the given slot.
      *
      * @param index slot to clear, {@code 0 <= index < size()}
-     * @return a new lot with that wafer removed
+     * @return a new lot with that wafer removed, carrying the same run spec
      * @throws IndexOutOfBoundsException if the index is not a slot of this lot
      */
     public FoupContents withoutWaferAt(int index) {
@@ -136,7 +158,31 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers) {
         }
         List<Wafer> shrunk = new ArrayList<>(this.wafers);
         shrunk.remove(index);
-        return new FoupContents(this.lotId, this.capacity, shrunk);
+        return new FoupContents(this.lotId, this.capacity, shrunk, this.run);
+    }
+
+    /**
+     * Returns whether the lot has been through at least one layer, which is the same
+     * thing as carrying a run spec.
+     *
+     * @return {@code true} if the lot carries a {@link RunSpec}
+     */
+    public boolean isStarted() {
+        return this.run != null;
+    }
+
+    /**
+     * Returns a copy of this lot carrying the given run spec.
+     *
+     * <p>Only the yield engine calls this, and only on the lot it returns from a first
+     * layer. The wafers are not touched: a spec says how the lot is being processed,
+     * not what has happened to it.</p>
+     *
+     * @param run the run spec to store, or {@code null} to clear it
+     * @return a new lot with the spec attached
+     */
+    public FoupContents withRun(RunSpec run) {
+        return new FoupContents(this.lotId, this.capacity, this.wafers, run);
     }
 
     /**
@@ -167,8 +213,8 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers) {
     }
 
     /**
-     * Prints the lot without its hidden values. Rolls and flags never appear here
-     * because a lot can end up in a log line or an error message.
+     * Prints the lot without its hidden values. Rolls, flags and the run spec never
+     * appear here because a lot can end up in a log line or an error message.
      *
      * @return a description with the public view only
      */

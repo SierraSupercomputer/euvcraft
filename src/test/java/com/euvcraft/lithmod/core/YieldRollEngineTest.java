@@ -185,7 +185,7 @@ class YieldRollEngineTest {
                 int simulated = 0;
                 for (int lot = 0; lot < WAFERS / 25; lot++) {
                     FoupContents processed = runThrough(tier, freshLot(25), null, 1.0, SALT + lot, settings);
-                    boolean[] outcomes = YieldRollEngine.evaluate(processed, yield);
+                    boolean[] outcomes = YieldRollEngine.evaluate(processed, tier, null);
                     passing += YieldRollEngine.countPassing(outcomes);
                     simulated += outcomes.length;
                 }
@@ -237,14 +237,16 @@ class YieldRollEngineTest {
         }
 
         @Test
-        @DisplayName("a longer tier can keep going where the shorter one stopped")
+        @DisplayName("a longer tier refuses a lot started at a different tier")
         void tiersHaveDifferentLengths() {
             FoupContents lot = runThrough(ReferenceTiers.byId("T1"), freshLot(2), null, 1.0, SALT, settings);
             assertEquals(6, lot.lotLayer());
 
-            FoupContents next = YieldRollEngine.applyLayerStep(lot, ReferenceTiers.byId("T3"), null, 7, 1.0,
-                settings, source(SALT));
-            assertEquals(7, next.lotLayer(), "T3 should accept the layer after a T1 lot");
+            IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> YieldRollEngine.applyLayerStep(lot, ReferenceTiers.byId("T3"), null, 7, 1.0,
+                    settings, source(SALT)));
+            assertTrue(thrown.getMessage().contains("differ from the run spec"),
+                "message did not explain why: " + thrown.getMessage());
         }
 
         @Test
@@ -269,7 +271,7 @@ class YieldRollEngineTest {
             assertThrows(NullPointerException.class,
                 () -> YieldRollEngine.applyLayerStep(lot, tier, null, 1, 1.0, settings, null));
             assertThrows(NullPointerException.class, () -> YieldRollEngine.rollCount(tier, null));
-            assertThrows(NullPointerException.class, () -> YieldRollEngine.evaluate(null, 0.9));
+            assertThrows(NullPointerException.class, () -> YieldRollEngine.evaluate(null, tier, null));
             assertThrows(NullPointerException.class, () -> YieldRollEngine.countPassing(null));
             assertThrows(NullPointerException.class, () -> YieldRollEngine.requireCompleteLot(lot, null));
         }
@@ -291,9 +293,12 @@ class YieldRollEngineTest {
 
             FoupContents finished = runThrough(tier, halfWay, null, 1.0, SALT, FabSettings.defaults());
             YieldRollEngine.requireCompleteLot(finished, tier);
-            assertArrayEquals(YieldRollEngine.evaluate(finished, 0.90),
-                YieldRollEngine.evaluate(finished, 0.90),
-                "the same lot judged at the same yield twice must give the same answers");
+
+            boolean[] outcomes = YieldRollEngine.evaluate(finished, tier, null);
+            for (int wafer = 0; wafer < outcomes.length; wafer++) {
+                boolean expected = YieldMath.passes(finished.wafers().get(wafer).cumulativeRoll(), 0.90);
+                assertEquals(expected, outcomes[wafer], "wafer " + wafer + " was answered in the wrong slot");
+            }
         }
 
         @Test
@@ -303,7 +308,7 @@ class YieldRollEngineTest {
             FoupContents finished = runThrough(tier, freshLot(9), null, 1.0, SALT, FabSettings.defaults());
             double yield = 0.80;
 
-            boolean[] outcomes = YieldRollEngine.evaluate(finished, yield);
+            boolean[] outcomes = YieldRollEngine.evaluate(finished, tier, null);
 
             assertEquals(finished.size(), outcomes.length);
             for (int wafer = 0; wafer < outcomes.length; wafer++) {
@@ -317,9 +322,9 @@ class YieldRollEngineTest {
         void judgingDoesNotChangeTheLot() {
             Tier tier = ReferenceTiers.byId("T2");
             FoupContents finished = runThrough(tier, freshLot(9), null, 1.0, SALT, FabSettings.defaults());
-            FoupContents copy = new FoupContents(finished.lotId(), finished.capacity(), finished.wafers());
+            FoupContents copy = new FoupContents(finished.lotId(), finished.capacity(), finished.wafers(), finished.run());
 
-            YieldRollEngine.evaluate(finished, 0.80);
+            YieldRollEngine.evaluate(finished, tier, null);
 
             assertEquals(copy, finished, "evaluating a lot changed it");
         }

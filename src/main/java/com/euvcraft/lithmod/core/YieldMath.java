@@ -95,7 +95,7 @@ public final class YieldMath {
      * @param steepness        the penalty steepness {@code k}
      * @return an exponent of at least {@code 1}
      */
-    public static double penaltyExponent(Integer cores, int comfortableCores, double steepness) {
+    static double penaltyExponent(Integer cores, int comfortableCores, double steepness) {
         if (cores == null || cores <= 0 || comfortableCores <= 0 || steepness <= 0.0) {
             return 1.0;
         }

@@ -6,6 +6,7 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 import com.euvcraft.lithmod.core.FoupContents;
+import com.euvcraft.lithmod.core.RunSpec;
 import com.euvcraft.lithmod.core.Wafer;
 import com.euvcraft.lithmod.core.WaferPacking;
 import com.mojang.serialization.Codec;
@@ -53,6 +54,9 @@ public final class FoupContentsCodec {
     /** Field holding the packed flags. */
     public static final String KEY_FLAGS = "flags";
 
+    /** Field holding the run spec (optional, new in M0-09b). */
+    public static final String KEY_RUN_SPEC = "runSpec";
+
     /**
      * Lot id used by {@link #fromPublicView(int, int, int)}.
      *
@@ -79,14 +83,18 @@ public final class FoupContentsCodec {
      */
     private static final Codec<int[]> INT_ARRAY = Codec.INT_STREAM.xmap(IntStream::toArray, IntStream::of);
 
-    /** Persistent form: everything, rolls and flags included. */
+    /** Persistent form: everything, rolls, flags and the optional run spec included. */
     public static final Codec<FoupContents> CODEC = RecordCodecBuilder.create(instance -> instance.group(
         UUIDUtil.CODEC.fieldOf(KEY_LOT).forGetter(FoupContents::lotId),
         Codec.INT.fieldOf(KEY_CAPACITY).forGetter(FoupContents::capacity),
         INT_ARRAY.fieldOf(KEY_LAYERS).forGetter(contents -> WaferPacking.packLayers(contents.wafers())),
         INT_ARRAY.fieldOf(KEY_ROLLS).forGetter(contents -> WaferPacking.packRollBits(contents.wafers())),
-        INT_ARRAY.fieldOf(KEY_FLAGS).forGetter(contents -> WaferPacking.packFlags(contents.wafers()))
-    ).apply(instance, FoupContentsCodec::decodePersistent));
+        INT_ARRAY.fieldOf(KEY_FLAGS).forGetter(contents -> WaferPacking.packFlags(contents.wafers())),
+        RunSpec.CODEC.optionalFieldOf(KEY_RUN_SPEC).forGetter(c -> java.util.Optional.ofNullable(c.run()))
+    ).apply(instance, (lotId, capacity, layers, rollBits, flags, runSpec) ->
+        new FoupContents(lotId, capacity,
+            WaferPacking.unpack(layers, WaferPacking.unpackRollBits(rollBits), flags),
+            runSpec.orElse(null))));
 
     /**
      * Network form: the public view only.

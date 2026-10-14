@@ -5,10 +5,9 @@ package com.euvcraft.lithmod.core;
  *
  * <p>This is the one seam between the pure engine and Minecraft: the engine asks for a
  * generator per {@code (waferIndex, stepIndex)} pair and never learns where it came
- * from. The Minecraft side answers with
- * {@link com.euvcraft.lithmod.mc.FabRandomService#rngFor}, which binds the pair to the
- * lot id and the server-only salt; a unit test answers with a seeded
- * {@link ContextualRng} or a fixed sequence.</p>
+ * from. The Minecraft side answers with a method that binds the pair to the lot id and
+ * the server-only salt; a unit test answers with a seeded {@link ContextualRng} or a
+ * fixed sequence.</p>
  */
 @FunctionalInterface
 public interface RollSource {

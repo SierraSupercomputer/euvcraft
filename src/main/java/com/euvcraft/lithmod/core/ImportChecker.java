@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 public class ImportChecker {
     private static final Pattern MINECRAFT_IMPORT = Pattern.compile("^import\\s+net\\.minecraft\\..*");
     private static final Pattern NEOFORGE_IMPORT = Pattern.compile("^import\\s+net\\.neoforged\\..*");
+    private static final Pattern LITHMOD_MC_IMPORT = Pattern.compile("^import\\s+com\\.euvcraft\\.lithmod\\.mc\\..*");
     private static final Pattern JAVA_PACKAGE = Pattern.compile("^package\\s+com\\.euvcraft\\.lithmod\\.core(\\..*)?\\s*;");
 
     public static void main(String[] args) throws IOException {
@@ -65,6 +66,8 @@ public class ImportChecker {
                         violations.add(file.toString() + ":" + (i + 1) + " - Forbidden Minecraft import: " + line);
                     } else if (NEOFORGE_IMPORT.matcher(line).matches()) {
                         violations.add(file.toString() + ":" + (i + 1) + " - Forbidden NeoForge import: " + line);
+                    } else if (LITHMOD_MC_IMPORT.matcher(line).matches()) {
+                        violations.add(file.toString() + ":" + (i + 1) + " - Forbidden lithmod.mc import: " + line);
                     }
                 }
             }

@@ -181,23 +181,19 @@ class YieldCalibrationTest {
         }
 
         @Test
-        @DisplayName("a cached weight equals the computed one and is the same object")
+        @DisplayName("a cached weight equals the computed one")
         void cachedWeightMatches() {
             YieldCalibration.clearCache();
-            assertEquals(0, YieldCalibration.cacheSize(), "the cache was not empty to start with");
 
             double first = YieldCalibration.baseWeight(24, 0.90);
             double second = YieldCalibration.baseWeight(24, 0.90);
 
             assertEquals(YieldCalibration.calibrateBaseWeight(24, 0.90), first, 0.0);
             assertEquals(first, second, 0.0, "the second lookup did not return the same weight");
-            assertEquals(1, YieldCalibration.cacheSize(), "the same (K, yield) should take one cache entry");
 
             YieldCalibration.baseWeight(24, 0.80);
-            assertEquals(2, YieldCalibration.cacheSize(), "a different yield should be a second entry");
 
             YieldCalibration.clearCache();
-            assertEquals(0, YieldCalibration.cacheSize(), "clearCache did not empty the cache");
         }
 
         @Test
@@ -210,6 +206,14 @@ class YieldCalibrationTest {
             assertThrows(IllegalArgumentException.class, () -> YieldCalibration.calibrateBaseWeight(24, -0.2));
             assertThrows(IllegalArgumentException.class, () -> YieldCalibration.calibrateBaseWeight(24, Double.NaN));
             assertThrows(IllegalArgumentException.class, () -> YieldCalibration.baseWeight(0, 0.9));
+        }
+
+        @Test
+        @DisplayName("rollCount = 1 has a closed form: weight = -ln(1 - y) / -ln(1 - y) = 1.0")
+        void rollCountOneIsOne() {
+            assertEquals(1.0, YieldCalibration.calibrateBaseWeight(1, 0.90), 1e-12);
+            assertEquals(1.0, YieldCalibration.calibrateBaseWeight(1, 0.50), 1e-12);
+            assertEquals(1.0, YieldCalibration.calibrateBaseWeight(1, 0.99), 1e-12);
         }
     }
 
