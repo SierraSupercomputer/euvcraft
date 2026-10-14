@@ -15,11 +15,6 @@ public record StatRulesParams(double penaltyPerTierDeficit) {
         }
     }
 
-    /** No-arg constructor using the default penalty. */
-    public StatRulesParams() {
-        this(DEFAULT_PENALTY_PER_TIER_DEFICIT);
-    }
-
     /** Returns params with the default penalty. */
     public static StatRulesParams defaults() {
         return new StatRulesParams(DEFAULT_PENALTY_PER_TIER_DEFICIT);

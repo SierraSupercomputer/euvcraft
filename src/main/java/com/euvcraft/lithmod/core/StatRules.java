@@ -15,12 +15,4 @@ public interface StatRules {
      * True when the line can run the given target tier based on resolution and overlay.
      */
     boolean canRunTier(LineComponents components, int targetTier);
-
-    static StatRules defaultRules(TierRegistry tierRegistry) {
-        return new DefaultStatRules(tierRegistry);
-    }
-
-    static StatRules defaultRules(TierRegistry tierRegistry, StatRulesParams params) {
-        return new DefaultStatRules(tierRegistry, params);
-    }
 }

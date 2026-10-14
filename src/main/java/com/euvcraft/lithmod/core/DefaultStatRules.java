@@ -19,13 +19,6 @@ public final class DefaultStatRules implements StatRules {
         this.params = (params == null) ? StatRulesParams.defaults() : params;
     }
 
-    public DefaultStatRules(TierRegistry tierRegistry, double penaltyPerTierDeficit) {
-        this(tierRegistry, new StatRulesParams(penaltyPerTierDeficit));
-    }
-
-    public DefaultStatRules(StatRulesParams params, TierRegistry tierRegistry) {
-        this(tierRegistry, params);
-    }
 
     public TierRegistry tierRegistry() {
         return tierRegistry;
