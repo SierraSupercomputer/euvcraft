@@ -1,3 +1,7 @@
+# Root-level binary artifacts (co-mod jars live in libs/ and stay tracked)
+/*.jar
+/*.zip
+
 ### Gradle ###
 .gradle
 build/
