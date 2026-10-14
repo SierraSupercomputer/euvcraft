@@ -58,6 +58,15 @@ The FOUP game tests run in the `lithmod:foup_default` environment:
 | `lithmod:foup_encoded_size` | logs the NBT and network size of a 25 and a 64 wafer lot |
 | `lithmod:foup_creative_tab_entries` | the tab hands out one empty lot per variant, each with its own lot id and the configured capacity |
 | `lithmod:foup_debug_commands` | the `/debug foup` branch exists exactly when `debugCommands` is true |
+| `lithmod:foup_trusted_contents` | a stack with no lot, a client view holding wafers and a client view with a capacity of its own are all refused |
+| `lithmod:foup_stored_capacity_wins` | an existing FOUP keeps its stored capacity when the config differs |
+
+The yield engine game tests run in the `lithmod:yield_default` environment:
+
+| test | what it proves |
+|---|---|
+| `lithmod:yield_layer_step` | a lot on a real `ServerLevel` moves one layer at a time up to the tier's last layer, every hidden roll moves strictly down from 1.0, repeating or skipping a layer is refused, and judging the finished lot does not change it |
+| `lithmod:yield_pass_rate` | 1000 wafers are run through T1 and T3 with the world salt and the observed pass rates are logged next to the tier yields; the assertion is deliberately wide (10 points) because this is wiring evidence, and the accuracy claim lives in `YieldCalibrationTest` |
 
 ## Debug commands
 
