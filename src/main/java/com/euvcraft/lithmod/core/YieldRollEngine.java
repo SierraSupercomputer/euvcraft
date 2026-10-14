@@ -1,0 +1,214 @@
+package com.euvcraft.lithmod.core;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * The pure core of the yield roll engine: one method that puts a lot through one layer
+ * of a process, and one that judges a finished lot.
+ *
+ * <p><strong>Applying a layer.</strong> Every wafer in the lot draws
+ * {@code rollsPerLayer} rolls, all at the same calibrated step weight, and each roll is
+ * multiplied into that wafer's hidden cumulative roll. The rolls for layer
+ * {@code n} and roll {@code j} of that layer come from step index
+ * {@code n * rollsPerLayer + j}, which keeps every roll of a process at a distinct,
+ * reproducible position: undoing the save and doing the step again gives the same
+ * numbers, and no two wafers in a lot share a stream.</p>
+ *
+ * <p>The weight is calibrated once for the whole process, from
+ * {@code tier.layers() * rollsPerLayer} rolls and the effective yield of the tier, so a
+ * lot that has been through every layer passes at its tier's yield. A line that is not
+ * perfectly healthy carries a lower {@code defectFactor}, which divides the weight and
+ * lowers the pass rate without any second table.</p>
+ *
+ * <p><strong>Judging a lot.</strong> {@link #evaluate(FoupContents, double)} reads the
+ * hidden rolls and answers pass or fail per wafer. It does not change the lot, and the
+ * answers carry nothing a client could use to work out a roll.</p>
+ *
+ * <p>This class has no Minecraft or NeoForge dependencies.</p>
+ */
+public final class YieldRollEngine {
+
+    private YieldRollEngine() {
+    }
+
+    /**
+     * Returns the number of rolls a whole process at this tier draws.
+     *
+     * @param tier     the tier being run, not null
+     * @param settings the settings in force, not null
+     * @return {@code tier.layers() * settings.rollsPerLayer()}
+     */
+    public static int rollCount(Tier tier, FabSettings settings) {
+        Objects.requireNonNull(tier, "tier must not be null");
+        Objects.requireNonNull(settings, "settings must not be null");
+        return tier.layers() * settings.rollsPerLayer();
+    }
+
+    /**
+     * Returns the step weight a layer of this process uses, calibrated so that a lot run
+     * through every layer passes at the tier's effective yield.
+     *
+     * @param tier         the tier being run, not null
+     * @param settings     the settings in force, not null
+     * @param cores        the core count of the die, or {@code null} for none
+     * @param defectFactor how healthy the line is
+     * @return the step weight, strictly positive
+     */
+    public static double stepWeight(Tier tier, FabSettings settings, Integer cores, double defectFactor) {
+        double effectiveYield = YieldMath.resolveEffectiveYield(tier, settings, cores);
+        return YieldCalibration.stepWeight(rollCount(tier, settings), effectiveYield, defectFactor);
+    }
+
+    /**
+     * Returns the step index of one roll of one layer, {@code layerNumber * rollsPerLayer + roll}.
+     *
+     * @param layerNumber  the one-based layer being applied
+     * @param rollsPerLayer how many rolls that layer draws, at least one
+     * @param roll         which roll of that layer, {@code 0 <= roll < rollsPerLayer}
+     * @return the step index the roll is drawn at
+     * @throws IllegalArgumentException if the roll is outside the layer
+     */
+    public static int stepIndex(int layerNumber, int rollsPerLayer, int roll) {
+        if (roll < 0 || roll >= rollsPerLayer) {
+            throw new IllegalArgumentException(
+                "roll " + roll + " is not in a layer of " + rollsPerLayer + " rolls");
+        }
+        return layerNumber * rollsPerLayer + roll;
+    }
+
+    /**
+     * Puts every wafer of a lot through one more layer of a process.
+     *
+     * <p>The lot comes back as a new instance; the one that was passed in is untouched.
+     * Each wafer's cumulative roll is multiplied by the rolls of this layer and every
+     * wafer is moved to {@code layerNumber}. The hidden rolls are never logged, sent or
+     * copied into the public view.</p>
+     *
+     * @param lot          the lot to process, not null, not empty
+     * @param tier         the tier being run, not null
+     * @param cores        the core count of the die, or {@code null} for none
+     * @param layerNumber  the one-based layer to apply; it must be the layer the lot is
+     *                     on plus one and no higher than {@code tier.layers()}
+     * @param defectFactor how healthy the line is; values below
+     *                     {@link YieldCalibration#MIN_DEFECT_FACTOR} are raised to it
+     * @param settings     the settings in force, not null
+     * @param rolls        where the step draws its randomness from, not null
+     * @return a new lot with the layer applied
+     * @throws NullPointerException     if any argument is null
+     * @throws IllegalArgumentException if the lot is empty, or the layer number is not
+     *                                  the next one, or it is past the tier's layers
+     */
+    public static FoupContents applyLayerStep(FoupContents lot, Tier tier, Integer cores, int layerNumber,
+            double defectFactor, FabSettings settings, RollSource rolls) {
+        Objects.requireNonNull(lot, "lot must not be null");
+        Objects.requireNonNull(tier, "tier must not be null");
+        Objects.requireNonNull(settings, "settings must not be null");
+        Objects.requireNonNull(rolls, "rolls must not be null");
+
+        if (lot.isEmpty()) {
+            throw new IllegalArgumentException("an empty lot cannot take a layer step");
+        }
+
+        int currentLayer = lot.lotLayer();
+        if (layerNumber != currentLayer + 1) {
+            throw new IllegalArgumentException(
+                "layer " + layerNumber + " is not the next layer of a lot that is at layer " + currentLayer);
+        }
+        if (layerNumber > tier.layers()) {
+            throw new IllegalArgumentException(
+                "layer " + layerNumber + " is past the " + tier.layers() + " layers of " + tier.id());
+        }
+
+        int rollsPerLayer = settings.rollsPerLayer();
+        double weight = stepWeight(tier, settings, cores, defectFactor);
+
+        List<Wafer> processed = new ArrayList<>(lot.size());
+        for (int waferIndex = 0; waferIndex < lot.size(); waferIndex++) {
+            Wafer wafer = lot.wafers().get(waferIndex);
+            double cumulative = wafer.cumulativeRoll();
+            for (int roll = 0; roll < rollsPerLayer; roll++) {
+                Rng rng = rolls.rngFor(waferIndex, stepIndex(layerNumber, rollsPerLayer, roll));
+                cumulative *= YieldCalibration.stepRoll(rng, weight);
+            }
+            processed.add(new Wafer(layerNumber, stored(cumulative), wafer.flags()));
+        }
+        return new FoupContents(lot.lotId(), lot.capacity(), processed);
+    }
+
+    /**
+     * Judges every wafer of a lot against one effective yield.
+     *
+     * @param lot            the lot to judge, not null
+     * @param effectiveYield the pass rate to judge against, as a fraction
+     * @return one answer per wafer, in slot order
+     * @throws NullPointerException if the lot is null
+     */
+    public static boolean[] evaluate(FoupContents lot, double effectiveYield) {
+        Objects.requireNonNull(lot, "lot must not be null");
+        boolean[] outcomes = new boolean[lot.size()];
+        for (int waferIndex = 0; waferIndex < lot.size(); waferIndex++) {
+            outcomes[waferIndex] = YieldMath.passes(lot.wafers().get(waferIndex).cumulativeRoll(), effectiveYield);
+        }
+        return outcomes;
+    }
+
+    /**
+     * Returns how many of a set of answers are passes.
+     *
+     * @param outcomes the answers from {@link #evaluate(FoupContents, double)}, not null
+     * @return the number of passes
+     * @throws NullPointerException if the answers are null
+     */
+    public static int countPassing(boolean[] outcomes) {
+        Objects.requireNonNull(outcomes, "outcomes must not be null");
+        int passing = 0;
+        for (boolean outcome : outcomes) {
+            if (outcome) {
+                passing++;
+            }
+        }
+        return passing;
+    }
+
+    /**
+     * Checks that every wafer of a lot has been through every layer of a tier.
+     *
+     * <p>A lot that is short of its last layer has almost no rolls multiplied into it, so
+     * its wafers would sail past any threshold. Judging one is refused instead.</p>
+     *
+     * @param lot  the lot to check, not null
+     * @param tier the tier it is meant to be at, not null
+     * @throws NullPointerException     if an argument is null
+     * @throws IllegalStateException    if any wafer is not at {@code tier.layers()}
+     */
+    public static void requireCompleteLot(FoupContents lot, Tier tier) {
+        Objects.requireNonNull(lot, "lot must not be null");
+        Objects.requireNonNull(tier, "tier must not be null");
+
+        for (int waferIndex = 0; waferIndex < lot.size(); waferIndex++) {
+            int layer = lot.wafers().get(waferIndex).layerIndex();
+            if (layer != tier.layers()) {
+                throw new IllegalStateException(
+                    "wafer " + waferIndex + " of a " + tier.id() + " lot is at layer " + layer
+                        + ", not at " + tier.layers());
+            }
+        }
+    }
+
+    /**
+     * Narrows a cumulative roll to the float a wafer stores.
+     *
+     * <p>A product of many rolls can fall below the smallest positive float, and a
+     * {@link Wafer} rejects a roll of zero, so the smallest legal value is used instead.
+     * The product can never exceed one because every roll is at most one.</p>
+     */
+    private static float stored(double cumulative) {
+        float stored = (float) cumulative;
+        if (stored <= 0.0f) {
+            return Float.MIN_VALUE;
+        }
+        return Math.min(stored, 1.0f);
+    }
+}
