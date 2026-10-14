@@ -60,7 +60,7 @@ public class FabConfig implements FabSettingsProvider {
             .defineInRange("wafersPerBoule", FabSettings.DEFAULT_WAFERS_PER_BOULE, 1, 64);
 
         ROLLS_PER_LAYER = BUILDER
-            .comment("Yield rolls per layer cycle. Each roll is an independent chance to pass.")
+            .comment("Yield rolls per layer cycle; each roll multiplies into the wafer's cumulative roll, and pass or fail is decided at test, so rolls are not independent chances to pass.")
             .defineInRange("rollsPerLayer", FabSettings.DEFAULT_ROLLS_PER_LAYER, 1, 8);
 
         YIELD_MULTIPLIER = BUILDER
@@ -114,11 +114,11 @@ public class FabConfig implements FabSettingsProvider {
     // Runtime state
     private FabSettings currentSettings;
     private final java.util.List<Runnable> changeListeners = new java.util.ArrayList<>();
+    private volatile boolean loaded = false;
 
     public FabConfig() {
-        // Register this as the provider
         FabSettingsProvider.setLogger(LOGGER);
-        reloadSettings();
+        this.currentSettings = FabSettings.defaults();
     }
 
     /**
@@ -133,7 +133,12 @@ public class FabConfig implements FabSettingsProvider {
      */
     public void onConfigLoad(ModConfig config) {
         reloadSettings();
-        LOGGER.info("EUVCRAFT config loaded: {}", currentSettings);
+        if (!loaded) {
+            loaded = true;
+            LOGGER.info("EUVCRAFT server config loaded: {}", currentSettings);
+        } else {
+            LOGGER.debug("EUVCRAFT server config reloaded: {}", currentSettings);
+        }
     }
 
     /**

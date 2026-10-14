@@ -38,3 +38,11 @@ run/
 **/src/generated/**/.cache/
 repo/
 !**/src/**/repo/
+
+# Temporary decomp dirs
+temp_*/
+temp_*
+
+# Runtime logs
+logs/
+run/

@@ -119,6 +119,8 @@ dependencies {
     implementation files("libs/arcforge-2.5.1+26.3.jar")
     implementation files("libs/arcforge-api-1.2.0+26.3.jar")
 
+    testCompileOnly files(sourceSets.main.compileClasspath)
+    testRuntimeOnly files(sourceSets.main.runtimeClasspath)
     // JUnit 5 for unit tests
     testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.10.2"
