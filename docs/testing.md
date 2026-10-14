@@ -1,10 +1,23 @@
 # Testing EUVCRAFT
 
-## Unit tests (JUnit 5, game classes on classpath)
+## Toolchain
+
+NeoForge 26.3 targets the Java 25 runtime that Mojang ships with Minecraft 26.3.
+`build.gradle` pins this with a Gradle Java toolchain:
+
+```groovy
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+```
+
+Gradle's Foojay resolver (configured in `settings.gradle`) provisions that JDK, so
+builds do not depend on `JAVA_HOME`. Documented commands below assume a normal
+shell with no `JAVA_HOME` override.
+
+## Unit tests (JUnit 5)
 
 ```powershell
-$env:JAVA_HOME="C:\Users\ethan\.gradle\jdks\eclipse_adoptium-25-amd64-windows.2"
 .\gradlew.bat test --offline
+.\gradlew.bat checkCoreImports --offline
 ```
 
 ModDevGradle unit test support is enabled in `build.gradle`:
@@ -25,17 +38,34 @@ Per-class counts are in `build/test-results/test/*.xml`.
 ## Game tests
 
 ```powershell
-$env:JAVA_HOME="C:\Users\ethan\.gradle\jdks\eclipse_adoptium-25-amd64-windows.2"
 .\gradlew.bat runGameTestServer --offline
 ```
 
 A trivial game test is registered as `lithmod:trivial` and must report as passed.
 
-## Reloading tier data (manual)
+## Tier data reload (manual)
 
-1. Start the dev server.
-2. Create a data pack with `data/lithmod/tiers/t5.json` containing an override.
-3. Run `/reload`.
-4. Check the server log for the eight loaded tiers and the override value.
-5. Use an invalid override; the server log names the file and field and keeps
-   the previous registry.
+Expected startup log line (one line, id, yield percent and layers):
+
+```text
+Loaded 8 tiers: T1(60%, 6 layers), T2(80%, 12 layers), ...
+```
+
+Valid override:
+
+1. Create `run/<world>/datapacks/tier-override/data/lithmod/tiers/t3.json`.
+2. Put an override such as a different `default_yield_percent`.
+3. Run the dev server and execute `/reload`.
+4. The server log shows the changed value in the `Loaded 8 tiers:` line.
+
+Invalid override:
+
+1. Add a second data pack with invalid data, for example a negative `layers` value.
+2. Execute `/reload`.
+3. The error names the file and field; the previous registry stays in place and
+   the next `Loaded 8 tiers:` line keeps the previous values.
+
+## OneDrive note
+
+This repository lives inside a OneDrive folder. Exclude `.git`, `build`, `.gradle`,
+and `run` from sync; see the task report for the steps. Do not move the repository.
