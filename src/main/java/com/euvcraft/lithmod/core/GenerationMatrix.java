@@ -19,18 +19,6 @@ public final class GenerationMatrix {
 
     public static final List<String> LINE_IDS = SupportLines.ALL;
 
-    /** Nested alias of {@link UnmetLine}. */
-    public record UnmetLine(String lineId, int requiredGeneration, int installedGeneration) {
-    }
-
-    /** Nested alias of {@link GenerationEntry}. */
-    public record Entry(String lineId, int tierIndex, int generation) {
-    }
-
-    /** Container returned by various loaders/tests. */
-    public record Line(String id, List<Integer> generations) {
-    }
-
     private final TierRegistry tierRegistry;
     private final Map<Integer, Map<String, Integer>> required;
     private final String sourceDescription;
@@ -198,10 +186,6 @@ public final class GenerationMatrix {
         return sourceDescription;
     }
 
-    public Set<String> lines() {
-        return LINE_IDS instanceof Set ? (Set<String>) (Set<?>) LINE_IDS : new java.util.LinkedHashSet<>(LINE_IDS);
-    }
-
     public List<String> lineIds() {
         return LINE_IDS;
     }
@@ -260,15 +244,6 @@ public final class GenerationMatrix {
             }
         }
         return List.copyOf(result);
-    }
-
-    /** Alias returning top-level UnmetLine. */
-    public List<com.euvcraft.lithmod.core.UnmetLine> unmetLinesTopLevel(Map<String, Integer> installedGenerations, Tier tier) {
-        List<com.euvcraft.lithmod.core.UnmetLine> out = new ArrayList<>();
-        for (com.euvcraft.lithmod.core.UnmetLine u : unmetLines(installedGenerations, tier)) {
-            out.add(new com.euvcraft.lithmod.core.UnmetLine(u.lineId(), u.requiredGeneration(), u.installedGeneration()));
-        }
-        return List.copyOf(out);
     }
 
     @Override
@@ -593,8 +568,4 @@ public final class GenerationMatrix {
         return index;
     }
 
-    /** Accessor for an immutable view (already immutable). */
-    public GenerationMatrix toImmutable() {
-        return this;
-    }
 }
