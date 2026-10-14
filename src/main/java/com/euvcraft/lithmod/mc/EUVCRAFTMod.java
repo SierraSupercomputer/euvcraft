@@ -12,6 +12,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.NeoForge;
 
 import com.euvcraft.lithmod.mc.data.TierDataLoader;
+import com.euvcraft.lithmod.mc.data.SupportLineDataLoader;
 
 @Mod(EUVCRAFTMod.MODID)
 public class EUVCRAFTMod {
@@ -28,6 +29,7 @@ public class EUVCRAFTMod {
         this.fabConfig = new FabConfig();
 
         NeoForge.EVENT_BUS.register(TierDataLoader.class);
+        NeoForge.EVENT_BUS.register(SupportLineDataLoader.class);
 
         LOGGER.info("EUVCRAFT mod loading...");
     }
