@@ -99,7 +99,13 @@ public final class ContextualRng implements Rng {
         return this.generator.nextDouble();
     }
 
-    public long salt() {
+    /**
+     * Returns the salt this generator was seeded with. Package private on purpose: the
+     * salt is a secret and must not be logged or sent to a client.
+     *
+     * @return the 64-bit salt
+     */
+    long salt() {
         return this.salt;
     }
 

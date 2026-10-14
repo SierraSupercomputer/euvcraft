@@ -42,7 +42,6 @@ class ContextualRngTest {
         double[] a = sample(first, 64);
         double[] b = sample(second, 64);
 
-        assertEquals(SALT, first.salt());
         assertEquals(LOT_A, first.lotId());
         assertEquals(3, first.waferIndex());
         assertEquals(7, first.stepIndex());

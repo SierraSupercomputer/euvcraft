@@ -51,12 +51,14 @@ public final class FabRandomService {
     }
 
     /**
-     * Returns the salt of the save this level belongs to.
+     * Returns the salt of the save this level belongs to. Package private on purpose:
+     * the salt is a secret and must not be logged or sent to a client. Code outside
+     * this package should draw rolls with {@link #rngFor(Level, UUID, int, int)}.
      *
      * @param level any level on the server
      * @return the 64-bit salt
      */
-    public static long salt(Level level) {
+    static long salt(Level level) {
         return data(level).salt();
     }
 

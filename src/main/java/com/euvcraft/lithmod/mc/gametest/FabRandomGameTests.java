@@ -95,11 +95,14 @@ public final class FabRandomGameTests {
 
     /**
      * Writes the salt to disk, reads the file back and replays the same context.
+     *
+     * <p>The salt itself is never read here: it is package private, and the shared
+     * salt is proven by comparing rolls instead. Identical rolls across dimensions
+     * and across a save/load round trip can only happen if the salt is the same.</p>
      */
     private static void saltRoundTrip(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         FabRandomData data = FabRandomService.data(level);
-        long salt = data.salt();
 
         ContextualRng before = data.rngFor(LOT, WAFER_INDEX, STEP_INDEX);
         double[] expected = new double[ROLLS];
@@ -110,7 +113,8 @@ public final class FabRandomGameTests {
         // Every dimension of the save must resolve to the same salt.
         ServerLevel nether = level.getServer().getLevel(Level.NETHER);
         if (nether != null) {
-            helper.assertTrue(FabRandomService.salt(nether) == salt,
+            double fromNether = FabRandomService.rngFor(nether, LOT, WAFER_INDEX, STEP_INDEX).nextDouble();
+            helper.assertTrue(fromNether == expected[0],
                 "the nether does not share the overworld salt");
         }
 
@@ -145,9 +149,6 @@ public final class FabRandomGameTests {
             helper.fail("could not decode " + file + ": " + decoded.error());
             return;
         }
-
-        helper.assertTrue(reloaded.get().salt() == salt,
-            "the reloaded salt differs from the stored salt");
 
         ContextualRng after = reloaded.get().rngFor(LOT, WAFER_INDEX, STEP_INDEX);
         for (int i = 0; i < ROLLS; i++) {

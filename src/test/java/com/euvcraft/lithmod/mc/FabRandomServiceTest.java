@@ -2,8 +2,8 @@ package com.euvcraft.lithmod.mc;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -74,13 +74,29 @@ class FabRandomServiceTest {
     }
 
     @Test
-    @DisplayName("a stored tag without a salt field still decodes")
+    @DisplayName("a stored tag without a salt field still decodes and is marked dirty")
     void codecToleratesMissingSalt() {
         DataResult<FabRandomData> decoded = FabRandomData.CODEC
             .parse(NbtOps.INSTANCE, new CompoundTag());
 
         assertTrue(decoded.result().isPresent(), "decoding failed: " + decoded.error());
-        assertNotNull(decoded.result().orElseThrow());
+        FabRandomData regenerated = decoded.result().orElseThrow();
+
+        assertTrue(regenerated.isDirty(),
+            "a regenerated salt must be marked dirty so it is written out instead of regenerated every load");
+    }
+
+    @Test
+    @DisplayName("a normal decode does not mark the data dirty")
+    void codecRoundTripLeavesDataClean() {
+        FabRandomData original = new FabRandomData(99L);
+
+        DataResult<net.minecraft.nbt.Tag> encoded = FabRandomData.CODEC.encodeStart(NbtOps.INSTANCE, original);
+        DataResult<FabRandomData> decoded = FabRandomData.CODEC
+            .parse(NbtOps.INSTANCE, encoded.result().orElseThrow());
+
+        assertFalse(decoded.result().orElseThrow().isDirty(),
+            "loading an intact salt must not schedule a rewrite");
     }
 
     @Test

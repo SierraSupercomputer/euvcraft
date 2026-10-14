@@ -172,12 +172,12 @@ Game test table, from `run/logs/latest.log`:
 3. Should the salt be logged (hashed) at server start for debugging, or left silent?
    Today it is only logged by the game test, which prints the file path but never the
    salt value.
-4. DataFixerUpper on the compile classpath is 10.0.21, whose `RecordCodecBuilder$Instance`
-   has no `group` method, yet the patched 26.3 `MapIndex` class calls
-   `RecordCodecBuilder$Instance.group`. Vanilla saved-data codecs compiled by the
-   game therefore cannot be recompiled by this project as-is. Worth confirming whether
-   this project is meant to pin a different DFU version, because any later task that
-   copies a vanilla codec pattern will hit the same wall.
+4. Corrected in `M0-07_server-side-randomness_r2.md`: the original text of this
+   question was based on a bad `javap` reading. `RecordCodecBuilder.create(instance ->
+   instance.group(...).apply(instance, ...))` compiles fine against the DataFixerUpper
+   10.0.21 jar on this project's compile classpath, verified with `javac` directly and
+   confirmed by the project's own `TierCodec` and `DieRuleCodec`. `FabRandomData.CODEC`
+   has been rewritten in that idiomatic form.
 
 ## 8. Handoff
 
@@ -226,8 +226,5 @@ world state by design, so it cannot be configured, copied between worlds, or rea
 client. Game tests are `lithmod:fab_random_salt_round_trip` and
 `lithmod:fab_random_client_side_rejected`, environment `lithmod:fab_random_default`.
 
-For M0-09 (yield roll engine): draw one `ContextualRng` per `(lotId, waferIndex,
-stepIndex)` through `FabRandomService.rngFor`, multiply the per-step draws together,
-and compare the product against `1 - effectiveYield`. Because `nextDouble()` is in
-`(0, 1]` and never 0, a cumulative product can never collapse to 0 through rounding
-of a single factor alone.
+For M0-09 (yield roll engine): M0-09 defines the roll model; obtain a ContextualRng
+via FabRandomService.rngFor(level, lotId, waferIndex, stepIndex).
