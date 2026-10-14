@@ -37,9 +37,11 @@ public class EUVCRAFTMod {
         com.euvcraft.lithmod.mc.gametest.EUVCRAFTGameTests.register(modEventBus);
         com.euvcraft.lithmod.mc.gametest.FabRandomGameTests.register(modEventBus);
         com.euvcraft.lithmod.mc.gametest.FoupGameTests.register(modEventBus);
+        com.euvcraft.lithmod.mc.gametest.YieldGameTests.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.LOCAL, FabConfig.getSpec());
         config = new FabConfig();
+        config.addSettingsChangeListener(FabYieldService::onSettingsChanged);
 
         // Without these the spec values are never read back into FabSettings, so
         // FabConfig.getSettings() would keep returning the defaults forever.
