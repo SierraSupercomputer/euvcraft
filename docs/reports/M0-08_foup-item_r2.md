@@ -2,9 +2,7 @@
 
 - Date: 2026-10-14
 - Branch: `m0-08-foup-item`
-- Commits: `2d92746` (fixes, tests, models, r1 header), and the commit that adds this
-  report; that second hash is filled in by the next commit on this branch, because a
-  commit cannot contain its own hash
+- Commits: `2d92746` (fixes, tests, models, r1 header), `c6fce18` (this report)
 - Java version used: Java 25 through the Gradle toolchain pinned in `build.gradle`
 - Build and test commands run:
   - `.\gradlew.bat test checkCoreImports --offline --console=plain --rerun-tasks`
@@ -142,7 +140,7 @@ Game tests, from `run/logs/latest.log`:
 | 5. the same in `docs/testing.md` | met | the Debug commands section |
 | 5. test that an existing FOUP keeps its stored capacity when config differs | met | `foup_stored_capacity_wins` game test and `storedCapacityIsIndependentOfConfig` unit test |
 | 5. game test helper calls `helper.fail` with the command text | met | `run(helper, level, source, command)` calls `helper.fail("the command '" + command + "' did not parse: " + ...)`; the `helper_fail` logger is deleted |
-| 5. both commit hashes in the report header | partly | `docs/reports/M0-08_foup-item.md` line 5 now lists `fe0fb2d` and `a7246ed`, which is what finding 10 was about. This r2 report lists `2d92746` and describes the second commit in words, because a file cannot contain the hash of the commit that introduces it; the follow-up commit fills it in |
+| 5. both commit hashes in the report header | met | this header lists `2d92746` and `c6fce18`; `docs/reports/M0-08_foup-item.md` line 5 lists `fe0fb2d` and `a7246ed` |
 | 6. write `docs/reports/M0-08_foup-item_r2.md` | met | this file |
 | 6. commit `docs/reports/M0-08_foup-item_review.md` | met | committed in `2d92746`, unmodified by this pass |
 
