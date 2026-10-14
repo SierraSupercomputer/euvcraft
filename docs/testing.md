@@ -43,6 +43,12 @@ Per-class counts are in `build/test-results/test/*.xml`.
 
 A trivial game test is registered as `lithmod:trivial` and must report as passed.
 
+The fab randomness game tests are `lithmod:fab_random_salt_round_trip` (the salt is
+written to `<world>/dimensions/minecraft/overworld/data/lithmod/fab_random.dat` and
+replaying the same context after reading that file back yields the same rolls) and
+`lithmod:fab_random_client_side_rejected` (the server-authority guard rejects a
+client-side call).
+
 ## Tier data reload (manual)
 
 Expected startup log line (one line, id, yield percent and layers):

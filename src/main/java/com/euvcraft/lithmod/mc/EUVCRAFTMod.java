@@ -25,6 +25,7 @@ public class EUVCRAFTMod {
     public EUVCRAFTMod(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(this::commonSetup);
         com.euvcraft.lithmod.mc.gametest.EUVCRAFTGameTests.register(modEventBus);
+        com.euvcraft.lithmod.mc.gametest.FabRandomGameTests.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.LOCAL, FabConfig.getSpec());
         this.fabConfig = new FabConfig();
