@@ -2,12 +2,11 @@ package com.euvcraft.lithmod.mc.data;
 
 import com.euvcraft.lithmod.core.DieRule;
 import com.euvcraft.lithmod.core.DieRules;
-import com.euvcraft.lithmod.mc.data.TierDataLoader;
+import com.euvcraft.lithmod.core.TierRegistry;
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.mojang.serialization.Codec;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
@@ -17,7 +16,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -35,7 +33,7 @@ public class DieRulesDataLoader extends JsonResourceDataLoader<List<DieRule>, Di
 
     public DieRulesDataLoader() {
         super(DIRECTORY, RULES_CODEC, (values, source) -> {
-            com.euvcraft.lithmod.core.TierRegistry tiers = TierDataLoader.getRegistry();
+            TierRegistry tiers = TierDataLoader.getRegistry();
             if (tiers == null) {
                 tiers = new TierDataLoader().fallback();
             }
@@ -48,8 +46,7 @@ public class DieRulesDataLoader extends JsonResourceDataLoader<List<DieRule>, Di
                     merged.addAll(value);
                 }
             }
-            DieRules next = DieRules.build(tiers, merged, source);
-            return next;
+            return DieRules.build(tiers, merged, source);
         }, LOGGER);
     }
 
@@ -74,7 +71,7 @@ public class DieRulesDataLoader extends JsonResourceDataLoader<List<DieRule>, Di
 
     @Override
     protected DieRules fallback() {
-        com.euvcraft.lithmod.core.TierRegistry tiers = TierDataLoader.getRegistry();
+        TierRegistry tiers = TierDataLoader.getRegistry();
         if (tiers == null) {
             tiers = new TierDataLoader().fallback();
         }
@@ -96,14 +93,6 @@ public class DieRulesDataLoader extends JsonResourceDataLoader<List<DieRule>, Di
     }
 
     public static DieRules getRules() {
-        return currentRules;
-    }
-
-    public static DieRules getDieRules() {
-        return currentRules;
-    }
-
-    public static DieRules get() {
         return currentRules;
     }
 }

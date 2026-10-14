@@ -1,5 +1,6 @@
 package com.euvcraft.lithmod.core;
 
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -12,7 +13,7 @@ import java.util.Objects;
 public record DieRule(String dieType, int firstTier, Integer capTier, boolean usesCoreCount) {
     public DieRule {
         Objects.requireNonNull(dieType, "dieType must not be null");
-        String normalized = dieType.trim().toLowerCase(java.util.Locale.ROOT);
+        String normalized = dieType.trim().toLowerCase(Locale.ROOT);
         if (normalized.isEmpty()) {
             throw new IllegalArgumentException("dieType must not be blank");
         }

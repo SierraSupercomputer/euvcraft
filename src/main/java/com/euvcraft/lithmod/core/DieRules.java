@@ -12,7 +12,8 @@ import java.util.Objects;
  * Immutable collection of {@link DieRule}s bound to a {@link TierRegistry}.
  *
  * Validates the rules against the supplied tier registry and exposes the
- * derived queries defined by the spec.
+ * derived queries defined by the spec. Die types are canonical lowercase
+ * string ids ("compute", "logic", "memory", "nand").
  */
 public final class DieRules {
 
@@ -20,11 +21,11 @@ public final class DieRules {
     private final Map<String, DieRule> rulesByType;
     private final String sourceDescription;
 
-    public DieRules(TierRegistry tierRegistry, List<?> rules) {
+    public DieRules(TierRegistry tierRegistry, List<DieRule> rules) {
         this(tierRegistry, rules, "die rules");
     }
 
-    public DieRules(TierRegistry tierRegistry, List<?> rules, String sourceDescription) {
+    public DieRules(TierRegistry tierRegistry, List<DieRule> rules, String sourceDescription) {
         Objects.requireNonNull(tierRegistry, "tierRegistry must not be null");
         String source = (sourceDescription == null || sourceDescription.isBlank())
             ? "die rules" : sourceDescription.trim();
@@ -34,16 +35,16 @@ public final class DieRules {
         Map<String, DieRule> built = new LinkedHashMap<>();
         int tierCount = tierRegistry.all().size();
         if (rules != null) {
-            for (Object raw : rules) {
-                DieRule rule;
-                if (raw instanceof DieRule dr) {
-                    rule = dr;
-                } else {
-                    throw new IllegalArgumentException(source + ": expected DieRule but got " + (raw == null ? "null" : raw.getClass().getName()));
+            for (DieRule rule : rules) {
+                Objects.requireNonNull(rule, source + ": rule must not be null");
+                String type = rule.dieType();
+                if (type == null || type.isBlank()) {
+                    throw new IllegalArgumentException(source + ": field 'dieType' must not be blank");
                 }
-                String type = normalizeDieType(rule.dieType());
-                // Validate indexes against the tier registry.
-                if (rule.firstTier() < 1 || rule.firstTier() > tierCount || tierRegistry.byIndex(rule.firstTier()).isEmpty()) {
+                type = type.trim().toLowerCase(Locale.ROOT);
+
+                if (rule.firstTier() < 1 || rule.firstTier() > tierCount
+                        || tierRegistry.byIndex(rule.firstTier()).isEmpty()) {
                     throw new IllegalArgumentException(source + ": field 'firstTier' (" + rule.firstTier() +
                         ") does not exist in TierRegistry for die type '" + type + "'");
                 }
@@ -71,12 +72,11 @@ public final class DieRules {
         this(tierRegistry, DieRules.defaultRuleList(), "default die rules");
     }
 
-    // Constructor shapes requested/compatible variants.
-    public DieRules(List<?> rules, TierRegistry tierRegistry) {
+    public DieRules(List<DieRule> rules, TierRegistry tierRegistry) {
         this(tierRegistry, rules, "die rules");
     }
 
-    public DieRules(List<?> rules, TierRegistry tierRegistry, String sourceDescription) {
+    public DieRules(List<DieRule> rules, TierRegistry tierRegistry, String sourceDescription) {
         this(tierRegistry, rules, sourceDescription);
     }
 
@@ -100,8 +100,8 @@ public final class DieRules {
         return rulesByType;
     }
 
-    public DieRule ruleFor(Object dieType) {
-        String type = normalizeDieType(dieType);
+    public DieRule ruleFor(String dieType) {
+        String type = normalize(dieType);
         DieRule rule = rulesByType.get(type);
         if (rule == null) {
             throw new IllegalArgumentException(sourceDescription + ": unknown die type '" + type + "'");
@@ -109,109 +109,80 @@ public final class DieRules {
         return rule;
     }
 
-    public boolean hasRule(Object dieType) {
+    public boolean hasRule(String dieType) {
         try {
-            return rulesByType.containsKey(normalizeDieType(dieType));
+            return rulesByType.containsKey(normalize(dieType));
         } catch (RuntimeException e) {
             return false;
         }
     }
 
-    public boolean canMake(Object dieType, int tierIndex) {
-        DieRule rule = rulesByType.get(normalizeDieType(dieType));
+    public boolean canMake(String dieType, int tierIndex) {
+        DieRule rule = rulesByType.get(normalize(dieType));
         if (rule == null) return false;
         return tierIndex >= rule.firstTier();
     }
 
-    public boolean canMake(Object dieType, Tier tier) {
+    public boolean canMake(String dieType, Tier tier) {
         return tier == null ? false : canMake(dieType, tier.index());
     }
 
-    public boolean canMake(Object dieType, Object tier) {
-        return canMake(dieType, toTierIndex(tier));
-    }
-
-    public int effectiveTier(Object dieType, int tierIndex) {
+    public int effectiveTier(String dieType, int tierIndex) {
         DieRule rule = ruleFor(dieType);
         if (rule.capTier() == null) return tierIndex;
         return Math.min(tierIndex, rule.capTier());
     }
 
-    public int effectiveTier(Object dieType, Tier tier) {
+    public int effectiveTier(String dieType, Tier tier) {
         return effectiveTier(dieType, tier == null ? 0 : tier.index());
     }
 
-    public int effectiveTier(Object dieType, Object tier) {
-        return effectiveTier(dieType, toTierIndex(tier));
-    }
-
-    public boolean isCapped(Object dieType, int tierIndex) {
+    public boolean isCapped(String dieType, int tierIndex) {
         return effectiveTier(dieType, tierIndex) != tierIndex;
     }
 
-    public boolean isCapped(Object dieType, Tier tier) {
+    public boolean isCapped(String dieType, Tier tier) {
         return isCapped(dieType, tier == null ? 0 : tier.index());
     }
 
-    public boolean isCapped(Object dieType, Object tier) {
-        return isCapped(dieType, toTierIndex(tier));
-    }
-
-    public int targetSpeedMhz(Object dieType, int tierIndex) {
+    public int targetSpeedMhz(String dieType, int tierIndex) {
         int eff = effectiveTier(dieType, tierIndex);
-        Tier tier = tierRegistry.getByIndex(eff);
-        return tier.targetSpeedMhz();
+        return tierRegistry.getByIndex(eff).targetSpeedMhz();
     }
 
-    public int targetSpeedMhz(Object dieType, Tier tier) {
+    public int targetSpeedMhz(String dieType, Tier tier) {
         return targetSpeedMhz(dieType, tier == null ? 0 : tier.index());
     }
 
-    public int targetSpeedMhz(Object dieType, Object tier) {
-        return targetSpeedMhz(dieType, toTierIndex(tier));
-    }
-
-    /**
-     * Returns the effective tier whose resolutionNm and overlayNm describe the
-     * requirements for making this die type at the given tier.
-     */
-    public Tier requirements(Object dieType, int tierIndex) {
+    public Tier requirements(String dieType, int tierIndex) {
         int eff = effectiveTier(dieType, tierIndex);
         return tierRegistry.getByIndex(eff);
     }
 
-    public Tier requirements(Object dieType, Tier tier) {
+    public Tier requirements(String dieType, Tier tier) {
         return requirements(dieType, tier == null ? 0 : tier.index());
     }
 
-    public Tier requirements(Object dieType, Object tier) {
-        return requirements(dieType, toTierIndex(tier));
-    }
-
-    public boolean coreCountsAvailable(Object dieType, int tierIndex) {
-        DieRule rule = rulesByType.get(normalizeDieType(dieType));
+    public boolean coreCountsAvailable(String dieType, int tierIndex) {
+        DieRule rule = rulesByType.get(normalize(dieType));
         if (rule == null || !rule.usesCoreCount()) return false;
         Tier tier = tierRegistry.byIndex(tierIndex).orElse(null);
         return tier != null && tier.comfortableCores() != null;
     }
 
-    public boolean coreCountsAvailable(Object dieType, Tier tier) {
+    public boolean coreCountsAvailable(String dieType, Tier tier) {
         return tier == null ? false : coreCountsAvailable(dieType, tier.index());
     }
 
-    public boolean coreCountsAvailable(Object dieType, Object tier) {
-        return coreCountsAvailable(dieType, toTierIndex(tier));
-    }
-
-    public boolean usesCoreCount(Object dieType) {
+    public boolean usesCoreCount(String dieType) {
         return ruleFor(dieType).usesCoreCount();
     }
 
-    public Integer capTier(Object dieType) {
+    public Integer capTier(String dieType) {
         return ruleFor(dieType).capTier();
     }
 
-    public int firstTier(Object dieType) {
+    public int firstTier(String dieType) {
         return ruleFor(dieType).firstTier();
     }
 
@@ -246,7 +217,7 @@ public final class DieRules {
         return sb.toString();
     }
 
-    // ---- static factories / compatibility ----
+    // ---- static factories ----
 
     public static List<DieRule> defaultRuleList() {
         return List.of(
@@ -265,19 +236,11 @@ public final class DieRules {
         return defaults(tierRegistry);
     }
 
-    public static DieRules standard(TierRegistry tierRegistry) {
-        return defaults(tierRegistry);
-    }
-
-    public static DieRules bundled(TierRegistry tierRegistry) {
-        return defaults(tierRegistry);
-    }
-
-    public static DieRules build(TierRegistry tierRegistry, List<?> rules, String sourceDescription) {
+    public static DieRules build(TierRegistry tierRegistry, List<DieRule> rules, String sourceDescription) {
         return new DieRules(tierRegistry, rules, sourceDescription);
     }
 
-    public static DieRules build(List<?> rules, TierRegistry tierRegistry, String sourceDescription) {
+    public static DieRules build(List<DieRule> rules, TierRegistry tierRegistry, String sourceDescription) {
         return new DieRules(rules, tierRegistry, sourceDescription);
     }
 
@@ -285,14 +248,11 @@ public final class DieRules {
         if (data == null) {
             throw new IllegalArgumentException((sourceDescription == null ? "die rules" : sourceDescription) + ": no data provided");
         }
-        // Support map whose keys are die types and values are maps with tiers.
         List<DieRule> parsed = new ArrayList<>();
-        // Case 1: keys are die type names and value is a Map with first_tier etc is not parsed here; require DieRule objects.
         for (Map.Entry<?, ?> e : data.entrySet()) {
             if (e.getValue() instanceof DieRule dr) {
                 parsed.add(dr);
             } else if (e.getValue() instanceof Map<?, ?> m) {
-                // Try to read fields.
                 String dieType = String.valueOf(e.getKey());
                 Object first = m.get("first_tier");
                 if (first == null) first = m.get("firstTier");
@@ -306,8 +266,6 @@ public final class DieRules {
                 Integer capTier = (cap == null) ? null : toIntScalar(cap);
                 boolean uses = toBoolean(cores);
                 parsed.add(new DieRule(dieType, firstTier, capTier, uses));
-            } else if (e.getValue() instanceof DieRule) {
-                parsed.add((DieRule) e.getValue());
             } else {
                 throw new IllegalArgumentException((sourceDescription == null ? "die rules" : sourceDescription) +
                     ": cannot parse die rule from " + e);
@@ -320,49 +278,23 @@ public final class DieRules {
         return build(tierRegistry, data, sourceDescription);
     }
 
-    public static DieRules of(TierRegistry tierRegistry, List<?> rules) {
+    public static DieRules of(TierRegistry tierRegistry, List<DieRule> rules) {
         return build(tierRegistry, rules, "die rules");
     }
 
-    public static DieRules from(TierRegistry tierRegistry, List<?> rules, String sourceDescription) {
+    public static DieRules from(TierRegistry tierRegistry, List<DieRule> rules, String sourceDescription) {
         return build(tierRegistry, rules, sourceDescription);
     }
 
-    public static DieRules from(List<?> rules, TierRegistry tierRegistry, String sourceDescription) {
+    public static DieRules from(List<DieRule> rules, TierRegistry tierRegistry, String sourceDescription) {
         return build(rules, tierRegistry, sourceDescription);
     }
 
     // ---- helpers ----
 
-    private static int toTierIndex(Object tier) {
-        if (tier == null) {
-            throw new IllegalArgumentException("tier must not be null");
-        }
-        if (tier instanceof Tier t) return t.index();
-        if (tier instanceof Number n) return n.intValue();
-        if (tier instanceof String s) {
-            String v = s.trim();
-            try {
-                return Integer.parseInt(v);
-            } catch (NumberFormatException ignored) {
-            }
-            // Accept ids like "T7"
-            if (v.length() > 1 && (v.charAt(0) == 'T' || v.charAt(0) == 't')) {
-                try {
-                    return Integer.parseInt(v.substring(1).trim());
-                } catch (NumberFormatException ignored) {
-                }
-            }
-        }
-        throw new IllegalArgumentException("cannot resolve tier from " + tier);
-    }
-
-    public static String normalizeDieType(Object dieType) {
+    private static String normalize(String dieType) {
         if (dieType == null) throw new IllegalArgumentException("dieType must not be null");
-        if (dieType instanceof DieType dt) return dt.key();
-        if (dieType instanceof DieRule dr) return dr.dieType();
-        if (dieType instanceof Enum<?> e) return e.name().toLowerCase(Locale.ROOT);
-        String s = String.valueOf(dieType).trim().toLowerCase(Locale.ROOT);
+        String s = dieType.trim().toLowerCase(Locale.ROOT);
         if (s.isEmpty()) throw new IllegalArgumentException("dieType must not be blank");
         return s;
     }
@@ -378,22 +310,5 @@ public final class DieRules {
         if (value == null) return false;
         String s = String.valueOf(value).trim().toLowerCase(Locale.ROOT);
         return s.equals("true") || s.equals("yes") || s.equals("1");
-    }
-
-    // Backwards-friendly aliases for class name expectations of helper types.
-    public static final class Requirements {
-        public final int resolutionNm;
-        public final int overlayNm;
-        public final int tierIndex;
-        public final int targetSpeedMhz;
-        public Requirements(int resolutionNm, int overlayNm) {
-            this(resolutionNm, overlayNm, 0, 0);
-        }
-        public Requirements(int resolutionNm, int overlayNm, int tierIndex, int targetSpeedMhz) {
-            this.resolutionNm = resolutionNm;
-            this.overlayNm = overlayNm;
-            this.tierIndex = tierIndex;
-            this.targetSpeedMhz = targetSpeedMhz;
-        }
     }
 }

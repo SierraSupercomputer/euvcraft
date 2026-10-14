@@ -65,10 +65,19 @@ class DieRulesTest {
     }
 
     @Test
-    void dieTypeConstants() {
+    void defaultRulesMatchReferenceTable() {
         DieRules rules = DieRules.defaults(registry());
-        // accept null source? no, but defaults source ignored? ensure not throw for default builder via defaults
-        assertNotNull(rules);
+        assertEquals(4, rules.rules().size());
+        assertEquals(List.of("logic", "memory", "compute", "nand"),
+            rules.rules().stream().map(DieRule::dieType).toList());
+        assertEquals(1, rules.firstTier(DieTypes.LOGIC));
+        assertEquals(5, rules.capTier(DieTypes.LOGIC));
+        assertEquals(2, rules.firstTier(DieTypes.MEMORY));
+        assertNull(rules.capTier(DieTypes.MEMORY));
+        assertEquals(3, rules.firstTier(DieTypes.COMPUTE));
+        assertTrue(rules.usesCoreCount(DieTypes.COMPUTE));
+        assertEquals(3, rules.firstTier(DieTypes.NAND));
+        assertFalse(rules.usesCoreCount(DieTypes.NAND));
     }
 
     @Nested

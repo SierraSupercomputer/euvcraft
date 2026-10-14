@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-class DieRuleDataLoaderFallbackTest {
+class DieRulesDataLoaderFallbackTest {
     @Test
     void bundledFallbackIsNeverNull() {
         DieRulesDataLoader loader = new DieRulesDataLoader();
