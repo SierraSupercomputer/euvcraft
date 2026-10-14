@@ -46,6 +46,13 @@ public abstract class JsonResourceDataLoader<T, R> extends SimpleJsonResourceRel
 
         if (values.isEmpty()) {
             logger.warn("No {} data loaded from {}, keeping previous value", directory, source);
+            if (current == null) {
+                R fb = fallback();
+                if (fb != null) {
+                    current = fb;
+                    logger.warn("Fell back to bundled defaults for {} after an empty first load", directory);
+                }
+            }
             return;
         }
 
@@ -55,7 +62,22 @@ public abstract class JsonResourceDataLoader<T, R> extends SimpleJsonResourceRel
             logger.info("Loaded {} {} entries from {}", values.size(), directory, source);
         } catch (RuntimeException e) {
             logger.error("Failed to build {} from {}: {}", directory, source, e.getMessage());
+            if (current == null) {
+                R fb = fallback();
+                if (fb != null) {
+                    current = fb;
+                    logger.warn("Fell back to bundled defaults for {} after a failed first load", directory);
+                }
+            }
         }
+    }
+
+    /**
+     * Used when a first load fails (or is empty) so the registry is never null.
+     * Override in loaders that have bundled defaults; the base returns null.
+     */
+    protected R fallback() {
+        return null;
     }
 
     public R getCurrent() {

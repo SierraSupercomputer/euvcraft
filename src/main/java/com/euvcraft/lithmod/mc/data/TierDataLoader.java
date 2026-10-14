@@ -4,6 +4,7 @@ import com.euvcraft.lithmod.core.Tier;
 import com.euvcraft.lithmod.core.TierRegistry;
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.JsonOps;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
@@ -44,8 +45,31 @@ public final class TierDataLoader extends JsonResourceDataLoader<Tier, TierRegis
         if (next != null) {
             currentRegistry = next;
             LOGGER.info("Loaded {} tiers: {}", currentRegistry.all().size(),
-                currentRegistry.all().stream().map(Tier::id).toList());
+                currentRegistry.all().stream()
+                    .map(t -> t.id() + "(" + (int) t.defaultYieldPercent() + "%, " + t.layers() + " layers)")
+                    .reduce((a, b) -> a + ", " + b)
+                    .orElse(""));
         }
+    }
+
+    @Override
+    protected TierRegistry fallback() {
+        java.util.List<Tier> defaults = new java.util.ArrayList<>();
+        for (int i = 1; i <= 8; i++) {
+            String resource = "/data/lithmod/tiers/t" + i + ".json";
+            try (java.io.InputStream input = TierDataLoader.class.getResourceAsStream(resource)) {
+                if (input == null) {
+                    throw new IllegalStateException("Missing bundled tier file: " + resource);
+                }
+                com.google.gson.JsonElement json = com.google.gson.JsonParser.parseReader(
+                    new java.io.InputStreamReader(input, java.nio.charset.StandardCharsets.UTF_8));
+                Tier tier = TierCodec.CODEC.parse(JsonOps.INSTANCE, json).getOrThrow();
+                defaults.add(tier);
+            } catch (java.io.IOException e) {
+                throw new RuntimeException("Failed to read bundled tier file: " + resource, e);
+            }
+        }
+        return TierRegistry.build(defaults, "bundled default tiers");
     }
 
     public static TierRegistry getRegistry() {
