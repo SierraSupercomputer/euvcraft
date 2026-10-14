@@ -3,7 +3,7 @@
 - Date: 2026-10-13
 - Branch: `m0-07-server-randomness` (git worktree at `.local/share/opencode/worktree/4b213d/m0-07-server-randomness`)
 - Base commit: `826eaaa` (M0-05b)
-- Work commit: see `git log` on the branch; this report is committed with the work
+- Work commit: `9efbf82`, report committed as `M0-07 report`
 - Java version used: Java 25 via the Gradle toolchain pinned in `build.gradle`
 - Build and test commands run:
   - `.\gradlew.bat test --offline --console=plain`
@@ -64,7 +64,14 @@ BUILD SUCCESSFUL in 4m 58s
 
 A baseline `runGameTestServer` on the unmodified base commit reported
 `All 671 required tests passed :)`. The new run reports 673, i.e. the two tests added
-here are part of the required set and passed.
+here are part of the required set and passed. A second `runGameTestServer` after the
+work commit repeated the result:
+
+```
+[13Oct2026 22:48:02.907] GameTestServer: ========= 673 GAME TESTS COMPLETE IN 1.737 min ======================
+[13Oct2026 22:48:02.909] GameTestServer: All 673 required tests passed :)
+BUILD SUCCESSFUL in 4m 5s
+```
 
 Unit test table, read from `build/test-results/test/*.xml`:
 
@@ -133,11 +140,11 @@ Game test table, from `run/logs/latest.log`:
   `requireServerSide(Level)` delegates to on its first line, and through the null
   branch of the `Level` overload. An integrated-client game test run was not run.
 - Whether `Arcforge:creosote_moves` (an optional game test in another mod's namespace)
-  failed because of this change was not established. The baseline run on the
-  unmodified base commit reported no optional failures; the first run with this change
-  reported `1 optional tests failed` for that Arcforge test. Nothing in this change
-  touches movement, blocks or entities, and the failing test is not in the `lithmod`
-  namespace. Treated as unrelated; see section 7.
+  failed because of this change was not investigated. It failed on one of the two runs
+  with this change present (`1 optional tests failed`) and not on the baseline run, but
+  a second run with this change present reported no optional failures. Nothing in this
+  change touches movement, blocks or entities, and the test is not in the `lithmod`
+  namespace. Treated as an unrelated Arcforge flake; see section 7.
 - Long-run behaviour across a real world reload (stop the server, start it again, run
   the same step) was not simulated; the GameTest performs the equivalent at the file
   level, reading back the exact bytes the game wrote.
@@ -158,9 +165,10 @@ Game test table, from `run/logs/latest.log`:
 1. Should `ContextualRng` reject negative `waferIndex` and `stepIndex`? It does today
    (both are indices into a lot and into a step list). If a later task needs to roll a
    "pre-step" sentinel such as `-1`, that constructor needs relaxing.
-2. `arcforge:creosote_moves` is an optional Arcforge game test that failed once with
-   this change present and once without it. Is that test known to be flaky in this
-   environment? It is outside this repo and was not investigated.
+2. `arcforge:creosote_moves` is an optional Arcforge game test that failed on one of
+   three runs and passed on the other two (baseline, and a repeat run with this
+   change). Is that test known to be flaky in this environment? It is outside this
+   repo and was not investigated.
 3. Should the salt be logged (hashed) at server start for debugging, or left silent?
    Today it is only logged by the game test, which prints the file path but never the
    salt value.
