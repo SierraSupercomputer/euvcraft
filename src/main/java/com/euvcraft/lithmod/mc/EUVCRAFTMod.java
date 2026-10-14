@@ -13,6 +13,7 @@ import net.neoforged.neoforge.common.NeoForge;
 
 import com.euvcraft.lithmod.mc.data.TierDataLoader;
 import com.euvcraft.lithmod.mc.data.SupportLineDataLoader;
+import com.euvcraft.lithmod.mc.data.DieRulesDataLoader;
 
 @Mod(EUVCRAFTMod.MODID)
 public class EUVCRAFTMod {
@@ -30,6 +31,7 @@ public class EUVCRAFTMod {
 
         NeoForge.EVENT_BUS.register(TierDataLoader.class);
         NeoForge.EVENT_BUS.register(SupportLineDataLoader.class);
+        NeoForge.EVENT_BUS.register(DieRulesDataLoader.class);
 
         LOGGER.info("EUVCRAFT mod loading...");
     }

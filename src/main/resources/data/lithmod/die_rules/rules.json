@@ -1,0 +1,6 @@
+[
+  { "die_type": "logic", "first_tier": 1, "cap_tier": 5, "uses_core_count": false },
+  { "die_type": "memory", "first_tier": 2, "uses_core_count": false },
+  { "die_type": "compute", "first_tier": 3, "uses_core_count": true },
+  { "die_type": "nand", "first_tier": 3, "uses_core_count": false }
+]
