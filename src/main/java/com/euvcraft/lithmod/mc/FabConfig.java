@@ -99,7 +99,7 @@ public class FabConfig implements FabSettingsProvider {
             .define("tier6Enabled", FabSettings.DEFAULT_TIER_6_ENABLED);
 
         DEBUG_COMMANDS = BUILDER
-            .comment("When true, registers the operator-only '/debug' command tree (permission level 2). Intended for development and pack testing only.")
+            .comment("When true, registers the operator-only '/debug' command tree. The mod asks for permission level 2, but vanilla already owns '/debug' at level 3 and the two merge, so the effective gate is level 3 in practice. Intended for development and pack testing only.")
             .define("debugCommands", FabSettings.DEFAULT_DEBUG_COMMANDS);
 
         BUILDER.pop();

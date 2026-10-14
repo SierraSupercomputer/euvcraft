@@ -29,6 +29,9 @@ public final class WaferPacking {
      * {@link #flags()} hand out copies too. Every accessor therefore costs a copy;
      * that is the price of never handing out a mutable array.</p>
      *
+     * <p>{@link #equals(Object)} is compared by contents, because a record would
+     * compare the arrays by identity, which is never what a caller means here.</p>
+     *
      * @param layers layer index of each wafer
      * @param rolls  cumulative roll of each wafer, in {@code (0, 1]}
      * @param flags  reserved flags of each wafer
@@ -103,50 +106,18 @@ public final class WaferPacking {
         }
 
         /**
-         * Returns the cumulative rolls as raw IEEE-754 bit patterns.
-         *
-         * <p>Storing the raw bits rather than the float values keeps the conversion
-         * exact and lets the caller write the rolls down as an integer array, which
-         * is what an NBT int array and a buffer varint array both are.</p>
-         *
-         * @return a fresh array of {@code floatToRawIntBits} values
-         */
-        public int[] rollBits() {
-            int[] bits = new int[this.rolls.length];
-            for (int i = 0; i < this.rolls.length; i++) {
-                bits[i] = Float.floatToRawIntBits(this.rolls[i]);
-            }
-            return bits;
-        }
-
-        /**
-         * Rebuilds a packing from raw IEEE-754 bit patterns.
-         *
-         * @param layers   layer index of each wafer
-         * @param rollBits raw bit pattern of each cumulative roll
-         * @param flags    reserved flags of each wafer
-         * @return the equivalent packing
-         * @throws IllegalArgumentException if the three arrays differ in length
-         */
-        public static Packed fromRollBits(int[] layers, int[] rollBits, int[] flags) {
-            Objects.requireNonNull(rollBits, "rollBits must not be null");
-            float[] rolls = new float[rollBits.length];
-            for (int i = 0; i < rollBits.length; i++) {
-                rolls[i] = Float.intBitsToFloat(rollBits[i]);
-            }
-            return new Packed(layers, rolls, flags);
-        }
-
-        /**
-         * Compares the contents of the three arrays. A record would compare the
-         * arrays by identity, which is never what a caller means here.
+         * Compares the three arrays by contents. A record would compare them by
+         * identity, which is never what a caller means here.
          *
          * @param other the object to compare with
          * @return {@code true} if all three arrays hold equal values
          */
         @Override
         public boolean equals(Object other) {
-            return other instanceof Packed packed && sameContents(packed);
+            return other instanceof Packed packed
+                && Arrays.equals(this.layers, packed.layers)
+                && Arrays.equals(this.rolls, packed.rolls)
+                && Arrays.equals(this.flags, packed.flags);
         }
 
         /**
@@ -161,19 +132,6 @@ public final class WaferPacking {
         }
 
         /**
-         * Compares the contents of the three arrays.
-         *
-         * @param other the packing to compare with
-         * @return {@code true} if all three arrays hold equal values
-         */
-        public boolean sameContents(Packed other) {
-            return other != null
-                && Arrays.equals(this.layers, other.layers)
-                && Arrays.equals(this.rolls, other.rolls)
-                && Arrays.equals(this.flags, other.flags);
-        }
-
-        /**
          * Prints the packing without its hidden values.
          *
          * @return the wafer count only
@@ -182,17 +140,6 @@ public final class WaferPacking {
         public String toString() {
             return "Packed[wafers=" + this.layers.length + "]";
         }
-    }
-
-    /**
-     * Packs a wafer list into three parallel arrays.
-     *
-     * @param wafers the wafers to pack, not null
-     * @return the packed wafers in the same order
-     * @throws NullPointerException if the list or one of its entries is null
-     */
-    public static Packed pack(List<Wafer> wafers) {
-        return new Packed(packLayers(wafers), unpackRollBits(packRollBits(wafers)), packFlags(wafers));
     }
 
     /**
@@ -274,11 +221,8 @@ public final class WaferPacking {
         Packed packed = new Packed(layers, rolls, flags);
         int size = packed.size();
         List<Wafer> wafers = new ArrayList<>(size);
-        int[] packedLayers = packed.layers();
-        float[] packedRolls = packed.rolls();
-        int[] packedFlags = packed.flags();
         for (int i = 0; i < size; i++) {
-            wafers.add(new Wafer(packedLayers[i], packedRolls[i], packedFlags[i]));
+            wafers.add(new Wafer(packed.layers[i], packed.rolls[i], packed.flags[i]));
         }
         return List.copyOf(wafers);
     }

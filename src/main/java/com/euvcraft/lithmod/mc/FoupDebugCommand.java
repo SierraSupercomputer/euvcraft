@@ -41,9 +41,6 @@ public final class FoupDebugCommand {
     /** Literal the debug tree hangs off. */
     public static final String ROOT = "debug";
 
-    /** Largest lot the game can hold, matching the config range of the capacity. */
-    private static final int MAX_WAFERS = 64;
-
     private FoupDebugCommand() {
     }
 
@@ -60,7 +57,7 @@ public final class FoupDebugCommand {
         LiteralArgumentBuilder<CommandSourceStack> foup = Commands.literal("foup")
             .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
             .then(Commands.literal("fill")
-                .then(Commands.argument("count", IntegerArgumentType.integer(1, MAX_WAFERS))
+                .then(Commands.argument("count", IntegerArgumentType.integer(1, Integer.MAX_VALUE))
                     .then(Commands.argument("layer", IntegerArgumentType.integer(0, Integer.MAX_VALUE))
                         .executes(FoupDebugCommand::fill))))
             .then(Commands.literal("inspect")
@@ -78,6 +75,10 @@ public final class FoupDebugCommand {
 
     /**
      * Gives the caller a FOUP holding the requested number of wafers.
+     *
+     * <p>The configured capacity is the only bound on {@code count}: the command takes
+     * any positive number and rejects whatever does not fit in the current capacity,
+     * so the argument never duplicates the capacity that config already decides.</p>
      *
      * @param context the command context
      * @return the command result count

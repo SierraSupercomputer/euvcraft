@@ -58,8 +58,11 @@ public final class FoupContentsCodec {
      *
      * <p>The real lot id is not part of the public view, so the network form has to
      * put something there. It uses the nil UUID, which a server-side
-     * {@link UUID#randomUUID()} can never draw, so a value carrying it is recognisable
-     * as a client-side view.</p>
+     * {@link UUID#randomUUID()} is practically never going to draw, so the value is
+     * recognisable. That is a convenience, not a guarantee: a lot that has this id is
+     * treated as a client view because of this marker, and the marker is checked
+     * explicitly by {@link #isClientView(FoupContents)} and by
+     * {@link FoupItems#trustedContentsOf(net.minecraft.world.item.ItemStack)}.</p>
      */
     public static final UUID CLIENT_VIEW_LOT_ID = new UUID(0L, 0L);
 
@@ -152,9 +155,10 @@ public final class FoupContentsCodec {
      * Returns whether a lot is a client-side view built by
      * {@link #fromPublicView(int, int, int)} rather than a server-side lot.
      *
-     * <p>This is a diagnostic, not an authority check. It exists so that the debug
-     * commands and a later anti-tamper check can recognise a lot whose hidden values
-     * were never filled in by the server.</p>
+     * <p>This is the marker that {@link FoupItems#trustedContentsOf(net.minecraft.world.item.ItemStack)}
+     * checks. It is a marker, not an authority check: it says "this value came from
+     * the network form", nothing more. Nothing outside this package decides whether to
+     * trust a lot; see the creative-mode spike in the M0-08 report.</p>
      *
      * @param contents the lot to inspect, not null
      * @return {@code true} if the lot carries the client view lot id

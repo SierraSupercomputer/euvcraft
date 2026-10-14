@@ -14,6 +14,7 @@ import com.euvcraft.lithmod.mc.FoupContentsCodec;
 import com.euvcraft.lithmod.mc.FoupDebugCommand;
 import com.euvcraft.lithmod.mc.FoupItems;
 import com.euvcraft.lithmod.mc.registry.ModCreativeTabs;
+import com.euvcraft.lithmod.mc.registry.ModDataComponents;
 import com.euvcraft.lithmod.mc.registry.ModItems;
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -26,11 +27,13 @@ import io.netty.channel.embedded.EmbeddedChannel;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.Holder;
+import net.minecraft.core.NonNullList;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.gametest.framework.FunctionGameTestInstance;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.gametest.framework.TestData;
 import net.minecraft.gametest.framework.TestEnvironmentDefinition;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
@@ -45,11 +48,17 @@ import net.minecraft.server.network.CommonListenerCookie;
 import net.minecraft.server.permissions.LevelBasedPermissionSet;
 import net.minecraft.server.permissions.PermissionLevel;
 import net.minecraft.server.permissions.PermissionSet;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -81,6 +90,8 @@ public final class FoupGameTests {
         FUNCTIONS.register("foup_encoded_size", () -> FoupGameTests::encodedSize);
         FUNCTIONS.register("foup_creative_tab_entries", () -> FoupGameTests::creativeTabEntries);
         FUNCTIONS.register("foup_debug_commands", () -> FoupGameTests::debugCommands);
+        FUNCTIONS.register("foup_trusted_contents", () -> FoupGameTests::trustedContents);
+        FUNCTIONS.register("foup_stored_capacity_wins", () -> FoupGameTests::storedCapacityWins);
     }
 
     private FoupGameTests() {
@@ -104,6 +115,8 @@ public final class FoupGameTests {
         register(event, data, "foup_encoded_size");
         register(event, data, "foup_creative_tab_entries");
         register(event, data, "foup_debug_commands");
+        register(event, data, "foup_trusted_contents");
+        register(event, data, "foup_stored_capacity_wins");
         LOGGER.info("Registered EUVCRAFT foup game tests");
     }
 
@@ -136,7 +149,78 @@ public final class FoupGameTests {
         }
         assertSameContents(helper, "a stack that went through NBT", contents, FoupItems.contentsOf(reloaded));
 
+        ItemStack fromChest = chestRoundTrip(helper, level, original);
+        if (fromChest == null) {
+            return;
+        }
+        assertSameContents(helper, "a stack that went through a chest", contents, FoupItems.contentsOf(fromChest));
+
+        ItemEntity fromGround = groundRoundTrip(helper, level, original);
+        if (fromGround == null) {
+            return;
+        }
+        assertSameContents(helper, "a stack that was dropped and saved", contents,
+            FoupItems.contentsOf(fromGround.getItem()));
+
+        ServerPlayer player = connect(level);
+        player.getInventory().setItem(0, original.copy());
+        assertSameContents(helper, "a stack placed with Inventory.setItem", contents,
+            FoupItems.contentsOf(player.getInventory().getItem(0)));
+
+        fromGround.playerTouch(player);
+        assertSameContents(helper, "a stack picked up off the ground", contents,
+            FoupItems.contentsOf(player.getInventory().getItem(1)));
+
         helper.succeed();
+    }
+
+    /**
+     * Runs a stack through the chest container path: {@link ContainerHelper#saveAllItems}
+     * into a tag and {@link ContainerHelper#loadAllItems} back into a fresh chest.
+     *
+     * @return the reloaded stack, or null if the round trip could not be done
+     */
+    private static ItemStack chestRoundTrip(GameTestHelper helper, ServerLevel level, ItemStack stack) {
+        NonNullList<ItemStack> chest = NonNullList.withSize(27, ItemStack.EMPTY);
+        chest.set(4, stack.copy());
+
+        TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, level.registryAccess());
+        ContainerHelper.saveAllItems(output, chest);
+        CompoundTag saved = output.buildResult();
+
+        NonNullList<ItemStack> reloaded = NonNullList.withSize(27, ItemStack.EMPTY);
+        ContainerHelper.loadAllItems(
+            TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), saved), reloaded);
+
+        ItemStack result = reloaded.get(4);
+        if (result.isEmpty()) {
+            helper.fail("the chest round trip lost the FOUP; the saved tag was " + saved);
+            return null;
+        }
+        return result;
+    }
+
+    /**
+     * Runs a stack through the dropped-item path: an {@link ItemEntity}, saved and read
+     * back the way a chunk is written.
+     *
+     * @return the reloaded entity, or null if the round trip could not be done
+     */
+    private static ItemEntity groundRoundTrip(GameTestHelper helper, ServerLevel level, ItemStack stack) {
+        ItemEntity entity = new ItemEntity(level, 0.5, 0.5, 0.5, stack.copy());
+
+        TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, level.registryAccess());
+        entity.save(output);
+        CompoundTag saved = output.buildResult();
+
+        ItemEntity reloaded = new ItemEntity(level, 0.5, 0.5, 0.5, ItemStack.EMPTY);
+        reloaded.load(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), saved));
+
+        if (reloaded.getItem().isEmpty()) {
+            helper.fail("the dropped item round trip lost the FOUP; the saved tag was " + saved);
+            return null;
+        }
+        return reloaded;
     }
 
     /**
@@ -304,7 +388,7 @@ public final class FoupGameTests {
 
         CommandSourceStack source = sourceFor(level, player, LevelBasedPermissionSet.forLevel(PermissionLevel.ADMINS));
 
-        int filled = run(level, source, FoupDebugCommand.ROOT + " foup fill 3 5");
+        int filled = run(helper, level, source, FoupDebugCommand.ROOT + " foup fill 3 5");
         helper.assertTrue(filled > 0, "debug foup fill returned " + filled);
 
         FoupContents given = firstFoup(player);
@@ -319,7 +403,7 @@ public final class FoupGameTests {
 
         // A second fill must not repeat the lot id of the first one.
         player.getInventory().clearContent();
-        run(level, source, FoupDebugCommand.ROOT + " foup fill 3 5");
+        run(helper, level, source, FoupDebugCommand.ROOT + " foup fill 3 5");
         FoupContents again = firstFoup(player);
         if (again == null) {
             helper.fail("the second debug foup fill gave nothing");
@@ -328,7 +412,7 @@ public final class FoupGameTests {
         helper.assertTrue(!given.lotId().equals(again.lotId()),
             "two fills were given the same lot id");
 
-        int inspected = run(level, source, FoupDebugCommand.ROOT + " foup inspect");
+        int inspected = run(helper, level, source, FoupDebugCommand.ROOT + " foup inspect");
         helper.assertTrue(inspected == 1, "debug foup inspect returned " + inspected);
 
         helper.succeed();
@@ -358,17 +442,13 @@ public final class FoupGameTests {
         return player;
     }
 
-    private static int run(ServerLevel level, CommandSourceStack source, String command) {
+    private static int run(GameTestHelper helper, ServerLevel level, CommandSourceStack source, String command) {
         try {
             return level.getServer().getCommands().getDispatcher().execute(command, source);
         } catch (CommandSyntaxException e) {
-            helper_fail(command, e);
+            helper.fail("the command '" + command + "' did not parse: " + e.getMessage());
             return 0;
         }
-    }
-
-    private static void helper_fail(String command, Exception e) {
-        LOGGER.error("Command '{}' failed: {}", command, e);
     }
 
     private static FoupContents firstFoup(ServerPlayer player) {
@@ -384,6 +464,83 @@ public final class FoupGameTests {
     private static CommandSourceStack sourceFor(ServerLevel level, ServerPlayer player, PermissionSet permissions) {
         return new CommandSourceStack(player.createCommandSourceStack().source, player.position(),
             player.getRotationVector(), level, permissions, level.getServer(), player);
+    }
+
+    /**
+     * Proves that {@link FoupItems#trustedContentsOf} refuses the three things it is
+     * there to refuse.
+     */
+    private static void trustedContents(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        int configured = FoupItems.configuredCapacity();
+
+        // 1. A stack that is not a FOUP at all.
+        FoupContents fromStone = FoupItems.trustedContentsOf(new ItemStack(Items.STONE));
+        helper.assertTrue(fromStone.isEmpty(), "a stone produced wafers: " + fromStone);
+        assertEqual(helper, configured, fromStone.capacity(),
+            "a stone produced a lot that is not at the configured capacity");
+
+        // 2. A client view that still holds wafers: the rolls were never filled in.
+        FoupContents fake = FoupDebugCommand.fillContents(level, LOT, configured, configured, 4);
+        ByteBuf carryingWafers = Unpooled.buffer();
+        FoupContentsCodec.STREAM_CODEC.encode(carryingWafers, fake);
+        ItemStack tampered = FoupItems.with(ModItems.FOUP_MK1.get(),
+            FoupContentsCodec.STREAM_CODEC.decode(carryingWafers));
+
+        FoupContents fromTampered = FoupItems.trustedContentsOf(tampered);
+        helper.assertTrue(fromTampered.isEmpty(),
+            "a client view holding " + configured + " wafers was accepted: " + fromTampered);
+        assertEqual(helper, configured, fromTampered.capacity(),
+            "a tampered stack produced a lot at the wrong capacity");
+        helper.assertTrue(!fromTampered.lotId().equals(FoupContentsCodec.CLIENT_VIEW_LOT_ID),
+            "a tampered stack kept the client view lot id");
+
+        // 3. A client view with no wafers: the capacity came from the client.
+        ByteBuf emptyView = Unpooled.buffer();
+        FoupContentsCodec.STREAM_CODEC.encode(emptyView, FoupContents.empty(LOT, configured));
+        ItemStack clientCapacity = FoupItems.with(ModItems.FOUP_MK2.get(),
+            FoupContentsCodec.STREAM_CODEC.decode(emptyView));
+
+        FoupContents fromClientCapacity = FoupItems.trustedContentsOf(clientCapacity);
+        helper.assertTrue(fromClientCapacity.isEmpty(), "a client view produced wafers");
+        assertEqual(helper, configured, fromClientCapacity.capacity(),
+            "the client's capacity was trusted instead of the configured one");
+
+        // A real lot is returned untouched.
+        FoupContents real = FoupDebugCommand.fillContents(level, LOT, configured, 3, 2);
+        FoupContents fromReal = FoupItems.trustedContentsOf(FoupItems.with(ModItems.FOUP_MK1.get(), real));
+        helper.assertTrue(!FoupContentsCodec.isClientView(fromReal), "a real lot was replaced");
+        assertSameContents(helper, "a real lot", real, fromReal);
+
+        helper.succeed();
+    }
+
+    /**
+     * Proves that a lot keeps the capacity stored in its own data even when the
+     * configured capacity is different, and that a newly created lot uses the
+     * configured one.
+     */
+    private static void storedCapacityWins(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        int configured = FoupItems.configuredCapacity();
+        int otherCapacity = configured == 64 ? 25 : 64;
+
+        FoupContents existing = FoupDebugCommand.fillContents(level, LOT, otherCapacity, 3, 1);
+        ItemStack stack = FoupItems.with(ModItems.FOUP_MK1.get(), existing);
+
+        ItemStack reloaded = roundTrip(helper, level, stack);
+        if (reloaded == null) {
+            return;
+        }
+        FoupContents afterReload = FoupItems.contentsOf(reloaded);
+        assertEqual(helper, otherCapacity, afterReload.capacity(),
+            "an existing lot did not keep its stored capacity");
+
+        assertEqual(helper, configured, FoupItems.emptyFoup(ModItems.FOUP_MK1.get())
+            .get(ModDataComponents.FOUP_CONTENTS.get()).capacity(),
+            "a newly created lot did not use the configured capacity");
+
+        helper.succeed();
     }
 
     private static RegistryOps<Tag> ops(ServerLevel level) {

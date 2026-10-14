@@ -73,17 +73,6 @@ public record Wafer(int layerIndex, float cumulativeRoll, int flags) {
     }
 
     /**
-     * Returns a copy of this wafer at another layer, keeping the cumulative roll and
-     * the flags.
-     *
-     * @param newLayerIndex layer the wafer has reached, {@code >= 0}
-     * @return the updated wafer
-     */
-    public Wafer atLayer(int newLayerIndex) {
-        return new Wafer(newLayerIndex, this.cumulativeRoll, this.flags);
-    }
-
-    /**
      * Prints the wafer without its hidden values. Rolls and flags never appear here
      * because a wafer can end up in a log line or an error message.
      *

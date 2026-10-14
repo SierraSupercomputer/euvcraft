@@ -247,7 +247,7 @@ class FoupContentsTest {
         @Test
         @DisplayName("0 wafers round trip")
         void emptyRoundTrip() {
-            WaferPacking.Packed packed = WaferPacking.pack(List.of());
+            WaferPacking.Packed packed = new WaferPacking.Packed(new int[0], new float[0], new int[0]);
             assertEquals(0, packed.size());
             assertTrue(packed.isEmpty());
             assertEquals(List.of(), WaferPacking.unpack(packed.layers(), packed.rolls(), packed.flags()));
@@ -257,18 +257,20 @@ class FoupContentsTest {
         @DisplayName("1 wafer round trips exactly")
         void singleRoundTrip() {
             Wafer source = wafer(17, 0.9876543f);
-            WaferPacking.Packed packed = WaferPacking.pack(List.of(source));
+            List<Wafer> back = WaferPacking.unpack(WaferPacking.packLayers(List.of(source)),
+                new float[] {source.cumulativeRoll()}, WaferPacking.packFlags(List.of(source)));
 
-            assertEquals(1, packed.size());
-            assertEquals(source, WaferPacking.unpack(packed.layers(), packed.rolls(), packed.flags()).get(0));
+            assertEquals(1, back.size());
+            assertEquals(source, back.get(0));
         }
 
         @Test
         @DisplayName("25 wafers round trip exactly")
         void defaultCapacityRoundTrip() {
             List<Wafer> source = wafers(25, 12, 0.99f);
-            WaferPacking.Packed packed = WaferPacking.pack(source);
-            List<Wafer> back = WaferPacking.unpack(packed.layers(), packed.rolls(), packed.flags());
+            List<Wafer> back = WaferPacking.unpack(WaferPacking.packLayers(source),
+                WaferPacking.unpackRollBits(WaferPacking.packRollBits(source)),
+                WaferPacking.packFlags(source));
 
             assertEquals(25, back.size());
             assertEquals(source, back);
@@ -283,23 +285,12 @@ class FoupContentsTest {
         @DisplayName("64 wafers round trip exactly")
         void maxCapacityRoundTrip() {
             List<Wafer> source = wafers(64, 90, 1.0f);
-            WaferPacking.Packed packed = WaferPacking.pack(source);
-            assertEquals(64, packed.size());
-            assertEquals(source, WaferPacking.unpack(packed.layers(), packed.rolls(), packed.flags()));
-        }
+            List<Wafer> back = WaferPacking.unpack(WaferPacking.packLayers(source),
+                WaferPacking.unpackRollBits(WaferPacking.packRollBits(source)),
+                WaferPacking.packFlags(source));
 
-        @Test
-        @DisplayName("raw roll bits are lossless in both directions")
-        void rollBitsAreLossless() {
-            float[] rolls = {Float.MIN_VALUE, 0.1f, 0.5f, 0.9999999f, 1.0f};
-            int[] bits = new int[rolls.length];
-            for (int i = 0; i < rolls.length; i++) {
-                bits[i] = Float.floatToRawIntBits(rolls[i]);
-            }
-
-            assertArrayEquals(rolls, WaferPacking.unpackRollBits(bits));
-            assertArrayEquals(bits, WaferPacking.Packed.fromRollBits(new int[rolls.length], bits,
-                new int[rolls.length]).rollBits());
+            assertEquals(64, back.size());
+            assertEquals(source, back);
         }
 
         @Test
@@ -368,16 +359,19 @@ class FoupContentsTest {
         void nullArrayIsRejected() {
             assertThrows(NullPointerException.class,
                 () -> new WaferPacking.Packed(null, new float[] {0.5f}, new int[] {0}));
-            assertThrows(NullPointerException.class, () -> WaferPacking.pack(null));
+            assertThrows(NullPointerException.class, () -> WaferPacking.packLayers(null));
+            assertThrows(NullPointerException.class, () -> WaferPacking.packFlags(null));
+            assertThrows(NullPointerException.class, () -> WaferPacking.unpackRollBits(null));
         }
     }
 
     @Test
     @DisplayName("packing is compared by contents, not by array identity")
     void packingEqualityIsByContents() {
-        List<Wafer> source = wafers(3, 5, 0.7f);
-        WaferPacking.Packed first = WaferPacking.pack(source);
-        WaferPacking.Packed second = WaferPacking.pack(source);
+        WaferPacking.Packed first = new WaferPacking.Packed(new int[] {1, 2, 3},
+            new float[] {0.7f, 0.6f, 0.5f}, new int[] {0, 0, 0});
+        WaferPacking.Packed second = new WaferPacking.Packed(new int[] {1, 2, 3},
+            new float[] {0.7f, 0.6f, 0.5f}, new int[] {0, 0, 0});
 
         assertNotSame(first, second);
         assertEquals(first, second);

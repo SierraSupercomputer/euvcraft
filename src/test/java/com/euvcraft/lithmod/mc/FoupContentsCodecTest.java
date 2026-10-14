@@ -14,6 +14,7 @@ import java.util.UUID;
 
 import com.euvcraft.lithmod.core.FoupContents;
 import com.euvcraft.lithmod.core.FoupPublicView;
+import com.euvcraft.lithmod.core.FabSettings;
 import com.euvcraft.lithmod.core.Wafer;
 
 import com.mojang.serialization.DataResult;
@@ -240,6 +241,20 @@ class FoupContentsCodecTest {
         DataResult<FoupContents> tooMany = FoupContentsCodec.CODEC.parse(NbtOps.INSTANCE, overCapacity);
         assertTrue(tooMany.result().isEmpty(),
             "more wafers than the capacity were accepted: " + tooMany.result().orElse(null));
+    }
+
+    @Test
+    @DisplayName("an existing lot keeps the capacity stored in it, not the configured one")
+    void storedCapacityIsIndependentOfConfig() {
+        int configured = FabSettings.defaults().foupCapacity();
+        int otherCapacity = configured == 64 ? 25 : 64;
+        FoupContents lot = new FoupContents(LOT, otherCapacity, wafers(3, 2));
+
+        assertEquals(otherCapacity, encodeDecode(lot).capacity(),
+            "a stored capacity was replaced by the configured one");
+
+        FoupPublicView view = lot.publicView();
+        assertEquals(otherCapacity, view.capacity(), "the public view lost the stored capacity");
     }
 
     @Test

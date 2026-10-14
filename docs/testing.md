@@ -63,11 +63,12 @@ The FOUP game tests run in the `lithmod:foup_default` environment:
 
 `/debug foup fill <count> <layer>` and `/debug foup inspect` are only registered when
 `features.debugCommands` is `true` in `run/config/lithmod-local.toml`, which is off by
-default. Vanilla already owns `/debug` at permission level 3, so the effective gate for
-`/debug foup ...` is the stricter of the two; the mod's own requirement is permission
-level 2. To exercise the commands in the game test run, set the key to `true` before
-starting `runGameTestServer`; with the key off the same test only asserts that the
-branch is absent.
+default. The mod asks for permission level 2 on its own nodes, but vanilla already owns
+`/debug` at level 3 and brigadier keeps the existing node's requirement when two literals
+with the same name merge, so the effective gate for `/debug foup ...` is level 3 in
+practice. To exercise the commands in the game test run, set the key to `true` before
+starting `runGameTestServer`; with the key off the same test only asserts that the branch
+is absent.
 
 ## Tier data reload (manual)
 

@@ -3,7 +3,9 @@ package com.euvcraft.lithmod.mc;
 import java.util.UUID;
 
 import com.euvcraft.lithmod.core.FoupContents;
+import com.euvcraft.lithmod.core.Wafer;
 import com.euvcraft.lithmod.mc.registry.ModDataComponents;
+import com.euvcraft.lithmod.mc.registry.ModItems;
 
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -73,6 +75,66 @@ public final class FoupItems {
     @Nullable
     public static FoupContents contentsOf(ItemStack stack) {
         return stack.get(ModDataComponents.FOUP_CONTENTS.get());
+    }
+
+    /**
+     * Returns the lot of a stack, refusing anything that cannot be trusted.
+     *
+     * <p>Every gameplay read of a lot should go through this and not through
+     * {@link #contentsOf(ItemStack)}. It answers for three cases:</p>
+     *
+     * <ul>
+     *   <li>the stack carries no lot at all: a fresh empty lot is returned. This is
+     *       what a plain {@code /give} of a FOUP item produces, so a FOUP item without
+     *       a lot in it is logged as a warning while a stack of something else is not,
+     *       because asking "is this a FOUP" must not fill the log;</li>
+     *   <li>the lot is a client view that still holds wafers: the wafer count and the
+     *       rolls are the client's invention and every roll reads as
+     *       {@link Wafer#NO_ROLLS}, which passes any yield check. A warning is logged
+     *       and a fresh empty lot is returned;</li>
+     *   <li>the lot is a client view with no wafers: the capacity came from the
+     *       client, so a fresh lot with a new lot id and the configured capacity is
+     *       returned instead of the client's value. Nothing was lost, so this case is
+     *       not a warning.</li>
+     * </ul>
+     *
+     * <p>A warning names the item and the wafer count and nothing else: rolls are
+     * hidden values and must never reach a log line.</p>
+     *
+     * <p>This is the part of the creative-mode spike that is cheap enough to do now:
+     * it stops a client-replaced stack from feeding fabricated wafers into a machine.
+     * It does not stop a client from choosing a lot id or duplicating a lot; see the
+     * M0-08 report for the rest.</p>
+     *
+     * @param stack the stack to read, not null
+     * @return a lot the caller may read rolls from, never null
+     */
+    public static FoupContents trustedContentsOf(ItemStack stack) {
+        FoupContents contents = contentsOf(stack);
+        if (contents == null) {
+            if (stack.is(ModItems.FOUP_MK1.get()) || stack.is(ModItems.FOUP_MK2.get())) {
+                EUVCRAFTMod.LOGGER.warn(
+                    "EUVCRAFT discarded a FOUP stack of {} that carries no sealed lot", stack.getItem());
+            }
+            return freshEmptyLot();
+        }
+
+        if (!FoupContentsCodec.isClientView(contents)) {
+            return contents;
+        }
+
+        if (!contents.isEmpty()) {
+            EUVCRAFTMod.LOGGER.warn(
+                "EUVCRAFT discarded a FOUP stack of {} whose sealed lot is a client view holding {} wafers;"
+                    + " the hidden rolls were never filled in by the server",
+                stack.getItem(), contents.size());
+        }
+
+        return freshEmptyLot();
+    }
+
+    private static FoupContents freshEmptyLot() {
+        return FoupContents.empty(UUID.randomUUID(), configuredCapacity());
     }
 
     /**

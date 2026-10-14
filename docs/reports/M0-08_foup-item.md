@@ -2,7 +2,7 @@
 
 - Date: 2026-10-14
 - Branch: `m0-08-foup-item`, branched from `m0-06-die-type-definitions` at `443be6c`
-- Commits: `fe0fb2d` (implementation) and the commit that adds this report
+- Commits: `fe0fb2d` (implementation), `a7246ed` (report)
 - Java version used: Java 25 through the Gradle toolchain pinned in `build.gradle`
   (the `java` on `PATH` is Temurin 21; Gradle provisions 25, as in M0-03c)
 - Build and test commands run:
