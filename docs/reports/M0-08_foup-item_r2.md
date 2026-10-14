@@ -2,7 +2,8 @@
 
 - Date: 2026-10-14
 - Branch: `m0-08-foup-item`
-- Commits: `2d92746` (fixes, tests, models, r1 header), `c6fce18` (this report)
+- Commits: `2d92746` (fixes, tests, models, r1 header), `c6fce18` (this report),
+  `7856b6d` (the hash line above)
 - Java version used: Java 25 through the Gradle toolchain pinned in `build.gradle`
 - Build and test commands run:
   - `.\gradlew.bat test checkCoreImports --offline --console=plain --rerun-tasks`
