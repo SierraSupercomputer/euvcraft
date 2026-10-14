@@ -25,6 +25,7 @@ public record FabSettings(
     Map<String, Integer> comfortableCoreOverrides,
     double coreCountPenaltySteepness,
     boolean tier6Enabled,
+    boolean debugCommands,
     double fePowerMultiplier
 ) {
 
@@ -36,6 +37,7 @@ public record FabSettings(
     public static final List<Integer> DEFAULT_CORE_COUNT_OPTIONS = List.of(1, 2, 4, 8, 12, 24);
     public static final double DEFAULT_CORE_COUNT_PENALTY_STEEPNESS = 2.0;
     public static final boolean DEFAULT_TIER_6_ENABLED = true;
+    public static final boolean DEFAULT_DEBUG_COMMANDS = false;
     public static final double DEFAULT_FE_POWER_MULTIPLIER = 1.0;
 
     // Valid ranges
@@ -106,6 +108,7 @@ public record FabSettings(
             Map.of(),
             DEFAULT_CORE_COUNT_PENALTY_STEEPNESS,
             DEFAULT_TIER_6_ENABLED,
+            DEFAULT_DEBUG_COMMANDS,
             DEFAULT_FE_POWER_MULTIPLIER
         );
     }
@@ -123,6 +126,7 @@ public record FabSettings(
         private Map<String, Integer> comfortableCoreOverrides = Map.of();
         private double coreCountPenaltySteepness = DEFAULT_CORE_COUNT_PENALTY_STEEPNESS;
         private boolean tier6Enabled = DEFAULT_TIER_6_ENABLED;
+        private boolean debugCommands = DEFAULT_DEBUG_COMMANDS;
         private double fePowerMultiplier = DEFAULT_FE_POWER_MULTIPLIER;
 
         public Builder foupCapacity(int value) { this.foupCapacity = value; return this; }
@@ -134,13 +138,14 @@ public record FabSettings(
         public Builder comfortableCoreOverrides(Map<String, Integer> value) { this.comfortableCoreOverrides = value; return this; }
         public Builder coreCountPenaltySteepness(double value) { this.coreCountPenaltySteepness = value; return this; }
         public Builder tier6Enabled(boolean value) { this.tier6Enabled = value; return this; }
+        public Builder debugCommands(boolean value) { this.debugCommands = value; return this; }
         public Builder fePowerMultiplier(double value) { this.fePowerMultiplier = value; return this; }
 
         public FabSettings build() {
             return new FabSettings(
                 foupCapacity, wafersPerBoule, rollsPerLayer, yieldMultiplier,
                 tierYieldOverrides, coreCountOptions, comfortableCoreOverrides,
-                coreCountPenaltySteepness, tier6Enabled, fePowerMultiplier
+                coreCountPenaltySteepness, tier6Enabled, debugCommands, fePowerMultiplier
             );
         }
     }
@@ -166,6 +171,7 @@ public record FabSettings(
             .comfortableCoreOverrides(comfortableCoreOverrides)
             .coreCountPenaltySteepness(coreCountPenaltySteepness)
             .tier6Enabled(tier6Enabled)
+            .debugCommands(debugCommands)
             .fePowerMultiplier(fePowerMultiplier);
     }
 

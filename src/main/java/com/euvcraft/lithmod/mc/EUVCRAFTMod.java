@@ -8,27 +8,45 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.NeoForge;
 
+import com.euvcraft.lithmod.core.FabSettings;
 import com.euvcraft.lithmod.mc.data.TierDataLoader;
 import com.euvcraft.lithmod.mc.data.SupportLineDataLoader;
 import com.euvcraft.lithmod.mc.data.DieRulesDataLoader;
+import com.euvcraft.lithmod.mc.registry.ModCreativeTabs;
+import com.euvcraft.lithmod.mc.registry.ModDataComponents;
+import com.euvcraft.lithmod.mc.registry.ModItems;
 
 @Mod(EUVCRAFTMod.MODID)
 public class EUVCRAFTMod {
     public static final String MODID = "lithmod";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    private final FabConfig fabConfig;
+    private static FabConfig config;
 
     public EUVCRAFTMod(IEventBus modEventBus, ModContainer modContainer) {
+        ModDataComponents.DATA_COMPONENTS.register(modEventBus);
+        ModItems.ITEMS.register(modEventBus);
+        ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
+
         modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(FoupTooltipAppenders::register);
         com.euvcraft.lithmod.mc.gametest.EUVCRAFTGameTests.register(modEventBus);
         com.euvcraft.lithmod.mc.gametest.FabRandomGameTests.register(modEventBus);
+        com.euvcraft.lithmod.mc.gametest.FoupGameTests.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.LOCAL, FabConfig.getSpec());
-        this.fabConfig = new FabConfig();
+        config = new FabConfig();
+
+        // Without these the spec values are never read back into FabSettings, so
+        // FabConfig.getSettings() would keep returning the defaults forever.
+        modEventBus.addListener(EUVCRAFTMod::configLoaded);
+        modEventBus.addListener(EUVCRAFTMod::configReloaded);
+
+        NeoForge.EVENT_BUS.addListener(FoupDebugCommand::register);
 
         NeoForge.EVENT_BUS.register(TierDataLoader.class);
         NeoForge.EVENT_BUS.register(SupportLineDataLoader.class);
@@ -41,7 +59,55 @@ public class EUVCRAFTMod {
         LOGGER.info("HELLO FROM EUVCRAFT COMMON SETUP");
     }
 
-    public FabConfig getFabConfig() {
-        return fabConfig;
+    /**
+     * Reads the spec values into {@link FabSettings} when the config file is loaded.
+     *
+     * @param event the NeoForge config load event
+     */
+    private static void configLoaded(ModConfigEvent.Loading event) {
+        if (isOurConfig(event.getConfig())) {
+            config.onConfigLoad(event.getConfig());
+        }
+    }
+
+    /**
+     * Reads the spec values into {@link FabSettings} again when the config is
+     * reloaded, for example by {@code /forge config}.
+     *
+     * @param event the NeoForge config reload event
+     */
+    private static void configReloaded(ModConfigEvent.Reloading event) {
+        if (isOurConfig(event.getConfig())) {
+            config.onConfigReload();
+        }
+    }
+
+    private static boolean isOurConfig(ModConfig candidate) {
+        return candidate != null && FabConfig.getSpec() == candidate.getSpec();
+    }
+
+    /**
+     * Returns the config binding for this mod.
+     *
+     * <p>Static because item creation, the creative tab and the debug commands all
+     * need the current settings and none of them has a mod instance to ask. Before the
+     * constructor has run this returns {@code null}, which only happens during
+     * registry construction, and nothing reads settings that early.</p>
+     *
+     * @return the config binding
+     */
+    public static FabConfig config() {
+        return config;
+    }
+
+    /**
+     * Returns the current fab settings, or the core defaults before the config
+     * exists or has been loaded.
+     *
+     * @return the settings in force right now
+     */
+    public static FabSettings settings() {
+        FabConfig current = config;
+        return current == null ? FabSettings.defaults() : current.getSettings();
     }
 }

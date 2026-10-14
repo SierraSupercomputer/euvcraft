@@ -41,6 +41,7 @@ public class FabConfig implements FabSettingsProvider {
 
     // Feature toggles
     public static final ModConfigSpec.BooleanValue TIER_6_ENABLED;
+    public static final ModConfigSpec.BooleanValue DEBUG_COMMANDS;
 
     // FE power multiplier
     public static final ModConfigSpec.DoubleValue FE_POWER_MULTIPLIER;
@@ -96,6 +97,10 @@ public class FabConfig implements FabSettingsProvider {
         TIER_6_ENABLED = BUILDER
             .comment("When false, T6 (Multi-patterned) is skipped. Tiers go T5 -> T7.")
             .define("tier6Enabled", FabSettings.DEFAULT_TIER_6_ENABLED);
+
+        DEBUG_COMMANDS = BUILDER
+            .comment("When true, registers the operator-only '/debug' command tree (permission level 2). Intended for development and pack testing only.")
+            .define("debugCommands", FabSettings.DEFAULT_DEBUG_COMMANDS);
 
         BUILDER.pop();
 
@@ -174,6 +179,7 @@ public class FabConfig implements FabSettingsProvider {
             .comfortableCoreOverrides(comfortableCoreOverrides)
             .coreCountPenaltySteepness(CORE_COUNT_PENALTY_STEEPNESS.get())
             .tier6Enabled(TIER_6_ENABLED.get())
+            .debugCommands(DEBUG_COMMANDS.get())
             .fePowerMultiplier(FE_POWER_MULTIPLIER.get())
             .build();
     }

@@ -49,6 +49,26 @@ replaying the same context after reading that file back yields the same rolls) a
 `lithmod:fab_random_client_side_rejected` (the server-authority guard rejects a
 client-side call).
 
+The FOUP game tests run in the `lithmod:foup_default` environment:
+
+| test | what it proves |
+|---|---|
+| `lithmod:foup_stack_round_trip` | the hidden rolls survive `ItemStack.copy()` and a full `ItemStack.CODEC` round trip |
+| `lithmod:foup_network_view_is_public_only` | the network codec carries capacity, wafer count and lot layer only; the decoded lot has placeholder rolls |
+| `lithmod:foup_encoded_size` | logs the NBT and network size of a 25 and a 64 wafer lot |
+| `lithmod:foup_creative_tab_entries` | the tab hands out one empty lot per variant, each with its own lot id and the configured capacity |
+| `lithmod:foup_debug_commands` | the `/debug foup` branch exists exactly when `debugCommands` is true |
+
+## Debug commands
+
+`/debug foup fill <count> <layer>` and `/debug foup inspect` are only registered when
+`features.debugCommands` is `true` in `run/config/lithmod-local.toml`, which is off by
+default. Vanilla already owns `/debug` at permission level 3, so the effective gate for
+`/debug foup ...` is the stricter of the two; the mod's own requirement is permission
+level 2. To exercise the commands in the game test run, set the key to `true` before
+starting `runGameTestServer`; with the key off the same test only asserts that the
+branch is absent.
+
 ## Tier data reload (manual)
 
 Expected startup log line (one line, id, yield percent and layers):
