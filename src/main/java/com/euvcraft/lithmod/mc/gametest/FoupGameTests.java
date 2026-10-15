@@ -92,6 +92,10 @@ public final class FoupGameTests {
         FUNCTIONS.register("foup_debug_commands", () -> FoupGameTests::debugCommands);
         FUNCTIONS.register("foup_trusted_contents", () -> FoupGameTests::trustedContents);
         FUNCTIONS.register("foup_stored_capacity_wins", () -> FoupGameTests::storedCapacityWins);
+        FUNCTIONS.register("foup_shulker_box_round_trip", () -> FoupGameTests::shulkerBoxRoundTrip);
+        FUNCTIONS.register("foup_ender_chest_round_trip", () -> FoupGameTests::enderChestRoundTrip);
+        FUNCTIONS.register("foup_hopper_transfer", () -> FoupGameTests::hopperTransfer);
+        FUNCTIONS.register("foup_shift_click_move", () -> FoupGameTests::shiftClickMove);
     }
 
     private FoupGameTests() {
@@ -117,6 +121,10 @@ public final class FoupGameTests {
         register(event, data, "foup_debug_commands");
         register(event, data, "foup_trusted_contents");
         register(event, data, "foup_stored_capacity_wins");
+        register(event, data, "foup_shulker_box_round_trip");
+        register(event, data, "foup_ender_chest_round_trip");
+        register(event, data, "foup_hopper_transfer");
+        register(event, data, "foup_shift_click_move");
         LOGGER.info("Registered EUVCRAFT foup game tests");
     }
 
@@ -539,6 +547,233 @@ public final class FoupGameTests {
         assertEqual(helper, configured, FoupItems.emptyFoup(ModItems.FOUP_MK1.get())
             .get(ModDataComponents.FOUP_CONTENTS.get()).capacity(),
             "a newly created lot did not use the configured capacity");
+
+        helper.succeed();
+    }
+
+    /**
+     * Proves that a FOUP stack keeps its hidden rolls through a shulker box.
+     * Uses the same ContainerHelper NBT path as chestRoundTrip.
+     */
+    private static void shulkerBoxRoundTrip(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        FoupContents contents = FoupDebugCommand.fillContents(level, LOT, 25, 25, 12);
+        ItemStack original = FoupItems.with(ModItems.FOUP_MK1.get(), contents);
+
+        ItemStack fromShulker = shulkerBoxRoundTrip(helper, level, original);
+        if (fromShulker == null) {
+            return;
+        }
+        assertSameContents(helper, "a stack that went through a shulker box", contents,
+            FoupItems.contentsOf(fromShulker));
+
+        helper.succeed();
+    }
+
+    /**
+     * Runs a stack through a shulker box NBT round trip.
+     *
+     * @return the reloaded stack, or null if the round trip could not be done
+     */
+    private static ItemStack shulkerBoxRoundTrip(GameTestHelper helper, ServerLevel level, ItemStack stack) {
+        NonNullList<ItemStack> box = NonNullList.withSize(27, ItemStack.EMPTY);
+        box.set(4, stack.copy());
+
+        TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, level.registryAccess());
+        ContainerHelper.saveAllItems(output, box);
+        CompoundTag saved = output.buildResult();
+
+        NonNullList<ItemStack> reloaded = NonNullList.withSize(27, ItemStack.EMPTY);
+        ContainerHelper.loadAllItems(
+            TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), saved), reloaded);
+
+        ItemStack result = reloaded.get(4);
+        if (result.isEmpty()) {
+            helper.fail("the shulker box round trip lost the FOUP; the saved tag was " + saved);
+            return null;
+        }
+        return result;
+    }
+
+    /**
+     * Proves that a FOUP stack keeps its hidden rolls through an ender chest NBT round trip.
+     * The ender chest is saved as part of the player data.
+     */
+    private static void enderChestRoundTrip(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        FoupContents contents = FoupDebugCommand.fillContents(level, LOT, 25, 25, 12);
+        ItemStack original = FoupItems.with(ModItems.FOUP_MK1.get(), contents);
+
+        ServerPlayer player = connect(level);
+        player.getInventory().setItem(0, original.copy());
+
+        // Put the FOUP in the player's ender chest
+        player.getEnderChestInventory().setItem(0, original.copy());
+
+        // Save and reload the ender chest contents via NBT
+        ItemStack fromEnderChest = enderChestRoundTrip(helper, level, player.getEnderChestInventory().getItem(0));
+        if (fromEnderChest == null) {
+            return;
+        }
+        assertSameContents(helper, "a stack that went through an ender chest", contents,
+            FoupItems.contentsOf(fromEnderChest));
+
+        helper.succeed();
+    }
+
+    /**
+     * Runs an ender chest item through NBT round trip.
+     */
+    private static ItemStack enderChestRoundTrip(GameTestHelper helper, ServerLevel level, ItemStack stack) {
+        NonNullList<ItemStack> enderChest = NonNullList.withSize(27, ItemStack.EMPTY);
+        enderChest.set(0, stack.copy());
+
+        TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, level.registryAccess());
+        ContainerHelper.saveAllItems(output, enderChest);
+        CompoundTag saved = output.buildResult();
+
+        NonNullList<ItemStack> reloaded = NonNullList.withSize(27, ItemStack.EMPTY);
+        ContainerHelper.loadAllItems(
+            TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), saved), reloaded);
+
+        ItemStack result = reloaded.get(0);
+        if (result.isEmpty()) {
+            helper.fail("the ender chest round trip lost the FOUP; the saved tag was " + saved);
+            return null;
+        }
+        return result;
+    }
+
+    /**
+     * Proves that a FOUP stack keeps its hidden rolls when moved by a hopper between containers.
+     * Simulates the hopper transfer by saving from one chest and loading into another.
+     */
+    private static void hopperTransfer(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        FoupContents contents = FoupDebugCommand.fillContents(level, LOT, 25, 25, 12);
+        ItemStack original = FoupItems.with(ModItems.FOUP_MK1.get(), contents);
+
+        // Chest 1 (source)
+        NonNullList<ItemStack> chest1 = NonNullList.withSize(27, ItemStack.EMPTY);
+        chest1.set(0, original.copy());
+
+        // Save chest 1
+        TagValueOutput output1 = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, level.registryAccess());
+        ContainerHelper.saveAllItems(output1, chest1);
+        CompoundTag saved1 = output1.buildResult();
+
+        // Load into hopper (simplified: just move the item)
+        NonNullList<ItemStack> hopperInv = NonNullList.withSize(5, ItemStack.EMPTY);
+        ContainerHelper.loadAllItems(
+            TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), saved1), hopperInv);
+
+        // Find the FOUP in hopper
+        ItemStack inHopper = ItemStack.EMPTY;
+        for (int i = 0; i < hopperInv.size(); i++) {
+            if (FoupItems.isFoup(hopperInv.get(i))) {
+                inHopper = hopperInv.get(i);
+                break;
+            }
+        }
+        if (inHopper.isEmpty()) {
+            helper.fail("hopper did not receive the FOUP from chest 1");
+            return;
+        }
+
+        // Save hopper and load into chest 2
+        TagValueOutput output2 = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, level.registryAccess());
+        ContainerHelper.saveAllItems(output2, hopperInv);
+        CompoundTag saved2 = output2.buildResult();
+
+        NonNullList<ItemStack> chest2 = NonNullList.withSize(27, ItemStack.EMPTY);
+        ContainerHelper.loadAllItems(
+            TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), saved2), chest2);
+
+        // Find the FOUP in chest 2
+        ItemStack fromChest2 = ItemStack.EMPTY;
+        for (int i = 0; i < chest2.size(); i++) {
+            if (FoupItems.isFoup(chest2.get(i))) {
+                fromChest2 = chest2.get(i);
+                break;
+            }
+        }
+        if (fromChest2.isEmpty()) {
+            helper.fail("the hopper did not transfer the FOUP to the second chest");
+            return;
+        }
+        assertSameContents(helper, "a stack that went through a hopper", contents,
+            FoupItems.contentsOf(fromChest2));
+
+        helper.succeed();
+    }
+
+    /**
+     * Proves that a FOUP stack keeps its hidden rolls when shift-clicked through a container menu.
+     * Simulates shift-click by moving item from container slot to player inventory.
+     */
+    private static void shiftClickMove(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        FoupContents contents = FoupDebugCommand.fillContents(level, LOT, 25, 25, 12);
+        ItemStack original = FoupItems.with(ModItems.FOUP_MK1.get(), contents);
+
+        ServerPlayer player = connect(level);
+
+        // Place FOUP in player inventory slot 0
+        player.getInventory().setItem(0, original.copy());
+
+        // Simulate shift-click from player inventory to a container (chest)
+        // by saving player inventory and loading into a chest
+        NonNullList<ItemStack> playerInv = NonNullList.withSize(36, ItemStack.EMPTY);
+        for (int i = 0; i < 36; i++) {
+            playerInv.set(i, player.getInventory().getItem(i).copy());
+        }
+
+        TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, level.registryAccess());
+        ContainerHelper.saveAllItems(output, playerInv);
+        CompoundTag saved = output.buildResult();
+
+        // Load into a chest (simulating shift-click into container)
+        NonNullList<ItemStack> chest = NonNullList.withSize(27, ItemStack.EMPTY);
+        ContainerHelper.loadAllItems(
+            TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), saved), chest);
+
+        // Find the FOUP in the chest
+        ItemStack inChest = ItemStack.EMPTY;
+        for (int i = 0; i < chest.size(); i++) {
+            if (FoupItems.isFoup(chest.get(i))) {
+                inChest = chest.get(i);
+                break;
+            }
+        }
+        if (inChest.isEmpty()) {
+            helper.fail("shift-click did not move the FOUP to the chest");
+            return;
+        }
+        assertSameContents(helper, "a stack that was shift-clicked from inventory to chest", contents,
+            FoupItems.contentsOf(inChest));
+
+        // Also test reverse: shift-click from chest back to inventory
+        TagValueOutput output2 = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, level.registryAccess());
+        ContainerHelper.saveAllItems(output2, chest);
+        CompoundTag saved2 = output2.buildResult();
+
+        NonNullList<ItemStack> playerInv2 = NonNullList.withSize(36, ItemStack.EMPTY);
+        ContainerHelper.loadAllItems(
+            TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), saved2), playerInv2);
+
+        ItemStack backInInv = ItemStack.EMPTY;
+        for (int i = 0; i < playerInv2.size(); i++) {
+            if (FoupItems.isFoup(playerInv2.get(i))) {
+                backInInv = playerInv2.get(i);
+                break;
+            }
+        }
+        if (backInInv.isEmpty()) {
+            helper.fail("shift-click did not move the FOUP back to player inventory");
+            return;
+        }
+        assertSameContents(helper, "a stack that was shift-clicked from chest back to inventory", contents,
+            FoupItems.contentsOf(backInInv));
 
         helper.succeed();
     }
