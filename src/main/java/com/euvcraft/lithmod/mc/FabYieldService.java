@@ -2,9 +2,12 @@ package com.euvcraft.lithmod.mc;
 
 import java.util.Objects;
 
+import com.euvcraft.lithmod.core.DieRules;
 import com.euvcraft.lithmod.core.FabSettings;
 import com.euvcraft.lithmod.core.FoupContents;
 import com.euvcraft.lithmod.core.Tier;
+
+import com.euvcraft.lithmod.mc.data.DieRulesDataLoader;
 import com.euvcraft.lithmod.core.YieldCalibration;
 import com.euvcraft.lithmod.core.YieldRollEngine;
 
@@ -34,42 +37,15 @@ public final class FabYieldService {
     }
 
     /**
-     * Puts every wafer of a lot through one more layer of a process, with no core count
-     * penalty.
+     * Puts every wafer of a lot through one more layer of a process.
      *
-     * <p>This is the call for any die that is not a compute die, and for a compute die
-     * whose core count has not been chosen yet.</p>
-     *
-     * @param level        the server level the lot is processed on, not null
-     * @param lot          the lot to process, not null, not empty, not a client view
-     * @param tier         the tier being run, not null
-     * @param layerNumber  the one-based layer to apply; it must be the layer the lot is
-     *                     on plus one and no higher than {@code tier.layers()}
-     * @param defectFactor how healthy the line is, from
-     *                     {@link com.euvcraft.lithmod.core.LineStats#defectFactor()}
-     * @return a new lot with the layer applied
-     * @throws NullPointerException     if an argument is null
-     * @throws IllegalArgumentException if the level is not a server level, the lot is
-     *                                  empty, a client view, or the layer number is not
-     *                                  the next one or is past the tier's layers
-     */
-    public static FoupContents applyLayerStep(ServerLevel level, FoupContents lot, Tier tier, int layerNumber,
-            double defectFactor) {
-        return applyLayerStep(level, lot, tier, null, layerNumber, defectFactor);
-    }
-
-    /**
-     * Puts every wafer of a lot through one more layer of a process at a chosen core
-     * count.
-     *
-     * <p>The rolls are calibrated against the <em>effective</em> yield of that core
-     * count, so the lot passes at the rate the core count buys when it reaches test. A
-     * 24 core die on T6 is judged at 17%, not at the tier's 85%, and the layer rolls
-     * already carry that.</p>
+     * <p>The core count may be {@code null} for a die that carries no core count. The
+     * rolls are calibrated against the <em>effective</em> yield of that core count.</p>
      *
      * @param level        the server level the lot is processed on, not null
      * @param lot          the lot to process, not null, not empty, not a client view
      * @param tier         the tier being run, not null
+     * @param dieType      the die type being run, must be makeable on this tier
      * @param cores        the core count of the die, or {@code null} for none
      * @param layerNumber  the one-based layer to apply; it must be the layer the lot is
      *                     on plus one and no higher than {@code tier.layers()}
@@ -78,19 +54,25 @@ public final class FabYieldService {
      * @throws NullPointerException     if an argument but the core count is null
      * @throws IllegalArgumentException if the level is not a server level, the lot is
      *                                  empty, a client view, or the layer number is not
-     *                                  the next one or is past the tier's layers
+     *                                  the next one or is past the tier's layers, or the
+     *                                  die type cannot be made on this tier at layer 1
      */
-    public static FoupContents applyLayerStep(ServerLevel level, FoupContents lot, Tier tier, @Nullable Integer cores,
-            int layerNumber, double defectFactor) {
+    public static FoupContents applyLayerStep(ServerLevel level, FoupContents lot, Tier tier, String dieType,
+            @Nullable Integer cores, int layerNumber, double defectFactor) {
         FabRandomService.requireServerSide(level);
         Objects.requireNonNull(lot, "lot must not be null");
         Objects.requireNonNull(tier, "tier must not be null");
+        Objects.requireNonNull(dieType, "dieType must not be null");
 
         if (FoupContentsCodec.isClientView(lot)) {
             throw new IllegalArgumentException("a client-view lot cannot take a layer step");
         }
 
-        return YieldRollEngine.applyLayerStep(lot, tier, cores, layerNumber, defectFactor,
+        if (layerNumber == 1 && !DieRulesDataLoader.getRules().canMake(dieType, tier)) {
+            throw new IllegalArgumentException("die type '" + dieType + "' cannot be made on tier " + tier.id());
+        }
+
+        return YieldRollEngine.applyLayerStep(lot, tier, dieType, cores, layerNumber, defectFactor,
             EUVCRAFTMod.settings(), (waferIndex, stepIndex) ->
                 FabRandomService.rngFor(level, lot.lotId(), waferIndex, stepIndex));
     }
@@ -112,15 +94,16 @@ public final class FabYieldService {
      *                               match the spec, or any wafer is not at the tier's
      *                               last layer
      */
-    public static boolean[] evaluateLot(FoupContents lot, Tier tier, @Nullable Integer cores) {
+    public static boolean[] evaluateLot(FoupContents lot, Tier tier, String dieType, @Nullable Integer cores) {
         Objects.requireNonNull(lot, "lot must not be null");
         Objects.requireNonNull(tier, "tier must not be null");
+        Objects.requireNonNull(dieType, "dieType must not be null");
 
         if (FoupContentsCodec.isClientView(lot)) {
             throw new IllegalArgumentException("a client-view lot cannot be judged");
         }
 
-        return YieldRollEngine.evaluate(lot, tier, cores);
+        return YieldRollEngine.evaluate(lot, tier, dieType, cores);
     }
 
     /**
@@ -142,9 +125,9 @@ public final class FabYieldService {
      * @throws IllegalArgumentException if the level is not a server level or the lot is
      *                                  a client view
      */
-    public static boolean[] evaluateLot(ServerLevel level, FoupContents lot, Tier tier, @Nullable Integer cores) {
+    public static boolean[] evaluateLot(ServerLevel level, FoupContents lot, Tier tier, String dieType, @Nullable Integer cores) {
         FabRandomService.requireServerSide(level);
-        return evaluateLot(lot, tier, cores);
+        return evaluateLot(lot, tier, dieType, cores);
     }
 
     /**
@@ -159,8 +142,8 @@ public final class FabYieldService {
      *                               match the spec, or any wafer is not at the tier's
      *                               last layer
      */
-    public static int countPassing(FoupContents lot, Tier tier, @Nullable Integer cores) {
-        return YieldRollEngine.countPassing(evaluateLot(lot, tier, cores));
+    public static int countPassing(FoupContents lot, Tier tier, String dieType, @Nullable Integer cores) {
+        return YieldRollEngine.countPassing(evaluateLot(lot, tier, dieType, cores));
     }
 
     /**
@@ -178,8 +161,8 @@ public final class FabYieldService {
      * @throws IllegalArgumentException if the level is not a server level or the lot is
      *                                  a client view
      */
-    public static int countPassing(ServerLevel level, FoupContents lot, Tier tier, @Nullable Integer cores) {
-        return YieldRollEngine.countPassing(evaluateLot(level, lot, tier, cores));
+    public static int countPassing(ServerLevel level, FoupContents lot, Tier tier, String dieType, @Nullable Integer cores) {
+        return YieldRollEngine.countPassing(evaluateLot(level, lot, tier, dieType, cores));
     }
 
     /**
@@ -203,26 +186,23 @@ public final class FabYieldService {
      * mid-run without actually reloading the config. Uses the server RNG from the
      * level associated with the lot's RNG source.</p>
      */
-    public static FoupContents applyLayerStep(ServerLevel level, FoupContents lot, Tier tier, int layerNumber,
-            double defectFactor, FabSettings settings) {
-        return applyLayerStep(level, lot, tier, null, layerNumber, defectFactor, settings);
-    }
-
-    /**
-     * Testing overload: puts every wafer through one layer with explicit settings and core count.
-     */
-    public static FoupContents applyLayerStep(ServerLevel level, FoupContents lot, Tier tier, @Nullable Integer cores,
-            int layerNumber, double defectFactor, FabSettings settings) {
+    public static FoupContents applyLayerStep(ServerLevel level, FoupContents lot, Tier tier, String dieType,
+            @Nullable Integer cores, int layerNumber, double defectFactor, FabSettings settings) {
         FabRandomService.requireServerSide(level);
         Objects.requireNonNull(lot, "lot must not be null");
         Objects.requireNonNull(tier, "tier must not be null");
+        Objects.requireNonNull(dieType, "dieType must not be null");
         Objects.requireNonNull(settings, "settings must not be null");
 
         if (FoupContentsCodec.isClientView(lot)) {
             throw new IllegalArgumentException("a client-view lot cannot take a layer step");
         }
 
-        return YieldRollEngine.applyLayerStep(lot, tier, cores, layerNumber, defectFactor, settings,
+        if (layerNumber == 1 && !DieRulesDataLoader.getRules().canMake(dieType, tier)) {
+            throw new IllegalArgumentException("die type '" + dieType + "' cannot be made on tier " + tier.id());
+        }
+
+        return YieldRollEngine.applyLayerStep(lot, tier, dieType, cores, layerNumber, defectFactor, settings,
             (waferIndex, stepIndex) -> FabRandomService.rngFor(level, lot.lotId(), waferIndex, stepIndex));
     }
 }

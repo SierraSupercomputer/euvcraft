@@ -40,13 +40,14 @@ import java.util.Objects;
  * @param effectiveYield the pass rate the rolls were calibrated for, in {@code (0, 1)}
  * @param rollCount      the number of rolls the whole process draws, at least one
  */
-public record RunSpec(int tierIndex, int cores, double effectiveYield, int rollCount) {
+public record RunSpec(String dieType, int tierIndex, int cores, double effectiveYield, int rollCount) {
 
     /** Core count of a die that has no core count. */
     public static final int NO_CORES = 0;
 
     /** Codec for the persistent form. */
     public static final Codec<RunSpec> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+        Codec.STRING.fieldOf("die_type").forGetter(RunSpec::dieType),
         Codec.INT.fieldOf("tierIndex").forGetter(RunSpec::tierIndex),
         Codec.INT.fieldOf("cores").forGetter(RunSpec::cores),
         Codec.DOUBLE.fieldOf("effectiveYield").forGetter(RunSpec::effectiveYield),
@@ -61,6 +62,12 @@ public record RunSpec(int tierIndex, int cores, double effectiveYield, int rollC
      *                                  not a number in {@code (0, 1)}
      */
     public RunSpec {
+        if (dieType == null) {
+            throw new IllegalArgumentException("dieType must not be null");
+        }
+        if (!DieTypes.ALL.contains(dieType)) {
+            throw new IllegalArgumentException("dieType must be one of " + DieTypes.ALL + ", got " + dieType);
+        }
         if (tierIndex < 1) {
             throw new IllegalArgumentException("tierIndex must be >= 1, got " + tierIndex);
         }
@@ -85,13 +92,13 @@ public record RunSpec(int tierIndex, int cores, double effectiveYield, int rollC
      * @throws NullPointerException     if the tier or the settings are null
      * @throws IllegalArgumentException if the core count is not positive
      */
-    public static RunSpec of(Tier tier, Integer cores, FabSettings settings) {
+    public static RunSpec of(Tier tier, String dieType, Integer cores, FabSettings settings) {
         Objects.requireNonNull(tier, "tier must not be null");
         Objects.requireNonNull(settings, "settings must not be null");
         if (cores != null && cores <= 0) {
             throw new IllegalArgumentException("cores must be > 0 when present, got " + cores);
         }
-        return new RunSpec(tier.index(), coresOrZero(cores),
+        return new RunSpec(dieType, tier.index(), coresOrZero(cores),
             YieldMath.resolveEffectiveYield(tier, settings, cores),
             YieldRollEngine.rollCount(tier, settings));
     }
@@ -132,8 +139,9 @@ public record RunSpec(int tierIndex, int cores, double effectiveYield, int rollC
      * @param cores the core count the caller names, or {@code null} for none
      * @return whether both agree with this spec
      */
-    public boolean matches(Tier tier, Integer cores) {
-        return tier != null && this.tierIndex == tier.index() && this.cores == coresOrZero(cores);
+    public boolean matches(Tier tier, String dieType, Integer cores) {
+        return tier != null && dieType != null && this.tierIndex == tier.index()
+            && this.dieType.equals(dieType) && this.cores == coresOrZero(cores);
     }
 
     /**

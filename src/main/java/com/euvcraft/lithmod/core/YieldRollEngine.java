@@ -110,10 +110,11 @@ public final class YieldRollEngine {
      *                                  the tier or cores do not match the stored spec,
      *                                  or defectFactor is above 1.0
      */
-    public static FoupContents applyLayerStep(FoupContents lot, Tier tier, Integer cores, int layerNumber,
+    public static FoupContents applyLayerStep(FoupContents lot, Tier tier, String dieType, Integer cores, int layerNumber,
             double defectFactor, FabSettings settings, RollSource rolls) {
         Objects.requireNonNull(lot, "lot must not be null");
         Objects.requireNonNull(tier, "tier must not be null");
+        Objects.requireNonNull(dieType, "dieType must not be null");
         Objects.requireNonNull(settings, "settings must not be null");
         Objects.requireNonNull(rolls, "rolls must not be null");
 
@@ -143,13 +144,13 @@ public final class YieldRollEngine {
             if (cores != null && cores <= 0) {
                 throw new IllegalArgumentException("cores must be > 0 when present, got " + cores);
             }
-            spec = RunSpec.of(tier, cores, settings);
+            spec = RunSpec.of(tier, dieType, cores, settings);
         } else {
             // Later layers: must match the stored spec exactly
-            if (!spec.matches(tier, cores)) {
+            if (!spec.matches(tier, dieType, cores)) {
                 throw new IllegalArgumentException(
-                    "tier or cores differ from the run spec (" + spec + "); got tier " + tier.index()
-                        + " and cores " + (cores != null ? cores : "none"));
+                    "tier, die type or cores differ from the run spec (" + spec + "); got tier " + tier.index()
+                        + ", die type " + dieType + " and cores " + (cores != null ? cores : "none"));
             }
         }
 
@@ -199,18 +200,19 @@ public final class YieldRollEngine {
      *                                  do not match the spec, or if any wafer is not at the
      *                                  tier's last layer
      */
-    public static boolean[] evaluate(FoupContents lot, Tier tier, Integer cores) {
+    public static boolean[] evaluate(FoupContents lot, Tier tier, String dieType, Integer cores) {
         Objects.requireNonNull(lot, "lot must not be null");
         Objects.requireNonNull(tier, "tier must not be null");
+        Objects.requireNonNull(dieType, "dieType must not be null");
 
         RunSpec spec = lot.run();
         if (spec == null) {
             throw new IllegalStateException("lot has not been started (no run spec)");
         }
-        if (!spec.matches(tier, cores)) {
+        if (!spec.matches(tier, dieType, cores)) {
             throw new IllegalStateException(
-                "tier or cores differ from the run spec (" + spec + "); got tier " + tier.index()
-                    + " and cores " + (cores != null ? cores : "none"));
+                "tier, die type or cores differ from the run spec (" + spec + "); got tier " + tier.index()
+                    + ", die type " + dieType + " and cores " + (cores != null ? cores : "none"));
         }
         requireCompleteLot(lot, tier);
 

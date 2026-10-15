@@ -82,7 +82,7 @@ class YieldRollEngineTest {
             Tier tier = ReferenceTiers.byId("T1");
 
             FoupContents before = freshLot(8);
-            FoupContents after = YieldRollEngine.applyLayerStep(before, tier, null, 1, 1.0, settings, source(SALT));
+            FoupContents after = YieldRollEngine.applyLayerStep(before, tier, "logic", null, 1, 1.0, settings, source(SALT));
 
             assertEquals(before.lotLayer(), 0, "the starting lot should be unprocessed");
             assertEquals(after.lotLayer(), 1, "the lot did not move to layer 1");
@@ -128,7 +128,7 @@ class YieldRollEngineTest {
             Tier tier = ReferenceTiers.byId("T1");
             List<int[]> asked = new ArrayList<>();
 
-            YieldRollEngine.applyLayerStep(freshLot(2), tier, null, 1, 1.0, settings,
+            YieldRollEngine.applyLayerStep(freshLot(2), tier, "logic", null, 1, 1.0, settings,
                 (waferIndex, stepIndex) -> {
                     asked.add(new int[] {waferIndex, stepIndex});
                     return new ContextualRng(SALT, LOT, waferIndex, stepIndex);
@@ -165,7 +165,7 @@ class YieldRollEngineTest {
 
             FoupContents lot = freshLot(100);
             List<int[]> asked = new ArrayList<>();
-            YieldRollEngine.applyLayerStep(lot, tier, null, 1, 1.0, fourRolls, (waferIndex, stepIndex) -> {
+            YieldRollEngine.applyLayerStep(lot, tier, "logic", null, 1, 1.0, fourRolls, (waferIndex, stepIndex) -> {
                 asked.add(new int[] {waferIndex, stepIndex});
                 return new ContextualRng(SALT, LOT, waferIndex, stepIndex);
             });
@@ -185,7 +185,7 @@ class YieldRollEngineTest {
                 int simulated = 0;
                 for (int lot = 0; lot < WAFERS / 25; lot++) {
                     FoupContents processed = runThrough(tier, freshLot(25), null, 1.0, SALT + lot, settings);
-                    boolean[] outcomes = YieldRollEngine.evaluate(processed, tier, null);
+                    boolean[] outcomes = YieldRollEngine.evaluate(processed, tier, "logic", null);
                     passing += YieldRollEngine.countPassing(outcomes);
                     simulated += outcomes.length;
                 }
@@ -209,18 +209,18 @@ class YieldRollEngineTest {
             Tier tier = ReferenceTiers.byId("T3");
 
             assertThrows(IllegalArgumentException.class,
-                () -> YieldRollEngine.applyLayerStep(freshLot(4), tier, null, 2, 1.0, settings, source(SALT)),
+                () -> YieldRollEngine.applyLayerStep(freshLot(4), tier, "logic", null, 2, 1.0, settings, source(SALT)),
                 "skipping to layer 2 should be refused");
             assertThrows(IllegalArgumentException.class,
-                () -> YieldRollEngine.applyLayerStep(freshLot(4), tier, null, 5, 1.0, settings, source(SALT)),
+                () -> YieldRollEngine.applyLayerStep(freshLot(4), tier, "logic", null, 5, 1.0, settings, source(SALT)),
                 "jumping to layer 5 should be refused");
 
-            FoupContents atOne = YieldRollEngine.applyLayerStep(freshLot(4), tier, null, 1, 1.0, settings, source(SALT));
+            FoupContents atOne = YieldRollEngine.applyLayerStep(freshLot(4), tier, "logic", null, 1, 1.0, settings, source(SALT));
             assertThrows(IllegalArgumentException.class,
-                () -> YieldRollEngine.applyLayerStep(atOne, tier, null, 1, 1.0, settings, source(SALT)),
+                () -> YieldRollEngine.applyLayerStep(atOne, tier, "logic", null, 1, 1.0, settings, source(SALT)),
                 "doing layer 1 twice should be refused");
             assertThrows(IllegalArgumentException.class,
-                () -> YieldRollEngine.applyLayerStep(atOne, tier, null, 3, 1.0, settings, source(SALT)),
+                () -> YieldRollEngine.applyLayerStep(atOne, tier, "logic", null, 3, 1.0, settings, source(SALT)),
                 "doing layer 3 after layer 1 should be refused");
         }
 
@@ -232,7 +232,7 @@ class YieldRollEngineTest {
 
             assertEquals(tier.layers(), finished.lotLayer());
             IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                () -> YieldRollEngine.applyLayerStep(finished, tier, null, tier.layers() + 1, 1.0, settings, source(SALT)));
+                () -> YieldRollEngine.applyLayerStep(finished, tier, "logic", null, tier.layers() + 1, 1.0, settings, source(SALT)));
             assertTrue(thrown.getMessage().contains("past"), "message did not explain why: " + thrown.getMessage());
         }
 
@@ -243,7 +243,7 @@ class YieldRollEngineTest {
             assertEquals(1, lot.lotLayer());
 
             IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                () -> YieldRollEngine.applyLayerStep(lot, ReferenceTiers.byId("T3"), null, lot.lotLayer() + 1, 1.0,
+                () -> YieldRollEngine.applyLayerStep(lot, ReferenceTiers.byId("T3"), "logic", null, lot.lotLayer() + 1, 1.0,
                     settings, source(SALT)));
             assertTrue(thrown.getMessage().contains("differ from the run spec"),
                 "message did not explain why: " + thrown.getMessage());
@@ -254,7 +254,7 @@ class YieldRollEngineTest {
         void emptyLotIsRefused() {
             Tier tier = ReferenceTiers.byId("T1");
             assertThrows(IllegalArgumentException.class,
-                () -> YieldRollEngine.applyLayerStep(FoupContents.empty(LOT, 25), tier, null, 1, 1.0, settings, source(SALT)));
+                () -> YieldRollEngine.applyLayerStep(FoupContents.empty(LOT, 25), tier, "logic", null, 1, 1.0, settings, source(SALT)));
         }
 
         @Test
@@ -263,15 +263,15 @@ class YieldRollEngineTest {
             Tier tier = ReferenceTiers.byId("T1");
             FoupContents lot = freshLot(2);
             assertThrows(NullPointerException.class,
-                () -> YieldRollEngine.applyLayerStep(null, tier, null, 1, 1.0, settings, source(SALT)));
+                () -> YieldRollEngine.applyLayerStep(null, tier, "logic", null, 1, 1.0, settings, source(SALT)));
             assertThrows(NullPointerException.class,
-                () -> YieldRollEngine.applyLayerStep(lot, null, null, 1, 1.0, settings, source(SALT)));
+                () -> YieldRollEngine.applyLayerStep(lot, null, "logic", null, 1, 1.0, settings, source(SALT)));
             assertThrows(NullPointerException.class,
-                () -> YieldRollEngine.applyLayerStep(lot, tier, null, 1, 1.0, null, source(SALT)));
+                () -> YieldRollEngine.applyLayerStep(lot, tier, "logic", null, 1, 1.0, null, source(SALT)));
             assertThrows(NullPointerException.class,
-                () -> YieldRollEngine.applyLayerStep(lot, tier, null, 1, 1.0, settings, null));
+                () -> YieldRollEngine.applyLayerStep(lot, tier, "logic", null, 1, 1.0, settings, null));
             assertThrows(NullPointerException.class, () -> YieldRollEngine.rollCount(tier, null));
-            assertThrows(NullPointerException.class, () -> YieldRollEngine.evaluate(null, tier, null));
+            assertThrows(NullPointerException.class, () -> YieldRollEngine.evaluate(null, tier, "logic", null));
             assertThrows(NullPointerException.class, () -> YieldRollEngine.countPassing(null));
             assertThrows(NullPointerException.class, () -> YieldRollEngine.requireCompleteLot(lot, null));
         }
@@ -294,7 +294,7 @@ class YieldRollEngineTest {
             FoupContents finished = runThrough(tier, halfWay, null, 1.0, SALT, FabSettings.defaults());
             YieldRollEngine.requireCompleteLot(finished, tier);
 
-            boolean[] outcomes = YieldRollEngine.evaluate(finished, tier, null);
+            boolean[] outcomes = YieldRollEngine.evaluate(finished, tier, "logic", null);
             for (int wafer = 0; wafer < outcomes.length; wafer++) {
                 boolean expected = YieldMath.passes(finished.wafers().get(wafer).cumulativeRoll(), 0.90);
                 assertEquals(expected, outcomes[wafer], "wafer " + wafer + " was answered in the wrong slot");
@@ -308,7 +308,7 @@ class YieldRollEngineTest {
             FoupContents finished = runThrough(tier, freshLot(9), null, 1.0, SALT, FabSettings.defaults());
             double yield = 0.80;
 
-            boolean[] outcomes = YieldRollEngine.evaluate(finished, tier, null);
+            boolean[] outcomes = YieldRollEngine.evaluate(finished, tier, "logic", null);
 
             assertEquals(finished.size(), outcomes.length);
             for (int wafer = 0; wafer < outcomes.length; wafer++) {
@@ -324,7 +324,7 @@ class YieldRollEngineTest {
             FoupContents finished = runThrough(tier, freshLot(9), null, 1.0, SALT, FabSettings.defaults());
             FoupContents copy = new FoupContents(finished.lotId(), finished.capacity(), finished.wafers(), finished.run());
 
-            YieldRollEngine.evaluate(finished, tier, null);
+            YieldRollEngine.evaluate(finished, tier, "logic", null);
 
             assertEquals(copy, finished, "evaluating a lot changed it");
         }
@@ -342,7 +342,7 @@ class YieldRollEngineTest {
         RollSource rolls = source(salt);
         FoupContents processed = lot;
         for (int layer = processed.lotLayer() + 1; layer <= upToLayer; layer++) {
-            processed = YieldRollEngine.applyLayerStep(processed, tier, cores, layer, defectFactor, settings, rolls);
+            processed = YieldRollEngine.applyLayerStep(processed, tier, "logic", cores, layer, defectFactor, settings, rolls);
         }
         return processed;
     }
