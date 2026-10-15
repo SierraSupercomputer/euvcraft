@@ -19,7 +19,7 @@ class GenerationMatrixTest {
         static List<Tier> all() {
             List<Tier> list = new java.util.ArrayList<>();
             for (int i = 1; i <= 8; i++) {
-                list.add(new Tier("T" + i, i, "Tier" + i, "src", 100, 10, 10, i, 90.0, 100, (i >= 6 ? 4 : null), i == 6));
+                list.add(new Tier("T" + i, i, "Tier" + i, "src", 100, 10, 10, i, 100, 90.0, 100, (i >= 6 ? 4 : null), i == 6));
             }
             return list;
         }

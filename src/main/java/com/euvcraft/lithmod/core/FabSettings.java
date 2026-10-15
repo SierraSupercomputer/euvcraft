@@ -8,6 +8,7 @@ package com.euvcraft.lithmod.core;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -18,9 +19,13 @@ import java.util.stream.Collectors;
 public record FabSettings(
     int foupCapacity,
     int wafersPerBoule,
+    int chipsPerWafer,
+    int maskUses,
+    int resistPerLayer,
     int rollsPerLayer,
     double yieldMultiplier,
     Map<String, Integer> tierYieldOverrides,
+    Map<String, Integer> layerTicksOverrides,
     List<Integer> coreCountOptions,
     Map<String, Integer> comfortableCoreOverrides,
     double coreCountPenaltySteepness,
@@ -32,6 +37,9 @@ public record FabSettings(
     // Default values
     public static final int DEFAULT_FOUP_CAPACITY = 25;
     public static final int DEFAULT_WAFERS_PER_BOULE = 25;
+    public static final int DEFAULT_CHIPS_PER_WAFER = 4;
+    public static final int DEFAULT_MASK_USES = 4;
+    public static final int DEFAULT_RESIST_PER_LAYER = 1;
     public static final int DEFAULT_ROLLS_PER_LAYER = 1;
     public static final double DEFAULT_YIELD_MULTIPLIER = 1.0;
     public static final List<Integer> DEFAULT_CORE_COUNT_OPTIONS = List.of(1, 2, 4, 8, 12, 24);
@@ -45,12 +53,20 @@ public record FabSettings(
     private static final int MAX_FOUP_CAPACITY = 64;
     private static final int MIN_WAFERS_PER_BOULE = 1;
     private static final int MAX_WAFERS_PER_BOULE = 64;
+    private static final int MIN_CHIPS_PER_WAFER = 1;
+    private static final int MAX_CHIPS_PER_WAFER = 64;
+    private static final int MIN_MASK_USES = 1;
+    private static final int MAX_MASK_USES = 1000;
+    private static final int MIN_RESIST_PER_LAYER = 0;
+    private static final int MAX_RESIST_PER_LAYER = 64;
     private static final int MIN_ROLLS_PER_LAYER = 1;
     private static final int MAX_ROLLS_PER_LAYER = 8;
     private static final double MIN_YIELD_MULTIPLIER = 0.1;
     private static final double MAX_YIELD_MULTIPLIER = 2.0;
     private static final int MIN_TIER_YIELD_OVERRIDE = 1;
     private static final int MAX_TIER_YIELD_OVERRIDE = 99;
+    private static final int MIN_LAYER_TICKS_OVERRIDE = 1;
+    private static final int MAX_LAYER_TICKS_OVERRIDE = 72000;
     private static final int MIN_CORE_COUNT = 1;
     private static final int MAX_CORE_COUNT = 256;
     private static final double MIN_CORE_COUNT_PENALTY_STEEPNESS = 0.0;
@@ -68,6 +84,9 @@ public record FabSettings(
         // Clamp simple values
         foupCapacity = clampInt(foupCapacity, MIN_FOUP_CAPACITY, MAX_FOUP_CAPACITY, DEFAULT_FOUP_CAPACITY, "foupCapacity");
         wafersPerBoule = clampInt(wafersPerBoule, MIN_WAFERS_PER_BOULE, MAX_WAFERS_PER_BOULE, DEFAULT_WAFERS_PER_BOULE, "wafersPerBoule");
+        chipsPerWafer = clampInt(chipsPerWafer, MIN_CHIPS_PER_WAFER, MAX_CHIPS_PER_WAFER, DEFAULT_CHIPS_PER_WAFER, "chipsPerWafer");
+        maskUses = clampInt(maskUses, MIN_MASK_USES, MAX_MASK_USES, DEFAULT_MASK_USES, "maskUses");
+        resistPerLayer = clampInt(resistPerLayer, MIN_RESIST_PER_LAYER, MAX_RESIST_PER_LAYER, DEFAULT_RESIST_PER_LAYER, "resistPerLayer");
         rollsPerLayer = clampInt(rollsPerLayer, MIN_ROLLS_PER_LAYER, MAX_ROLLS_PER_LAYER, DEFAULT_ROLLS_PER_LAYER, "rollsPerLayer");
         yieldMultiplier = clampDouble(yieldMultiplier, MIN_YIELD_MULTIPLIER, MAX_YIELD_MULTIPLIER, DEFAULT_YIELD_MULTIPLIER, "yieldMultiplier");
         coreCountPenaltySteepness = clampDouble(coreCountPenaltySteepness, MIN_CORE_COUNT_PENALTY_STEEPNESS, MAX_CORE_COUNT_PENALTY_STEEPNESS, DEFAULT_CORE_COUNT_PENALTY_STEEPNESS, "coreCountPenaltySteepness");
@@ -90,6 +109,9 @@ public record FabSettings(
         // Parse and validate tierYieldOverrides (format: "T5=90")
         tierYieldOverrides = parseAndValidateTierOverrides(tierYieldOverrides, MIN_TIER_YIELD_OVERRIDE, MAX_TIER_YIELD_OVERRIDE, "tierYieldOverrides");
 
+        // Parse and validate layerTicksOverrides (format: "T2=80")
+        layerTicksOverrides = parseAndValidateTierOverrides(layerTicksOverrides, MIN_LAYER_TICKS_OVERRIDE, MAX_LAYER_TICKS_OVERRIDE, "layerTicksOverrides");
+
         // Parse and validate comfortableCoreOverrides (format: "T7=10")
         comfortableCoreOverrides = parseAndValidateTierOverrides(comfortableCoreOverrides, MIN_CORE_COUNT, MAX_CORE_COUNT, "comfortableCoreOverrides");
     }
@@ -101,8 +123,12 @@ public record FabSettings(
         return new FabSettings(
             DEFAULT_FOUP_CAPACITY,
             DEFAULT_WAFERS_PER_BOULE,
+            DEFAULT_CHIPS_PER_WAFER,
+            DEFAULT_MASK_USES,
+            DEFAULT_RESIST_PER_LAYER,
             DEFAULT_ROLLS_PER_LAYER,
             DEFAULT_YIELD_MULTIPLIER,
+            Map.of(),
             Map.of(),
             DEFAULT_CORE_COUNT_OPTIONS,
             Map.of(),
@@ -119,9 +145,13 @@ public record FabSettings(
     public static class Builder {
         private int foupCapacity = DEFAULT_FOUP_CAPACITY;
         private int wafersPerBoule = DEFAULT_WAFERS_PER_BOULE;
+        private int chipsPerWafer = DEFAULT_CHIPS_PER_WAFER;
+        private int maskUses = DEFAULT_MASK_USES;
+        private int resistPerLayer = DEFAULT_RESIST_PER_LAYER;
         private int rollsPerLayer = DEFAULT_ROLLS_PER_LAYER;
         private double yieldMultiplier = DEFAULT_YIELD_MULTIPLIER;
         private Map<String, Integer> tierYieldOverrides = Map.of();
+        private Map<String, Integer> layerTicksOverrides = Map.of();
         private List<Integer> coreCountOptions = DEFAULT_CORE_COUNT_OPTIONS;
         private Map<String, Integer> comfortableCoreOverrides = Map.of();
         private double coreCountPenaltySteepness = DEFAULT_CORE_COUNT_PENALTY_STEEPNESS;
@@ -131,9 +161,13 @@ public record FabSettings(
 
         public Builder foupCapacity(int value) { this.foupCapacity = value; return this; }
         public Builder wafersPerBoule(int value) { this.wafersPerBoule = value; return this; }
+        public Builder chipsPerWafer(int value) { this.chipsPerWafer = value; return this; }
+        public Builder maskUses(int value) { this.maskUses = value; return this; }
+        public Builder resistPerLayer(int value) { this.resistPerLayer = value; return this; }
         public Builder rollsPerLayer(int value) { this.rollsPerLayer = value; return this; }
         public Builder yieldMultiplier(double value) { this.yieldMultiplier = value; return this; }
         public Builder tierYieldOverrides(Map<String, Integer> value) { this.tierYieldOverrides = value; return this; }
+        public Builder layerTicksOverrides(Map<String, Integer> value) { this.layerTicksOverrides = value; return this; }
         public Builder coreCountOptions(List<Integer> value) { this.coreCountOptions = value; return this; }
         public Builder comfortableCoreOverrides(Map<String, Integer> value) { this.comfortableCoreOverrides = value; return this; }
         public Builder coreCountPenaltySteepness(double value) { this.coreCountPenaltySteepness = value; return this; }
@@ -143,30 +177,26 @@ public record FabSettings(
 
         public FabSettings build() {
             return new FabSettings(
-                foupCapacity, wafersPerBoule, rollsPerLayer, yieldMultiplier,
-                tierYieldOverrides, coreCountOptions, comfortableCoreOverrides,
+                foupCapacity, wafersPerBoule, chipsPerWafer, maskUses, resistPerLayer, rollsPerLayer, yieldMultiplier,
+                tierYieldOverrides, layerTicksOverrides, coreCountOptions, comfortableCoreOverrides,
                 coreCountPenaltySteepness, tier6Enabled, debugCommands, fePowerMultiplier
             );
         }
     }
 
-    /**
-     * Creates a builder starting from defaults.
-     */
-    public static Builder builder() {
-        return new Builder();
-    }
+    public static Builder builder() { return new Builder(); }
 
-    /**
-     * Creates a builder starting from this settings instance.
-     */
     public Builder toBuilder() {
         return new Builder()
             .foupCapacity(foupCapacity)
             .wafersPerBoule(wafersPerBoule)
+            .chipsPerWafer(chipsPerWafer)
+            .maskUses(maskUses)
+            .resistPerLayer(resistPerLayer)
             .rollsPerLayer(rollsPerLayer)
             .yieldMultiplier(yieldMultiplier)
             .tierYieldOverrides(tierYieldOverrides)
+            .layerTicksOverrides(layerTicksOverrides)
             .coreCountOptions(coreCountOptions)
             .comfortableCoreOverrides(comfortableCoreOverrides)
             .coreCountPenaltySteepness(coreCountPenaltySteepness)
@@ -203,19 +233,16 @@ public record FabSettings(
             String key = entry.getKey().trim().toUpperCase();
             Integer value = entry.getValue();
 
-            // Validate tier ID format
             if (!VALID_TIER_IDS.contains(key)) {
                 FabSettingsProvider.logWarning("Invalid tier ID '%s' in %s (valid: %s), ignoring".formatted(key, configName, VALID_TIER_IDS));
                 continue;
             }
 
-            // Check for duplicates
             if (result.containsKey(key)) {
                 FabSettingsProvider.logWarning("Duplicate tier ID '%s' in %s, ignoring".formatted(key, configName));
                 continue;
             }
 
-            // Clamp value
             int clamped = clampInt(value, minValue, maxValue, minValue, configName + "." + key);
             result.put(key, clamped);
         }
@@ -223,10 +250,6 @@ public record FabSettings(
         return Map.copyOf(result);
     }
 
-    /**
-     * Parses tier override entries from a list of "T5=90" style strings.
-     * Used by the NeoForge config layer which stores lists instead of maps.
-     */
     public static Map<String, Integer> parseTierOverrideList(List<String> entries, int minValue, int maxValue, String configName) {
         if (entries == null || entries.isEmpty()) {
             return Map.of();
@@ -255,19 +278,16 @@ public record FabSettings(
                 continue;
             }
 
-            // Validate tier ID format
             if (!VALID_TIER_IDS.contains(key)) {
                 FabSettingsProvider.logWarning("Invalid tier ID '%s' in %s (valid: %s), ignoring".formatted(key, configName, VALID_TIER_IDS));
                 continue;
             }
 
-            // Check for duplicates
             if (result.containsKey(key)) {
                 FabSettingsProvider.logWarning("Duplicate tier ID '%s' in %s, ignoring".formatted(key, configName));
                 continue;
             }
 
-            // Clamp value
             int clamped = clampInt(value, minValue, maxValue, minValue, configName + "." + key);
             result.put(key, clamped);
         }
@@ -275,9 +295,6 @@ public record FabSettings(
         return Map.copyOf(result);
     }
 
-    /**
-     * Converts a tier override map to a list of "T5=90" strings for config storage.
-     */
     public static List<String> tierOverrideMapToList(Map<String, Integer> map) {
         if (map == null || map.isEmpty()) {
             return List.of();
@@ -285,5 +302,16 @@ public record FabSettings(
         return map.entrySet().stream()
             .map(e -> e.getKey() + "=" + e.getValue())
             .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns the layer cycle length in ticks for the given tier, honoring a configured
+     * override when present and falling back to the tier's data value otherwise.
+     */
+    public static int layerTicks(Tier tier, FabSettings settings) {
+        Objects.requireNonNull(tier, "tier must not be null");
+        Objects.requireNonNull(settings, "settings must not be null");
+        Integer override = settings.layerTicksOverrides().get(tier.id());
+        return override != null ? override : tier.layerTicks();
     }
 }

@@ -16,6 +16,7 @@ public record Tier(
     int overlayNm,
     int throughputWph,
     int layers,
+    int layerTicks,
     double defaultYieldPercent,
     int targetSpeedMhz,
     Integer comfortableCores,
@@ -40,6 +41,9 @@ public record Tier(
         }
         if (layers <= 0) {
             throw new IllegalArgumentException("layers must be positive, got " + layers);
+        }
+        if (layerTicks <= 0) {
+            throw new IllegalArgumentException("layerTicks must be positive, got " + layerTicks);
         }
         if (defaultYieldPercent <= 0 || defaultYieldPercent > 100) {
             throw new IllegalArgumentException("defaultYieldPercent must be in (0, 100], got " + defaultYieldPercent);
@@ -73,8 +77,21 @@ public record Tier(
         return Optional.ofNullable(comfortableCores);
     }
 
+    /**
+     * Returns the layer cycle length in ticks for this tier under the given settings,
+     * honoring a configured override when present.
+     */
+    public int layerTicks(FabSettings settings) {
+        return FabSettings.layerTicks(this, settings);
+    }
+
+    public static int layerTicks(Tier tier, FabSettings settings) {
+        return FabSettings.layerTicks(tier, settings);
+    }
+
     @Override
     public String toString() {
         return "Tier[" + id + "]";
     }
 }
+

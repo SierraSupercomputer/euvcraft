@@ -11,14 +11,14 @@ class StatModelVerificationTest {
     private TierRegistry registry() {
         // TierRegistry requires exactly 8 tiers
         List<Tier> all = List.of(
-            new Tier("T1", 1, "Contact", "mercury arc lamp", 5000, 1000, 75, 6, 60.0, 1, null, false),
-            new Tier("T2", 2, "Stepper", "g-line then i-line lamp", 500, 150, 45, 12, 80.0, 15, null, false),
-            new Tier("T3", 3, "KrF DUV", "248 nm excimer laser", 180, 40, 80, 24, 90.0, 600, null, false),
-            new Tier("T4", 4, "ArF dry", "193 nm excimer laser", 65, 15, 110, 32, 92.0, 2600, null, false),
-            new Tier("T5", 5, "ArF immersion", "193 nm, water immersion", 28, 4, 250, 42, 93.0, 3400, null, false),
-            new Tier("T6", 6, "Multi-patterned", "193 nm, several passes", 7, 3, 125, 70, 85.0, 3900, 4, true),
-            new Tier("T7", 7, "EUV", "13.5 nm tin plasma", 13, 2, 140, 80, 85.0, 5000, 8, false),
-            new Tier("T8", 8, "High-NA EUV", "13.5 nm tin plasma, NA 0.55", 8, 1, 170, 90, 80.0, 5500, 12, false)
+            new Tier("T1", 1, "Contact", "mercury arc lamp", 5000, 1000, 75, 1, 600, 60.0, 1, null, false),
+            new Tier("T2", 2, "Stepper", "g-line then i-line lamp", 500, 150, 45, 12, 100, 80.0, 15, null, false),
+            new Tier("T3", 3, "KrF DUV", "248 nm excimer laser", 180, 40, 80, 24, 100, 90.0, 600, null, false),
+            new Tier("T4", 4, "ArF dry", "193 nm excimer laser", 65, 15, 110, 32, 100, 92.0, 2600, null, false),
+            new Tier("T5", 5, "ArF immersion", "193 nm, water immersion", 28, 4, 250, 42, 100, 93.0, 3400, null, false),
+            new Tier("T6", 6, "Multi-patterned", "193 nm, several passes", 7, 3, 125, 70, 100, 85.0, 3900, 4, true),
+            new Tier("T7", 7, "EUV", "13.5 nm tin plasma", 13, 2, 140, 80, 100, 85.0, 5000, 8, false),
+            new Tier("T8", 8, "High-NA EUV", "13.5 nm tin plasma, NA 0.55", 8, 1, 170, 90, 100, 80.0, 5500, 12, false)
         );
         return TierRegistry.build(all, "test");
     }

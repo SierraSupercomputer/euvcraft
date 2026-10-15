@@ -28,11 +28,17 @@ public class FabConfig implements FabSettingsProvider {
     // General settings
     public static final ModConfigSpec.IntValue FOUP_CAPACITY;
     public static final ModConfigSpec.IntValue WAFERS_PER_BOULE;
+    public static final ModConfigSpec.IntValue CHIPS_PER_WAFER;
+    public static final ModConfigSpec.IntValue MASK_USES;
+    public static final ModConfigSpec.IntValue RESIST_PER_LAYER;
     public static final ModConfigSpec.IntValue ROLLS_PER_LAYER;
     public static final ModConfigSpec.DoubleValue YIELD_MULTIPLIER;
 
     // Tier yield overrides (stored as list of "T5=90" strings)
     public static final ModConfigSpec.ConfigValue<List<? extends String>> TIER_YIELD_OVERRIDES;
+
+    // Layer ticks overrides (stored as list of "T2=80" strings)
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> LAYER_TICKS_OVERRIDES;
 
     // Core count settings
     public static final ModConfigSpec.ConfigValue<List<? extends Integer>> CORE_COUNT_OPTIONS;
@@ -60,6 +66,18 @@ public class FabConfig implements FabSettingsProvider {
             .comment("Wafers one silicon boule yields.")
             .defineInRange("wafersPerBoule", FabSettings.DEFAULT_WAFERS_PER_BOULE, 1, 64);
 
+        CHIPS_PER_WAFER = BUILDER
+            .comment("Chips cut from each passing wafer during Test and Package.")
+            .defineInRange("chipsPerWafer", FabSettings.DEFAULT_CHIPS_PER_WAFER, 1, 64);
+
+        MASK_USES = BUILDER
+            .comment("Lot runs a single mask survives before it is spent.")
+            .defineInRange("maskUses", FabSettings.DEFAULT_MASK_USES, 1, 1000);
+
+        RESIST_PER_LAYER = BUILDER
+            .comment("Units of resist consumed per layer cycle of a Process Cell run.")
+            .defineInRange("resistPerLayer", FabSettings.DEFAULT_RESIST_PER_LAYER, 0, 64);
+
         ROLLS_PER_LAYER = BUILDER
             .comment("Yield rolls per layer cycle; each roll multiplies into the wafer's cumulative roll, and pass or fail is decided at test, so rolls are not independent chances to pass.")
             .defineInRange("rollsPerLayer", FabSettings.DEFAULT_ROLLS_PER_LAYER, 1, 8);
@@ -71,6 +89,10 @@ public class FabConfig implements FabSettingsProvider {
         TIER_YIELD_OVERRIDES = BUILDER
             .comment("Tier yield overrides as 'T5=90' (percent, 1-99). Replaces a tier's default yield from tier data. Invalid or duplicate entries are ignored.")
             .defineListAllowEmpty("tierYieldOverrides", List.of(), () -> "T5=90", entry -> entry instanceof String);
+
+        LAYER_TICKS_OVERRIDES = BUILDER
+            .comment("Layer cycle time overrides as 'T2=80' (ticks, 1-72000). Replaces a tier's layer_ticks from tier data. Invalid or duplicate entries are ignored.")
+            .defineListAllowEmpty("layerTicksOverrides", List.of(), () -> "T2=80", entry -> entry instanceof String);
 
         BUILDER.pop();
 
@@ -126,16 +148,10 @@ public class FabConfig implements FabSettingsProvider {
         this.currentSettings = FabSettings.defaults();
     }
 
-    /**
-     * Gets the ModConfigSpec for registration with NeoForge.
-     */
     public static ModConfigSpec getSpec() {
         return SPEC;
     }
 
-    /**
-     * Called by NeoForge when the config is loaded or reloaded.
-     */
     public void onConfigLoad(ModConfig config) {
         reloadSettings();
         if (!loaded) {
@@ -146,9 +162,6 @@ public class FabConfig implements FabSettingsProvider {
         }
     }
 
-    /**
-     * Called when the config is reloaded (e.g. via /forge config).
-     */
     public void onConfigReload() {
         reloadSettings();
         LOGGER.info("EUVCRAFT config reloaded: {}", currentSettings);
@@ -156,25 +169,31 @@ public class FabConfig implements FabSettingsProvider {
     }
 
     private void reloadSettings() {
-        // Parse tier yield overrides from list format
         Map<String, Integer> tierYieldOverrides = FabSettings.parseTierOverrideList(
             (List<String>) TIER_YIELD_OVERRIDES.get(),
             1, 99, "tierYieldOverrides"
         );
 
-        // Parse comfortable core overrides from list format
+        Map<String, Integer> layerTicksOverrides = FabSettings.parseTierOverrideList(
+            (List<String>) LAYER_TICKS_OVERRIDES.get(),
+            1, 72000, "layerTicksOverrides"
+        );
+
         Map<String, Integer> comfortableCoreOverrides = FabSettings.parseTierOverrideList(
             (List<String>) COMFORTABLE_CORE_OVERRIDES.get(),
             1, 256, "comfortableCoreOverrides"
         );
 
-        // Build settings
         this.currentSettings = new FabSettings.Builder()
             .foupCapacity(FOUP_CAPACITY.get())
             .wafersPerBoule(WAFERS_PER_BOULE.get())
+            .chipsPerWafer(CHIPS_PER_WAFER.get())
+            .maskUses(MASK_USES.get())
+            .resistPerLayer(RESIST_PER_LAYER.get())
             .rollsPerLayer(ROLLS_PER_LAYER.get())
             .yieldMultiplier(YIELD_MULTIPLIER.get())
             .tierYieldOverrides(tierYieldOverrides)
+            .layerTicksOverrides(layerTicksOverrides)
             .coreCountOptions((List<Integer>) CORE_COUNT_OPTIONS.get())
             .comfortableCoreOverrides(comfortableCoreOverrides)
             .coreCountPenaltySteepness(CORE_COUNT_PENALTY_STEEPNESS.get())
@@ -185,27 +204,18 @@ public class FabConfig implements FabSettingsProvider {
     }
 
     @Override
-    public FabSettings getSettings() {
-        return currentSettings;
-    }
+    public FabSettings getSettings() { return currentSettings; }
 
     @Override
-    public void addSettingsChangeListener(Runnable listener) {
-        changeListeners.add(listener);
-    }
+    public void addSettingsChangeListener(Runnable listener) { changeListeners.add(listener); }
 
     @Override
-    public void removeSettingsChangeListener(Runnable listener) {
-        changeListeners.remove(listener);
-    }
+    public void removeSettingsChangeListener(Runnable listener) { changeListeners.remove(listener); }
 
     private void notifyListeners() {
         for (Runnable listener : changeListeners) {
-            try {
-                listener.run();
-            } catch (Exception e) {
-                LOGGER.error("Error in config change listener", e);
-            }
+            try { listener.run(); }
+            catch (Exception e) { LOGGER.error("Error in config change listener", e); }
         }
     }
 }

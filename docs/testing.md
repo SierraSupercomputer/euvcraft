@@ -84,7 +84,7 @@ is absent.
 Expected startup log line (one line, id, yield percent and layers):
 
 ```text
-Loaded 8 tiers: T1(60%, 6 layers), T2(80%, 12 layers), ...
+Loaded 8 tiers: T1(60%, 1 layers), T2(80%, 12 layers), ...
 ```
 
 Valid override:

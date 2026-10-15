@@ -243,7 +243,7 @@ class YieldMathTest {
 
             // No reference tier reaches the lower clamp through the multiplier alone,
             // even at its lowest, so the tier below carries a 5% yield to reach it.
-            Tier frail = new Tier("T9", 9, "Frail", "test", 100, 10, 10, 10, 5.0, 10, null, false);
+            Tier frail = new Tier("T9", 9, "Frail", "test", 100, 10, 10, 10, 100, 5.0, 10, null, false);
             FabSettings harsh = FabSettings.builder().yieldMultiplier(0.1).build();
             assertEquals(YieldMath.MIN_EFFECTIVE_YIELD, YieldMath.resolveEffectiveYield(frail, harsh, null), 1e-12,
                 "5% times 0.1 is 0.5%, which must clamp up to 1%");
