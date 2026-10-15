@@ -6,7 +6,8 @@
   "resolution_nm": 5000,
   "overlay_nm": 1000,
   "throughput_wph": 75,
-  "layers": 6,
+  "layers": 1,
+  "layer_ticks": 600,
   "default_yield_percent": 60.0,
   "target_speed_mhz": 1,
   "optional": false

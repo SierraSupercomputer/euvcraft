@@ -7,6 +7,7 @@
   "overlay_nm": 40,
   "throughput_wph": 80,
   "layers": 24,
+  "layer_ticks": 100,
   "default_yield_percent": 90.0,
   "target_speed_mhz": 600,
   "optional": false

@@ -232,7 +232,7 @@ class YieldRollEngineTest {
 
             assertEquals(tier.layers(), finished.lotLayer());
             IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                () -> YieldRollEngine.applyLayerStep(finished, tier, null, 7, 1.0, settings, source(SALT)));
+                () -> YieldRollEngine.applyLayerStep(finished, tier, null, tier.layers() + 1, 1.0, settings, source(SALT)));
             assertTrue(thrown.getMessage().contains("past"), "message did not explain why: " + thrown.getMessage());
         }
 
@@ -240,10 +240,10 @@ class YieldRollEngineTest {
         @DisplayName("a longer tier refuses a lot started at a different tier")
         void tiersHaveDifferentLengths() {
             FoupContents lot = runThrough(ReferenceTiers.byId("T1"), freshLot(2), null, 1.0, SALT, settings);
-            assertEquals(6, lot.lotLayer());
+            assertEquals(1, lot.lotLayer());
 
             IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                () -> YieldRollEngine.applyLayerStep(lot, ReferenceTiers.byId("T3"), null, 7, 1.0,
+                () -> YieldRollEngine.applyLayerStep(lot, ReferenceTiers.byId("T3"), null, lot.lotLayer() + 1, 1.0,
                     settings, source(SALT)));
             assertTrue(thrown.getMessage().contains("differ from the run spec"),
                 "message did not explain why: " + thrown.getMessage());

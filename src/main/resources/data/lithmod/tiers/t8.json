@@ -7,6 +7,7 @@
   "overlay_nm": 1,
   "throughput_wph": 170,
   "layers": 90,
+  "layer_ticks": 100,
   "default_yield_percent": 80.0,
   "target_speed_mhz": 5500,
   "comfortable_cores": 12,

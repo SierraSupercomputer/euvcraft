@@ -212,7 +212,7 @@ class FabYieldServiceTest {
 
     /** One reference tier, built from the reference table. */
     private static Tier tier(String id, int layers, double yieldPercent, Integer comfortableCores) {
-        return new Tier(id, Integer.parseInt(id.substring(1)), id, "test", 100, 10, 10, layers,
+        return new Tier(id, Integer.parseInt(id.substring(1)), id, "test", 100, 10, 10, layers, 100,
             yieldPercent, 100, comfortableCores, false);
     }
 }

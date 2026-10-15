@@ -62,7 +62,7 @@ class DieRulesJsonDataTest {
     private TierRegistry tierRegistry() {
         List<Tier> tiers = new ArrayList<>();
         for (int i = 1; i <= 8; i++) {
-            tiers.add(new Tier("T" + i, i, "Tier" + i, "src", 100, 10, 10, i, 90.0, 100, (i >= 6 ? 4 : null), i == 6));
+            tiers.add(new Tier("T" + i, i, "Tier" + i, "src", 100, 10, 10, i, 100, 90.0, 100, (i >= 6 ? 4 : null), i == 6));
         }
         return TierRegistry.build(tiers, "test");
     }

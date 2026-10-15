@@ -22,12 +22,13 @@ public final class TierCodec {
         Codec.INT.fieldOf("overlay_nm").forGetter(Tier::overlayNm),
         Codec.INT.fieldOf("throughput_wph").forGetter(Tier::throughputWph),
         Codec.INT.fieldOf("layers").forGetter(Tier::layers),
+        Codec.INT.fieldOf("layer_ticks").forGetter(Tier::layerTicks),
         Codec.DOUBLE.fieldOf("default_yield_percent").forGetter(Tier::defaultYieldPercent),
         Codec.INT.fieldOf("target_speed_mhz").forGetter(Tier::targetSpeedMhz),
         Codec.INT.optionalFieldOf("comfortable_cores").forGetter(t -> Optional.ofNullable(t.comfortableCores())),
         Codec.BOOL.optionalFieldOf("optional", false).forGetter(Tier::optional)
-    ).apply(instance, (id, index, displayName, lightSource, resolutionNm, overlayNm, throughputWph, layers, defaultYieldPercent, targetSpeedMhz, comfortableCores, optional) -> 
-        new Tier(id, index, displayName, lightSource, resolutionNm, overlayNm, throughputWph, layers, defaultYieldPercent, targetSpeedMhz, comfortableCores.orElse(null), optional)
+    ).apply(instance, (id, index, displayName, lightSource, resolutionNm, overlayNm, throughputWph, layers, layerTicks, defaultYieldPercent, targetSpeedMhz, comfortableCores, optional) -> 
+        new Tier(id, index, displayName, lightSource, resolutionNm, overlayNm, throughputWph, layers, layerTicks, defaultYieldPercent, targetSpeedMhz, comfortableCores.orElse(null), optional)
     ));
 
     public static final Codec<List<Tier>> LIST_CODEC = CODEC.listOf();

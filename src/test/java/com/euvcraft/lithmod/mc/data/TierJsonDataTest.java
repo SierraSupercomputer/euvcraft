@@ -41,7 +41,8 @@ class TierJsonDataTest {
         assertEquals(5000, t1.resolutionNm());
         assertEquals(1000, t1.overlayNm());
         assertEquals(75, t1.throughputWph());
-        assertEquals(6, t1.layers());
+        assertEquals(1, t1.layers());
+        assertEquals(600, t1.layerTicks());
         assertEquals(60.0, t1.defaultYieldPercent());
         assertEquals(1, t1.targetSpeedMhz());
         assertEquals(false, t1.optional());
