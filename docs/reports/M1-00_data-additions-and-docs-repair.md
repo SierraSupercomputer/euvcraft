@@ -2,7 +2,7 @@
 
 - Date: 2026-10-14
 - Branch: m1-00-data-additions-and-docs-repair
-- Commit hash: (to be filled after commit)
+- Commit hash: 0f910070649ae28b4c4154a98248036ca4819023
 - Java version used: 25 (Gradle toolchain)
 - Build/test commands: `.\gradlew.bat test checkCoreImports --offline`; `.\gradlew.bat runGameTestServer --offline`
 
