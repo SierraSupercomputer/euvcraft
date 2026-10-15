@@ -275,6 +275,30 @@ class YieldRollEngineTest {
             assertThrows(NullPointerException.class, () -> YieldRollEngine.countPassing(null));
             assertThrows(NullPointerException.class, () -> YieldRollEngine.requireCompleteLot(lot, null));
         }
+
+        @Test
+        @DisplayName("die type mismatch refused at later layer")
+        void dieTypeMismatchRefusedAtLaterLayer() {
+            Tier tier = ReferenceTiers.byId("T3");
+            FoupContents atOne = YieldRollEngine.applyLayerStep(freshLot(4), tier, "logic", null, 1, 1.0, settings, source(SALT));
+            assertEquals("logic", atOne.run().dieType());
+
+            // Try to apply layer 2 with different die type
+            assertThrows(IllegalArgumentException.class,
+                () -> YieldRollEngine.applyLayerStep(atOne, tier, "memory", null, 2, 1.0, settings, source(SALT)));
+        }
+
+        @Test
+        @DisplayName("die type mismatch refused at evaluate")
+        void dieTypeMismatchRefusedAtEvaluate() {
+            Tier tier = ReferenceTiers.byId("T1");
+            FoupContents finished = runThrough(tier, freshLot(2), null, 1.0, SALT, settings);
+            assertEquals("logic", finished.run().dieType());
+
+            // Try to evaluate with different die type
+            assertThrows(IllegalStateException.class,
+                () -> YieldRollEngine.evaluate(finished, tier, "memory", null));
+        }
     }
 
     @Nested

@@ -215,4 +215,37 @@ class FabYieldServiceTest {
         return new Tier(id, Integer.parseInt(id.substring(1)), id, "test", 100, 10, 10, layers, 100,
             yieldPercent, 100, comfortableCores, false);
     }
+
+    @Test
+    @DisplayName("die type mismatch refused at later layer")
+    void dieTypeMismatchRefusedAtLaterLayer() {
+        Tier tier = tier("T3", 24, 90.0, null);
+        FoupContents atOne = process(tier, null, 1.0, 25, 25, 1);
+        assertEquals("logic", atOne.run().dieType());
+
+        assertThrows(IllegalArgumentException.class,
+            () -> YieldRollEngine.applyLayerStep(atOne, tier, "memory", null, 2, 1.0, EUVCRAFTMod.settings(),
+                (w, s) -> new ContextualRng(SALT, atOne.lotId(), w, s)));
+    }
+
+    @Test
+    @DisplayName("die type mismatch refused at evaluateLot")
+    void dieTypeMismatchRefusedAtEvaluateLot() {
+        Tier tier = tier("T1", 1, 60.0, null);
+        FoupContents finished = process(tier, null, 1.0, 25, 25);
+        assertEquals("logic", finished.run().dieType());
+
+        assertThrows(IllegalStateException.class,
+            () -> FabYieldService.evaluateLot(finished, tier, "memory", null));
+    }
+
+    @Test
+    @DisplayName("frozen spec reports its die type after layer 1")
+    void frozenSpecReportsDieTypeAfterLayer1() {
+        Tier tier = tier("T2", 12, 80.0, null);
+        FoupContents atOne = process(tier, null, 1.0, 25, 25, 1);
+        RunSpec spec = atOne.run();
+        assertEquals("logic", spec.dieType());
+        assertEquals(2, spec.tierIndex());
+    }
 }

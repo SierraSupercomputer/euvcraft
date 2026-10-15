@@ -543,6 +543,76 @@ public final class YieldGameTests {
             }
         }
 
+        // Test: layer 1 refuses memory at T1 and compute at T2
+        {
+            Tier t1 = tier(helper, 1);
+            if (t1 != null) {
+                UUID lotId = UUID.randomUUID();
+                FoupContents contents = unprocessed(lotId, 10);
+                expectRefusal(helper, "layer 1 refuses memory at T1", () ->
+                    FabYieldService.applyLayerStep(level, contents, t1, "memory", null, 1, 1.0));
+            }
+
+            Tier t2 = tier(helper, 2);
+            if (t2 != null) {
+                UUID lotId = UUID.randomUUID();
+                FoupContents contents = unprocessed(lotId, 10);
+                expectRefusal(helper, "layer 1 refuses compute at T2", () ->
+                    FabYieldService.applyLayerStep(level, contents, t2, "compute", null, 1, 1.0));
+            }
+        }
+
+        // Test: layer 1 accepts logic at T1 and memory at T2
+        {
+            Tier t1 = tier(helper, 1);
+            if (t1 != null) {
+                UUID lotId = UUID.randomUUID();
+                FoupContents contents = unprocessed(lotId, 10);
+                FoupContents after = FabYieldService.applyLayerStep(level, contents, t1, "logic", null, 1, 1.0);
+                helper.assertTrue(after.run() != null, "run spec created");
+                helper.assertTrue("logic".equals(after.run().dieType()), "run spec die type should be logic");
+            }
+
+            Tier t2 = tier(helper, 2);
+            if (t2 != null) {
+                UUID lotId = UUID.randomUUID();
+                FoupContents contents = unprocessed(lotId, 10);
+                FoupContents after = FabYieldService.applyLayerStep(level, contents, t2, "memory", null, 1, 1.0);
+                helper.assertTrue(after.run() != null, "run spec created");
+                helper.assertTrue("memory".equals(after.run().dieType()), "run spec die type should be memory");
+            }
+        }
+
+        // Test: die type mismatch refused at later layer
+        {
+            Tier t3 = tier(helper, 3);
+            if (t3 != null) {
+                UUID lotId = UUID.randomUUID();
+                FoupContents contents = unprocessed(lotId, 10);
+                FoupContents afterLayer1 = FabYieldService.applyLayerStep(level, contents, t3, "logic", null, 1, 1.0);
+                helper.assertTrue("logic".equals(afterLayer1.run().dieType()), "run spec die type should be logic");
+                expectRefusal(helper, "die type mismatch at later layer", () ->
+                    FabYieldService.applyLayerStep(level, afterLayer1, t3, "memory", null, 2, 1.0));
+            }
+        }
+
+        // Test: die type mismatch refused at evaluateLot
+        {
+            Tier t1 = tier(helper, 1);
+            if (t1 != null) {
+                UUID lotId = UUID.randomUUID();
+                FoupContents contents = unprocessed(lotId, 10);
+                FoupContents finished = contents;
+                for (int layer = 1; layer <= t1.layers(); layer++) {
+                    finished = FabYieldService.applyLayerStep(level, finished, t1, "logic", null, layer, 1.0);
+                }
+                final FoupContents toEval = finished;
+                helper.assertTrue("logic".equals(toEval.run().dieType()), "run spec die type should be logic");
+                expectRefusal(helper, "die type mismatch at evaluate", () ->
+                    FabYieldService.evaluateLot(toEval, t1, "memory", null));
+            }
+        }
+
         helper.succeed();
     }
 
