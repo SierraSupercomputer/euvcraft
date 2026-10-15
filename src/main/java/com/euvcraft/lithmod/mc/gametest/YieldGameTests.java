@@ -3,13 +3,20 @@ package com.euvcraft.lithmod.mc.gametest;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+import com.euvcraft.lithmod.core.FabSettings;
 import com.euvcraft.lithmod.core.FoupContents;
 import com.euvcraft.lithmod.core.Tier;
 import com.euvcraft.lithmod.core.Wafer;
 import com.euvcraft.lithmod.core.YieldMath;
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.euvcraft.lithmod.mc.FabYieldService;
+import com.euvcraft.lithmod.mc.FoupContentsCodec;
+import com.euvcraft.lithmod.mc.FoupItems;
 import com.euvcraft.lithmod.mc.data.TierDataLoader;
+import com.euvcraft.lithmod.mc.registry.ModItems;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
@@ -17,15 +24,21 @@ import net.minecraft.gametest.framework.FunctionGameTestInstance;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.gametest.framework.TestData;
 import net.minecraft.gametest.framework.TestEnvironmentDefinition;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Rotation;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.slf4j.Logger;
+
+import com.mojang.serialization.DataResult;
 
 /**
  * Game tests for the yield roll engine of milestone M0-09.
@@ -55,6 +68,8 @@ public final class YieldGameTests {
     static {
         FUNCTIONS.register("yield_layer_step", () -> YieldGameTests::layerStep);
         FUNCTIONS.register("yield_pass_rate", () -> YieldGameTests::passRate);
+        FUNCTIONS.register("yield_end_to_end", () -> YieldGameTests::endToEndSimulation);
+        FUNCTIONS.register("yield_run_spec", () -> YieldGameTests::runSpecTests);
     }
 
     private YieldGameTests() {
@@ -75,6 +90,8 @@ public final class YieldGameTests {
 
         register(event, data, "yield_layer_step");
         register(event, data, "yield_pass_rate");
+        register(event, data, "yield_end_to_end");
+        register(event, data, "yield_run_spec");
         LOGGER.info("Registered EUVCRAFT yield game tests");
     }
 
@@ -204,10 +221,353 @@ public final class YieldGameTests {
     private static void expectRefusal(GameTestHelper helper, String what, Runnable action) {
         try {
             action.run();
-        } catch (IllegalArgumentException refused) {
+        } catch (IllegalArgumentException | IllegalStateException refused) {
             LOGGER.info("{}: refused with \"{}\"", what, refused.getMessage());
             return;
         }
         helper.fail(what + " was not refused");
+    }
+
+    /**
+     * End-to-end simulation: builds lots, applies every layer for T3, T5 and T7 through
+     * FabYieldService.applyLayerStep on a real server level, evaluates them with
+     * FabYieldService.evaluateLot, and checks the aggregate pass rate over many lots
+     * against the tier yield. Includes T7 compute lot with 8 and 24 cores to confirm
+     * the core-count penalty.
+     */
+    private static void endToEndSimulation(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+
+        for (int index : new int[] {3, 5, 7}) {
+            Tier tier = tier(helper, index);
+            if (tier == null) {
+                return;
+            }
+
+            int wafersPerLot = 25;
+            int lots = 40;
+            int passing = 0;
+            int simulated = 0;
+
+            for (int lot = 0; lot < lots; lot++) {
+                UUID lotId = UUID.randomUUID();
+                FoupContents contents = unprocessed(lotId, wafersPerLot);
+                for (int layer = 1; layer <= tier.layers(); layer++) {
+                    contents = FabYieldService.applyLayerStep(level, contents, tier, layer, 1.0);
+                }
+                passing += FabYieldService.countPassing(contents, tier, null);
+                simulated += contents.size();
+            }
+
+            double yield = YieldMath.resolveEffectiveYield(tier, EUVCRAFTMod.settings(), null);
+            double rate = (double) passing / simulated;
+            LOGGER.info("T{}: {} of {} wafers passed, {}% against a target of {}%", tier.index(), passing,
+                simulated, String.format("%.2f", rate * 100.0), Math.round(yield * 100.0));
+
+            helper.assertTrue(Math.abs(rate - yield) <= 0.10,
+                "T" + tier.index() + " passed " + (rate * 100.0) + "% against a target of "
+                    + (yield * 100.0) + "%");
+        }
+
+        Tier t7 = tier(helper, 7);
+        if (t7 != null) {
+            int wafersPerLot = 25;
+            int lots = 40;
+            int passing = 0;
+            int simulated = 0;
+
+            for (int lot = 0; lot < lots; lot++) {
+                UUID lotId = UUID.randomUUID();
+                FoupContents contents = unprocessed(lotId, wafersPerLot);
+                for (int layer = 1; layer <= t7.layers(); layer++) {
+                    contents = FabYieldService.applyLayerStep(level, contents, t7, 8, layer, 1.0);
+                }
+                passing += FabYieldService.countPassing(contents, t7, 8);
+                simulated += contents.size();
+            }
+
+            double yield = YieldMath.resolveEffectiveYield(t7, EUVCRAFTMod.settings(), 8);
+            double rate = (double) passing / simulated;
+            LOGGER.info("T7 compute 8 cores: {} of {} wafers passed, {}% against a target of {}%", passing,
+                simulated, String.format("%.2f", rate * 100.0), Math.round(yield * 100.0));
+
+            helper.assertTrue(Math.abs(rate - yield) <= 0.10,
+                "T7 8 cores passed " + (rate * 100.0) + "% against a target of "
+                    + (yield * 100.0) + "%");
+        }
+
+        if (t7 != null) {
+            int wafersPerLot = 25;
+            int lots = 40;
+            int passing = 0;
+            int simulated = 0;
+
+            for (int lot = 0; lot < lots; lot++) {
+                UUID lotId = UUID.randomUUID();
+                FoupContents contents = unprocessed(lotId, wafersPerLot);
+                for (int layer = 1; layer <= t7.layers(); layer++) {
+                    contents = FabYieldService.applyLayerStep(level, contents, t7, 24, layer, 1.0);
+                }
+                passing += FabYieldService.countPassing(contents, t7, 24);
+                simulated += contents.size();
+            }
+
+            double yield = YieldMath.resolveEffectiveYield(t7, EUVCRAFTMod.settings(), 24);
+            double rate = (double) passing / simulated;
+            LOGGER.info("T7 compute 24 cores: {} of {} wafers passed, {}% against a target of {}%", passing,
+                simulated, String.format("%.2f", rate * 100.0), Math.round(yield * 100.0));
+
+            helper.assertTrue(Math.abs(rate - yield) <= 0.10,
+                "T7 24 cores passed " + (rate * 100.0) + "% against a target of "
+                    + (yield * 100.0) + "%");
+        }
+
+        helper.succeed();
+    }
+
+    /**
+     * Lot run spec tests:
+     * (a) After layer 1, change yieldMultiplier to 2.0 and finish the lot: its pass rate
+     *     still matches the tier yield, while a new lot started after the change follows
+     *     the new setting.
+     * (b) Change rollsPerLayer after layer 1: the lot still finishes and judges consistently
+     *     (rollsPerLayer is read from stored spec at later layers).
+     * (c) A tier or core count that differs from the stored spec is refused at a later
+     *     layer and at test.
+     * (d) The persistent codec round trip preserves a RunSpec, and a lot with no spec
+     *     still decodes.
+     * (e) A client-view lot is refused by applyLayerStep and evaluateLot.
+     */
+    private static void runSpecTests(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        final Tier tier = tier(helper, 3);
+        if (tier == null) {
+            return;
+        }
+
+        // Test (c): Different tier refused at later layer
+        {
+            UUID lotId = UUID.randomUUID();
+            FoupContents contents = unprocessed(lotId, 10);
+            Tier t1 = tier(helper, 1);
+            if (t1 != null) {
+                FoupContents afterLayer1 = FabYieldService.applyLayerStep(level, contents, t1, 1, 1.0);
+                expectRefusal(helper, "different tier at layer 2", () ->
+                    FabYieldService.applyLayerStep(level, afterLayer1, tier, 2, 1.0));
+            }
+        }
+
+        // Test (c): Different core count refused at later layer
+        {
+            UUID lotId = UUID.randomUUID();
+            FoupContents contents = unprocessed(lotId, 10);
+            Tier t7 = tier(helper, 7);
+            if (t7 != null) {
+                FoupContents afterLayer1 = FabYieldService.applyLayerStep(level, contents, t7, 8, 1, 1.0);
+                expectRefusal(helper, "different cores at layer 2", () ->
+                    FabYieldService.applyLayerStep(level, afterLayer1, t7, 24, 2, 1.0));
+            }
+        }
+
+        // Test (c): Different tier refused at evaluateLot
+        {
+            UUID lotId = UUID.randomUUID();
+            FoupContents contents = unprocessed(lotId, 10);
+            final Tier t1 = tier(helper, 1);
+            if (t1 != null) {
+                FoupContents finished = contents;
+                for (int layer = 1; layer <= t1.layers(); layer++) {
+                    finished = FabYieldService.applyLayerStep(level, finished, t1, layer, 1.0);
+                }
+                final Tier evalTier = tier;
+                final FoupContents toEval = finished;
+                expectRefusal(helper, "different tier at evaluate", () ->
+                    FabYieldService.evaluateLot(toEval, evalTier, null));
+            }
+        }
+
+        // Test (c): Different core count refused at evaluateLot
+        {
+            UUID lotId = UUID.randomUUID();
+            FoupContents contents = unprocessed(lotId, 10);
+            final Tier t7 = tier(helper, 7);
+            if (t7 != null) {
+                FoupContents finished = contents;
+                for (int layer = 1; layer <= t7.layers(); layer++) {
+                    finished = FabYieldService.applyLayerStep(level, finished, t7, 8, layer, 1.0);
+                }
+                final FoupContents toEval = finished;
+                expectRefusal(helper, "different cores at evaluate", () ->
+                    FabYieldService.evaluateLot(toEval, t7, 24));
+            }
+        }
+
+        // Test (d): Persistent codec round trip preserves RunSpec
+        {
+            UUID lotId = UUID.randomUUID();
+            FoupContents contents = unprocessed(lotId, 10);
+            Tier t3 = tier(helper, 3);
+            if (t3 != null) {
+                for (int layer = 1; layer <= t3.layers(); layer++) {
+                    contents = FabYieldService.applyLayerStep(level, contents, t3, layer, 1.0);
+                }
+                helper.assertTrue(contents.run() != null, "lot should have a run spec");
+                helper.assertTrue(contents.run().matches(t3, null), "run spec should match T3");
+
+                ItemStack stack = FoupItems.with(ModItems.FOUP_MK1.get(), contents);
+                ItemStack reloaded = roundTrip(helper, level, stack);
+                if (reloaded != null) {
+                    FoupContents afterReload = FoupItems.contentsOf(reloaded);
+                    helper.assertTrue(afterReload.run() != null, "reloaded lot should have a run spec");
+                    helper.assertTrue(afterReload.run().matches(t3, null), "reloaded run spec should match T3");
+                }
+            }
+        }
+
+        // Test (d): Lot with no spec still decodes (empty lot)
+        {
+            ItemStack stack = FoupItems.emptyFoup(ModItems.FOUP_MK1.get());
+            ItemStack reloaded = roundTrip(helper, level, stack);
+            if (reloaded != null) {
+                FoupContents afterReload = FoupItems.contentsOf(reloaded);
+                helper.assertTrue(afterReload.isEmpty(), "reloaded empty lot should be empty");
+            }
+        }
+
+        // Test (e): Client-view lot refused by applyLayerStep
+        {
+            FoupContents clientView = makeClientView(25, 10, 5);
+            expectRefusal(helper, "client view at applyLayerStep", () ->
+                FabYieldService.applyLayerStep(level, clientView, tier, 1, 1.0));
+        }
+
+        // Test (e): Client-view lot refused by evaluateLot
+        {
+            FoupContents clientView = makeClientView(25, 10, 5);
+            expectRefusal(helper, "client view at evaluateLot", () ->
+                FabYieldService.evaluateLot(clientView, tier, null));
+        }
+
+        // Test (a): yieldMultiplier change mid-run doesn't affect in-flight lot
+        {
+            UUID lotId = UUID.randomUUID();
+            FoupContents contents = unprocessed(lotId, 5);
+            Tier t1 = tier(helper, 1);
+            if (t1 != null) {
+                contents = FabYieldService.applyLayerStep(level, contents, t1, 1, 1.0);
+                helper.assertTrue(contents.run() != null, "run spec created at layer 1");
+                int specRollCount = contents.run().rollCount();
+                for (int layer = 2; layer <= t1.layers(); layer++) {
+                    contents = FabYieldService.applyLayerStep(level, contents, t1, layer, 1.0);
+                }
+                helper.assertTrue(contents.run().rollCount() == specRollCount,
+                    "run spec roll count should not change after settings change");
+            }
+        }
+
+        // Test (a) extended: Actually change yieldMultiplier after layer 1 and verify
+        // the in-flight lot uses the original yield while a new lot uses the new yield
+        {
+            // Simulate by using different FabSettings objects for the two lots
+            FabSettings originalSettings = FabSettings.defaults();
+            FabSettings changedSettings = FabSettings.builder()
+                .yieldMultiplier(2.0)
+                .build();
+
+            // Lot 1: started with original settings (1.0), finished with changed settings (2.0)
+            // The run spec should freeze the effective yield at layer 1 (1.0 * tier yield)
+            UUID lotId1 = UUID.randomUUID();
+            FoupContents contents1 = unprocessed(lotId1, 25);
+            Tier t1 = tier(helper, 1);
+            if (t1 != null) {
+                // Layer 1 with original settings
+                contents1 = FabYieldService.applyLayerStep(level, contents1, t1, 1, 1.0, originalSettings);
+                // Remaining layers with changed settings (should use frozen spec)
+                for (int layer = 2; layer <= t1.layers(); layer++) {
+                    contents1 = FabYieldService.applyLayerStep(level, contents1, t1, layer, 1.0, changedSettings);
+                }
+                double originalYield = YieldMath.resolveEffectiveYield(t1, originalSettings, null);
+                int passing1 = FabYieldService.countPassing(contents1, t1, null);
+                double rate1 = (double) passing1 / contents1.size();
+                // Should be close to original yield (60%), not doubled yield
+                helper.assertTrue(Math.abs(rate1 - originalYield) <= 0.10,
+                    "Lot 1 pass rate " + (rate1 * 100) + "% should match original yield " + (originalYield * 100) + "%");
+            }
+
+            // Lot 2: started and finished with changed settings (2.0)
+            // Should use the doubled yield
+            UUID lotId2 = UUID.randomUUID();
+            FoupContents contents2 = unprocessed(lotId2, 25);
+            if (t1 != null) {
+                for (int layer = 1; layer <= t1.layers(); layer++) {
+                    contents2 = FabYieldService.applyLayerStep(level, contents2, t1, layer, 1.0, changedSettings);
+                }
+                double changedYield = YieldMath.resolveEffectiveYield(t1, changedSettings, null);
+                int passing2 = FabYieldService.countPassing(contents2, t1, null);
+                double rate2 = (double) passing2 / contents2.size();
+                // Should be close to changed yield (capped at 99%)
+                helper.assertTrue(Math.abs(rate2 - changedYield) <= 0.10,
+                    "Lot 2 pass rate " + (rate2 * 100) + "% should match changed yield " + (changedYield * 100) + "%");
+            }
+        }
+
+        // Test (b): rollsPerLayer change after layer 1 - verify roll count comes from stored spec
+        {
+            FabSettings settings1 = FabSettings.builder().rollsPerLayer(1).build();
+            FabSettings settings2 = FabSettings.builder().rollsPerLayer(2).build();
+
+            UUID lotId = UUID.randomUUID();
+            FoupContents contents = unprocessed(lotId, 25);
+            Tier t3 = tier(helper, 3);
+            if (t3 != null) {
+                // Layer 1 with 1 roll per layer
+                contents = FabYieldService.applyLayerStep(level, contents, t3, 1, 1.0, settings1);
+                helper.assertTrue(contents.run() != null, "run spec created at layer 1");
+                int specRollCount = contents.run().rollCount();
+                // Should be 24 (24 layers * 1 roll)
+                helper.assertTrue(specRollCount == 24, "spec roll count should be 24 for T3 with 1 roll/layer");
+
+                // Remaining layers with 2 rolls per layer (should use frozen spec)
+                for (int layer = 2; layer <= t3.layers(); layer++) {
+                    contents = FabYieldService.applyLayerStep(level, contents, t3, layer, 1.0, settings2);
+                }
+                helper.assertTrue(contents.run().rollCount() == specRollCount,
+                    "run spec roll count should remain 24 (frozen at layer 1), not change to 48");
+
+                // Verify the lot judges correctly against the frozen spec
+                int passing = FabYieldService.countPassing(contents, t3, null);
+                double rate = (double) passing / contents.size();
+                double expectedYield = YieldMath.resolveEffectiveYield(t3, settings1, null);
+                helper.assertTrue(Math.abs(rate - expectedYield) <= 0.10,
+                    "Lot should judge against frozen spec yield " + (expectedYield * 100) + "%, got " + (rate * 100) + "%");
+            }
+        }
+
+        helper.succeed();
+    }
+
+    private static ItemStack roundTrip(GameTestHelper helper, ServerLevel level, ItemStack stack) {
+        RegistryOps<Tag> ops = RegistryOps.create(NbtOps.INSTANCE, level.registryAccess());
+        DataResult<Tag> encoded = ItemStack.CODEC.encodeStart(ops, stack);
+        if (encoded.result().isEmpty()) {
+            helper.fail("could not encode the stack: " + encoded.error());
+            return null;
+        }
+        DataResult<ItemStack> decoded = ItemStack.CODEC.parse(ops, encoded.result().get());
+        if (decoded.result().isEmpty()) {
+            helper.fail("could not decode the stack: " + decoded.error());
+            return null;
+        }
+        return decoded.result().get();
+    }
+
+    private static FoupContents makeClientView(int capacity, int waferCount, int lotLayer) {
+        FoupContents lot = FoupContents.empty(UUID.randomUUID(), capacity);
+        for (int i = 0; i < waferCount; i++) {
+            lot = lot.withWafer(new Wafer(lotLayer, Wafer.NO_ROLLS, Wafer.NO_FLAGS));
+        }
+        ByteBuf buffer = Unpooled.buffer();
+        FoupContentsCodec.STREAM_CODEC.encode(buffer, lot);
+        return FoupContentsCodec.STREAM_CODEC.decode(buffer);
     }
 }

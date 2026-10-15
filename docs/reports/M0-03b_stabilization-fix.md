@@ -3,7 +3,7 @@
 **Date:** October 14, 2026
 **Mod:** EUVCRAFT (mod id: `lithmod`)
 **Root Package:** `com.euvcraft.lithmod`
-**Location:** `C:\Users\ethan\OneDrive\Documents\Minecraft\euvcraftmk4nemo`
+**Location:** Repository root
 **Framework:** NeoForge 26.3 / Minecraft 26.3
 
 ---
@@ -48,7 +48,7 @@ Earlier reports listed FabSettingsTest as 44 or 46 tests because they counted th
 
 ### Verification
 ```powershell
-$env:JAVA_HOME="C:\Users\ethan\.gradle\jdks\eclipse_adoptium-25-amd64-windows.2"
+$env:JAVA_HOME="<path-to-jdk-25>"
 .\gradlew.bat test --offline
 .\gradlew.bat checkCoreImports --offline
 ```
@@ -75,7 +75,7 @@ Added `src/main/java/com/euvcraft/lithmod/mc/gametest/EUVCRAFTGameTests.java`. I
 
 Documented command:
 ```powershell
-$env:JAVA_HOME="C:\Users\ethan\.gradle\jdks\eclipse_adoptium-25-amd64-windows.2"
+$env:JAVA_HOME="<path-to-jdk-25>"
 .\gradlew.bat runGameTestServer --offline
 ```
 
@@ -162,7 +162,7 @@ This item is intentionally stopped rather than half-implemented.
 
 ## Verification commands and results
 ```powershell
-$env:JAVA_HOME="C:\Users\ethan\.gradle\jdks\eclipse_adoptium-25-amd64-windows.2"
+$env:JAVA_HOME="<path-to-jdk-25>"
 .\gradlew.bat test --offline
 .\gradlew.bat checkCoreImports --offline
 ```

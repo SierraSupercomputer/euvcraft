@@ -3,7 +3,7 @@
 **Date:** October 13, 2026  
 **Mod:** EUVCRAFT (mod id: `lithmod`)  
 **Root Package:** `com.euvcraft.lithmod`  
-**Location:** `C:\Users\ethan\OneDrive\Documents\Minecraft\euvcraftmk4nemo`  
+**Location:** Repository root  
 **Framework:** NeoForge 26.3 / Minecraft 26.3
 
 ---

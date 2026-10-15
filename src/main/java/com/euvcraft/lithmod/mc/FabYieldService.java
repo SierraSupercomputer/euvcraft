@@ -2,6 +2,7 @@ package com.euvcraft.lithmod.mc;
 
 import java.util.Objects;
 
+import com.euvcraft.lithmod.core.FabSettings;
 import com.euvcraft.lithmod.core.FoupContents;
 import com.euvcraft.lithmod.core.Tier;
 import com.euvcraft.lithmod.core.YieldCalibration;
@@ -191,5 +192,37 @@ public final class FabYieldService {
      */
     static void onSettingsChanged() {
         YieldCalibration.clearCache();
+    }
+
+    // --- Overloads accepting explicit FabSettings for testing ---
+
+    /**
+     * Testing overload: puts every wafer through one layer with explicit settings.
+     *
+     * <p>This exists only for game tests that need to simulate a settings change
+     * mid-run without actually reloading the config. Uses the server RNG from the
+     * level associated with the lot's RNG source.</p>
+     */
+    public static FoupContents applyLayerStep(ServerLevel level, FoupContents lot, Tier tier, int layerNumber,
+            double defectFactor, FabSettings settings) {
+        return applyLayerStep(level, lot, tier, null, layerNumber, defectFactor, settings);
+    }
+
+    /**
+     * Testing overload: puts every wafer through one layer with explicit settings and core count.
+     */
+    public static FoupContents applyLayerStep(ServerLevel level, FoupContents lot, Tier tier, @Nullable Integer cores,
+            int layerNumber, double defectFactor, FabSettings settings) {
+        FabRandomService.requireServerSide(level);
+        Objects.requireNonNull(lot, "lot must not be null");
+        Objects.requireNonNull(tier, "tier must not be null");
+        Objects.requireNonNull(settings, "settings must not be null");
+
+        if (FoupContentsCodec.isClientView(lot)) {
+            throw new IllegalArgumentException("a client-view lot cannot take a layer step");
+        }
+
+        return YieldRollEngine.applyLayerStep(lot, tier, cores, layerNumber, defectFactor, settings,
+            (waferIndex, stepIndex) -> FabRandomService.rngFor(level, lot.lotId(), waferIndex, stepIndex));
     }
 }

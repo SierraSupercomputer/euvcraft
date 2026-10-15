@@ -153,11 +153,14 @@ public final class YieldRollEngine {
             }
         }
 
-        int rollsPerLayer = spec.hasCores() ? settings.rollsPerLayer() : settings.rollsPerLayer();
+        int rollsPerLayer;
         double weight;
         if (firstLayer) {
+            rollsPerLayer = settings.rollsPerLayer();
             weight = stepWeight(tier, settings, cores, defectFactor);
         } else {
+            // Later layers: derive rollsPerLayer from frozen spec rollCount
+            rollsPerLayer = spec.rollCount() / tier.layers();
             // Use the stored spec's effective yield and roll count
             weight = YieldCalibration.stepWeight(spec.rollCount(), spec.effectiveYield(), defectFactor);
         }
