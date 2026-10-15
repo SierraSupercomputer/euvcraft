@@ -17,6 +17,7 @@ public final class RunSpecCodec {
 
     /** Codec for the persistent form of a run spec. */
     public static final Codec<RunSpec> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+        Codec.STRING.fieldOf("die_type").forGetter(RunSpec::dieType),
         Codec.INT.fieldOf("tierIndex").forGetter(RunSpec::tierIndex),
         Codec.INT.fieldOf("cores").forGetter(RunSpec::cores),
         Codec.DOUBLE.fieldOf("effectiveYield").forGetter(RunSpec::effectiveYield),

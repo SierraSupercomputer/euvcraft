@@ -43,12 +43,12 @@ class FabYieldServiceTest {
         Tier tier = tier("T3", 24, 90.0, null);
         FoupContents finished = process(tier, null, 1.0, 4000, 25);
 
-        boolean[] outcomes = FabYieldService.evaluateLot(finished, tier, null);
-        double rate = (double) FabYieldService.countPassing(finished, tier, null) / finished.size();
+        boolean[] outcomes = FabYieldService.evaluateLot(finished, tier, "logic", null);
+        double rate = (double) FabYieldService.countPassing(finished, tier, "logic", null) / finished.size();
 
         System.out.printf("%nT3, %d wafers, K=%d: %d of %d passed, %.4f%%%n",
             finished.size(), YieldRollEngine.rollCount(tier, FabSettings.defaults()),
-            FabYieldService.countPassing(finished, tier, null), finished.size(), rate * 100.0);
+            FabYieldService.countPassing(finished, tier, "logic", null), finished.size(), rate * 100.0);
 
         assertEquals(finished.size(), outcomes.length, "one answer per wafer was expected");
         assertTrue(Math.abs(rate - 0.90) <= 0.015,
@@ -84,7 +84,7 @@ class FabYieldServiceTest {
         FoupContents finished = process(tier, null, 1.0, 500, 25);
         double yield = YieldMath.resolveEffectiveYield(tier, EUVCRAFTMod.settings(), null);
 
-        boolean[] outcomes = FabYieldService.evaluateLot(finished, tier, null);
+        boolean[] outcomes = FabYieldService.evaluateLot(finished, tier, "logic", null);
 
         assertEquals(500, outcomes.length);
         for (int wafer = 0; wafer < outcomes.length; wafer++) {
@@ -100,7 +100,7 @@ class FabYieldServiceTest {
         FoupContents finished = process(tier, null, 1.0, 100, 25);
         FoupContents before = new FoupContents(finished.lotId(), finished.capacity(), finished.wafers(), finished.run());
 
-        FabYieldService.evaluateLot(finished, tier, null);
+        FabYieldService.evaluateLot(finished, tier, "logic", null);
 
         assertEquals(before, finished, "judging a lot changed it");
 
@@ -117,10 +117,10 @@ class FabYieldServiceTest {
         FoupContents halfWay = process(tier, null, 1.0, 25, 25, 12);
 
         IllegalStateException thrown = assertThrows(IllegalStateException.class,
-            () -> FabYieldService.evaluateLot(halfWay, tier, null));
+            () -> FabYieldService.evaluateLot(halfWay, tier, "logic", null));
         assertTrue(thrown.getMessage().contains("layer"),
             "the message did not explain why: " + thrown.getMessage());
-        assertThrows(IllegalStateException.class, () -> FabYieldService.countPassing(halfWay, tier, null));
+        assertThrows(IllegalStateException.class, () -> FabYieldService.countPassing(halfWay, tier, "logic", null));
     }
 
     @Test
@@ -129,11 +129,11 @@ class FabYieldServiceTest {
         Tier tier = tier("T3", 24, 90.0, null);
         FoupContents empty = FoupContents.empty(LOT, 25);
 
-        assertThrows(IllegalStateException.class, () -> FabYieldService.evaluateLot(empty, tier, null));
-        assertThrows(IllegalStateException.class, () -> FabYieldService.countPassing(empty, tier, null));
+        assertThrows(IllegalStateException.class, () -> FabYieldService.evaluateLot(empty, tier, "logic", null));
+        assertThrows(IllegalStateException.class, () -> FabYieldService.countPassing(empty, tier, "logic", null));
 
-        assertThrows(NullPointerException.class, () -> FabYieldService.evaluateLot(null, tier, null));
-        assertThrows(NullPointerException.class, () -> FabYieldService.evaluateLot(empty, null, null));
+        assertThrows(NullPointerException.class, () -> FabYieldService.evaluateLot(null, tier, "logic", null));
+        assertThrows(NullPointerException.class, () -> FabYieldService.evaluateLot(empty, null, "logic", null));
     }
 
     @Test
@@ -148,7 +148,7 @@ class FabYieldServiceTest {
 
         // A new run should still work, which implies the cache was cleared
         FoupContents lot = process(tier("T1", 6, 60.0, null), null, 1.0, 25, 25);
-        boolean[] outcomes = FabYieldService.evaluateLot(lot, tier("T1", 6, 60.0, null), null);
+        boolean[] outcomes = FabYieldService.evaluateLot(lot, tier("T1", 6, 60.0, null), "logic", null);
         assertTrue(outcomes.length > 0);
     }
 
@@ -158,8 +158,8 @@ class FabYieldServiceTest {
         Tier tier = tier("T3", 24, 90.0, null);
         FoupContents finished = process(tier, null, 1.0, 200, 25);
 
-        boolean[] first = FabYieldService.evaluateLot(finished, tier, null);
-        boolean[] second = FabYieldService.evaluateLot(finished, tier, null);
+        boolean[] first = FabYieldService.evaluateLot(finished, tier, "logic", null);
+        boolean[] second = FabYieldService.evaluateLot(finished, tier, "logic", null);
         assertArrayEquals(first, second);
     }
 
@@ -190,7 +190,7 @@ class FabYieldServiceTest {
                 contents = contents.withWafer(Wafer.unprocessed());
             }
             for (int layer = 1; layer <= upToLayer; layer++) {
-                contents = YieldRollEngine.applyLayerStep(contents, tier, cores, layer, defectFactor,
+                contents = YieldRollEngine.applyLayerStep(contents, tier, "logic", cores, layer, defectFactor,
                     EUVCRAFTMod.settings(), rolls);
             }
             if (collectedSpec == null) {
@@ -207,7 +207,7 @@ class FabYieldServiceTest {
     /** The pass rate over {@code wafers} simulated wafers. */
     private static double rate(Tier tier, Integer cores, int wafers) {
         FoupContents finished = process(tier, cores, 1.0, wafers, 25);
-        return (double) FabYieldService.countPassing(finished, tier, cores) / finished.size();
+        return (double) FabYieldService.countPassing(finished, tier, "logic", cores) / finished.size();
     }
 
     /** One reference tier, built from the reference table. */

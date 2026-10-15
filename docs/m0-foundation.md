@@ -309,11 +309,11 @@ public abstract com.euvcraft.lithmod.core.Rng rngFor(int, int);
 
 ### RunSpec (com.euvcraft.lithmod.core)
 ```java
-public com.euvcraft.lithmod.core.RunSpec(int, int, double, int);
-public static com.euvcraft.lithmod.core.RunSpec of(com.euvcraft.lithmod.core.Tier, java.lang.Integer, com.euvcraft.lithmod.core.FabSettings);
+public com.euvcraft.lithmod.core.RunSpec(java.lang.String, int, int, double, int);
+public static com.euvcraft.lithmod.core.RunSpec of(com.euvcraft.lithmod.core.Tier, java.lang.String, java.lang.Integer, com.euvcraft.lithmod.core.FabSettings);
 public static int coresOrZero(java.lang.Integer);
 public boolean hasCores();
-public boolean matches(com.euvcraft.lithmod.core.Tier, java.lang.Integer);
+public boolean matches(com.euvcraft.lithmod.core.Tier, java.lang.String, java.lang.Integer);
 public java.lang.Integer coresOrNull();
 public java.lang.String toString();
 public final boolean equals(java.lang.Object);
