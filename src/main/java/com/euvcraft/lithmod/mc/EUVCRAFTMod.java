@@ -16,9 +16,12 @@ import com.euvcraft.lithmod.core.FabSettings;
 import com.euvcraft.lithmod.mc.data.TierDataLoader;
 import com.euvcraft.lithmod.mc.data.SupportLineDataLoader;
 import com.euvcraft.lithmod.mc.data.DieRulesDataLoader;
+import com.euvcraft.lithmod.mc.event.CapabilityEventHandler;
 import com.euvcraft.lithmod.mc.registry.ModCreativeTabs;
 import com.euvcraft.lithmod.mc.registry.ModDataComponents;
 import com.euvcraft.lithmod.mc.registry.ModItems;
+import com.euvcraft.lithmod.mc.registry.ModBlocks;
+import com.euvcraft.lithmod.mc.registry.ModMenuTypes;
 
 @Mod(EUVCRAFTMod.MODID)
 public class EUVCRAFTMod {
@@ -31,6 +34,8 @@ public class EUVCRAFTMod {
         ModDataComponents.DATA_COMPONENTS.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
         ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
+        ModBlocks.register(modEventBus);
+        ModMenuTypes.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(FoupTooltipAppenders::register);
@@ -53,6 +58,8 @@ public class EUVCRAFTMod {
         NeoForge.EVENT_BUS.register(TierDataLoader.class);
         NeoForge.EVENT_BUS.register(SupportLineDataLoader.class);
         NeoForge.EVENT_BUS.register(DieRulesDataLoader.class);
+
+        modEventBus.addListener(CapabilityEventHandler::onRegisterCapabilities);
 
         LOGGER.info("EUVCRAFT mod loading...");
     }
