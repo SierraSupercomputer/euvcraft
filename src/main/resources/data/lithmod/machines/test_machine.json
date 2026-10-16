@@ -1,0 +1,14 @@
+{
+  "id": "test_machine",
+  "energy_capacity": 10000,
+  "max_receive": 1000,
+  "energy_per_tick": 40,
+  "per_tier_energy_per_tick": {
+    "T1": 20,
+    "T2": 60
+  },
+  "params": {
+    "input_slots": 1,
+    "output_slots": 1
+  }
+}

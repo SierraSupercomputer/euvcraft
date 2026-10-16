@@ -27,7 +27,7 @@ public final class TierDataLoader extends JsonResourceDataLoader<Tier, TierRegis
     private static TierRegistry currentRegistry;
 
     public TierDataLoader() {
-        super("tiers", TierCodec.CODEC, TierRegistry::build, LOGGER);
+        super("tiers", TierCodec.CODEC, fromList(TierRegistry::build), LOGGER);
     }
 
     @SubscribeEvent

@@ -32,7 +32,7 @@ public class DieRulesDataLoader extends JsonResourceDataLoader<List<DieRule>, Di
     private static DieRules currentRules;
 
     public DieRulesDataLoader() {
-        super(DIRECTORY, RULES_CODEC, (values, source) -> {
+        super(DIRECTORY, RULES_CODEC, fromList((values, source) -> {
             TierRegistry tiers = TierDataLoader.getRegistry();
             if (tiers == null) {
                 tiers = new TierDataLoader().fallback();
@@ -47,7 +47,7 @@ public class DieRulesDataLoader extends JsonResourceDataLoader<List<DieRule>, Di
                 }
             }
             return DieRules.build(tiers, merged, source);
-        }, LOGGER);
+        }), LOGGER);
     }
 
     @SubscribeEvent
