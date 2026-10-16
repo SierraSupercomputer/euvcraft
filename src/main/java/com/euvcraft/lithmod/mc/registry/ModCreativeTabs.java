@@ -87,6 +87,27 @@ public final class ModCreativeTabs {
             .build()
     );
 
+    /** The EUVCRAFT line components tab. */
+    public static final Supplier<CreativeModeTab> COMPONENTS = CREATIVE_MODE_TABS.register(
+        "3_line_components",
+        () -> CreativeModeTab.builder()
+            .title(Component.translatable("itemGroup.lithmod.line_components"))
+            .icon(() -> new ItemStack(ModItems.MERCURY_LAMP.get()))
+            .displayItems((parameters, output) -> {
+                output.accept(ModItems.MERCURY_LAMP.get());
+                output.accept(ModItems.I_LINE_LAMP.get());
+                output.accept(ModItems.CONTACT_PLATE.get());
+                output.accept(ModItems.REDUCTION_LENS.get());
+                output.accept(ModItems.MANUAL_ALIGNER.get());
+                output.accept(ModItems.STEPPER_STAGE.get());
+                output.accept(ModItems.BASIC_AIR_FILTER.get());
+                output.accept(ModItems.FINE_AIR_FILTER.get());
+                output.accept(ModItems.OPTICAL_MICROSCOPE.get());
+                output.accept(ModItems.OVERLAY_SCOPE.get());
+            })
+            .build()
+    );
+
     private ModCreativeTabs() {
     }
 }
