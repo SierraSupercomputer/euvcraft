@@ -11,7 +11,9 @@ import com.euvcraft.lithmod.mc.recipe.MachineRecipeRunner;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.Container;
 import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -19,6 +21,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -53,7 +56,7 @@ import java.util.Optional;
  * <p>No item handler and no fluid capability are registered for this block entity type, so
  * {@code Level.getCapability} returns {@code null} for both on every side.</p>
  */
-public abstract class FabMachineBlockEntity extends BlockEntity implements MenuProvider {
+public abstract class FabMachineBlockEntity extends BlockEntity implements MenuProvider, Container {
 
     /** Synced to the menu: stored FE. */
     public static final int DATA_ENERGY = 0;
@@ -76,9 +79,20 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
     protected FabMachineBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state,
                                     int inputSlots, int outputSlots,
                                     int fallbackCapacity, int fallbackMaxReceive) {
+        this(type, pos, state, inputSlots, outputSlots, 0, fallbackCapacity, fallbackMaxReceive);
+    }
+
+    /**
+     * @param storageSlots slots after the outputs that hold items but are not part of any
+     *     recipe. The runner never reads them; the player and the drop path do. A machine
+     *     needs somewhere to put things that are not currently being processed.
+     */
+    protected FabMachineBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state,
+                                    int inputSlots, int outputSlots, int storageSlots,
+                                    int fallbackCapacity, int fallbackMaxReceive) {
         super(type, pos, state);
         this.inputSlotCount = inputSlots;
-        this.items = NonNullList.withSize(inputSlots + outputSlots, ItemStack.EMPTY);
+        this.items = NonNullList.withSize(inputSlots + outputSlots + storageSlots, ItemStack.EMPTY);
         this.buffer = new MachineEnergy(this, fallbackCapacity, fallbackMaxReceive);
         this.exposed = new WithdrawNothing(this.buffer);
         this.data.set(DATA_CAPACITY, fallbackCapacity);
@@ -264,21 +278,200 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
         this.runner.saveState(output.child("recipe"));
     }
 
-    /** Drops every stored item when the block is broken. */
-    public void dropContents() {
+    // ------------------------------------------------------------------
+    // Container: this is what makes contents drop
+    // ------------------------------------------------------------------
+    //
+    // 26.3 removed BlockBehaviour.onRemove and Containers.dropContentsOnDestroy. The
+    // replacement is BlockEntity.preRemoveSideEffects, whose base implementation is:
+    //
+    //     if (this instanceof Container container && this.level != null)
+    //         Containers.dropContents(this.level, pos, container);
+    //
+    // LevelChunk.setBlockState calls it on every block change that removes the block
+    // entity, gated on Block.UPDATE_SKIP_BLOCK_ENTITY_SIDEEFFECTS. So simply implementing
+    // Container is the whole of "drop my contents when broken, replaced or exploded" — no
+    // block override, no loot table entry, and it fires for explosions too because they go
+    // through the same setBlockState path.
+    //
+    // Energy is deliberately NOT part of this Container. Container only moves ItemStacks, so
+    // the buffer cannot be dropped by this path even by accident; stored FE is simply lost
+    // when the block goes away, which is the intended behaviour.
+
+    @Override
+    public int getContainerSize() {
+        return this.items.size();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        for (ItemStack stack : this.items) {
+            if (!stack.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public ItemStack getItem(int index) {
+        return this.items.get(index);
+    }
+
+    @Override
+    public ItemStack removeItem(int index, int count) {
+        ItemStack stack = this.items.get(index);
+        if (stack.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        ItemStack removed = stack.split(Math.min(count, stack.getCount()));
+        if (stack.isEmpty()) {
+            clearSlot(index);
+        }
+        setChanged();
+        return removed;
+    }
+
+    @Override
+    public ItemStack removeItemNoUpdate(int index) {
+        ItemStack stack = this.items.get(index);
+        clearSlot(index);
+        return stack;
+    }
+
+    @Override
+    public void setItem(int index, ItemStack stack) {
+        setSlot(index, stack);
+    }
+
+    /** Empties every slot; the {@code Clearable} half of {@link Container}. */
+    @Override
+    public void clearContent() {
+        for (int index = 0; index < this.items.size(); index++) {
+            clearSlot(index);
+        }
+    }
+
+    @Override
+    public int getMaxStackSize() {
+        return 64;
+    }
+
+    @Override
+    public boolean stillValid(Player player) {
+        // A single-block machine has no ownership rule; the menu does its own range check.
+        return true;
+    }
+
+    /**
+     * The extension point for a block entity that owns inventories beyond this machine's
+     * slots — the Process Cell controller, for instance, will hold its own inventory
+     * alongside the machine it drives.
+     *
+     * <p>Called from {@link #preRemoveSideEffects} after the base class has dropped this
+     * machine's slots. A subclass overrides this method and drops its extra containers
+     * through {@link #dropContainer(Level, BlockPos, Container)}; the Process Cell
+     * controller will do exactly that when it grows an inventory. Keeping the hook on the
+     * block entity rather than the block means it runs for any removal path, including an
+     * explosion or a piston, without the block having to know.</p>
+     *
+     * <p>The base implementation handles the test-only second inventory so the hook has
+     * coverage; a real subclass calls {@code super} and adds its own.</p>
+     */
+    protected void dropExtraContents(@Nullable Level level, BlockPos pos) {
+        if (this.extraInventory != null && !this.extraInventory.isEmpty()) {
+            dropContainer(level, pos, new ListContainer(this.extraInventory));
+            this.extraInventory.clear();
+        }
+    }
+
+    /** Drops one extra container's contents at {@code pos}; the helper for subclasses. */
+    protected static void dropContainer(@Nullable Level level, BlockPos pos, Container container) {
         if (level == null || level.isClientSide()) {
             return;
         }
-        for (ItemStack stack : this.items) {
-            if (stack.isEmpty()) {
-                continue;
-            }
-            net.minecraft.world.entity.item.ItemEntity entity = new net.minecraft.world.entity.item.ItemEntity(
-                level, worldPosition.getX() + 0.5, worldPosition.getY() + 0.5, worldPosition.getZ() + 0.5, stack.copy());
-            level.addFreshEntity(entity);
-            stack.setCount(0);
+        Containers.dropContents(level, pos, container);
+    }
+
+    @Override
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+        // Drops this machine's item slots because it is a Container. Never drops energy.
+        super.preRemoveSideEffects(pos, state);
+        dropExtraContents(this.level, pos);
+    }
+
+    /** A second inventory used only to exercise {@link #dropExtraContents} from a test. */
+    private @Nullable NonNullList<ItemStack> extraInventory;
+
+    /**
+     * Gives this machine a second inventory and opts into {@link #dropExtraContents}.
+     *
+     * <p>Exists so the extension point has a test rather than only documentation. A real
+     * subclass that owns extra storage overrides {@code dropExtraContents} and drops its
+     * own containers; the test machine does the same thing with a fixed pair of stacks.</p>
+     */
+    public final void setExtraInventoryForTest(ItemStack... stacks) {
+        this.extraInventory = NonNullList.withSize(stacks.length, ItemStack.EMPTY);
+        for (int index = 0; index < stacks.length; index++) {
+            this.extraInventory.set(index, stacks[index]);
         }
-        setChanged();
+    }
+
+    /** A minimal {@link Container} over a fixed list, for the extension point only. */
+    private static final class ListContainer implements Container {
+
+        private final NonNullList<ItemStack> list;
+
+        ListContainer(NonNullList<ItemStack> list) {
+            this.list = list;
+        }
+
+        @Override
+        public int getContainerSize() {
+            return this.list.size();
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return this.list.stream().allMatch(ItemStack::isEmpty);
+        }
+
+        @Override
+        public ItemStack getItem(int index) {
+            return this.list.get(index);
+        }
+
+        @Override
+        public ItemStack removeItem(int index, int count) {
+            ItemStack stack = this.list.get(index).split(count);
+            return stack;
+        }
+
+        @Override
+        public ItemStack removeItemNoUpdate(int index) {
+            ItemStack stack = this.list.get(index);
+            this.list.set(index, ItemStack.EMPTY);
+            return stack;
+        }
+
+        @Override
+        public void setItem(int index, ItemStack stack) {
+            this.list.set(index, stack);
+        }
+
+        @Override
+        public void setChanged() {
+        }
+
+        @Override
+        public boolean stillValid(Player player) {
+            return true;
+        }
+
+        @Override
+        public void clearContent() {
+            this.list.clear();
+        }
     }
 
     @Override

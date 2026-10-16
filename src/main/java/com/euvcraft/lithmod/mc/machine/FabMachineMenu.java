@@ -1,5 +1,6 @@
 package com.euvcraft.lithmod.mc.machine;
 
+import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -35,8 +36,18 @@ public abstract class FabMachineMenu extends AbstractContainerMenu {
 
     protected final @Nullable FabMachineBlockEntity blockEntity;
     protected final ContainerData data;
-    private final @Nullable MachineContainer machineSlots;
-    private final int machineSlotCount;
+    /**
+     * The machine's slots as a {@link Container}.
+     *
+     * <p>{@link FabMachineBlockEntity} is itself the {@code Container}, so there is no
+     * adapter between the menu and the slots. That is deliberate: 26.3 dropped contents via
+     * {@code BlockEntity.preRemoveSideEffects}, which only fires for a block entity that is
+     * a {@code Container} itself, and having the menu go through the same object keeps one
+     * route to the inventory rather than two.</p>
+     */
+    private final @Nullable Container machineSlots;
+    /** Counted as machine slots are added; see {@link #addMachineSlot(int, int, int, boolean)}. */
+    private int machineSlotCount;
 
     protected FabMachineMenu(MenuType<?> type, int containerId, Inventory playerInventory,
                              @Nullable FabMachineBlockEntity blockEntity) {
@@ -46,8 +57,8 @@ public abstract class FabMachineMenu extends AbstractContainerMenu {
         // local dummy and the machine slots are not added at all.
         this.data = blockEntity == null ? new SimpleContainerData(FabMachineBlockEntity.DATA_COUNT)
             : blockEntity.data();
-        this.machineSlots = blockEntity == null ? null : new MachineContainer(blockEntity);
-        this.machineSlotCount = blockEntity == null ? 0 : blockEntity.slotCount();
+        this.machineSlots = blockEntity;
+        this.machineSlotCount = 0;
 
         addDataSlots(this.data);
         if (this.machineSlots != null) {
@@ -66,17 +77,33 @@ public abstract class FabMachineMenu extends AbstractContainerMenu {
 
     /** Adds a slot that takes anything the machine declares valid. */
     protected final void addMachineSlot(int index, int x, int y) {
+        addMachineSlot(index, x, y, true);
+    }
+
+    /**
+     * Adds a slot, with control over whether the player may put things into it.
+     *
+     * <p>{@code machineSlotCount} is counted here as slots are added rather than taken from
+     * the block entity. A menu is free to expose fewer slots than the block entity has — the
+     * framework's storage slots exist for the machine and the drop path, not necessarily for
+     * the player — and shift-click routing splits the slot list on that number, so reading
+     * it from the block entity would silently treat the first player inventory slots as
+     * machine slots.</p>
+     */
+    protected final void addMachineSlot(int index, int x, int y, boolean mayPlace) {
         addSlot(new Slot(this.machineSlots, index, x, y) {
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return index < blockEntity.inputSlotCount();
+                return mayPlace && index < blockEntity.inputSlotCount();
             }
         });
+        this.machineSlotCount++;
     }
 
     /** Adds a slot that takes only FOUP stacks, one per slot. */
     protected final void addFoupSlot(int index, int x, int y) {
         addSlot(new FoupSlot(this.machineSlots, index, x, y));
+        this.machineSlotCount++;
     }
 
     /** Adds an output-only slot: the player can take from it but not put anything in. */
@@ -92,6 +119,7 @@ public abstract class FabMachineMenu extends AbstractContainerMenu {
                 return true;
             }
         });
+        this.machineSlotCount++;
     }
 
     private void addPlayerSlots(Inventory playerInventory) {

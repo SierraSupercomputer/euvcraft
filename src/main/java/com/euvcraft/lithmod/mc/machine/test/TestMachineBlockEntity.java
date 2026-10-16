@@ -39,8 +39,15 @@ public class TestMachineBlockEntity extends FabMachineBlockEntity {
      *     population.
      */
     public TestMachineBlockEntity(BlockPos pos, BlockState state) {
-        super(ModMachines.TEST_MACHINE_BE.get(), pos, state, 1, 1, FALLBACK_CAPACITY, FALLBACK_MAX_RECEIVE);
+        // 1 input (the FOUP), 1 output, 1 storage. The storage slot is what lets a test (or a
+        // player) park a third distinct stack in the machine without the recipe matcher
+        // seeing it: the runner only ever reads inputSlots().
+        super(ModMachines.TEST_MACHINE_BE.get(), pos, state, 1, 1, 1,
+            FALLBACK_CAPACITY, FALLBACK_MAX_RECEIVE);
     }
+
+    /** Storage slot index: holds items but is never part of a recipe. */
+    public static final int STORAGE_SLOT = 2;
 
     @Override
     protected String machineId() {

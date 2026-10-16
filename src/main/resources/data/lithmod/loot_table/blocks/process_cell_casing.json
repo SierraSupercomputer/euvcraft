@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "condition": {
+        "type": "minecraft:survives_explosion"
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "lithmod:process_cell_casing"
+        }
+      ]
+    }
+  ],
+  "random_sequence": "lithmod:blocks/process_cell_casing"
+}

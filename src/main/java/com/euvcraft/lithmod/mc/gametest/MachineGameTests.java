@@ -604,8 +604,8 @@ public final class MachineGameTests {
             "createMenu did not return a TestMachineMenu");
         TestMachineMenu menu = (TestMachineMenu) bound;
         helper.assertTrue(menu.isServerSide(), "the block entity menu is not server side");
-        // 1 FOUP slot + 1 output slot + 27 inventory + 9 hotbar.
-        helper.assertValueEqual(38, menu.slots.size(), "the menu has an unexpected slot count");
+        // 3 machine slots + 27 inventory + 9 hotbar.
+        helper.assertValueEqual(39, menu.slots.size(), "the menu has an unexpected slot count");
         helper.assertTrue(menu.energyCapacity() > 0, "the menu reports no energy capacity");
         helper.assertValueEqual(0, menu.progress(), "a fresh menu reports progress");
 
