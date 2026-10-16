@@ -144,7 +144,7 @@ public final class MachineGameTests {
         EnergyHandler exposed = level.getCapability(Capabilities.Energy.BLOCK, machinePos, Direction.WEST);
         helper.assertTrue(exposed != null, "no energy capability on WEST");
 
-        // Insert from the second position.
+        // Insert through the capability, as an adjacent energy pipe would.
         int pushed = push(exposed, 300);
         helper.assertValueEqual(300, pushed, "the insert was not accepted in full");
         helper.assertValueEqual((long) 300, exposed.getAmountAsLong(),
