@@ -67,6 +67,26 @@ public final class ModCreativeTabs {
             .build()
     );
 
+    /**
+     * The Process Cell multiblock blocks.
+     *
+     * <p>A third tab rather than entries in {@link #MAIN} or {@link #CHIPS}: the M0-08 game test
+     * pins the main tab to exactly two entries and the M1-05 test pins the chips tab to exactly
+     * seven, so adding to either would break a passing test rather than extend a feature.</p>
+     */
+    public static final Supplier<CreativeModeTab> PROCESS_CELL = CREATIVE_MODE_TABS.register(
+        "2_process_cell",
+        () -> CreativeModeTab.builder()
+            .title(Component.translatable("itemGroup.lithmod.process_cell"))
+            .icon(() -> new ItemStack(ModItems.PROCESS_CELL_CONTROLLER.get()))
+            .displayItems((parameters, output) -> {
+                output.accept(ModItems.PROCESS_CELL_CONTROLLER.get());
+                output.accept(ModItems.PROCESS_CELL_CASING.get());
+                output.accept(ModItems.PROCESS_CELL_POWER_PORT.get());
+            })
+            .build()
+    );
+
     private ModCreativeTabs() {
     }
 }

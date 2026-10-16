@@ -1,7 +1,9 @@
 package com.euvcraft.lithmod.mc.registry;
 
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
+import com.euvcraft.lithmod.mc.multiblock.ModMultiblocks;
 
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -59,6 +61,32 @@ public final class ModItems {
 
     /** The packaging consumable the Test and Package machine feeds on. */
     public static final DeferredItem<Item> CHIP_PACKAGE = ITEMS.registerSimpleItem("chip_package");
+
+    /**
+     * The three Process Cell multiblock block items.
+     *
+     * <p>Declared here so the whole item registry stays in one place, but the blocks come from
+     * {@code ModMultiblocks} because a block item cannot be built before its block is registered.
+     * The {@code .get()} calls sit inside lambdas, so neither class touches the other during static
+     * initialisation.</p>
+     *
+     * <p>{@code registerSimpleBlockItem}, not {@code register} with a hand-built
+     * {@code new BlockItem(block, new Item.Properties())}: only the helper stamps the item id onto
+     * the properties, and without it the constructor throws {@code NullPointerException: Item id
+     * not set}. That is the item-side twin of the block-side {@code registerBlock} rule the M1-02s
+     * spike found.</p>
+     */
+    public static final DeferredItem<BlockItem> PROCESS_CELL_CONTROLLER =
+        ITEMS.registerSimpleBlockItem("process_cell_controller",
+            () -> ModMultiblocks.PROCESS_CELL_CONTROLLER.get());
+
+    public static final DeferredItem<BlockItem> PROCESS_CELL_CASING =
+        ITEMS.registerSimpleBlockItem("process_cell_casing",
+            () -> ModMultiblocks.PROCESS_CELL_CASING.get());
+
+    public static final DeferredItem<BlockItem> PROCESS_CELL_POWER_PORT =
+        ITEMS.registerSimpleBlockItem("process_cell_power_port",
+            () -> ModMultiblocks.PROCESS_CELL_POWER_PORT.get());
 
     private ModItems() {
     }

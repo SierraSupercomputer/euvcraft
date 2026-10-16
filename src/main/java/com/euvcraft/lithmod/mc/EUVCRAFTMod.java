@@ -22,7 +22,9 @@ import com.euvcraft.lithmod.mc.registry.ModCreativeTabs;
 import com.euvcraft.lithmod.mc.registry.ModDataComponents;
 import com.euvcraft.lithmod.mc.registry.ModItems;
 import com.euvcraft.lithmod.mc.gametest.MachineGameTests;
+import com.euvcraft.lithmod.mc.gametest.MultiblockGameTests;
 import com.euvcraft.lithmod.mc.machine.test.ModMachines;
+import com.euvcraft.lithmod.mc.multiblock.ModMultiblocks;
 
 @Mod(EUVCRAFTMod.MODID)
 public class EUVCRAFTMod {
@@ -36,6 +38,7 @@ public class EUVCRAFTMod {
         ModItems.ITEMS.register(modEventBus);
         ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
         ModMachines.register(modEventBus);
+        ModMultiblocks.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(FoupTooltipAppenders::register);
@@ -46,6 +49,7 @@ public class EUVCRAFTMod {
         com.euvcraft.lithmod.mc.gametest.YieldGameTests.register(modEventBus);
         com.euvcraft.lithmod.mc.gametest.ChipGameTests.register(modEventBus);
         MachineGameTests.register(modEventBus);
+        MultiblockGameTests.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.LOCAL, FabConfig.getSpec());
         config = new FabConfig();

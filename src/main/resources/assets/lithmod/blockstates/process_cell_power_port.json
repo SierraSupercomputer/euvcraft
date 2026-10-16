@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "formed=false": { "model": "lithmod:block/process_cell_power_port_unformed" },
+    "formed=true": { "model": "lithmod:block/process_cell_power_port_formed" }
+  }
+}

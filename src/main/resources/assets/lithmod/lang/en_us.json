@@ -1,6 +1,10 @@
 {
   "itemGroup.lithmod": "EUVCRAFT",
   "itemGroup.lithmod.chips": "EUVCRAFT Chips",
+  "itemGroup.lithmod.process_cell": "EUVCRAFT Process Cell",
+  "item.lithmod.process_cell_controller": "Process Cell Controller",
+  "item.lithmod.process_cell_casing": "Process Cell Casing",
+  "item.lithmod.process_cell_power_port": "Process Cell Power Port",
   "item.lithmod.foup_mk1": "FOUP Mk1",
   "item.lithmod.foup_mk2": "FOUP Mk2",
   "item.lithmod.logic_chip_t1": "Logic Chip T1",
