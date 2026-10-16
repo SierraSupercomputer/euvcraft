@@ -487,11 +487,11 @@ public final class YieldGameTests {
                     contents1 = FabYieldService.applyLayerStep(level, contents1, t1, "logic", null, layer, 1.0, changedSettings);
                 }
                 double originalYield = YieldMath.resolveEffectiveYield(t1, originalSettings, null);
-                int passing1 = FabYieldService.countPassing(contents1, t1, "logic", null);
-                double rate1 = (double) passing1 / contents1.size();
-                // Should be close to original yield (60%), not doubled yield
-                helper.assertTrue(Math.abs(rate1 - originalYield) <= 0.10,
-                    "Lot 1 pass rate " + (rate1 * 100) + "% should match original yield " + (originalYield * 100) + "%");
+                // Structural only: the in-flight lot keeps using the yield it was started with,
+                // not the changed one. Pass-rate statistics live in the seeded core tests.
+                helper.assertTrue(contents1.run() != null, "lot 1 should carry a run spec");
+                helper.assertTrue(Math.abs(contents1.run().effectiveYield() - originalYield) <= 1e-12,
+                    "the in-flight lot did not freeze the yield it was started at");
             }
 
             // Lot 2: started and finished with changed settings (2.0)
@@ -503,11 +503,10 @@ public final class YieldGameTests {
                     contents2 = FabYieldService.applyLayerStep(level, contents2, t1, "logic", null, layer, 1.0, changedSettings);
                 }
                 double changedYield = YieldMath.resolveEffectiveYield(t1, changedSettings, null);
-                int passing2 = FabYieldService.countPassing(contents2, t1, "logic", null);
-                double rate2 = (double) passing2 / contents2.size();
-                // Should be close to changed yield (capped at 99%)
-                helper.assertTrue(Math.abs(rate2 - changedYield) <= 0.10,
-                    "Lot 2 pass rate " + (rate2 * 100) + "% should match changed yield " + (changedYield * 100) + "%");
+                // Structural only: a lot started after the change takes on the new setting.
+                helper.assertTrue(contents2.run() != null, "lot 2 should carry a run spec");
+                helper.assertTrue(Math.abs(contents2.run().effectiveYield() - changedYield) <= 1e-12,
+                    "a new lot did not take on the new yield setting");
             }
         }
 
@@ -534,12 +533,14 @@ public final class YieldGameTests {
                 helper.assertTrue(contents.run().rollCount() == specRollCount,
                     "run spec roll count should remain 24 (frozen at layer 1), not change to 48");
 
-                // Verify the lot judges correctly against the frozen spec
-                int passing = FabYieldService.countPassing(contents, t3, "logic", null);
-                double rate = (double) passing / contents.size();
                 double expectedYield = YieldMath.resolveEffectiveYield(t3, settings1, null);
-                helper.assertTrue(Math.abs(rate - expectedYield) <= 0.10,
-                    "Lot should judge against frozen spec yield " + (expectedYield * 100) + "%, got " + (rate * 100) + "%");
+                // Structural only: the stored run spec keeps the frozen yield and the frozen
+                // roll count even though the later layers were applied under new settings.
+                helper.assertTrue(contents.run() != null, "the lot should carry a run spec");
+                helper.assertTrue(Math.abs(contents.run().effectiveYield() - expectedYield) <= 1e-12,
+                    "the lot did not keep the yield it was frozen at");
+                helper.assertTrue(contents.run().rollCount() == specRollCount,
+                    "the lot did not keep its frozen roll count");
             }
         }
 

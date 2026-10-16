@@ -354,6 +354,36 @@ class YieldRollEngineTest {
         }
     }
 
+    @Test
+    @DisplayName("a large run (fixed seed) stays within 4 standard deviations of the tier yield")
+    void aLargeRunStaysWithinFourStandardDeviations() {
+        for (String id : new String[] { "T1", "T3", "T5" }) {
+            Tier tier = ReferenceTiers.byId(id);
+            FabSettings settings = FabSettings.defaults();
+            double yield = YieldMath.resolveEffectiveYield(tier, settings, null);
+
+            int wafersPerLot = 25;
+            int lots = 48; // 1200 wafers, seeded SALT + lot
+            int passing = 0;
+            int simulated = 0;
+            for (int lot = 0; lot < lots; lot++) {
+                FoupContents processed = runThrough(tier, freshLot(wafersPerLot), null, 1.0, SALT + lot, settings);
+                boolean[] outcomes = YieldRollEngine.evaluate(processed, tier, "logic", null);
+                passing += YieldRollEngine.countPassing(outcomes);
+                simulated += outcomes.length;
+            }
+
+            double rate = (double) passing / simulated;
+            // Binomial standard deviation of the pass RATE: sigma(xbar) = sqrt(p*(1-p)/n).
+            double standardDeviationOfRate = Math.sqrt(yield * (1.0 - yield) / simulated);
+            double tolerance = 4.0 * standardDeviationOfRate;
+
+            assertTrue(Math.abs(rate - yield) <= tolerance,
+                id + " simulated " + (rate * 100.0) + "% against a target of " + (yield * 100.0) + "% "
+                    + "with " + simulated + " wafers; 4 sigma is " + (tolerance * 100.0) + "%");
+        }
+    }
+
     /** Runs a lot through every layer of a tier at one salt. */
     private static FoupContents runThrough(Tier tier, FoupContents lot, Integer cores, double defectFactor,
             long salt, FabSettings settings) {
