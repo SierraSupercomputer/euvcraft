@@ -34,10 +34,12 @@ public class EUVCRAFTMod {
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(FoupTooltipAppenders::register);
+        modEventBus.addListener(ChipTooltipAppenders::register);
         com.euvcraft.lithmod.mc.gametest.EUVCRAFTGameTests.register(modEventBus);
         com.euvcraft.lithmod.mc.gametest.FabRandomGameTests.register(modEventBus);
         com.euvcraft.lithmod.mc.gametest.FoupGameTests.register(modEventBus);
         com.euvcraft.lithmod.mc.gametest.YieldGameTests.register(modEventBus);
+        com.euvcraft.lithmod.mc.gametest.ChipGameTests.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.LOCAL, FabConfig.getSpec());
         config = new FabConfig();

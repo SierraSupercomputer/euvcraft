@@ -42,6 +42,31 @@ public final class ModCreativeTabs {
             .build()
     );
 
+    /**
+     * The EUVCRAFT chips and consumables tab.
+     *
+     * <p>A second tab rather than more entries in {@link #MAIN}, because the M0-08 game
+     * test {@code foup_creative_tab_entries} pins the main tab to exactly the two FOUP
+     * variants. Every chip and every consumable this milestone registers appears here,
+     * so later milestones only add entries to this tab.</p>
+     */
+    public static final Supplier<CreativeModeTab> CHIPS = CREATIVE_MODE_TABS.register(
+        "1_chips_and_consumables",
+        () -> CreativeModeTab.builder()
+            .title(Component.translatable("itemGroup.lithmod.chips"))
+            .icon(() -> new ItemStack(ModItems.LOGIC_CHIP_T1.get()))
+            .displayItems((parameters, output) -> {
+                output.accept(ModItems.LOGIC_CHIP_T1.get());
+                output.accept(ModItems.LOGIC_CHIP_T2.get());
+                output.accept(ModItems.MEMORY_CHIP_T2.get());
+                output.accept(ModItems.CHIP_SCRAP.get());
+                output.accept(ModItems.RESIST_T1.get());
+                output.accept(ModItems.RESIST_T2.get());
+                output.accept(ModItems.CHIP_PACKAGE.get());
+            })
+            .build()
+    );
+
     private ModCreativeTabs() {
     }
 }
