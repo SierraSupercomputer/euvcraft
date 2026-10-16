@@ -2,12 +2,12 @@
 
 - Date: 2026-10-15
 - Branch: m1-05-chips-and-consumables (worktree of master at abf867d, which has M1-00 and M1-01 merged)
-- Commit hash: 71365e8 (code and assets), report committed after this file was written
+- Commit hash: 71365e8 (code, assets and tests); the report is 37c8e0a plus one correction commit after it
 - Java version used: 25.0.4.1 (Eclipse Temurin, Gradle toolchain from build.gradle; Gradle 9.2.1 runs on a 21 launcher JVM)
-- Build/test commands: `.\gradlew.bat test checkCoreImports --offline`; `.\gradlew.bat runGameTestServer --offline`
+- Build/test commands: `.\gradlew.bat cleanTest test checkCoreImports --offline --no-build-cache`; `.\gradlew.bat runGameTestServer --offline --no-build-cache`
 
 ## 1. Summary: 3 to 6 sentences.
-Seven plain items are registered: `logic_chip_t1`, `logic_chip_t2`, `memory_chip_t2`, `chip_scrap`, `resist_t1`, `resist_t2` and `chip_package`, each with a client item definition, an item model that parents a vanilla texture, a language entry and an entry in a new `lithmod:1_chips_and_consumables` creative tab. `ChipCatalog` answers a die type and node tier with the chip item and back again, and its entry list is the only place a later die type has to be added. `ResistCatalog` reads a new `lithmod:resist_tier` data component and answers 0 for any stack that is not a resist. The chip tooltip is one translatable line built from the catalog alone, so it names the die type and the node tier and carries no wafer count, roll or yield. Coverage is one JUnit resource scan (`ItemAssetResourceTest`, 3 tests) and three game tests in the `lithmod:chip_default` environment (`chip_catalog_lookups`, `chip_tooltip_lines`, `item_assets`), and all three game tests and all 263 unit tests were shown to fail when the code or a resource is broken on purpose.
+Seven plain items are registered: `logic_chip_t1`, `logic_chip_t2`, `memory_chip_t2`, `chip_scrap`, `resist_t1`, `resist_t2` and `chip_package`, each with a client item definition, an item model that parents a vanilla texture, a language entry and an entry in a new `lithmod:1_chips_and_consumables` creative tab. `ChipCatalog` answers a die type and node tier with the chip item and back again, and its entry list is the only place a later die type has to be added. `ResistCatalog` reads a new `lithmod:resist_tier` data component and answers 0 for any stack that is not a resist. The chip tooltip is one translatable line built from the catalog alone, so it names the die type and the node tier and carries no wafer count, roll or yield. Coverage is one JUnit resource scan (`ItemAssetResourceTest`, 3 tests) and three game tests in the `lithmod:chip_default` environment (`chip_catalog_lookups`, `chip_tooltip_lines`, `item_assets`), and each of the new tests was shown to fail when the code or a resource is broken on purpose.
 
 ## 2. Files changed: a table with columns path, new/modified/deleted, purpose.
 | path | new/modified/deleted | purpose |
@@ -66,6 +66,18 @@ item.lithmod.chip_scrap, item.lithmod.resist_t1, item.lithmod.resist_t2, item.li
 dieType.lithmod.logic, dieType.lithmod.memory, tier.lithmod.t1, tier.lithmod.t2, tooltip.lithmod.chip
 ```
 
+Vanilla textures the seven models point at, checked against `assets/minecraft/textures/item/` of the 26.3 client jar:
+```
+total item textures: 831
+redstone            EXISTS        (logic_chip_t1)
+lapis_lazuli        EXISTS        (logic_chip_t2)
+emerald             EXISTS        (memory_chip_t2)
+iron_nugget         EXISTS        (chip_scrap)
+honeycomb           EXISTS        (resist_t1)
+slime_ball          EXISTS        (resist_t2)
+paper               EXISTS        (chip_package)
+```
+
 Unit test table (counts from build/test-results/test/*.xml, 263 tests):
 
 | test class | tests | failures | errors | skipped |
@@ -109,10 +121,10 @@ ItemAssetResourceTest > every client item definition has a model and a language 
     AssertionFailedError: no language entry for chip_scrap, the creative tab shows its registry path ==> expected: <true> but was: <false>
 
 .\gradlew.bat runGameTestServer --offline   # chip_scrap definition renamed away and the logic T1 catalog entry deleted
-lithmod:chip_catalog_lookups failed: no chip for logic at tier 1 on tick 0
-lithmod:chip_tooltip_lines failed: lithmod:logic_chip_t1 does not have exactly a name line and a chip line: 2 -> 1 on tick 0
-lithmod:item_assets failed: lithmod:chip_scrap has no client item definition on tick 0
-3 required tests failed :(
+[19:05:02] [Server thread/ERROR] [minecraft/LogTestReporter]: lithmod:chip_catalog_lookups failed at 9745545, 4, -12429975! no chip for logic at tier 1 on tick 0
+[19:05:02] [Server thread/ERROR] [minecraft/LogTestReporter]: lithmod:chip_tooltip_lines failed at 9745551, 4, -12429975! lithmod:logic_chip_t1 does not have exactly a name line and a chip line: 2 -> 1 on tick 0
+[19:05:02] [Server thread/ERROR] [minecraft/LogTestReporter]: lithmod:item_assets failed at 9745477, 4, -12429951! lithmod:chip_scrap has no client item definition on tick 0
+[19:05:03] [Server thread/ERROR] [minecraft/GameTestServer]: 3 required tests failed :(
 ```
 
 ## 4. Spec conformance: one row for every bullet in your task prompt and every Done-when criterion, with columns item, met/partly/not met, evidence (file, test name or output line).
@@ -155,7 +167,7 @@ lithmod:item_assets failed: lithmod:chip_scrap has no client item definition on 
 | "Implement them so that a resist item reports its tier" | added a `lithmod:resist_tier` data component and made the resists plain items | a data component is the 26.3 way to carry a value on an item, needs no `Item` subclass, and keeps `ResistCatalog` free of `instanceof` checks |
 | stack size 64 stated in the prompt | no `stacksTo` call, the vanilla default of 64 is used | rule 3: no numeric gameplay value is hard-coded when the vanilla default already is the value |
 | die type and tier names in the tooltip | new language keys `dieType.lithmod.<die>` and `tier.lithmod.t<n>` | the tooltip must not read tier data, so the names come from the language file; only the keys that today's three chips can reach are present |
-| item names such as "Logic Chip T1" | one line for the die type and the node tier, because the prompt asks the tooltip for exactly that | a tooltip that repeats the item name line adds nothing |
+| the prompt does not say what a chip is called | each chip also has the ordinary `item.lithmod.<id>` name ("Logic Chip T1") that the game shows above the tooltip line | an item without a name entry shows its registry path in the creative tab, and the tooltip line then carries the die type and tier |
 
 ## 7. Open questions: a numbered list, or "none".
 1. Should `ChipCatalog.chipFor` stay with an `Optional<Item>` return, or would the project rather have `Optional<ItemStack>` at the call sites in the Test and Package machine?
