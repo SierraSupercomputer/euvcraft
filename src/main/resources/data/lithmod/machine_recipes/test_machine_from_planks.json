@@ -1,0 +1,15 @@
+{
+  "machine": "test_machine",
+  "ingredients": [
+    { "tag": "minecraft:planks", "count": 2 }
+  ],
+  "result": {
+    "item": "minecraft:stick",
+    "count": 4,
+    "components": {
+      "minecraft:custom_name": "Charred Plank"
+    }
+  },
+  "ticks": 6,
+  "energy_per_tick": 5
+}

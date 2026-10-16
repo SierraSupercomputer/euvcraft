@@ -1,0 +1,186 @@
+package com.euvcraft.lithmod.mc.machine;
+
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.inventory.SimpleContainerData;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Base menu for fab machines.
+ *
+ * <p>Supplies the slot layout helpers, the player inventory rows, the energy and progress
+ * values read from the block entity's {@link ContainerData}, and the shift-click routing.
+ * Subclasses only decide how many machine slots there are and where they go.</p>
+ *
+ * <p>Shift-click routing is the important part: a click on a machine slot moves to the player
+ * inventory, and a click on a player slot moves to the machine. The move goes through
+ * {@code moveItemStackTo}, which consults each destination slot's {@code mayPlace}, so a
+ * {@link FoupSlot} still refuses non-FOUP stacks on a shift-click.</p>
+ */
+public abstract class FabMachineMenu extends AbstractContainerMenu {
+
+    /** Horizontal centre of a machine slot column. */
+    protected static final int MACHINE_SLOT_X = 80;
+    /** Vertical offset of the first machine slot row. */
+    protected static final int MACHINE_SLOT_Y = 35;
+    /** Vertical offset of the first player-inventory row. */
+    protected static final int INVENTORY_Y = 84;
+    /** Vertical offset of the player hotbar. */
+    protected static final int HOTBAR_Y = 142;
+
+    protected final @Nullable FabMachineBlockEntity blockEntity;
+    protected final ContainerData data;
+    private final @Nullable MachineContainer machineSlots;
+    private final int machineSlotCount;
+
+    protected FabMachineMenu(MenuType<?> type, int containerId, Inventory playerInventory,
+                             @Nullable FabMachineBlockEntity blockEntity) {
+        super(type, containerId);
+        this.blockEntity = blockEntity;
+        // On the client there is no block entity, so the synced values are served from a
+        // local dummy and the machine slots are not added at all.
+        this.data = blockEntity == null ? new SimpleContainerData(FabMachineBlockEntity.DATA_COUNT)
+            : blockEntity.data();
+        this.machineSlots = blockEntity == null ? null : new MachineContainer(blockEntity);
+        this.machineSlotCount = blockEntity == null ? 0 : blockEntity.slotCount();
+
+        addDataSlots(this.data);
+        if (this.machineSlots != null) {
+            addMachineSlots();
+        }
+        addPlayerSlots(playerInventory);
+    }
+
+    /** Whether this menu is the server-side instance bound to a real block entity. */
+    public final boolean isServerSide() {
+        return this.blockEntity != null;
+    }
+
+    /** Adds this machine's own slots. Called during construction. */
+    protected abstract void addMachineSlots();
+
+    /** Adds a slot that takes anything the machine declares valid. */
+    protected final void addMachineSlot(int index, int x, int y) {
+        addSlot(new Slot(this.machineSlots, index, x, y) {
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                return index < blockEntity.inputSlotCount();
+            }
+        });
+    }
+
+    /** Adds a slot that takes only FOUP stacks, one per slot. */
+    protected final void addFoupSlot(int index, int x, int y) {
+        addSlot(new FoupSlot(this.machineSlots, index, x, y));
+    }
+
+    /** Adds an output-only slot: the player can take from it but not put anything in. */
+    protected final void addOutputSlot(int index, int x, int y) {
+        addSlot(new Slot(this.machineSlots, index, x, y) {
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                return false;
+            }
+
+            @Override
+            public boolean mayPickup(Player player) {
+                return true;
+            }
+        });
+    }
+
+    private void addPlayerSlots(Inventory playerInventory) {
+        for (int row = 0; row < 3; row++) {
+            for (int column = 0; column < 9; column++) {
+                addSlot(new Slot(playerInventory, column + row * 9 + 9,
+                    8 + column * 18, INVENTORY_Y + row * 18));
+            }
+        }
+        for (int column = 0; column < 9; column++) {
+            addSlot(new Slot(playerInventory, column, 8 + column * 18, HOTBAR_Y));
+        }
+    }
+
+    /** Stored FE. */
+    public final int energy() {
+        return this.data.get(FabMachineBlockEntity.DATA_ENERGY);
+    }
+
+    /** Capacity in FE. */
+    public final int energyCapacity() {
+        return this.data.get(FabMachineBlockEntity.DATA_CAPACITY);
+    }
+
+    /** Ticks completed. */
+    public final int progress() {
+        return this.data.get(FabMachineBlockEntity.DATA_PROGRESS);
+    }
+
+    /** Ticks the running recipe needs. */
+    public final int ticks() {
+        return this.data.get(FabMachineBlockEntity.DATA_TICKS);
+    }
+
+    /** Progress from 0 to 1, for the screen's progress bar. */
+    public final float progressFraction() {
+        int total = ticks();
+        return total <= 0 ? 0.0f : Math.min(1.0f, (float) progress() / total);
+    }
+
+    /** Energy fill from 0 to 1, for the screen's energy bar. */
+    public final float energyFraction() {
+        int capacity = energyCapacity();
+        return capacity <= 0 ? 0.0f : Math.min(1.0f, (float) energy() / capacity);
+    }
+
+    public final boolean isRunning() {
+        return this.blockEntity != null && this.blockEntity.runner().isRunning();
+    }
+
+    @Override
+    public boolean stillValid(Player player) {
+        if (this.blockEntity == null || this.blockEntity.getLevel() == null) {
+            return false;
+        }
+        if (this.blockEntity.getLevel().getBlockEntity(this.blockEntity.getBlockPos()) != this.blockEntity) {
+            return false;
+        }
+        return player.distanceToSqr(
+            this.blockEntity.getBlockPos().getX() + 0.5,
+            this.blockEntity.getBlockPos().getY() + 0.5,
+            this.blockEntity.getBlockPos().getZ() + 0.5) <= 64.0;
+    }
+
+    @Override
+    public ItemStack quickMoveStack(Player player, int index) {
+        if (index < 0 || index >= slots.size()) {
+            return ItemStack.EMPTY;
+        }
+        Slot slot = slots.get(index);
+        if (!slot.hasItem()) {
+            return ItemStack.EMPTY;
+        }
+
+        ItemStack original = slot.getItem();
+        ItemStack copy = original.copy();
+
+        boolean moved = index < this.machineSlotCount
+            ? moveItemStackTo(original, this.machineSlotCount, slots.size(), true)
+            : moveItemStackTo(original, 0, this.machineSlotCount, false);
+
+        if (!moved) {
+            return ItemStack.EMPTY;
+        }
+        if (original.isEmpty()) {
+            slot.set(ItemStack.EMPTY);
+        } else {
+            slot.setChanged();
+        }
+        return copy;
+    }
+}

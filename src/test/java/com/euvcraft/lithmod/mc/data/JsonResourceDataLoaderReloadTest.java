@@ -22,12 +22,13 @@ class JsonResourceDataLoaderReloadTest {
         Logger logger = LoggerFactory.getLogger(JsonResourceDataLoaderReloadTest.class);
         AtomicBoolean fail = new AtomicBoolean(false);
         JsonResourceDataLoader<String, String> loader =
-            new JsonResourceDataLoader<>("demo", Codec.STRING, (values, source) -> {
-                if (fail.get()) {
-                    throw new IllegalArgumentException("boom");
-                }
-                return "PREVIOUS:" + values;
-            }, logger) {
+            new JsonResourceDataLoader<>("demo", Codec.STRING,
+                JsonResourceDataLoader.<String, String>fromList((values, source) -> {
+                    if (fail.get()) {
+                        throw new IllegalArgumentException("boom");
+                    }
+                    return "PREVIOUS:" + values;
+                }), logger) {
                 @Override
                 protected String fallback() {
                     return "DEFAULTS";

@@ -34,7 +34,7 @@ public class SupportLineDataLoader extends JsonResourceDataLoader<Map<String, Li
     private static GenerationMatrix currentMatrix;
 
     public SupportLineDataLoader() {
-        super(DIRECTORY, MATRIX_CODEC, (values, source) -> {
+        super(DIRECTORY, MATRIX_CODEC, fromList((values, source) -> {
             TierRegistry tiers = TierDataLoader.getRegistry();
             if (tiers == null) {
                 tiers = new TierDataLoader().fallback();
@@ -49,7 +49,7 @@ public class SupportLineDataLoader extends JsonResourceDataLoader<Map<String, Li
                 }
             }
             return GenerationMatrix.build(tiers, merged, source);
-        }, LOGGER);
+        }), LOGGER);
     }
 
     @SubscribeEvent

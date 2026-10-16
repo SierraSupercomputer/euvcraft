@@ -16,11 +16,13 @@ import com.euvcraft.lithmod.core.FabSettings;
 import com.euvcraft.lithmod.mc.data.TierDataLoader;
 import com.euvcraft.lithmod.mc.data.SupportLineDataLoader;
 import com.euvcraft.lithmod.mc.data.DieRulesDataLoader;
+import com.euvcraft.lithmod.mc.data.MachineDefinitionLoader;
+import com.euvcraft.lithmod.mc.data.MachineRecipeLoader;
 import com.euvcraft.lithmod.mc.registry.ModCreativeTabs;
 import com.euvcraft.lithmod.mc.registry.ModDataComponents;
 import com.euvcraft.lithmod.mc.registry.ModItems;
-import com.euvcraft.lithmod.mc.spike.SpikeGameTests;
-import com.euvcraft.lithmod.mc.spike.SpikeRegistries;
+import com.euvcraft.lithmod.mc.gametest.MachineGameTests;
+import com.euvcraft.lithmod.mc.machine.test.ModMachines;
 
 @Mod(EUVCRAFTMod.MODID)
 public class EUVCRAFTMod {
@@ -33,7 +35,7 @@ public class EUVCRAFTMod {
         ModDataComponents.DATA_COMPONENTS.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
         ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
-        SpikeRegistries.register(modEventBus);
+        ModMachines.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(FoupTooltipAppenders::register);
@@ -43,7 +45,7 @@ public class EUVCRAFTMod {
         com.euvcraft.lithmod.mc.gametest.FoupGameTests.register(modEventBus);
         com.euvcraft.lithmod.mc.gametest.YieldGameTests.register(modEventBus);
         com.euvcraft.lithmod.mc.gametest.ChipGameTests.register(modEventBus);
-        SpikeGameTests.register(modEventBus);
+        MachineGameTests.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.LOCAL, FabConfig.getSpec());
         config = new FabConfig();
@@ -59,6 +61,8 @@ public class EUVCRAFTMod {
         NeoForge.EVENT_BUS.register(TierDataLoader.class);
         NeoForge.EVENT_BUS.register(SupportLineDataLoader.class);
         NeoForge.EVENT_BUS.register(DieRulesDataLoader.class);
+        NeoForge.EVENT_BUS.register(MachineDefinitionLoader.class);
+        NeoForge.EVENT_BUS.register(MachineRecipeLoader.class);
 
         LOGGER.info("EUVCRAFT mod loading...");
     }
