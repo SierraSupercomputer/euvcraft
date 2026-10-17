@@ -907,7 +907,7 @@ public final class MaskGameTests {
             // The first tick re-attaches the run to the exact recipe it was running, and
             // continues it. Adoption compares the whole decoded spec against the live one,
             // so this also pins the spec's own round trip through NBT.
-            generator.setStoredEnergy(energyAfterPaidTicks);
+            generator.setStoredEnergy(Math.toIntExact(energyAfterPaidTicks));
             generator.serverTick();
             helper.assertTrue(generator.runner().isRunning(),
                 "the restored run did not re-attach to a recipe at all");
@@ -1088,7 +1088,9 @@ public final class MaskGameTests {
         helper.assertTrue(player.containerMenu instanceof PatternGeneratorMenu,
             "using the block with an empty hand left the player on "
                 + player.containerMenu.getClass().getSimpleName());
-        helper.assertTrue(player.containerMenu.isServerSide(),
+        PatternGeneratorMenu bound = (PatternGeneratorMenu) player.containerMenu;
+        helper.assertTrue(
+            bound.slots.get(PatternGeneratorBlockEntity.BLANK_SLOT).container == generator,
             "the menu opened by the block interaction is not bound to the machine");
         player.closeContainer();
         helper.assertTrue(player.containerMenu == player.inventoryMenu,
@@ -1149,7 +1151,7 @@ public final class MaskGameTests {
             "the pattern generator block reports no block entity, so it has nothing to tick");
 
         BlockEntityTicker<PatternGeneratorBlockEntity> ticker =
-            state.getTicker(level, state, MaskMachines.PATTERN_GENERATOR_BE.get());
+            state.getTicker(level, MaskMachines.PATTERN_GENERATOR_BE.get());
         helper.assertTrue(ticker != null,
             "the pattern generator has no ticker on a server level");
 
