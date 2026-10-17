@@ -2,6 +2,7 @@ package com.euvcraft.lithmod.mc.registry;
 
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.euvcraft.lithmod.mc.machine.test.ModMachines;
+import com.euvcraft.lithmod.mc.LineComponentItem;
 import com.euvcraft.lithmod.mc.multiblock.ModMultiblocks;
 
 import net.minecraft.world.item.BlockItem;
@@ -26,8 +27,8 @@ import net.neoforged.neoforge.registries.DeferredRegister.Items;
  * number in an item definition is part of which resist that item is, not a tunable
  * gameplay number.</p>
  *
- * <p>None of these items sets a stack size, so they all use the vanilla maximum of
- * 64. Only the FOUPs stack to one.</p>
+ * <p>Chips and consumables use the vanilla maximum of 64. FOUPs and line components
+ * stack to one; block items use their normal defaults.</p>
  */
 public final class ModItems {
 
@@ -62,6 +63,46 @@ public final class ModItems {
 
     /** The packaging consumable the Test and Package machine feeds on. */
     public static final DeferredItem<Item> CHIP_PACKAGE = ITEMS.registerSimpleItem("chip_package");
+
+    /** Line component: mercury lamp, light_source, node tier 1. */
+    public static final DeferredItem<LineComponentItem> MERCURY_LAMP =
+        ITEMS.registerItem("mercury_lamp", properties -> new LineComponentItem(properties, "light_source", 1), properties -> properties.stacksTo(1));
+
+    /** Line component: i-line lamp, light_source, node tier 2. */
+    public static final DeferredItem<LineComponentItem> I_LINE_LAMP =
+        ITEMS.registerItem("i_line_lamp", properties -> new LineComponentItem(properties, "light_source", 2), properties -> properties.stacksTo(1));
+
+    /** Line component: contact plate, optics, node tier 1. */
+    public static final DeferredItem<LineComponentItem> CONTACT_PLATE =
+        ITEMS.registerItem("contact_plate", properties -> new LineComponentItem(properties, "optics", 1), properties -> properties.stacksTo(1));
+
+    /** Line component: reduction lens, optics, node tier 2. */
+    public static final DeferredItem<LineComponentItem> REDUCTION_LENS =
+        ITEMS.registerItem("reduction_lens", properties -> new LineComponentItem(properties, "optics", 2), properties -> properties.stacksTo(1));
+
+    /** Line component: manual aligner, stage, node tier 1. */
+    public static final DeferredItem<LineComponentItem> MANUAL_ALIGNER =
+        ITEMS.registerItem("manual_aligner", properties -> new LineComponentItem(properties, "stage", 1), properties -> properties.stacksTo(1));
+
+    /** Line component: stepper stage, stage, node tier 2. */
+    public static final DeferredItem<LineComponentItem> STEPPER_STAGE =
+        ITEMS.registerItem("stepper_stage", properties -> new LineComponentItem(properties, "stage", 2), properties -> properties.stacksTo(1));
+
+    /** Line component: basic air filter, cleanroom, node tier 1. */
+    public static final DeferredItem<LineComponentItem> BASIC_AIR_FILTER =
+        ITEMS.registerItem("basic_air_filter", properties -> new LineComponentItem(properties, "cleanroom", 1), properties -> properties.stacksTo(1));
+
+    /** Line component: fine air filter, cleanroom, node tier 2. */
+    public static final DeferredItem<LineComponentItem> FINE_AIR_FILTER =
+        ITEMS.registerItem("fine_air_filter", properties -> new LineComponentItem(properties, "cleanroom", 2), properties -> properties.stacksTo(1));
+
+    /** Line component: optical microscope, metrology, node tier 1. */
+    public static final DeferredItem<LineComponentItem> OPTICAL_MICROSCOPE =
+        ITEMS.registerItem("optical_microscope", properties -> new LineComponentItem(properties, "metrology", 1), properties -> properties.stacksTo(1));
+
+    /** Line component: overlay scope, metrology, node tier 2. */
+    public static final DeferredItem<LineComponentItem> OVERLAY_SCOPE =
+        ITEMS.registerItem("overlay_scope", properties -> new LineComponentItem(properties, "metrology", 2), properties -> properties.stacksTo(1));
 
     /**
      * The three Process Cell multiblock block items.

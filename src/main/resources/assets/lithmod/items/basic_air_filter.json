@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "lithmod:item/basic_air_filter"
+  }
+}
