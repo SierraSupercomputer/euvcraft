@@ -107,7 +107,7 @@ public final class MultiblockGameTests {
             Identifier.fromNamespaceAndPath("lithmod", ENVIRONMENT_ID), new TestEnvironmentDefinition[0]);
         TestData<Holder<TestEnvironmentDefinition<?>>> data = new TestData<>(
             environment, Level.OVERWORLD, Identifier.withDefaultNamespace("empty"),
-            200, 0, true, Rotation.NONE, false, 5, 5, false, 0);
+            200, 0, true, Rotation.NONE, false, 1, 1, false, 0);
 
         register(event, data, FORMS_IN_ALL_FACINGS);
         register(event, data, REMOVING_ANY_MEMBER_UNFORMS);

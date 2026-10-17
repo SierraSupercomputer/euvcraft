@@ -159,7 +159,7 @@ public final class SiliconGameTests {
             Identifier.fromNamespaceAndPath("lithmod", ENVIRONMENT_ID), new TestEnvironmentDefinition[0]);
         TestData<Holder<TestEnvironmentDefinition<?>>> data = new TestData<>(
             environment, Level.OVERWORLD, Identifier.withDefaultNamespace("empty"),
-            200, 0, true, Rotation.NONE, false, 3, 3, false, 0);
+            200, 0, true, Rotation.NONE, false, 1, 1, false, 0);
 
         register(event, data, SLICER_PRODUCES_LOT);
         register(event, data, SLICER_LOT_TAKES_LAYER);
@@ -226,7 +226,17 @@ public final class SiliconGameTests {
             "the output is not a FOUP of the same item type but " + output.getItem());
 
         FoupContents lot = FoupItems.trustedContentsOf(output);
-        int expected = WaferSlicing.wafersFor(EUVCRAFTMod.settings(), capacity);
+        // The expected count is computed independently from the configured
+        // wafersPerBoule and this lot's capacity, NOT from the production helper
+        // WaferSlicing.wafersFor, so a broken or mutated helper cannot make this
+        // assertion pass vacuously. (wafersFor is still used by other tests here
+        // against lots whose size it does not single-handedly decide.)
+        int configuredWafersPerBoule = EUVCRAFTMod.settings().wafersPerBoule();
+        int expected = Math.min(configuredWafersPerBoule, capacity);
+        helper.assertTrue(expected > 0,
+            "the test computed an empty expected lot: wafersPerBoule="
+                + configuredWafersPerBoule + ", capacity=" + capacity);
+        helper.assertTrue(lot.size() > 0, "the slicer produced an empty lot");
         helper.assertValueEqual(expected, lot.size(),
             "the lot holds the wrong number of wafers");
         helper.assertValueEqual(capacity, lot.capacity(),

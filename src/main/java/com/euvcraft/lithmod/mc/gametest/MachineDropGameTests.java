@@ -132,7 +132,7 @@ public final class MachineDropGameTests {
             Identifier.fromNamespaceAndPath("lithmod", ENVIRONMENT_ID), new TestEnvironmentDefinition[0]);
         TestData<Holder<TestEnvironmentDefinition<?>>> data = new TestData<>(
             environment, Level.OVERWORLD, Identifier.withDefaultNamespace("empty"),
-            200, 0, true, Rotation.NONE, false, 3, 3, false, 0);
+            200, 0, true, Rotation.NONE, false, 1, 1, false, 0);
 
         register(event, data, BREAK_IN_SURVIVAL);
         register(event, data, REPLACE_DROPS);

@@ -68,6 +68,27 @@ The yield engine game tests run in the `lithmod:yield_default` environment:
 | `lithmod:yield_layer_step` | a lot on a real `ServerLevel` moves one layer at a time up to the tier's last layer, every hidden roll moves strictly down from 1.0, repeating or skipping a layer is refused, and judging the finished lot does not change it |
 | `lithmod:yield_pass_rate` | 1000 wafers are run through T1 and T3 with the world salt and the observed pass rates are logged next to the tier yields; the assertion is deliberately wide (10 points) because this is wiring evidence, and the accuracy claim lives in `YieldCalibrationTest` |
 
+Each of `SiliconGameTests`, `MachineGameTests`, `MachineDropGameTests` and
+`MultiblockGameTests` is registered with exactly **1 attempt / 1 required
+success** (`new TestData<>(... 1, 1 ...)`; Multiblock used to be 5/5, the
+others 3/3). This is deliberate and tied to how a positive server run reports:
+
+A positive `runGameTestServer` run prints every test as passed and then shuts
+the server down before a later attempt's retry results can be written into the
+game-test XML. With attempts above 1 the XML report can therefore omit tests
+entirely — with 3 attempts, all 16 `SiliconGameTests` cases print as passed in
+the console yet never appear in the XML at all, because shutdown pre-empts the
+retry bookkeeping.
+
+Repetition is consequently NOT done with attempts inside one process and no
+in-process repetition substitutes for it. At final M1-12 the suite must instead
+be repeated with **THREE SEPARATE, complete `runGameTestServer` processes**, and
+each run's game-test XML report checked so that **every registered `lithmod:*`
+case ID appears in it, all passed, in every one of the three runs**. Any absent
+case ID counts as a failure even if the console printed all passed. M1-04 has
+not yet run those three process-level repeats; they are M1-12 acceptance work,
+not an already-completed run of record.
+
 ## Silicon chain
 
 `WaferSlicingTest` is the one unit test for the chain:
