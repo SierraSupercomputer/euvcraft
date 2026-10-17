@@ -1,14 +1,14 @@
 # M1-04 Silicon chain — Crystal Puller and Wafer Slicer
 
-Head: `477c602dc24ba93e7f2bf88e1cb5f00d81d6ddb8` (all numbers below are for this head). This report was written by the DeepSeek free fallback during the NVIDIA overload cooldown; it ran no commands.
+Verified source head: `ca7822c650328bc26ed04f517099ceace24be081`. DeepSeek authored the report; Nemotron supplied the quartz update and the coordinator refreshed measured evidence and corrected the test's recipe-holder types. Workers ran no commands. Original full mutation controls below ran at `477c602`; the quartz control and latest positive checks ran at this source head.
 
 ## 1. Summary
 
-Task M1-04 delivered the first two silicon-chain machines: the Crystal Puller (silicon item to silicon boule through a plain JSON machine recipe) and the Wafer Slicer (boule plus an empty FOUP to a FOUP of wafers, where real lots first enter the game), with a pure core function `WaferSlicing.wafersFor(settings, capacity)`, 16 new GameTest cases in `SiliconGameTests` and 7 new unit tests. The latest final restored full normal run at head `477c602` passed after all mutation scratches were restored: `BUILD SUCCESSFUL in 3m 21s`, 409 unit tests in 68 suites (0 failures/errors/skips) and 732 distinct XML GameTest results all passing (0 failures/errors/skips), with all 62 project case IDs present and passing. Authorship was mixed: initial fallback implementation by SpaceBunny, partial repairs by Nemotron, continued repairs by GLM after an NVIDIA 503, production frozen and reviewed by Beam at `e59`, with DeepSeek approving the fixture `3d45` and the harness `477c602`. No overall task-completion or merge claim is made: the smelting/blasting recipes still consume `minecraft:sand` while the user now requires a distinct ingredient, the GUI bars have missing assets and are not visually verified, and this report is not yet integrated. All workers were free models ($0).
+Task M1-04 delivered the first two silicon-chain machines: the Crystal Puller (silicon item to silicon boule through a plain JSON machine recipe) and the Wafer Slicer (boule plus an empty FOUP to a FOUP of wafers, where real lots first enter the game), with a pure core function `WaferSlicing.wafersFor(settings, capacity)`, 16 new GameTest cases in `SiliconGameTests` and 7 new unit tests. The latest full normal run at `ca7822c` passed after the quartz fault was restored: `BUILD SUCCESSFUL in 3m 38s`, 409 unit tests in 68 suites (0 failures/errors/skips), 732 distinct XML GameTest results: 732 passed, 0 optional skipped after failure, 0 required failures, and all 62 project case IDs present and passing. Authorship was mixed: initial fallback implementation by SpaceBunny, partial repairs by Nemotron, continued repairs by GLM after an NVIDIA 503, production frozen and reviewed by Beam at `e59`, with DeepSeek approving the fixture `3d45` and the harness `477c602`. Both cooking recipes now consume user-selected `minecraft:quartz`, and ordinary quartz lookup plus sand-to-glass behavior passed the regression test. Client visuals and missing bar assets remain disclosed M1-11 follow-ups; this is a source verification checkpoint prepared for integration. All workers were free models ($0).
 
 ## 2. Files changed
 
-All 51 paths are the complete `FILES.tsv` inventory at head `477c602` (new = added, modified = changed; none deleted).
+All 51 paths are the complete baseline-to-source inventory at head `ca7822c` (new = added, modified = changed; none deleted).
 
 | Path | Change | Purpose |
 | --- | --- | --- |
@@ -68,17 +68,17 @@ All 51 paths are the complete `FILES.tsv` inventory at head `477c602` (new = add
 
 ### 3.1 Commands and environment
 
-The coordinator ran the exact command `gradlew.bat test checkCoreImports jar runGameTestServer --offline --console=plain`, plus the coordinator's init script and report routing. All verification below was executed by the coordinator at head `477c602`; no worker ran commands. Environment: Java 25, Minecraft 26.3, NeoForge 26.3.0.69-beta, Gradle 9.2.1.
+The coordinator ran the exact command `gradlew.bat test checkCoreImports jar runGameTestServer --offline --console=plain`, plus the coordinator's init script and report routing. Latest positive verification was executed by the coordinator at `ca7822c`; the original mutation evidence retains its original `477c602` provenance. No worker ran commands. Environment: Java 25, Minecraft 26.3, NeoForge 26.3.0.69-beta, Gradle 9.2.1.
 
 ### 3.2 Final restored full run (current status)
 
-The latest final restored full normal run at head `477c602`, executed after all mutation scratch runs were restored, passed: `BUILD SUCCESSFUL in 3m 21s`.
+The latest full normal run at `ca7822c`, after restoring the quartz ingredient fault, passed: `BUILD SUCCESSFUL in 3m 38s`.
 
 - Unit: 409 tests in 68 suites, 0 failures, 0 errors, 0 skipped.
-- GameTest: 732 distinct XML results, all 732 passed, 0 failures/errors/skips, including the previously flaky optional Arcforge case.
+- GameTest: 732 distinct XML GameTest results: 732 passed, 0 optional skipped after failure, 0 required failures. Optional skipped cases: none.
 - Project: all 62 project case IDs present and passing.
 
-Evidence materialized by the coordinator: `build/M1-04-verification/m1-04-restored-final-positive-check.json`, `-unit-rows.json`, `-runtime.xml`, `-project-runtime.json`.
+Evidence materialized by the coordinator: `build/M1-04-verification/m1-04-quartz-restored-positive-check.json`, `-unit-rows.json`, `-runtime.xml`, `-project-runtime.json`.
 
 Historical (not current status): an earlier full positive run showed 731 passed plus 1 optional Arcforge skip; the final restored run above supersedes it.
 
@@ -158,11 +158,13 @@ Historical (not current status): an earlier full positive run showed 731 passed 
 
 ### 3.4 GameTest runtime
 
-- 732 distinct XML results, all 732 passed, 0 failures/errors/skips at head `477c602`.
+- 732 distinct XML GameTest results: 732 passed, 0 optional skipped after failure, 0 required failures at `ca7822c`.
 - The framework/engine summary line labels all 732 results "required"; that is a mislabel — the per-case XML totals are authoritative.
 - All 62 registered project IDs present and passing; the 16 new silicon-chain case IDs and the 4 yield cases are inside the 62.
 
 ### 3.5 Negative (mutation) testing
+
+Original controls at `477c602` cover the unchanged slicing/machine source. Git comparison shows the subsequent production change is the two quartz recipe ingredients, with their cooking-test update and documentation.
 
 Unit constant-zero mutation: 7 `WaferSlicingTest` cases, all 7 failed, 0 errors; restored, restoration verified, head clean (run `m1-04-negative-unit-1792238636670`). The 7 case names:
 
@@ -187,7 +189,7 @@ Runtime: all 16 new IDs failed in their group's run, each group restored, head c
 | lithmod:silicon_energy_follows_machine_definitions | guards |
 | lithmod:silicon_machines_fail_closed_without_a_definition | guards |
 | lithmod:crystal_puller_resumes_only_the_same_recipe | guards, snapshots |
-| lithmod:silicon_cooking_recipes_load_and_match | guards |
+| lithmod:silicon_cooking_recipes_load_and_match | guards at `477c602`; quartz at `ca7822c` |
 | lithmod:wafer_slicer_produces_a_lot | lot |
 | lithmod:wafer_slicer_lot_takes_layer_one | lot |
 | lithmod:wafer_slicer_lot_size_follows_the_foup_capacity | lot |
@@ -195,9 +197,11 @@ Runtime: all 16 new IDs failed in their group's run, each group restored, head c
 | lithmod:wafer_slicer_menu_layout_and_shift_click | slots |
 | lithmod:wafer_slicer_foup_slot_client_boundary | slots |
 
+Quartz-specific control `m1-04-negative-quartz-1792250280262`: deliberately changed both cooking ingredients back to sand; `lithmod:silicon_cooking_recipes_load_and_match` failed as expected. Both files were restored byte-for-byte, Git remained clean, and the full positive run above followed restoration.
+
 ### 3.6 Review proof and model authorship
 
-Authorship was MIXED: initial fallback implementation by SpaceBunny, partial repairs by Nemotron, continued repairs by GLM after an NVIDIA 503. Production was frozen at `e59` and reviewed by Beam; production is unchanged after `e59`. DeepSeek approved the test-fixture delta `3d45` and the harness `477c602` after a Beam 429 outage, and authored this report as the free fallback. All workers were free-only models ($0); no paid model and no automatic router were used. The coordinator owns verification, integration and commits.
+Authorship was MIXED: initial fallback implementation by SpaceBunny, partial repairs by Nemotron, continued repairs by GLM after an NVIDIA 503. Non-test Java machine code was reviewed by Beam at `e59` and remains unchanged. The quartz recipe/test delta was written by Nemotron before NVIDIA503; the coordinator repaired its compiler-reported generic types. Beam429 required a fresh independent DeepSeek review, which approved this exact quartz source delta. DeepSeek approved the test-fixture delta `3d45` and the harness `477c602` after a Beam 429 outage, and authored this report as the free fallback. All workers were free-only models ($0); no paid model and no automatic router were used. The coordinator owns verification, integration and commits.
 
 ## 4. Spec conformance
 
@@ -224,23 +228,23 @@ Authorship was MIXED: initial fallback implementation by SpaceBunny, partial rep
 - The two screen classes' client visuals were never loaded.
 - A real mid-run `/reload` is untested; the GameTests swap the loaded registry synchronously (reflective) and restore it in `finally`.
 - The three final M1-12 processes have not run; they are a separate phase and are not part of the M1-04 gate.
-- Source and runtime M1-04 checks passed at `477c602`, but no overall M1-04 completion or merge is claimed until the distinct-ingredient recipe change and the report integration are done.
+- Source and runtime quartz checks passed at `ca7822c`. The reviewed source is prepared for a separately tested integration candidate; this report does not claim the overall M1 gate or a client walkthrough is complete.
 
 ## 6. Deviations
 
 | Spec / expectation | What was done | Why |
 | --- | --- | --- |
-| Recipes turn `minecraft:sand` into silicon | recipes still use `minecraft:sand` | the user now requires a distinct ingredient; the specific choice is pending, so no recipe was changed |
+| Recipes turn `minecraft:sand` into silicon | both now use `minecraft:quartz` | user explicitly selected Quartz; ordinary lookup is tested and sand still smelts to glass |
 | Tests exercise a changed loaded registry | synchronous reflective registry swap restored in `finally` | loaders expose no setter and the loader file is outside the task scope |
 | Beam: add a wafer-count clamp | not added | redundant with the existing FabSettings clamp |
 | Restore a run against the current definition's cost | not adopted | a resumed run must cost what it would have cost uninterrupted |
 | Assert exact 200/100 cooking times | asserted as positive values only | the values remain in JSON |
 | Shift-click test reused one FOUP stack | corrected to a fresh FOUP | quick-move mutates the stack, so the product probe proved nothing |
-| Cooking test used a first-match recipe lookup | switched to the key-preferred lookup | the preferred-key lookup proves recipe loading, not ordinary furnace default selection |
+| Sand cooking collided with vanilla glass | quartz is tested with ordinary three-argument recipe lookup | verifies the real selected recipe, output, cooking time, and preservation of sand-to-glass |
 
 ## 7. Open questions
 
-1. Which distinct silicon ingredient should replace `minecraft:sand` in `silicon_from_smelting.json` and `silicon_from_blasting.json`? The user requires a distinct ingredient, the specific choice is pending, and this requirement is NOT MET until the recipes are changed. The preferred-key lookup does not prove ordinary furnace default selection, so it cannot settle this question.
+None. The ingredient question was resolved by the user selecting Quartz.
 
 ## 8. Handoff
 
@@ -250,7 +254,7 @@ Authorship was MIXED: initial fallback implementation by SpaceBunny, partial rep
   - `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/WaferSlicerBlockEntity.java`: `MACHINE_ID = "wafer_slicer"`, `BOULE_SLOT = 0`, `FOUP_SLOT = 1`, `OUTPUT_SLOT = 2`, `SLICE_TICKS_PARAM = "slice_ticks"`; `WaferSlicerBlockEntity(BlockPos, BlockState)`; `protected String machineId()`; `public static @Nullable FoupContents acceptedFoup(ItemStack)`; `public static boolean acceptsFoupStack(ItemStack)`; `serverTick()`, `resetSlice()`, `sliceTicks()`, `energyPerTick()`, `isSlicing()`, `isPaused()`, `sliceProgress()`, `sliceTicksRemaining()`, `static Item bouleItem()`, `saveAdditional(ValueOutput)`, `loadAdditional(ValueInput)`, `createMachineMenu(int, Inventory, ...)`; inherits FabMachineBlockEntity's public API.
   - `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/CrystalPullerBlockEntity.java`: `MACHINE_ID = "crystal_puller"`, `INPUT_SLOT = 0`, `OUTPUT_SLOT = 1`; `CrystalPullerBlockEntity(BlockPos, BlockState)`; `protected String machineId()`; `createMachineMenu(int, Inventory, ...)`.
   - `src/main/java/com/euvcraft/lithmod/mc/recipe/MachineRecipeRunner.java`: public class present; only its constructor opening line is captured; the full body was not extracted and is not invented here.
-- Data/config real paths: `src/main/resources/data/lithmod/machines/crystal_puller.json`, `.../machines/wafer_slicer.json`, `.../machine_recipes/crystal_puller.json`, `.../recipe/silicon_from_smelting.json`, `.../recipe/silicon_from_blasting.json` (currently `minecraft:sand`).
+- Data/config real paths: `src/main/resources/data/lithmod/machines/crystal_puller.json`, `.../machines/wafer_slicer.json`, `.../machine_recipes/crystal_puller.json`, `.../recipe/silicon_from_smelting.json`, `.../recipe/silicon_from_blasting.json` (both use `minecraft:quartz`).
 - Follow-ups not done in this pack (M1-11): crafting recipes for the machine blocks; a crafted/given empty-FOUP server-initialization path; missing machine bar assets.
 - Three final M1-12 processes not run (separate phase).
 - No overall completion or merge until the distinct-ingredient recipe decision and the report integration are applied by the coordinator.
