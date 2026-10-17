@@ -1,6 +1,6 @@
 {
   "type": "minecraft:blasting",
-  "ingredient": "minecraft:sand",
+  "ingredient": "minecraft:quartz",
   "result": {
     "id": "lithmod:silicon"
   },

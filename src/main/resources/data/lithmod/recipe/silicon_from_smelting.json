@@ -1,6 +1,6 @@
 {
   "type": "minecraft:smelting",
-  "ingredient": "minecraft:sand",
+  "ingredient": "minecraft:quartz",
   "result": {
     "id": "lithmod:silicon"
   },

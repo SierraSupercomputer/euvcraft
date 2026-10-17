@@ -1836,81 +1836,98 @@ public final class SiliconGameTests {
     // ------------------------------------------------------------------
 
     private static void cookingRecipesLoadAndMatch(GameTestHelper helper) {
-        // The real lookup, against the live RecipeManager, always preferring our exact
-        // bundled recipe key through the verified 4-argument
-        // RecipeManager.getRecipeFor(type, input, level, ResourceKey) overload (see
-        // build/api-reference/recipe-manager-signatures.txt): the recipe under that key, only
-        // if it actually matches the input. Optional vanilla fields such as group are
-        // therefore allowed, and every time and experience number still lives in the JSON.
-        //
-        // What this proves is that OUR bundled recipes were loaded and do match sand and
-        // produce silicon; it does NOT prove which recipe a plain furnace would pick by
-        // default, because sand also matches vanilla glass. That selection question is the
-        // pending M1-11 product decision and is deliberately not asserted here.
+        // The real lookup, against the live RecipeManager, using the ordinary
+        // three-argument RecipeManager.getRecipeFor(type, input, level) overload:
+        // this proves OUR bundled recipes are the ones selected for quartz in
+        // both smelting and blasting, without any preferred-key lookup to force
+        // our recipe. If the ordinary lookup did not pick our recipe for quartz,
+        // the assertions below would fail.
         ServerLevel level = helper.getLevel();
         RecipeManager manager = level.getServer().getRecipeManager();
-        SingleRecipeInput sand = new SingleRecipeInput(new ItemStack(Items.SAND));
-        ItemStack smelted = ItemStack.EMPTY;
-        ItemStack blasted = ItemStack.EMPTY;
-        int smeltingCooking = 0;
-        int blastingCooking = 0;
 
-        Optional<RecipeHolder<SmeltingRecipe>> smelting =
-            manager.getRecipeFor(RecipeType.SMELTING, sand, level, recipeKey("silicon_from_smelting"));
+        // Quartz input — our recipes must be selected by the ordinary lookup.
+        SingleRecipeInput quartz = new SingleRecipeInput(new ItemStack(Items.QUARTZ));
+
+        // Smelting: ordinary lookup for quartz must return our silicon recipe.
+        Optional<RecipeHolder<?>> smelting = manager.getRecipeFor(RecipeType.SMELTING, quartz, level);
         helper.assertTrue(smelting.isPresent(),
-            "our bundled smelting recipe did not load or did not match a stack of sand");
+            "ordinary smelting lookup for quartz returned no recipe");
         if (smelting.isPresent()) {
             helper.assertValueEqual(recipeKey("silicon_from_smelting"), smelting.get().id(),
-                "the smelting holder returned under our key is not our recipe");
-            helper.assertTrue(smelting.get().value().matches(sand, level),
-                "our smelting recipe does not match the input it was found by");
-            smelted = smelting.get().value().assemble(sand);
+                "ordinary smelting lookup for quartz did not select our recipe");
+            helper.assertTrue(smelting.get().value().matches(quartz, level),
+                "our smelting recipe does not match the quartz input it was found by");
+            ItemStack smelted = smelting.get().value().assemble(quartz);
             helper.assertTrue(smelted.getItem() == ModItems.SILICON.get(),
-                "smelting sand produced " + smelted.getItem() + " rather than silicon");
+                "smelting quartz produced " + smelted.getItem() + " rather than silicon");
             if (smelting.get().value() instanceof AbstractCookingRecipe cooking) {
-                smeltingCooking = cooking.cookingTime();
+                int cookingTime = cooking.cookingTime();
+                helper.assertTrue(cookingTime > 0,
+                    "the smelting recipe did not load a positive cooking time: " + cookingTime);
             }
-            helper.assertTrue(smeltingCooking > 0,
-                "the smelting recipe did not load a positive cooking time");
         }
 
-        Optional<RecipeHolder<BlastingRecipe>> blasting =
-            manager.getRecipeFor(RecipeType.BLASTING, sand, level, recipeKey("silicon_from_blasting"));
+        // Blasting: ordinary lookup for quartz must return our silicon recipe.
+        Optional<RecipeHolder<?>> blasting = manager.getRecipeFor(RecipeType.BLASTING, quartz, level);
         helper.assertTrue(blasting.isPresent(),
-            "our bundled blasting recipe did not load or did not match a stack of sand");
+            "ordinary blasting lookup for quartz returned no recipe");
         if (blasting.isPresent()) {
             helper.assertValueEqual(recipeKey("silicon_from_blasting"), blasting.get().id(),
-                "the blasting holder returned under our key is not our recipe");
-            helper.assertTrue(blasting.get().value().matches(sand, level),
-                "our blasting recipe does not match the input it was found by");
-            blasted = blasting.get().value().assemble(sand);
+                "ordinary blasting lookup for quartz did not select our recipe");
+            helper.assertTrue(blasting.get().value().matches(quartz, level),
+                "our blasting recipe does not match the quartz input it was found by");
+            ItemStack blasted = blasting.get().value().assemble(quartz);
             helper.assertTrue(blasted.getItem() == ModItems.SILICON.get(),
-                "blasting sand produced " + blasted.getItem() + " rather than silicon");
+                "blasting quartz produced " + blasted.getItem() + " rather than silicon");
             if (blasting.get().value() instanceof AbstractCookingRecipe cooking) {
-                blastingCooking = cooking.cookingTime();
+                int cookingTime = cooking.cookingTime();
+                helper.assertTrue(cookingTime > 0,
+                    "the blasting recipe did not load a positive cooking time: " + cookingTime);
             }
-            helper.assertTrue(blastingCooking > 0,
-                "the blasting recipe did not load a positive cooking time");
         }
 
-        // A boule is not sand, so OUR recipes must not match it. This checks our typed
-        // holders directly (not the generic first match, which sand's overlap with vanilla
-        // glass makes ambiguous): reversed logic here would pass even if our recipe wrongly
-        // answered for a boule.
+        // Ordinary sand smelting must produce glass (vanilla recipe), proving the
+        // ordinary lookup does NOT select our recipe for sand.
+        SingleRecipeInput sand = new SingleRecipeInput(new ItemStack(Items.SAND));
+        Optional<RecipeHolder<?>> sandSmelting = manager.getRecipeFor(RecipeType.SMELTING, sand, level);
+        helper.assertTrue(sandSmelting.isPresent(),
+            "ordinary smelting lookup for sand returned no recipe");
+        if (sandSmelting.isPresent()) {
+            ItemStack sandResult = sandSmelting.get().value().assemble(sand);
+            helper.assertTrue(sandResult.getItem() == Items.GLASS,
+                "ordinary sand smelting produced " + sandResult.getItem() + " rather than glass");
+            helper.assertFalse(recipeKey("silicon_from_smelting").equals(sandSmelting.get().id()),
+                "ordinary sand smelting selected our silicon recipe instead of vanilla glass");
+        }
+
+        // OUR silicon recipes must reject sand and boule (they only match quartz).
         SingleRecipeInput boule = new SingleRecipeInput(new ItemStack(ModItems.SILICON_BOULE.get()));
-        if (smelting.isPresent()) {
-            helper.assertFalse(smelting.get().value().matches(boule, level),
-                "our bundled smelting recipe matched a boule, which cooks sand");
+        Optional<RecipeHolder<?>> ourSmelting = manager.getRecipeFor(RecipeType.SMELTING, quartz, level);
+        Optional<RecipeHolder<?>> ourBlasting = manager.getRecipeFor(RecipeType.BLASTING, quartz, level);
+        if (ourSmelting.isPresent() && ourSmelting.get().id().equals(recipeKey("silicon_from_smelting"))) {
+            helper.assertFalse(ourSmelting.get().value().matches(sand, level),
+                "our silicon smelting recipe matched sand (should only match quartz)");
+            helper.assertFalse(ourSmelting.get().value().matches(boule, level),
+                "our silicon smelting recipe matched a boule");
         }
-        if (blasting.isPresent()) {
-            helper.assertFalse(blasting.get().value().matches(boule, level),
-                "our bundled blasting recipe matched a boule, which cooks sand");
+        if (ourBlasting.isPresent() && ourBlasting.get().id().equals(recipeKey("silicon_from_blasting"))) {
+            helper.assertFalse(ourBlasting.get().value().matches(sand, level),
+                "our silicon blasting recipe matched sand (should only match quartz)");
+            helper.assertFalse(ourBlasting.get().value().matches(boule, level),
+                "our silicon blasting recipe matched a boule");
         }
-        LOGGER.info("[M1-04] silicon_cooking_recipes_load_and_match: our smelting recipe loads, "
-            + "sand -> {} in {} ticks, our blasting recipe loads, sand -> {} in {} ticks "
-            + "(proves recipe loading, not default furnace selection)", smelted, smeltingCooking,
-            blasted, blastingCooking);
 
+        // Blasting sand must not yield silicon if any match (vanilla or modded).
+        Optional<RecipeHolder<?>> sandBlasting = manager.getRecipeFor(RecipeType.BLASTING, sand, level);
+        if (sandBlasting.isPresent()) {
+            ItemStack sandBlastResult = sandBlasting.get().value().assemble(sand);
+            helper.assertFalse(sandBlastResult.getItem() == ModItems.SILICON.get(),
+                "blasting sand produced silicon — our recipe or another matched sand incorrectly");
+        }
+
+        LOGGER.info("[M1-04] silicon_cooking_recipes_load_and_match: ordinary lookup selects our "
+            + "smelting/blasting recipes for quartz -> silicon, sand smelting -> glass, our "
+            + "recipes reject sand and boule, blasting sand yields no silicon");
         helper.succeed();
     }
 

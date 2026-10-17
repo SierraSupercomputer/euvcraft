@@ -57,8 +57,8 @@ All 51 paths are the complete `FILES.tsv` inventory at head `477c602` (new = add
 | src/main/resources/data/lithmod/machine_recipes/crystal_puller.json | new | Machine recipe: 4 silicon to 1 silicon_boule, 400 ticks (placeholder). |
 | src/main/resources/data/lithmod/machines/crystal_puller.json | new | Machine definition with energy values (placeholder). |
 | src/main/resources/data/lithmod/machines/wafer_slicer.json | new | Machine definition with energy value and `slice_ticks` (placeholder). |
-| src/main/resources/data/lithmod/recipe/silicon_from_blasting.json | new | Blasting recipe producing silicon (currently from `minecraft:sand`). |
-| src/main/resources/data/lithmod/recipe/silicon_from_smelting.json | new | Smelting recipe producing silicon (currently from `minecraft:sand`). |
+| src/main/resources/data/lithmod/recipe/silicon_from_blasting.json | new | Blasting recipe producing silicon (now from `minecraft:quartz` per user QUARTZ decision). |
+| src/main/resources/data/lithmod/recipe/silicon_from_smelting.json | new | Smelting recipe producing silicon (now from `minecraft:quartz` per user QUARTZ decision). |
 | src/main/resources/data/lithmod/tags/block/machine.json | modified | Machine block tag updated for the new machines. |
 | src/main/resources/data/minecraft/tags/block/mineable/pickaxe.json | modified | Pickaxe-mineable tag for the new blocks. |
 | src/main/resources/data/minecraft/tags/block/needs_stone_tool.json | modified | Stone-tool requirement tag for the new blocks. |
@@ -204,7 +204,7 @@ Authorship was MIXED: initial fallback implementation by SpaceBunny, partial rep
 | Item | Status | Evidence |
 | --- | --- | --- |
 | Items silicon and silicon_boule, each with a model, item definition, language entry and creative tab entry (placeholder art) | met | ModItems/ModCreativeTabs registrations, assets items/models, lang entry; placeholder art, not visually verified |
-| Smelting + blasting recipes turning `minecraft:sand` into silicon; machine recipe 4 silicon to 1 silicon_boule, 400 ticks (placeholders) | partly not met | machine_recipes/crystal_puller.json present (4 to 1, 400 ticks); recipe/silicon_from_{smelting,blasting}.json present but still use `minecraft:sand`, and the user now requires a distinct ingredient |
+| Smelting + blasting recipes turning `minecraft:quartz` into silicon; machine recipe 4 silicon to 1 silicon_boule, 400 ticks (placeholders) | met | machine_recipes/crystal_puller.json present (4 to 1, 400 ticks); recipe/silicon_from_{smelting,blasting}.json now use `minecraft:quartz` per user QUARTZ decision |
 | Machine definitions data/lithmod/machines/crystal_puller.json and wafer_slicer.json with energy values and slicer `slice_ticks` (placeholders) | met | both definitions present with placeholder values |
 | Crystal Puller single block on FabMachineBlockEntity, input slots, one output slot, energy bar and progress bar, using MachineRecipeRunner, hand-fed only | partly not met | block/BE/menu exist and the recipe runs end to end (`crystal_puller_runs_its_recipe`); energy/progress bars implemented in code but not visually verified (missing bar assets) |
 | Wafer Slicer single block with boule slot, input FOUP slot accepting only FOUPs with no wafers and no RunSpec, extract-only output FOUP slot, every FOUP read with FoupItems.trustedContentsOf | met | `wafer_slicer_refuses_a_used_foup`, `wafer_slicer_foup_slot_client_boundary`; BouleSlot/EmptyFoupSlot |
