@@ -113,22 +113,6 @@ public final class FoupContentsCodec {
     private FoupContentsCodec() {
     }
 
-    /**
-     * Rebuilds a lot from the stored form.
-     *
-     * @param lotId     stored lot id
-     * @param capacity  stored capacity
-     * @param layers    packed layer indexes
-     * @param rollBits  packed cumulative rolls as raw IEEE-754 bits
-     * @param flags     packed flags
-     * @return the decoded lot
-     * @throws IllegalArgumentException if the arrays disagree in length or a roll is
-     *                                  outside {@code (0, 1]}
-     */
-    static FoupContents decodePersistent(UUID lotId, int capacity, int[] layers, int[] rollBits, int[] flags) {
-        return new FoupContents(lotId, capacity,
-            WaferPacking.unpack(layers, WaferPacking.unpackRollBits(rollBits), flags));
-    }
 
     /**
      * Rebuilds the placeholder lot a client holds from the three numbers the network
