@@ -53,7 +53,6 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.crafting.AbstractCookingRecipe;
 import net.minecraft.world.item.crafting.BlastingRecipe;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
@@ -1849,7 +1848,7 @@ public final class SiliconGameTests {
         SingleRecipeInput quartz = new SingleRecipeInput(new ItemStack(Items.QUARTZ));
 
         // Smelting: ordinary lookup for quartz must return our silicon recipe.
-        Optional<RecipeHolder<?>> smelting = manager.getRecipeFor(RecipeType.SMELTING, quartz, level);
+        Optional<RecipeHolder<SmeltingRecipe>> smelting = manager.getRecipeFor(RecipeType.SMELTING, quartz, level);
         helper.assertTrue(smelting.isPresent(),
             "ordinary smelting lookup for quartz returned no recipe");
         if (smelting.isPresent()) {
@@ -1860,15 +1859,13 @@ public final class SiliconGameTests {
             ItemStack smelted = smelting.get().value().assemble(quartz);
             helper.assertTrue(smelted.getItem() == ModItems.SILICON.get(),
                 "smelting quartz produced " + smelted.getItem() + " rather than silicon");
-            if (smelting.get().value() instanceof AbstractCookingRecipe cooking) {
-                int cookingTime = cooking.cookingTime();
-                helper.assertTrue(cookingTime > 0,
-                    "the smelting recipe did not load a positive cooking time: " + cookingTime);
-            }
+            int cookingTime = smelting.get().value().cookingTime();
+            helper.assertTrue(cookingTime > 0,
+                "the smelting recipe did not load a positive cooking time: " + cookingTime);
         }
 
         // Blasting: ordinary lookup for quartz must return our silicon recipe.
-        Optional<RecipeHolder<?>> blasting = manager.getRecipeFor(RecipeType.BLASTING, quartz, level);
+        Optional<RecipeHolder<BlastingRecipe>> blasting = manager.getRecipeFor(RecipeType.BLASTING, quartz, level);
         helper.assertTrue(blasting.isPresent(),
             "ordinary blasting lookup for quartz returned no recipe");
         if (blasting.isPresent()) {
@@ -1879,17 +1876,15 @@ public final class SiliconGameTests {
             ItemStack blasted = blasting.get().value().assemble(quartz);
             helper.assertTrue(blasted.getItem() == ModItems.SILICON.get(),
                 "blasting quartz produced " + blasted.getItem() + " rather than silicon");
-            if (blasting.get().value() instanceof AbstractCookingRecipe cooking) {
-                int cookingTime = cooking.cookingTime();
-                helper.assertTrue(cookingTime > 0,
-                    "the blasting recipe did not load a positive cooking time: " + cookingTime);
-            }
+            int cookingTime = blasting.get().value().cookingTime();
+            helper.assertTrue(cookingTime > 0,
+                "the blasting recipe did not load a positive cooking time: " + cookingTime);
         }
 
         // Ordinary sand smelting must produce glass (vanilla recipe), proving the
         // ordinary lookup does NOT select our recipe for sand.
         SingleRecipeInput sand = new SingleRecipeInput(new ItemStack(Items.SAND));
-        Optional<RecipeHolder<?>> sandSmelting = manager.getRecipeFor(RecipeType.SMELTING, sand, level);
+        Optional<RecipeHolder<SmeltingRecipe>> sandSmelting = manager.getRecipeFor(RecipeType.SMELTING, sand, level);
         helper.assertTrue(sandSmelting.isPresent(),
             "ordinary smelting lookup for sand returned no recipe");
         if (sandSmelting.isPresent()) {
@@ -1902,8 +1897,8 @@ public final class SiliconGameTests {
 
         // OUR silicon recipes must reject sand and boule (they only match quartz).
         SingleRecipeInput boule = new SingleRecipeInput(new ItemStack(ModItems.SILICON_BOULE.get()));
-        Optional<RecipeHolder<?>> ourSmelting = manager.getRecipeFor(RecipeType.SMELTING, quartz, level);
-        Optional<RecipeHolder<?>> ourBlasting = manager.getRecipeFor(RecipeType.BLASTING, quartz, level);
+        Optional<RecipeHolder<SmeltingRecipe>> ourSmelting = smelting;
+        Optional<RecipeHolder<BlastingRecipe>> ourBlasting = blasting;
         if (ourSmelting.isPresent() && ourSmelting.get().id().equals(recipeKey("silicon_from_smelting"))) {
             helper.assertFalse(ourSmelting.get().value().matches(sand, level),
                 "our silicon smelting recipe matched sand (should only match quartz)");
@@ -1918,7 +1913,7 @@ public final class SiliconGameTests {
         }
 
         // Blasting sand must not yield silicon if any match (vanilla or modded).
-        Optional<RecipeHolder<?>> sandBlasting = manager.getRecipeFor(RecipeType.BLASTING, sand, level);
+        Optional<RecipeHolder<BlastingRecipe>> sandBlasting = manager.getRecipeFor(RecipeType.BLASTING, sand, level);
         if (sandBlasting.isPresent()) {
             ItemStack sandBlastResult = sandBlasting.get().value().assemble(sand);
             helper.assertFalse(sandBlastResult.getItem() == ModItems.SILICON.get(),
@@ -1927,7 +1922,9 @@ public final class SiliconGameTests {
 
         LOGGER.info("[M1-04] silicon_cooking_recipes_load_and_match: ordinary lookup selects our "
             + "smelting/blasting recipes for quartz -> silicon, sand smelting -> glass, our "
-            + "recipes reject sand and boule, blasting sand yields no silicon");
+            + "recipes reject sand and boule, blasting sand yields no silicon; cooking times {} / {} ticks",
+            smelting.map(holder -> holder.value().cookingTime()).orElse(0),
+            blasting.map(holder -> holder.value().cookingTime()).orElse(0));
         helper.succeed();
     }
 
