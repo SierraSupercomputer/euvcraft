@@ -151,11 +151,12 @@ public final class MachineRecipeRunner {
      * Updates the machine-level fallback cost.
      *
      * <p>Ignored while a recipe is running, so a config change cannot retroactively alter the
-     * cost of work already paid for.</p>
+     * cost of work already paid for. Also ignored while a loaded run has restored progress
+     * but has not yet been adopted, so the frozen cost survives the first tick after load.</p>
      */
     public void setMachineEnergyPerTick(int machineEnergyPerTick) {
         this.machineEnergyPerTick = machineEnergyPerTick;
-        if (current == null) {
+        if (current == null && !hasRestoredProgress()) {
             this.runningEnergyPerTick = machineEnergyPerTick;
         }
     }

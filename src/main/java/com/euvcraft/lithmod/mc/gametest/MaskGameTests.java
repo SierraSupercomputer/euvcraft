@@ -9,6 +9,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 import com.euvcraft.lithmod.core.DieTypes;
+import com.euvcraft.lithmod.core.EnergySource;
 import com.euvcraft.lithmod.core.MachineDefinition;
 import com.euvcraft.lithmod.core.MachineIngredient;
 import com.euvcraft.lithmod.core.MachineRecipeSpec;
@@ -19,6 +20,7 @@ import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.euvcraft.lithmod.mc.FabConfig;
 import com.euvcraft.lithmod.mc.data.DieRulesDataLoader;
 import com.euvcraft.lithmod.mc.data.MachineRecipeLoader;
+import com.euvcraft.lithmod.mc.data.MachineRecipeSpecCodec;
 import com.euvcraft.lithmod.mc.data.SupportLineDataLoader;
 import com.euvcraft.lithmod.mc.machine.mask.MaskMachines;
 import com.euvcraft.lithmod.mc.machine.mask.PatternGeneratorBlockEntity;
@@ -970,6 +972,116 @@ public final class MaskGameTests {
                     + "payment",
                 SAVE_LOAD_ROUND_TRIP, cost * RECIPE_TICKS, RECIPE_TICKS, cost, paid,
                 RECIPE_TICKS - paid);
+
+            // ---- M1-06 regression: legacy reader & corrupted spec_text guard ----
+            // 1) Legacy compound spec (old writer) restores progress at frozen cost, and
+            //    setMachineEnergyPerTick(99) before adoption must NOT overwrite runningEnergyPerTick.
+            MachineRecipeSpec plainSpec = new MachineRecipeSpec(
+                    PatternGeneratorBlockEntity.MACHINE_ID,
+                    List.of(MachineIngredient.item(BLANK_MASK_ID, 1),
+                            MachineIngredient.item(DESIGN_REDSTONE, 1)),
+                    new MachineResult("minecraft:iron_ingot", 1, Map.of()),
+                    20, 21);
+            MachineRecipe resolvedLegacy = MachineRecipeLoader.build(List.of(plainSpec),
+                    "legacy regression").all().get(0);
+
+            // Build runner state tag using TagValueOutput (what loadState expects at root level)
+            TagValueOutput legacyOut = TagValueOutput.createWithContext(
+                    ProblemReporter.DISCARDING, level.registryAccess());
+            legacyOut.putInt("progress", 3);
+            legacyOut.putInt("ticks", 20);
+            legacyOut.putInt("energy_per_tick", 21);
+            legacyOut.putBoolean("running", true);
+            legacyOut.store("spec", MachineRecipeSpecCodec.CODEC, plainSpec);
+            CompoundTag legacyRunnerTag = legacyOut.buildResult();
+
+            MachineRecipeRunner legacyRunner = new MachineRecipeRunner(
+                    PatternGeneratorBlockEntity.MACHINE_ID, 99);
+            legacyRunner.loadState(TagValueInput.create(
+                    ProblemReporter.DISCARDING, level.registryAccess(), legacyRunnerTag));
+
+            helper.assertValueEqual(3, legacyRunner.progress(), "legacy load lost progress");
+            helper.assertValueEqual(20, legacyRunner.ticks(), "legacy load lost ticks");
+            helper.assertValueEqual(21, legacyRunner.energyPerTick(), "legacy load lost frozen cost");
+            helper.assertTrue(legacyRunner.hasRestoredProgress(), "legacy load has no restored progress");
+
+            // Setter guard: before adoption, fallback changes but running cost stays frozen
+            legacyRunner.setMachineEnergyPerTick(99);
+            helper.assertValueEqual(99, legacyRunner.machineEnergyPerTick(), "fallback not updated");
+            helper.assertValueEqual(21, legacyRunner.energyPerTick(), "frozen cost overwritten before adoption");
+
+            // Adoption succeeds, current.spec equals the plain spec, no restart
+            helper.assertTrue(legacyRunner.adoptRestored(resolvedLegacy), "legacy adoption failed");
+            helper.assertTrue(legacyRunner.current() != null
+                    && plainSpec.equals(legacyRunner.current().spec()), "adopted spec mismatch");
+            helper.assertValueEqual(3, legacyRunner.progress(), "adoption reset progress");
+            helper.assertFalse(legacyRunner.hasRestoredProgress(), "restored flag not cleared");
+
+            // 2) Corrupt NEW key (spec_text) must be authoritative even alongside VALID legacy compound.
+            //    Each mutation: load must not throw, adoptRestored(validLegacyRecipe) FALSE,
+            //    one tick with matching inputs must fail closed (no energy spent, no output, no start, no progress retained).
+            List<ItemStack> matchingInputs = List.of(
+                    new ItemStack(ModItems.BLANK_MASK.get(), 1),
+                    new ItemStack(Items.REDSTONE, 1));
+            ItemStack emptyOutput = ItemStack.EMPTY;
+            int[] drawCount = {0};
+            int[] writeCount = {0};
+            EnergySource countingEnergy = amount -> { drawCount[0]++; return amount; };
+            Consumer<ItemStack> countingWriter = s -> { writeCount[0]++; };
+
+            String[] corruptTexts = {"{", "null", "{}", "42"};
+            for (String badText : corruptTexts) {
+                CompoundTag corrupt = legacyRunnerTag.copy();
+                corrupt.putString("spec_text", badText);
+
+                MachineRecipeRunner r = new MachineRecipeRunner(
+                        PatternGeneratorBlockEntity.MACHINE_ID, 99);
+                r.loadState(TagValueInput.create(
+                        ProblemReporter.DISCARDING, level.registryAccess(), corrupt));
+
+                helper.assertFalse(r.adoptRestored(resolvedLegacy),
+                        "corrupt spec_text '" + badText + "' must not adopt");
+
+                drawCount[0] = 0;
+                writeCount[0] = 0;
+                boolean completed = r.tick(List.of(resolvedLegacy), matchingInputs, emptyOutput,
+                        countingWriter, countingEnergy);
+
+                helper.assertFalse(completed, "corrupt spec_text '" + badText + "' produced output");
+                helper.assertValueEqual(0, drawCount[0], "corrupt spec_text '" + badText + "' drew energy");
+                helper.assertValueEqual(0, writeCount[0], "corrupt spec_text '" + badText + "' wrote output");
+                helper.assertFalse(r.isRunning(), "corrupt spec_text '" + badText + "' started a run");
+                helper.assertValueEqual(0, r.progress(), "corrupt spec_text '" + badText + "' retained progress");
+            }
+
+            // Compound tag as spec_text (wrong type)
+            {
+                CompoundTag corrupt = legacyRunnerTag.copy();
+                corrupt.put("spec_text", new CompoundTag());
+
+                MachineRecipeRunner r = new MachineRecipeRunner(
+                        PatternGeneratorBlockEntity.MACHINE_ID, 99);
+                r.loadState(TagValueInput.create(
+                        ProblemReporter.DISCARDING, level.registryAccess(), corrupt));
+
+                helper.assertFalse(r.adoptRestored(resolvedLegacy),
+                        "compound spec_text must not adopt");
+
+                drawCount[0] = 0;
+                writeCount[0] = 0;
+                boolean completed = r.tick(List.of(resolvedLegacy), matchingInputs, emptyOutput,
+                        countingWriter, countingEnergy);
+
+                helper.assertFalse(completed, "compound spec_text produced output");
+                helper.assertValueEqual(0, drawCount[0], "compound spec_text drew energy");
+                helper.assertValueEqual(0, writeCount[0], "compound spec_text wrote output");
+                helper.assertFalse(r.isRunning(), "compound spec_text started a run");
+                helper.assertValueEqual(0, r.progress(), "compound spec_text retained progress");
+            }
+
+            LOGGER.info("[M1-06] {}: legacy compound spec restores at frozen cost; "
+                    + "setter guard holds before adoption; corrupt spec_text fails closed",
+                    SAVE_LOAD_ROUND_TRIP);
         });
 
         helper.succeed();
