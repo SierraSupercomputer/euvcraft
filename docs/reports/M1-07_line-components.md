@@ -1,4 +1,6 @@
-﻿# M1-07: Line component items and stat wiring
+> Historical branch report. Current integration status, corrected APIs, and fresh verification evidence are in [the consolidation report](CONSOLIDATION_2026-10-16.md).
+
+# M1-07: Line component items and stat wiring
 
 - Date: 2026-10-16
 - Branch: m1-07-line-components

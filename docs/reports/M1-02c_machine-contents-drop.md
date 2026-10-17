@@ -1,3 +1,5 @@
+> Historical branch report. Current integration status, corrected APIs, and fresh verification evidence are in [the consolidation report](CONSOLIDATION_2026-10-16.md).
+
 # M1-02c: Machine contents drop when the block is removed
 
 Date: 2026-10-16

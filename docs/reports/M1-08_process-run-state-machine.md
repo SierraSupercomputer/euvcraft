@@ -1,4 +1,6 @@
-﻿# M1-08: Process run state machine (core)
+> Historical branch report. Current integration status, corrected APIs, and fresh verification evidence are in [the consolidation report](CONSOLIDATION_2026-10-16.md).
+
+# M1-08: Process run state machine (core)
 
 - Date: 2026-10-16
 - Branch: m1-08-process-run-state-machine

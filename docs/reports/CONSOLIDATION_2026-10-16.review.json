@@ -1,0 +1,27 @@
+{
+  "sourceCommit": "7e2111805ad417523dcd967d59e107dcbc1d80dd",
+  "runtimeCommit": "aba1efd5381458f9d94c37bd1283bcb1efef2333",
+  "unitSummary": {
+    "suites": 67,
+    "tests": 402,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "reviews": [
+    {
+      "scope": "process",
+      "model": "opencode/beam-free",
+      "verdict": "APPROVE",
+      "text": "No concrete correctness defects found in the supplied snapshots. The snapshot validator rejects the previously identified `RUNNING/0/paid` and `PAUSED_NO_POWER/unpaid` combinations, restore enforces the current persisted lot and same settings contract, ProcessRun tick uses the documented void/amount/immutable-lot contracts, and FabMachineMenu shift-click splits total machine slots from player slots while generic insertion is restricted to input indices.\n\nAPPROVE",
+      "reportedCost": 0
+    },
+    {
+      "scope": "adapters",
+      "model": "opencode/beam-free",
+      "verdict": "APPROVE",
+      "text": "No concrete correctness defects found in the supplied snapshots. The codecs preserve the documented persistent/network split, optional runSpec, defaults, and public-view clamping; ingredient/result/recipe/definition adapters match their intended optional/default fields; and LineLoadoutReader preserves component-kind filtering and caller-supplied mask tier.\n\nAPPROVE",
+      "reportedCost": 0
+    }
+  ]
+}
