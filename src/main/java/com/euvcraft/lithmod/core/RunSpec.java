@@ -1,7 +1,5 @@
 package com.euvcraft.lithmod.core;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import java.util.Objects;
 
@@ -45,14 +43,6 @@ public record RunSpec(String dieType, int tierIndex, int cores, double effective
     /** Core count of a die that has no core count. */
     public static final int NO_CORES = 0;
 
-    /** Codec for the persistent form. */
-    public static final Codec<RunSpec> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-        Codec.STRING.fieldOf("die_type").forGetter(RunSpec::dieType),
-        Codec.INT.fieldOf("tierIndex").forGetter(RunSpec::tierIndex),
-        Codec.INT.fieldOf("cores").forGetter(RunSpec::cores),
-        Codec.DOUBLE.fieldOf("effectiveYield").forGetter(RunSpec::effectiveYield),
-        Codec.INT.fieldOf("rollCount").forGetter(RunSpec::rollCount)
-    ).apply(instance, RunSpec::new));
 
     /**
      * Validates the four components.

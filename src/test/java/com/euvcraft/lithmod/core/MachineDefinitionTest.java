@@ -1,5 +1,7 @@
 package com.euvcraft.lithmod.core;
 
+import com.euvcraft.lithmod.mc.data.MachineDefinitionCodec;
+
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
 
@@ -54,7 +56,7 @@ class MachineDefinitionTest {
                   "params": { "input_slots": 1 }
                 }
                 """;
-            MachineDefinition parsed = MachineDefinition.CODEC.parse(JsonOps.INSTANCE, tree(json))
+            MachineDefinition parsed = MachineDefinitionCodec.CODEC.parse(JsonOps.INSTANCE, tree(json))
                 .getOrThrow(AssertionError::new);
 
             assertEquals("test_machine", parsed.id());
@@ -75,7 +77,7 @@ class MachineDefinitionTest {
                   "energy_per_tick": 5
                 }
                 """;
-            MachineDefinition parsed = MachineDefinition.CODEC.parse(JsonOps.INSTANCE, tree(json))
+            MachineDefinition parsed = MachineDefinitionCodec.CODEC.parse(JsonOps.INSTANCE, tree(json))
                 .getOrThrow(AssertionError::new);
 
             assertTrue(parsed.perTierEnergyPerTick().isEmpty(),
@@ -90,21 +92,21 @@ class MachineDefinitionTest {
             // Validation runs in the canonical constructor, so bad data throws naming the
             // field rather than producing a DataResult error. The loader catches the throw,
             // which is what keeps the previously loaded definitions.
-            assertTrue(message(() -> MachineDefinition.CODEC.parse(JsonOps.INSTANCE, tree("""
+            assertTrue(message(() -> MachineDefinitionCodec.CODEC.parse(JsonOps.INSTANCE, tree("""
                 { "id": "m", "energy_capacity": 0, "max_receive": 10, "energy_per_tick": 1 }
                 """))).contains("energy_capacity must be positive"));
         }
 
         @Test
         void negativeControlANegativeEnergyPerTickDoesNotParse() {
-            assertTrue(message(() -> MachineDefinition.CODEC.parse(JsonOps.INSTANCE, tree("""
+            assertTrue(message(() -> MachineDefinitionCodec.CODEC.parse(JsonOps.INSTANCE, tree("""
                 { "id": "m", "energy_capacity": 10, "max_receive": 10, "energy_per_tick": -1 }
                 """))).contains("energy_per_tick must be non-negative"));
         }
 
         @Test
         void negativeControlANonPositiveParamDoesNotParse() {
-            assertTrue(message(() -> MachineDefinition.CODEC.parse(JsonOps.INSTANCE, tree("""
+            assertTrue(message(() -> MachineDefinitionCodec.CODEC.parse(JsonOps.INSTANCE, tree("""
                 { "id": "m", "energy_capacity": 10, "max_receive": 10, "energy_per_tick": 1,
                   "params": { "slots": 0 } }
                 """))).contains("params['slots'] must be a positive integer"));
@@ -114,7 +116,7 @@ class MachineDefinitionTest {
         void negativeControlAMissingRequiredFieldDoesNotParse() {
             // A missing field never reaches the constructor, so it is a DataResult error
             // rather than a throw.
-            DataResult<MachineDefinition> parsed = MachineDefinition.CODEC.parse(JsonOps.INSTANCE, tree("""
+            DataResult<MachineDefinition> parsed = MachineDefinitionCodec.CODEC.parse(JsonOps.INSTANCE, tree("""
                 { "id": "m", "energy_capacity": 10, "energy_per_tick": 1 }
                 """));
             assertTrue(parsed.error().isPresent(), "a missing max_receive should not parse");
@@ -122,7 +124,7 @@ class MachineDefinitionTest {
 
         @Test
         void negativeControlAMalformedPerTierValueDoesNotParse() {
-            DataResult<MachineDefinition> parsed = MachineDefinition.CODEC.parse(JsonOps.INSTANCE, tree("""
+            DataResult<MachineDefinition> parsed = MachineDefinitionCodec.CODEC.parse(JsonOps.INSTANCE, tree("""
                 { "id": "m", "energy_capacity": 10, "max_receive": 10, "energy_per_tick": 1,
                   "per_tier_energy_per_tick": { "T1": "not a number" } }
                 """));

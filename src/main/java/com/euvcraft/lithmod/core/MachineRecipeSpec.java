@@ -1,7 +1,5 @@
 package com.euvcraft.lithmod.core;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import java.util.List;
 import java.util.Objects;
@@ -118,15 +116,5 @@ public record MachineRecipeSpec(
         return "MachineRecipeSpec[" + machineId + " -> " + result + " in " + ticks + " ticks]";
     }
 
-    public static final Codec<MachineRecipeSpec> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-        Codec.STRING.fieldOf("machine").forGetter(MachineRecipeSpec::machineId),
-        MachineIngredient.FLEXIBLE_CODEC.listOf().fieldOf("ingredients").forGetter(MachineRecipeSpec::ingredients),
-        MachineResult.CODEC.fieldOf("result").forGetter(MachineRecipeSpec::result),
-        Codec.INT.fieldOf("ticks").forGetter(MachineRecipeSpec::ticks),
-        Codec.INT.optionalFieldOf("energy_per_tick")
-            .forGetter(spec -> Optional.ofNullable(spec.energyPerTickOverride()))
-    ).apply(instance, (machine, ingredients, result, ticks, energyPerTick) ->
-        new MachineRecipeSpec(machine, ingredients, result, ticks, energyPerTick.orElse(null))));
 
-    public static final Codec<List<MachineRecipeSpec>> LIST_CODEC = CODEC.listOf();
 }

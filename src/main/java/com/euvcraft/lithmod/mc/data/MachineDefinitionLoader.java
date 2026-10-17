@@ -28,7 +28,7 @@ public final class MachineDefinitionLoader
     extends JsonResourceDataLoader<MachineDefinition, MachineDefinitionLoader.Registry> {
 
     public MachineDefinitionLoader() {
-        super("machines", MachineDefinition.CODEC,
+        super("machines", MachineDefinitionCodec.CODEC,
             MachineDefinitionLoader::buildFromFiles, EUVCRAFTMod.LOGGER);
         CURRENT = this;
     }

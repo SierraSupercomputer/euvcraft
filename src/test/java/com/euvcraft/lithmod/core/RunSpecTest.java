@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.UUID;
 
+import com.euvcraft.lithmod.mc.RunSpecCodec;
 import com.mojang.serialization.DataResult;
 
 import net.minecraft.nbt.NbtOps;
@@ -59,10 +60,10 @@ class RunSpecTest {
         void dieTypePreserved() {
             for (String type : DieTypes.ALL) {
                 RunSpec original = new RunSpec(type, 3, 8, 0.75, 24);
-                DataResult<Tag> encoded = RunSpec.CODEC.encodeStart(NbtOps.INSTANCE, original);
+                DataResult<Tag> encoded = RunSpecCodec.CODEC.encodeStart(NbtOps.INSTANCE, original);
                 assertTrue(encoded.result().isPresent(), "encoding failed for " + type);
 
-                DataResult<RunSpec> decoded = RunSpec.CODEC.parse(NbtOps.INSTANCE, encoded.result().get());
+                DataResult<RunSpec> decoded = RunSpecCodec.CODEC.parse(NbtOps.INSTANCE, encoded.result().get());
                 assertTrue(decoded.result().isPresent(), "decoding failed for " + type);
 
                 RunSpec roundTrip = decoded.result().get();
@@ -87,7 +88,7 @@ class RunSpecTest {
 
             // The codec validation happens in the RunSpec constructor, which throws during parsing
             assertThrows(IllegalArgumentException.class,
-                () -> RunSpec.CODEC.parse(NbtOps.INSTANCE, nbt).getOrThrow());
+                () -> RunSpecCodec.CODEC.parse(NbtOps.INSTANCE, nbt).getOrThrow());
         }
     }
 }

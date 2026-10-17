@@ -13,9 +13,11 @@ import java.util.regex.Pattern;
  * This is run as a verification task during the build.
  */
 public class ImportChecker {
-    private static final Pattern MINECRAFT_IMPORT = Pattern.compile("^import\\s+net\\.minecraft\\..*");
-    private static final Pattern NEOFORGE_IMPORT = Pattern.compile("^import\\s+net\\.neoforged\\..*");
-    private static final Pattern LITHMOD_MC_IMPORT = Pattern.compile("^import\\s+com\\.euvcraft\\.lithmod\\.mc\\..*");
+    private static final Pattern MINECRAFT_IMPORT = Pattern.compile("^import\\s+(?:static\\s+)?net\\.minecraft\\..*");
+    private static final Pattern NEOFORGE_IMPORT = Pattern.compile("^import\\s+(?:static\\s+)?net\\.neoforged\\..*");
+    private static final Pattern LITHMOD_MC_IMPORT = Pattern.compile("^import\\s+(?:static\\s+)?com\\.euvcraft\\.lithmod\\.mc\\..*");
+    private static final Pattern MOJANG_IMPORT = Pattern.compile("^import\\s+(?:static\\s+)?com\\.mojang\\..*");
+    private static final Pattern NETTY_IMPORT = Pattern.compile("^import\\s+(?:static\\s+)?io\\.netty\\..*");
     private static final Pattern JAVA_PACKAGE = Pattern.compile("^package\\s+com\\.euvcraft\\.lithmod\\.core(\\..*)?\\s*;");
 
     public static void main(String[] args) throws IOException {
@@ -41,7 +43,7 @@ public class ImportChecker {
             System.err.println("==========================================");
             System.exit(1);
         } else {
-            System.out.println("Core import check passed: no Minecraft/NeoForge imports found in core package.");
+            System.out.println("Core import check passed: no game/runtime imports found in core package.");
             System.exit(0);
         }
     }
@@ -68,6 +70,10 @@ public class ImportChecker {
                         violations.add(file.toString() + ":" + (i + 1) + " - Forbidden NeoForge import: " + line);
                     } else if (LITHMOD_MC_IMPORT.matcher(line).matches()) {
                         violations.add(file.toString() + ":" + (i + 1) + " - Forbidden lithmod.mc import: " + line);
+                    } else if (MOJANG_IMPORT.matcher(line).matches()) {
+                        violations.add(file.toString() + ":" + (i + 1) + " - Forbidden Mojang import: " + line);
+                    } else if (NETTY_IMPORT.matcher(line).matches()) {
+                        violations.add(file.toString() + ":" + (i + 1) + " - Forbidden Netty import: " + line);
                     }
                 }
             }

@@ -98,13 +98,13 @@ class ProcessRunTest {
     class Refusals {
         @Test
         void noLot() {
-            ProcessRunRequest req = new ProcessRunRequest(null, "logic", t1(), null, 4, healthy(), true, true, Map.of(), null, settings(Map.of()), 5);
+            ProcessRunRequest req = new ProcessRunRequest(null, "logic", t1(), null, 4, healthy(), true, true, installed(), matrix(), settings(Map.of()), 5);
             assertSame(RefusalReason.NO_LOT, ProcessRun.start(req));
         }
 
         @Test
         void emptyLot() {
-            ProcessRunRequest req = new ProcessRunRequest(FoupContents.empty(LOT, 25), "logic", t1(), null, 4, healthy(), true, true, Map.of(), null, settings(Map.of()), 5);
+            ProcessRunRequest req = new ProcessRunRequest(FoupContents.empty(LOT, 25), "logic", t1(), null, 4, healthy(), true, true, installed(), matrix(), settings(Map.of()), 5);
             assertSame(RefusalReason.EMPTY_LOT, ProcessRun.start(req));
         }
 
@@ -115,7 +115,7 @@ class ProcessRunTest {
             FabSettings s = settings(Map.of());
             FoupContents done = YieldRollEngine.applyLayerStep(lot, t1, "logic", null, 1, 1.0, s,
                     (wi, si) -> new ContextualRng(SALT, lot.lotId(), wi, si));
-            ProcessRunRequest req = new ProcessRunRequest(done, "logic", t1, null, 4, healthy(), true, true, Map.of(), null, s, 5);
+            ProcessRunRequest req = new ProcessRunRequest(done, "logic", t1, null, 4, healthy(), true, true, installed(), matrix(), s, 5);
             assertSame(RefusalReason.LOT_ALREADY_COMPLETE, ProcessRun.start(req));
         }
 
@@ -126,7 +126,7 @@ class ProcessRunTest {
             FabSettings s = settings(Map.of());
             FoupContents started = YieldRollEngine.applyLayerStep(lot, t1, "logic", null, 1, 1.0, s,
                     (wi, si) -> new ContextualRng(SALT, lot.lotId(), wi, si));
-            ProcessRunRequest req = new ProcessRunRequest(started, "memory", t2(), null, 4, healthy(), true, true, Map.of(), null, s, 5);
+            ProcessRunRequest req = new ProcessRunRequest(started, "memory", t2(), null, 4, healthy(), true, true, installed(), matrix(), s, 5);
             Object result = ProcessRun.start(req);
             assertInstanceOf(RefusalReason.class, result);
             assertEquals(RefusalReason.Code.SPEC_MISMATCH, ((RefusalReason) result).code());
@@ -134,25 +134,25 @@ class ProcessRunTest {
 
         @Test
         void noMask() {
-            ProcessRunRequest req = new ProcessRunRequest(freshLot(2), null, t1(), null, 4, healthy(), true, true, Map.of(), null, settings(Map.of()), 5);
+            ProcessRunRequest req = new ProcessRunRequest(freshLot(2), null, t1(), null, 4, healthy(), true, true, installed(), matrix(), settings(Map.of()), 5);
             assertSame(RefusalReason.NO_MASK, ProcessRun.start(req));
         }
 
         @Test
         void maskSpent() {
-            ProcessRunRequest req = new ProcessRunRequest(freshLot(2), "logic", t1(), null, 0, healthy(), true, true, Map.of(), null, settings(Map.of()), 5);
+            ProcessRunRequest req = new ProcessRunRequest(freshLot(2), "logic", t1(), null, 0, healthy(), true, true, installed(), matrix(), settings(Map.of()), 5);
             assertSame(RefusalReason.MASK_SPENT, ProcessRun.start(req));
         }
 
         @Test
         void dieNotMakeable() {
-            ProcessRunRequest req = new ProcessRunRequest(freshLot(2), "logic", t1(), null, 4, healthy(), true, false, Map.of(), null, settings(Map.of()), 5);
+            ProcessRunRequest req = new ProcessRunRequest(freshLot(2), "logic", t1(), null, 4, healthy(), true, false, installed(), matrix(), settings(Map.of()), 5);
             assertSame(RefusalReason.DIE_NOT_MAKEABLE, ProcessRun.start(req));
         }
 
         @Test
         void lineCannotRunTier() {
-            ProcessRunRequest req = new ProcessRunRequest(freshLot(2), "logic", t1(), null, 4, healthy(), false, true, Map.of(), null, settings(Map.of()), 5);
+            ProcessRunRequest req = new ProcessRunRequest(freshLot(2), "logic", t1(), null, 4, healthy(), false, true, installed(), matrix(), settings(Map.of()), 5);
             assertSame(RefusalReason.LINE_CANNOT_RUN_TIER, ProcessRun.start(req));
         }
 
@@ -186,7 +186,7 @@ class ProcessRunTest {
         void t1FinishesAfterExpectedTicks() {
             Tier tier = t1();
             FabSettings s = settings(Map.of("T1", 4));
-            ProcessRunRequest req = new ProcessRunRequest(freshLot(3), "logic", tier, null, 4, healthy(), true, true, Map.of(), null, s, 5);
+            ProcessRunRequest req = new ProcessRunRequest(freshLot(3), "logic", tier, null, 4, healthy(), true, true, installed(), matrix(), s, 5);
             ProcessRun run = (ProcessRun) ProcessRun.start(req);
             FakeEnv env = new FakeEnv(tier, "logic", null, s, 100, 10);
             int ticks = runToFinish(run, env, 100);
@@ -201,7 +201,7 @@ class ProcessRunTest {
             Tier tier = t2();
             FabSettings s = settings(Map.of("T2", 2));
             FoupContents lot = freshLot(3);
-            ProcessRunRequest req = new ProcessRunRequest(lot, "logic", tier, null, 4, healthy(), true, true, Map.of(), null, s, 5);
+            ProcessRunRequest req = new ProcessRunRequest(lot, "logic", tier, null, 4, healthy(), true, true, installed(), matrix(), s, 5);
             ProcessRun run = (ProcessRun) ProcessRun.start(req);
             FakeEnv env = new FakeEnv(tier, "logic", null, s, 1000, 100);
             int ticks = runToFinish(run, env, 1000);
@@ -217,7 +217,7 @@ class ProcessRunTest {
         void maskConsumedOnceWithEvents() {
             Tier tier = t1();
             FabSettings s = settings(Map.of("T1", 2));
-            ProcessRunRequest req = new ProcessRunRequest(freshLot(2), "logic", tier, null, 1, healthy(), true, true, Map.of(), null, s, 5);
+            ProcessRunRequest req = new ProcessRunRequest(freshLot(2), "logic", tier, null, 1, healthy(), true, true, installed(), matrix(), s, 5);
             ProcessRun run = (ProcessRun) ProcessRun.start(req);
             FakeEnv env = new FakeEnv(tier, "logic", null, s, 100, 10);
             int maskCount = 0, finishCount = 0, layerCount = 0;
@@ -240,7 +240,7 @@ class ProcessRunTest {
         void pauseNoPowerDoesNotAdvance() {
             Tier tier = t1();
             FabSettings s = settings(Map.of("T1", 4));
-            ProcessRunRequest req = new ProcessRunRequest(freshLot(2), "logic", tier, null, 4, healthy(), true, true, Map.of(), null, s, 5);
+            ProcessRunRequest req = new ProcessRunRequest(freshLot(2), "logic", tier, null, 4, healthy(), true, true, installed(), matrix(), s, 5);
             ProcessRun run = (ProcessRun) ProcessRun.start(req);
             FakeEnv env = new FakeEnv(tier, "logic", null, s, 0, 10);
             ProcessTickResult r = run.tick(env);
@@ -258,7 +258,7 @@ class ProcessRunTest {
         void pauseNoResistDoesNotAdvance() {
             Tier tier = t1();
             FabSettings s = settings(Map.of("T1", 4));
-            ProcessRunRequest req = new ProcessRunRequest(freshLot(2), "logic", tier, null, 4, healthy(), true, true, Map.of(), null, s, 5);
+            ProcessRunRequest req = new ProcessRunRequest(freshLot(2), "logic", tier, null, 4, healthy(), true, true, installed(), matrix(), s, 5);
             ProcessRun run = (ProcessRun) ProcessRun.start(req);
             FakeEnv env = new FakeEnv(tier, "logic", null, s, 100, 0);
             ProcessTickResult r = run.tick(env);
@@ -275,7 +275,7 @@ class ProcessRunTest {
         void pauseStructureDoesNotAdvance() {
             Tier tier = t1();
             FabSettings s = settings(Map.of("T1", 4));
-            ProcessRunRequest req = new ProcessRunRequest(freshLot(2), "logic", tier, null, 4, healthy(), true, true, Map.of(), null, s, 5);
+            ProcessRunRequest req = new ProcessRunRequest(freshLot(2), "logic", tier, null, 4, healthy(), true, true, installed(), matrix(), s, 5);
             ProcessRun run = (ProcessRun) ProcessRun.start(req);
             FakeEnv env = new FakeEnv(tier, "logic", null, s, 100, 10);
             env.formed = false;
@@ -287,16 +287,13 @@ class ProcessRunTest {
         }
 
         @Test
-        void resistConsumedOncePerLayerAcrossPauseAndSnapshot() {
+        void resistConsumedOncePerLayer() {
             Tier tier = t2();
             FabSettings s = settings(Map.of("T2", 2));
             FoupContents lot = freshLot(2);
-            ProcessRunRequest req = new ProcessRunRequest(lot, "logic", tier, null, 4, healthy(), true, true, Map.of(), null, s, 5);
+            ProcessRunRequest req = new ProcessRunRequest(lot, "logic", tier, null, 4, healthy(), true, true, installed(), matrix(), s, 5);
             ProcessRun run = (ProcessRun) ProcessRun.start(req);
             FakeEnv env = new FakeEnv(tier, "logic", null, s, 1000, 12); // one resist per layer for all 12 layers
-            // pause in middle of first layer due to no power? keep power, but simulate a pause by making structure false? instead just run
-            // Force a power pause on first tick already? env has power. We'll reduce energy to 0 mid-run by setting after some ticks.
-            // Simpler: run first layer fully; resist consumed once. Then second layer.
             runToFinish(run, env, 1000);
             assertEquals(ProcessState.FINISHED, run.state());
             assertEquals(0, env.resist, "all layer resists should be consumed exactly once");
@@ -308,7 +305,7 @@ class ProcessRunTest {
             Tier tier = t1();
             FabSettings s = settings(Map.of("T1", 4));
             FoupContents lot = freshLot(2);
-            ProcessRunRequest req = new ProcessRunRequest(lot, "logic", tier, null, 4, healthy(), true, true, Map.of(), null, s, 5);
+            ProcessRunRequest req = new ProcessRunRequest(lot, "logic", tier, null, 4, healthy(), true, true, installed(), matrix(), s, 5);
 
             ProcessRun runA = (ProcessRun) ProcessRun.start(req);
             FakeEnv envA = new FakeEnv(tier, "logic", null, s, 100, 10);
@@ -347,7 +344,7 @@ class ProcessRunTest {
                         (wi, si) -> new ContextualRng(SALT, lot.lotId(), wi, si));
             }
             assertEquals(5, progressed.lotLayer());
-            ProcessRunRequest req = new ProcessRunRequest(progressed, "logic", tier, null, 4, healthy(), true, true, Map.of(), null, s, 5);
+            ProcessRunRequest req = new ProcessRunRequest(progressed, "logic", tier, null, 4, healthy(), true, true, installed(), matrix(), s, 5);
             ProcessRun run = (ProcessRun) ProcessRun.start(req);
             FakeEnv env = new FakeEnv(tier, "logic", null, s, 1000, 100);
             int ticks = runToFinish(run, env, 1000);
@@ -367,7 +364,7 @@ class ProcessRunTest {
         void restoreMidLayerKeepsResistPaidFlag() {
             Tier tier = t1();
             FabSettings s = settings(Map.of("T1", 4));
-            ProcessRunRequest req = new ProcessRunRequest(freshLot(2), "logic", tier, null, 4, healthy(), true, true, Map.of(), null, s, 5);
+            ProcessRunRequest req = new ProcessRunRequest(freshLot(2), "logic", tier, null, 4, healthy(), true, true, installed(), matrix(), s, 5);
             ProcessRun run = (ProcessRun) ProcessRun.start(req);
             FakeEnv env = new FakeEnv(tier, "logic", null, s, 100, 10);
             // tick twice: progressTicks=2, resist paid already first tick
@@ -379,5 +376,131 @@ class ProcessRunTest {
             assertEquals(2, restored.progressTicks());
             assertTrue(restored.resistPaid(), "resistPaid flag should survive restore");
         }
+    }
+
+    private static Map<String, Integer> installed() {
+        Map<String, Integer> values = new java.util.LinkedHashMap<>();
+        SupportLines.ALL.forEach(line -> values.put(line, 1));
+        return values;
+    }
+
+    private static GenerationMatrix matrix() {
+        Map<String, List<Integer>> values = new java.util.LinkedHashMap<>();
+        SupportLines.ALL.forEach(line -> values.put(line, java.util.Collections.nCopies(8, 1)));
+        return GenerationMatrix.build(TierRegistry.build(ReferenceTiers.all(), "test"), values, "T1/T2 fixture");
+    }
+
+    private static ProcessRunRequest request(FoupContents lot, Tier tier, FabSettings settings) {
+        return new ProcessRunRequest(lot, "logic", tier, null, 4, healthy(), true, true,
+            installed(), matrix(), settings, 5);
+    }
+
+    @Test
+    void actualEnergyWithdrawalMustPayBeforeProgress() {
+        FabSettings settings = settings(Map.of("T1", 1));
+        ProcessRun run = (ProcessRun) ProcessRun.start(request(freshLot(2), t1(), settings));
+        FakeEnv env = new FakeEnv(t1(), "logic", null, settings, 100, 10) {
+            @Override public int extractEnergy(int amount, boolean simulate) {
+                return simulate ? amount : 0;
+            }
+        };
+        assertEquals(ProcessState.PAUSED_NO_POWER, run.tick(env).state());
+        assertEquals(0, run.progressTicks());
+        assertEquals(0, run.lot().lotLayer());
+        assertTrue(env.applied.isEmpty());
+    }
+
+    @Test
+    void restoredMultiLayerRunMatchesUninterruptedResourcesAndWafers() {
+        FabSettings settings = settings(Map.of("T2", 2));
+        FoupContents lot = freshLot(2);
+        ProcessRun reference = (ProcessRun) ProcessRun.start(request(lot, t2(), settings));
+        FakeEnv expected = new FakeEnv(t2(), "logic", null, settings, 120, 12);
+        assertEquals(24, runToFinish(reference, expected, 100));
+
+        ProcessRun partial = (ProcessRun) ProcessRun.start(request(lot, t2(), settings));
+        FakeEnv initial = new FakeEnv(t2(), "logic", null, settings, 120, 12);
+        partial.tick(initial); partial.tick(initial); partial.tick(initial);
+        assertEquals(1, partial.lot().lotLayer());
+        assertEquals(1, partial.progressTicks());
+        int savedEnergy = initial.energy;
+        initial.energy = 0;
+        assertEquals(ProcessState.PAUSED_NO_POWER, partial.tick(initial).state());
+        ProcessRun.Snapshot snapshot = partial.snapshot();
+        ProcessRunRequest resumedRequest = request(partial.lot(), t2(), settings);
+        ProcessRun restored = ProcessRun.restore(resumedRequest, snapshot);
+        FakeEnv resumed = new FakeEnv(t2(), "logic", null, settings, savedEnergy, initial.resist);
+        assertEquals(21, runToFinish(restored, resumed, 100));
+        assertEquals(reference.lot().wafers(), restored.lot().wafers());
+        assertEquals(reference.lot().run(), restored.lot().run());
+        assertEquals(reference.lot().lotId(), restored.lot().lotId());
+        assertEquals(expected.energy, resumed.energy);
+        assertEquals(expected.resist, resumed.resist);
+        assertEquals(12, initial.applied.size() + resumed.applied.size());
+        // A corrupted paid-resist flag must not turn the same persisted progress into a free/duplicate charge.
+        assertThrows(IllegalArgumentException.class, () -> ProcessRun.restore(resumedRequest,
+            new ProcessRun.Snapshot(snapshot.state(), snapshot.currentLayer(), snapshot.progressTicks(),
+                false, false, false)));
+    }
+
+    @Test
+    void restoreRejectsStaleLotInsteadOfSkippingCompletedLayers() {
+        FabSettings settings = settings(Map.of("T2", 2));
+        ProcessRunRequest original = request(freshLot(2), t2(), settings);
+        ProcessRun run = (ProcessRun) ProcessRun.start(original);
+        FakeEnv env = new FakeEnv(t2(), "logic", null, settings, 120, 12);
+        run.tick(env); run.tick(env); run.tick(env);
+        assertThrows(IllegalArgumentException.class, () -> ProcessRun.restore(original, run.snapshot()));
+    }
+
+    @Test
+    void restoreRejectsOutOfRangeProgress() {
+        FabSettings settings = settings(Map.of("T1", 2));
+        ProcessRunRequest request = request(freshLot(2), t1(), settings);
+        assertThrows(IllegalArgumentException.class, () -> ProcessRun.restore(request,
+            new ProcessRun.Snapshot(ProcessState.RUNNING, 1, 2, true, false, false)));
+    }
+
+    @Test
+    void finishedSnapshotsCannotReplayMaskOrFinishEvents() {
+        FabSettings settings = settings(Map.of("T1", 1));
+        ProcessRun run = (ProcessRun) ProcessRun.start(request(freshLot(2), t1(), settings));
+        FakeEnv env = new FakeEnv(t1(), "logic", null, settings, 100, 10);
+        assertEquals(3, run.tick(env).events().size());
+        ProcessRun restored = ProcessRun.restore(request(run.lot(), t1(), settings), run.snapshot());
+        int energy = env.energy, resist = env.resist;
+        assertTrue(restored.tick(env).events().isEmpty());
+        assertEquals(energy, env.energy); assertEquals(resist, env.resist);
+        assertThrows(IllegalArgumentException.class, () -> ProcessRun.restore(request(run.lot(), t1(), settings),
+            new ProcessRun.Snapshot(ProcessState.FINISHED, 2, 0, false, false, false)));
+    }
+
+    @Test
+    void missingRequestDependenciesCannotBypassGenerationOrResistRules() {
+        FabSettings settings = settings(Map.of());
+        assertThrows(NullPointerException.class, () -> new ProcessRunRequest(freshLot(2), "logic", t1(), null,
+            4, healthy(), true, true, installed(), null, settings, 5));
+        assertThrows(NullPointerException.class, () -> new ProcessRunRequest(freshLot(2), "logic", t1(), null,
+            4, healthy(), true, true, installed(), matrix(), null, 5));
+        assertThrows(IllegalArgumentException.class, () -> new ProcessRunRequest(freshLot(2), "logic", t1(), null,
+            4, healthy(), true, true, installed(), matrix(), settings, -1));
+    }
+
+    @Test
+    void environmentMustActuallyApplyTheRequestedLayer() {
+        FabSettings settings = settings(Map.of("T1", 1));
+        ProcessRun run = (ProcessRun) ProcessRun.start(request(freshLot(2), t1(), settings));
+        FakeEnv env = new FakeEnv(t1(), "logic", null, settings, 100, 10) {
+            @Override public FoupContents applyLayer(FoupContents lot, int layer, double factor) { return lot; }
+        };
+        assertThrows(IllegalStateException.class, () -> run.tick(env));
+        assertNotEquals(ProcessState.FINISHED, run.state());
+    }
+
+    @Test
+    void nonFiniteStatisticsCannotEnterAProcessRequest() {
+        assertThrows(IllegalArgumentException.class, () -> new ProcessRunRequest(freshLot(2), "logic", t1(), null,
+            4, new LineStats(100, 10, 10, Double.NaN, 2, 2, 2), true, true,
+            installed(), matrix(), settings(Map.of()), 5));
     }
 }

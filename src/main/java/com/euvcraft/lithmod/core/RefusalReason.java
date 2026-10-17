@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * Reason a process run could not be started.
  */
-public record RefusalReason(Code code, List<String> unmetLines) {
+public record RefusalReason(Code code, List<String> unmetLines) implements ProcessStartResult {
 
     public enum Code {
         NO_LOT,

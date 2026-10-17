@@ -1,5 +1,7 @@
 package com.euvcraft.lithmod.core;
 
+import com.euvcraft.lithmod.mc.data.MachineRecipeSpecCodec;
+
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
 
@@ -247,7 +249,7 @@ class MachineRecipeSpecTest {
               "ticks": 4
             }
             """;
-        MachineRecipeSpec parsed = MachineRecipeSpec.CODEC.parse(JsonOps.INSTANCE, tree(json))
+        MachineRecipeSpec parsed = MachineRecipeSpecCodec.CODEC.parse(JsonOps.INSTANCE, tree(json))
             .getOrThrow(AssertionError::new);
 
         assertEquals("test_machine", parsed.machineId());
@@ -273,7 +275,7 @@ class MachineRecipeSpecTest {
               "energy_per_tick": 5
             }
             """;
-        MachineRecipeSpec parsed = MachineRecipeSpec.CODEC.parse(JsonOps.INSTANCE, tree(json))
+        MachineRecipeSpec parsed = MachineRecipeSpecCodec.CODEC.parse(JsonOps.INSTANCE, tree(json))
             .getOrThrow(AssertionError::new);
 
         assertTrue(parsed.ingredients().get(0).isTag(), "the ingredient should have parsed as a tag");
@@ -297,7 +299,7 @@ class MachineRecipeSpecTest {
         // Validation runs in the canonical constructor, so bad data throws rather than
         // producing a DataResult error. The loader catches the throw, which is what keeps
         // the previously loaded recipes.
-        assertTrue(message(() -> MachineRecipeSpec.CODEC.parse(JsonOps.INSTANCE, tree(json)))
+        assertTrue(message(() -> MachineRecipeSpecCodec.CODEC.parse(JsonOps.INSTANCE, tree(json)))
             .contains("ticks must be positive"));
     }
 
@@ -311,7 +313,7 @@ class MachineRecipeSpecTest {
               "ticks": 4
             }
             """;
-        assertTrue(message(() -> MachineRecipeSpec.CODEC.parse(JsonOps.INSTANCE, tree(json)))
+        assertTrue(message(() -> MachineRecipeSpecCodec.CODEC.parse(JsonOps.INSTANCE, tree(json)))
             .contains("must be namespaced"));
     }
 
@@ -325,7 +327,7 @@ class MachineRecipeSpecTest {
               "ticks": 4
             }
             """;
-        assertTrue(message(() -> MachineRecipeSpec.CODEC.parse(JsonOps.INSTANCE, tree(json)))
+        assertTrue(message(() -> MachineRecipeSpecCodec.CODEC.parse(JsonOps.INSTANCE, tree(json)))
             .contains("at least one ingredient"));
     }
 
@@ -336,7 +338,7 @@ class MachineRecipeSpecTest {
             """;
         // A missing field is a DataResult error, not a throw, because the record is never
         // constructed at all.
-        DataResult<MachineRecipeSpec> parsed = MachineRecipeSpec.CODEC.parse(JsonOps.INSTANCE, tree(json));
+        DataResult<MachineRecipeSpec> parsed = MachineRecipeSpecCodec.CODEC.parse(JsonOps.INSTANCE, tree(json));
         assertTrue(parsed.error().isPresent(), "a recipe with no result should not parse");
     }
 

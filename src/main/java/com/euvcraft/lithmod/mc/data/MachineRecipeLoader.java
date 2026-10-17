@@ -52,7 +52,7 @@ public final class MachineRecipeLoader
     private static volatile Map<Identifier, MachineRecipeSpec> resolvedFrom;
 
     public MachineRecipeLoader() {
-        super("machine_recipes", MachineRecipeSpec.CODEC,
+        super("machine_recipes", MachineRecipeSpecCodec.CODEC,
             MachineRecipeLoader::parse, EUVCRAFTMod.LOGGER);
     }
 
