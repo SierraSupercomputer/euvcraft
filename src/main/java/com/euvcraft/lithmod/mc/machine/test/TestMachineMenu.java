@@ -29,5 +29,9 @@ public class TestMachineMenu extends FabMachineMenu {
     protected void addMachineSlots() {
         addFoupSlot(TestMachineBlockEntity.INPUT_SLOT, MACHINE_SLOT_X, MACHINE_SLOT_Y);
         addOutputSlot(TestMachineBlockEntity.OUTPUT_SLOT, MACHINE_SLOT_X, MACHINE_SLOT_Y + 36);
+        // The storage slot: reachable by the player, but never part of a recipe. Its
+        // mayPlace is forced false because the default rule (index < inputSlotCount) would
+        // already refuse it, and saying so explicitly keeps the intent readable.
+        addMachineSlot(TestMachineBlockEntity.STORAGE_SLOT, MACHINE_SLOT_X + 18, MACHINE_SLOT_Y + 18, false);
     }
 }

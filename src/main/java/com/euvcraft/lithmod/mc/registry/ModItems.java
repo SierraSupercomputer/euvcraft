@@ -1,6 +1,7 @@
 package com.euvcraft.lithmod.mc.registry;
 
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
+import com.euvcraft.lithmod.mc.machine.test.ModMachines;
 import com.euvcraft.lithmod.mc.multiblock.ModMultiblocks;
 
 import net.minecraft.world.item.BlockItem;
@@ -87,6 +88,17 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> PROCESS_CELL_POWER_PORT =
         ITEMS.registerSimpleBlockItem("process_cell_power_port",
             () -> ModMultiblocks.PROCESS_CELL_POWER_PORT.get());
+
+    /**
+     * The test-only machine's block item.
+     *
+     * <p>Added by M1-02c. Without a block item the machine cannot drop itself at all, so a
+     * player who breaks one gets their FOUP back and no block. Same
+     * {@code registerSimpleBlockItem} rule as the Process Cell items above.</p>
+     */
+    public static final DeferredItem<BlockItem> TEST_MACHINE =
+        ITEMS.registerSimpleBlockItem("test_machine",
+            () -> ModMachines.TEST_MACHINE.get());
 
     private ModItems() {
     }
