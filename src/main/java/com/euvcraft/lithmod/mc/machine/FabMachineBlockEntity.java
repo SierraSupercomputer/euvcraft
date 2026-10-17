@@ -83,6 +83,24 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
     }
 
     /**
+     * Constructor for a real machine, which takes its energy numbers from data.
+     *
+     * <p>The buffer starts empty and refuses everything ({@code capacity} and
+     * {@code maxInsert} of zero) and is sized from the loaded
+     * {@link MachineDefinition} by the {@link #refreshDefinition()} call at the end of the
+     * constructor, so a machine is already chargeable the moment it exists if the data pack
+     * has been read, and inert if it has not. That is the fail-closed answer: no data, no
+     * energy, and therefore no work.</p>
+     *
+     * <p>The overloads that take explicit fallback numbers stay for the test-only machine,
+     * whose block entity can be built before any data exists.</p>
+     */
+    protected FabMachineBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state,
+                                    int inputSlots, int outputSlots) {
+        this(type, pos, state, inputSlots, outputSlots, 0, 0, 0);
+    }
+
+    /**
      * @param storageSlots slots after the outputs that hold items but are not part of any
      *     recipe. The runner never reads them; the player and the drop path do. A machine
      *     needs somewhere to put things that are not currently being processed.
@@ -97,6 +115,9 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
         this.exposed = new WithdrawNothing(this.buffer);
         this.data.set(DATA_CAPACITY, fallbackCapacity);
         this.runner = new MachineRecipeRunner(machineId(), 0);
+        // From here the data pack decides the capacity, the insert limit and the per-tick
+        // cost, if it has been read at all.
+        refreshDefinition();
     }
 
     /**
@@ -205,6 +226,37 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
         return registry == null ? Optional.empty() : registry.byId(machineId());
     }
 
+    /**
+     * Applies a definition's energy numbers to this machine.
+     *
+     * <p>This is the one place a definition reaches the machine, and it changes the real
+     * buffer, not only what the menu is told: the capacity and the per-operation insert
+     * limit are written into the {@link MachineEnergy} itself, and the per-tick cost goes to
+     * the runner. The synced capacity is then read back off the buffer, so the menu can
+     * never claim a capacity the buffer does not have.</p>
+     *
+     * <p>Called from the constructor, from {@link #serverTick()} and from
+     * {@link #loadAdditional(ValueInput)}, and directly by a block entity that owns its own
+     * tick (the Wafer Slicer) so it can pick up a data change without running the recipe
+     * runner.</p>
+     */
+    public final void applyDefinition(MachineDefinition definition) {
+        this.buffer.reconfigure(definition.energyCapacity(), definition.maxReceive());
+        this.runner.setMachineEnergyPerTick(definition.energyPerTick(null, EUVCRAFTMod.settings()));
+        this.data.set(DATA_CAPACITY, this.buffer.getCapacityAsInt());
+    }
+
+    /**
+     * Re-reads the loaded definition and applies it.
+     *
+     * <p>A machine with no definition is left exactly as it was rather than being given a
+     * made-up capacity: it stays at whatever the constructor gave it, which for a real
+     * machine means a buffer that accepts nothing.</p>
+     */
+    protected final void refreshDefinition() {
+        definition().ifPresent(this::applyDefinition);
+    }
+
     /** The machine's internal energy draw, as the runner sees it. */
     public final EnergySource energySource() {
         return amount -> {
@@ -230,10 +282,7 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
         if (level == null || level.isClientSide()) {
             return;
         }
-        definition().ifPresent(definition -> {
-            this.data.set(DATA_CAPACITY, definition.energyCapacity());
-            this.runner.setMachineEnergyPerTick(definition.energyPerTick(null, EUVCRAFTMod.settings()));
-        });
+        refreshDefinition();
 
         // Progress restored from a save is re-attached to whichever recipe now fits, rather
         // than starting the machine over from tick one.
@@ -265,6 +314,9 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
         super.loadAdditional(input);
         ContainerHelper.loadAllItems(input, this.items);
         this.buffer.deserialize(input);
+        // The capacity is data, so it is re-read before anything is published: a save
+        // written under a larger buffer must not be clamped by a smaller one.
+        refreshDefinition();
         this.runner.loadState(input.childOrEmpty("recipe"));
         this.data.set(DATA_CAPACITY, this.buffer.getCapacityAsInt());
         syncData();
@@ -435,6 +487,29 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
         MachineEnergy(BlockEntity owner, int capacity, int maxReceive) {
             super(capacity, maxReceive, Integer.MAX_VALUE);
             this.owner = owner;
+        }
+
+        /**
+         * Resizes this buffer in place and keeps the energy already stored.
+         *
+         * <p>The capacity and the insert limit are the inherited mutable fields, so the
+         * same buffer object is reconfigured rather than replaced: the capability delegate
+         * the block entity handed out at registration time keeps pointing at the live
+         * buffer, and nothing that cached it goes stale.</p>
+         *
+         * <p>Stored energy is deliberately not clamped. NeoForge's own contract for
+         * {@code SimpleEnergyHandler} says a capacity may be lowered below what is already
+         * stored (for example when the data pack changes it), in which case insertion
+         * returns zero until enough has been spent to make room. Destroying the surplus
+         * here would quietly delete a player's charged buffer every time a datapack edit
+         * shrank it.</p>
+         *
+         * @param capacity  the new capacity in FE
+         * @param maxInsert the new per-operation insert limit in FE
+         */
+        void reconfigure(int capacity, int maxInsert) {
+            this.capacity = Math.max(0, capacity);
+            this.maxInsert = Math.max(0, maxInsert);
         }
 
         @Override

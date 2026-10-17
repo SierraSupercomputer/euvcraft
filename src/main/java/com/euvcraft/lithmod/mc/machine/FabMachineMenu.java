@@ -17,7 +17,9 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Supplies the slot layout helpers, the player inventory rows, the energy and progress
  * values read from the block entity's {@link ContainerData}, and the shift-click routing.
- * Subclasses only decide how many machine slots there are and where they go.</p>
+ * Subclasses only decide how many machine slots there are and where they go, through
+ * {@link #addMachineSlots()}; a slot with its own validation rule goes in through
+ * {@link #addCustomSlot(Slot)}.</p>
  *
  * <p>Shift-click routing is the important part: a click on a machine slot moves to the player
  * inventory, and a click on a player slot moves to the machine. The move goes through
@@ -82,6 +84,34 @@ public abstract class FabMachineMenu extends AbstractContainerMenu {
     /** Adds this machine's own slots. Called during construction. */
     protected abstract void addMachineSlots();
 
+    /**
+     * The machine's slots as a {@link Container}.
+     *
+     * <p>Every machine slot is built over this one object, including the custom slots a
+     * subclass adds with {@link #addCustomSlot}, so there is a single route from a slot to
+     * the block entity's inventory.</p>
+     */
+    protected final Container machineSlots() {
+        return this.machineSlots;
+    }
+
+    /**
+     * Adds a slot this menu does not build itself and counts it as a machine slot.
+     *
+     * <p>The hook exists for a machine whose input slots validate something the plain
+     * helpers cannot express — the Wafer Slicer's boule slot and its empty-FOUP slot are
+     * the first. Two rules come with it: the slot has to be added from
+     * {@link #addMachineSlots()}, which the base constructor runs <em>before</em> the 36
+     * player slots, because {@link #quickMoveStack} splits the slot list on the machine
+     * count; and it has to be built over {@link #machineSlots()}. Added anywhere else it
+     * would be counted as a player slot and shift-clicks would be routed to the wrong half
+     * of the menu.</p>
+     */
+    protected final void addCustomSlot(Slot slot) {
+        addSlot(slot);
+        this.machineSlotCount++;
+    }
+
     /** Adds a slot that takes anything the machine declares valid. */
     protected final void addMachineSlot(int index, int x, int y) {
         addMachineSlot(index, x, y, true);
@@ -98,24 +128,22 @@ public abstract class FabMachineMenu extends AbstractContainerMenu {
      * machine slots.</p>
      */
     protected final void addMachineSlot(int index, int x, int y, boolean mayPlace) {
-        addSlot(new Slot(this.machineSlots, index, x, y) {
+        addCustomSlot(new Slot(this.machineSlots, index, x, y) {
             @Override
             public boolean mayPlace(ItemStack stack) {
                 return mayPlace && index < inputSlotCount;
             }
         });
-        this.machineSlotCount++;
     }
 
     /** Adds a slot that takes only FOUP stacks, one per slot. */
     protected final void addFoupSlot(int index, int x, int y) {
-        addSlot(new FoupSlot(this.machineSlots, index, x, y));
-        this.machineSlotCount++;
+        addCustomSlot(new FoupSlot(this.machineSlots, index, x, y));
     }
 
     /** Adds an output-only slot: the player can take from it but not put anything in. */
     protected final void addOutputSlot(int index, int x, int y) {
-        addSlot(new Slot(this.machineSlots, index, x, y) {
+        addCustomSlot(new Slot(this.machineSlots, index, x, y) {
             @Override
             public boolean mayPlace(ItemStack stack) {
                 return false;
@@ -126,7 +154,6 @@ public abstract class FabMachineMenu extends AbstractContainerMenu {
                 return true;
             }
         });
-        this.machineSlotCount++;
     }
 
     private void addPlayerSlots(Inventory playerInventory) {

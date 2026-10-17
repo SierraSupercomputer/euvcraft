@@ -9,10 +9,18 @@ import org.jspecify.annotations.Nullable;
 /**
  * The Wafer Slicer's input slot: takes only a FOUP that carries an empty lot.
  *
- * <p>The rule itself lives in {@link WaferSlicerBlockEntity#acceptedFoup(ItemStack)} so the
- * slot and the server tick cannot disagree. Validation is in {@link #mayPlace}, which runs
- * on the client menu as well as the server one, so the slot refuses a full lot on both
- * sides of the wire and a stack-click is turned away before a packet is sent.</p>
+ * <p>The rule itself lives in
+ * {@link WaferSlicerBlockEntity#acceptsFoupStack(ItemStack)} so the slot cannot disagree
+ * with itself between the two sides of the wire. Validation is in {@link #mayPlace},
+ * which runs on the client menu as well as the server one, so a stack-click is turned away
+ * before a packet is sent.</p>
+ *
+ * <p>What the two sides agree on is exactly what the client can see: the wafer count. A
+ * client cannot know about a lot's hidden run spec because the network codec does not send
+ * one, so a client-side FOUP with no wafers is predicted acceptable even when the server's
+ * lot is started. The server tick re-checks with the trusted read, which is where that case
+ * is refused. See the full boundary on
+ * {@link WaferSlicerBlockEntity#acceptsFoupStack(ItemStack)}.</p>
  */
 public class EmptyFoupSlot extends Slot {
 
@@ -22,7 +30,7 @@ public class EmptyFoupSlot extends Slot {
 
     @Override
     public boolean mayPlace(ItemStack stack) {
-        return WaferSlicerBlockEntity.acceptedFoup(stack) != null;
+        return WaferSlicerBlockEntity.acceptsFoupStack(stack);
     }
 
     /** One FOUP per slot; a FOUP is a carrier, not a stack of goods. */

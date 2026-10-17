@@ -1,91 +1,86 @@
 # M1-04: Silicon chain, Crystal Puller and Wafer Slicer
 
-- Date: 2026-10-16
-- Branch: `m1-04-silicon-chain` (isolated worktree `.orchestrator/worktrees/euvcraft/m1-04-silicon-chain`)
-- Commit: none. This agent cannot execute commands, so every file below is an uncommitted working-tree change and the coordinator owns the commit and the verification run. Baseline commit recorded in `build/M1-04-start-evidence.json`: `4b5f4a74f116b1759898cd690ebfb3af837eb32f` (taken from that evidence file, not re-measured by me).
+- Date: 2026-10-17 (repair pass, written into this same report file rather than a `_r2`
+  copy, because the coordinator's allowed-file list names exactly this path)
+- Branch: `m1-04-silicon-chain` (isolated worktree `.orchestrator/worktrees/euvcraft/m1-04-silicon-chain`).
+  Commit: none from me. This agent cannot execute commands, so every file below is an
+  uncommitted working-tree change and the coordinator owns the commit. Baseline commit recorded
+  in `build/M1-04-start-evidence.json`: `4b5f4a74f116b1759898cd690ebfb3af837eb32f` (taken from
+  that evidence file, not re-measured by me).
 - Java version used: none. No JVM was started by this agent.
-- Build and test commands: none run. See section 3 for the commands the coordinator must run.
-- `git worktree list`, `git branch --show-current`, `git status --short`: not run (no shell). The coordinator must take them before and after committing.
+- Build and test commands run by me: none. Section 3 lists what the coordinator must run.
+- `git worktree list`, `git branch --show-current`, `git status --short`: not run (no shell).
+  The coordinator must take them before and after committing.
 
-## 1. Summary: the silicon chain is implemented end to end in code and data
+## 1. Summary
 
-The Crystal Puller is a plain `FabMachineBlockEntity` driven by `MachineRecipeRunner`, with its
-recipes in `data/lithmod/machine_recipes/crystal_puller.json`. The Wafer Slicer owns its own
-tick instead, because its product is a sealed lot rather than a recipe result: it takes a boule
-and an empty FOUP, refuses any FOUP whose trusted lot already holds wafers or a run spec, pauses
-without energy or without room in the output, consumes nothing until it writes the product, and
-persists its own progress under the `slicer` node. `core.WaferSlicing.wafersFor(FabSettings,
-int)` holds the one number the slicer needs and is unit tested; both item models, item
-definitions, block models, blockstates, loot tables, tags and language entries reuse vanilla
-textures. Two items, two block items, two blocks, two block entity types, two menu types and two
-screens were added, the menus are registered once in `SiliconMachines` and `ModMenus` was not
-touched. Nothing in this task was executed: no build, no unit test, no game test, so every
-verification line below says "not run".
+This is the repair pass for M1-04. It fixes the two compile blockers, corrects the recipe
+runner so a boule costs the recipe's four silicon and so a running recipe re-validates its
+inputs on every tick, makes both machines take their energy numbers and the slice length from
+the loaded `MachineDefinition` instead of Java literals, moves the slicer's two validating
+slots into `FabMachineMenu`'s own machine-slot count so shift-click routing works, makes the
+slicer re-check its boule and FOUP on every tick, and replaces the slicer's FOUP slot rule
+with a documented boundary between the public client view and the trusted server lot. The
+game test suite grew from seven to fourteen tests and the one unit test file from seven to
+seven cases with the misleading claims removed. Nothing here was executed: no compile, no
+unit test, no game test, so every verification line in section 3 says "not run", and the test
+counts and the negative-control executions are left explicitly pending.
 
 ## 2. Files changed
 
 | path | new/modified/deleted | purpose |
 |---|---|---|
-| `src/main/java/com/euvcraft/lithmod/core/WaferSlicing.java` | new | pure `wafersFor(FabSettings, int)` = `min(wafersPerBoule, capacity)` |
-| `src/test/java/com/euvcraft/lithmod/core/WaferSlicingTest.java` | new | 7 unit tests for that function |
-| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/SiliconMachines.java` | new | blocks, block entity types, menu types, `Capabilities.Energy.BLOCK` |
-| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/SiliconMachineBlock.java` | new | shared block shell: ticker calls `serverTick()`, use opens the menu |
-| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/CrystalPullerBlock.java` | new | Crystal Puller block |
-| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/CrystalPullerBlockEntity.java` | new | 1 input, 1 output, base runner tick |
-| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/CrystalPullerMenu.java` | new | menu for the puller |
-| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/WaferSlicerBlock.java` | new | Wafer Slicer block |
-| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/WaferSlicerBlockEntity.java` | new | 2 inputs, 1 output, own tick, `acceptedFoup(ItemStack)`, slice persistence |
-| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/WaferSlicerMenu.java` | new | menu with the two validating slots and its own shift-click routing |
-| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/BouleSlot.java` | new | takes boules only |
-| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/EmptyFoupSlot.java` | new | takes only a FOUP whose trusted lot is empty and unstarted |
-| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/SiliconMachineScreen.java` | new | bar layout shared by the two screens |
-| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/screen/CrystalPullerScreen.java` | new | puller screen |
-| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/screen/WaferSlicerScreen.java` | new | slicer screen |
-| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/client/SiliconClientEvents.java` | new | `Dist.CLIENT` screen bindings for both menus |
-| `src/main/java/com/euvcraft/lithmod/mc/gametest/SiliconGameTests.java` | new | 7 game tests in the `lithmod:silicon_chain` environment |
-| `src/main/java/com/euvcraft/lithmod/mc/registry/ModItems.java` | modified | `silicon`, `silicon_boule`, and the two block items |
-| `src/main/java/com/euvcraft/lithmod/mc/registry/ModCreativeTabs.java` | modified | new `4_silicon_chain` tab |
-| `src/main/java/com/euvcraft/lithmod/mc/EUVCRAFTMod.java` | modified | `SiliconMachines.register(modEventBus)`, `SiliconGameTests.register(modEventBus)` |
-| `src/main/resources/data/lithmod/machines/crystal_puller.json` | new | energy numbers and slot counts |
-| `src/main/resources/data/lithmod/machines/wafer_slicer.json` | new | energy numbers, `slice_ticks: 200`, slot counts |
-| `src/main/resources/data/lithmod/machine_recipes/crystal_puller.json` | new | 4 silicon to 1 boule in 400 ticks |
-| `src/main/resources/data/lithmod/recipe/silicon_from_smelting.json` | new | sand to silicon in a furnace |
-| `src/main/resources/data/lithmod/recipe/silicon_from_blasting.json` | new | sand to silicon in a blast furnace |
-| `src/main/resources/data/lithmod/loot_table/blocks/crystal_puller.json` | new | block drops itself |
-| `src/main/resources/data/lithmod/loot_table/blocks/wafer_slicer.json` | new | block drops itself |
-| `src/main/resources/data/lithmod/tags/block/machine.json` | modified | both new blocks added |
-| `src/main/resources/data/minecraft/tags/block/mineable/pickaxe.json` | modified | both new blocks added |
-| `src/main/resources/data/minecraft/tags/block/needs_stone_tool.json` | modified | both new blocks added |
-| `src/main/resources/assets/lithmod/{items,models/item,models/block,blockstates}/*.json` | new (10 files) | item definitions, models and blockstates for `silicon`, `silicon_boule`, `crystal_puller`, `wafer_slicer` |
-| `src/main/resources/assets/lithmod/lang/en_us.json` | modified | four item names and the new tab name |
-| `docs/testing.md` | modified | silicon chain section: unit test and the seven game tests |
-| `docs/reports/M1-04_silicon-chain.md` | new | this report |
+| `src/main/java/com/euvcraft/lithmod/core/WaferSlicing.java` | modified | javadoc corrected: a FOUP smaller than the yield comes back **full**, a FOUP larger comes back partially filled |
+| `src/test/java/com/euvcraft/lithmod/core/WaferSlicingTest.java` | modified | removed the tautological "negative control" lines; each case now asserts the property its name claims |
+| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/SiliconMachines.java` | new (first pass) | blocks, block entity types, menu types, `Capabilities.Energy.BLOCK` only |
+| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/SiliconMachineBlock.java` | new (first pass) | ticker calls `serverTick()`, use opens the menu |
+| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/CrystalPullerBlock.java` | new (first pass) | Crystal Puller block |
+| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/CrystalPullerBlockEntity.java` | modified | removed `FALLBACK_CAPACITY`/`FALLBACK_MAX_RECEIVE`; takes its buffer numbers from the loaded definition |
+| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/CrystalPullerMenu.java` | new (first pass) | input slot plus extract-only output slot, base helpers only |
+| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/WaferSlicerBlock.java` | new (first pass) | Wafer Slicer block |
+| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/WaferSlicerBlockEntity.java` | modified | added the missing `BlockState` import; no fallback constants; `slice_ticks` required; per-tick input revalidation; trusted gameplay read split from the public client-view read |
+| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/WaferSlicerMenu.java` | modified | the three slots are added in `addMachineSlots()` through `addCustomSlot`; deleted the copied `quickMoveStack` override and the extra client container |
+| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/BouleSlot.java` | new (first pass) | takes boules only |
+| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/EmptyFoupSlot.java` | modified | `mayPlace` uses the public client-view rule; javadoc states the real boundary |
+| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/SiliconMachineScreen.java` | new (first pass) | shared bar layout |
+| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/screen/{CrystalPuller,WaferSlicer}Screen.java` | new (first pass) | menu-type bindings |
+| `src/main/java/com/euvcraft/lithmod/mc/machine/silicon/client/SiliconClientEvents.java` | new (first pass) | `Dist.CLIENT` screen registration |
+| `src/main/java/com/euvcraft/lithmod/mc/gametest/SiliconGameTests.java` | modified | 7 → 14 tests: puller counts and input removal/swap, slicer input removal/swap and blocked output, lot size vs capacity, menu layout and shift-click, the client-view boundary, definition-driven energy, cooking recipe schema |
+| `src/main/java/com/euvcraft/lithmod/mc/machine/FabMachineBlockEntity.java` | modified | data constructor for real machines, `applyDefinition`/`refreshDefinition`, in-place `MachineEnergy.reconfigure`, `DATA_CAPACITY` mirrored from the real buffer |
+| `src/main/java/com/euvcraft/lithmod/mc/machine/FabMachineMenu.java` | modified | added `addCustomSlot(Slot)` and `machineSlots()`; the three existing helpers delegate to the hook |
+| `src/main/java/com/euvcraft/lithmod/mc/recipe/MachineRecipeRunner.java` | modified | `consume` shrinks by the recipe's declared counts; `inputsMatch` re-validates before every tick and again before the commit; recipe identity kept across reloads |
+| `src/main/java/com/euvcraft/lithmod/mc/registry/ModCreativeTabs.java` | modified | added the missing final class brace (compile fix) |
+| `src/main/java/com/euvcraft/lithmod/mc/registry/ModItems.java`, `EUVCRAFTMod.java` | new/modified (first pass) | items and registration, unchanged in this pass |
+| `src/main/resources/data/lithmod/recipe/silicon_from_{smelting,blasting}.json` | modified | `result` is now the vanilla 26.3 object form `{"id": "lithmod:silicon"}` |
+| `src/main/resources/data/lithmod/{machines,machine_recipes,loot_table,tags}/…` | new/modified (first pass) | machine definitions, puller recipe, loot tables, tags, unchanged in this pass |
+| `src/main/resources/assets/lithmod/**` | new (first pass) | item definitions, models, blockstates, language, unchanged in this pass |
+| `docs/testing.md` | modified | silicon chain unit and game test tables rewritten for the 14 tests and the corrected wording |
+| `docs/reports/M1-04_silicon-chain.md` | modified | this report |
 
 ## 3. Verification
 
-No command was run. This agent cannot execute a shell, so there is no build output, no test
-output and no game test output to paste. Every cell below is therefore unmeasured, and the
-negative controls the task asks for (break the behaviour, show the test fail, revert) have not
-been performed.
-
-Commands the coordinator must run, in this order:
+No command was run by this agent. No build output, no test output and no game test output
+exists to paste, so every count below is unmeasured.
 
 ```powershell
 .\gradlew.bat compileJava --offline
+.\gradlew.bat compileTestJava --offline
 .\gradlew.bat test --offline
 .\gradlew.bat checkCoreImports --offline
 .\gradlew.bat runGameTestServer --offline
 ```
 
-Then take the counts from `build/test-results/test/*.xml` for the unit test table.
+Then take the counts from `build/test-results/test/*.xml`.
 
 | test class | tests | failures | errors | skipped |
 |---|---|---|---|---|
-| `com.euvcraft.lithmod.core.WaferSlicingTest` | not measured | not measured | not measured | not measured |
-| `com.euvcraft.lithmod.mc.ItemAssetResourceTest` (existing, affected: 4 new items) | not measured | not measured | not measured | not measured |
+| `com.euvcraft.lithmod.core.WaferSlicingTest` | 7 written, not run | not run | not run | not run |
+| `com.euvcraft.lithmod.mc.ItemAssetResourceTest` (existing, 4 new items) | not run | not run | not run | not run |
+| every other existing unit test class | not run | not run | not run | not run |
 | total | no run produced counts | | | |
 
-Game tests (one line per test, all currently unrun):
+Game tests: 14 registered, **0 run**. Negative controls: 0 executed. Both are the
+coordinator's; section 5 says why.
 
 | game test | status |
 |---|---|
@@ -94,108 +89,186 @@ Game tests (one line per test, all currently unrun):
 | `lithmod:wafer_slicer_refuses_a_used_foup` | not run |
 | `lithmod:wafer_slicer_pauses_without_energy` | not run |
 | `lithmod:wafer_slicer_save_load_round_trip` | not run |
+| `lithmod:wafer_slicer_rechecks_its_inputs` (new) | not run |
+| `lithmod:wafer_slicer_lot_size_follows_the_foup_capacity` (new) | not run |
+| `lithmod:wafer_slicer_menu_layout_and_shift_click` (new) | not run |
+| `lithmod:wafer_slicer_foup_slot_client_boundary` (new) | not run |
 | `lithmod:crystal_puller_runs_its_recipe` | not run |
+| `lithmod:crystal_puller_rechecks_its_inputs` (new) | not run |
 | `lithmod:silicon_machines_expose_no_item_handler` | not run |
+| `lithmod:silicon_energy_follows_machine_definitions` (new) | not run |
+| `lithmod:silicon_cooking_recipe_files_match_the_vanilla_schema` (new) | not run |
+
+Compile evidence that does exist, and its exact limits: the coordinator's temporary probe
+added only the `ModCreativeTabs` brace and the `BlockState` import, compiled **main and test
+sources** with them, and then restored the original bytes. That is evidence that those two
+defects were the only *syntax/import* blockers of the first pass. It is not a build of the
+sources now on disk, and this report does not claim otherwise; the compile of this repair pass
+is pending.
 
 ## 4. Spec conformance
 
+Repair scope, item by item. "met" means the code says the thing; "not verified" is recorded
+where no run backs it.
+
 | item | met/partly/not met | evidence |
 |---|---|---|
-| Items `silicon` and `silicon_boule` with model, item definition, language entry and creative tab entry | partly | `ModItems.SILICON`, `ModItems.SILICON_BOULE`; `assets/lithmod/{items,models/item}/{silicon,silicon_boule}.json`; `en_us.json`; `ModCreativeTabs.SILICON_CHAIN`. Not met as "verified": `ItemAssetResourceTest` has not been run |
-| Placeholder art only, no new binary art | met | every model parents `minecraft:item/generated` or `minecraft:block/cube_all` and names a vanilla texture |
-| Smelting and blasting recipes turning `minecraft:sand` into silicon | partly | `data/lithmod/recipe/silicon_from_smelting.json`, `silicon_from_blasting.json` written in the 1.21+ cooking schema (`ingredient`, `result`, `experience`, `cookingtime`). Not verified: no datapack load has run (see section 5) |
-| Machine recipe 4 silicon to 1 boule in 400 ticks | met | `data/lithmod/machine_recipes/crystal_puller.json`; the runtime cost per boule is section 6 |
-| Machine definitions with energy values and a `slice_ticks` param | met | `machines/crystal_puller.json` (20 FE/tick, 20000 capacity), `machines/wafer_slicer.json` (30 FE/tick, `slice_ticks: 200`) |
-| Crystal Puller on `FabMachineBlockEntity` with input, one output, energy bar, progress bar, `MachineRecipeRunner`, hand-fed | partly | `CrystalPullerBlockEntity` uses the inherited `serverTick()` and therefore `MachineRecipeRunner`; `CrystalPullerMenu` + `CrystalPullerScreen` draw both bars. Not verified: bars are only confirmed by reading the shared `FabMachineScreen` code |
-| Slicer boule slot, input FOUP slot that accepts only empty unstarted lots, extract-only output slot | partly | `BouleSlot`, `EmptyFoupSlot` (both call `WaferSlicerBlockEntity.acceptedFoup`, which reads through `FoupItems.trustedContentsOf`), `addOutputSlot`. Not verified: the client-side run needs the game test server |
-| Every FOUP read through `FoupItems.trustedContentsOf` | met | the only FOUP reads in the new code are in `acceptedFoup(ItemStack)`; no `contentsOf` call exists in this task |
-| Runs for `slice_ticks` when both inputs, energy and output room are present | partly | `WaferSlicerBlockEntity.serverTick`/`advance`; progress is `sliceTicks()` from the definition param. Not verified: unrun |
-| Consumes one boule and the empty FOUP and writes a FOUP of the same item type | partly | `complete()` writes the product first, then clears the FOUP slot and shrinks the boule. Not verified: unrun |
-| Fresh random lot id, the input's stored capacity, no run spec, `min(wafersPerBoule, capacity)` wafers each unprocessed via the existing factory | partly | `complete()` uses `UUID.randomUUID()`, `new FoupContents(lotId, input.capacity(), wafers)` (three-arg form, so `run` is null) and `Wafer.unprocessed()` |
-| A boule yielding fewer wafers than the capacity leaves the FOUP partially filled | met | that is the `min` in `WaferSlicing.wafersFor`, unit tested; the game tests run at the 25/25 default |
-| Pure `wafersFor(settings, capacity)` in core, unit tested | partly | `core/WaferSlicing.java`, `WaferSlicingTest` (7 tests written). Not verified: never executed |
-| No hard-coded gameplay numbers | partly | slice length, energy and slot counts come from the definition; wafer count from config plus the stored capacity. The two remaining literals are the documented fallbacks `FALLBACK_SLICE_TICKS`, `FALLBACK_CAPACITY`, `FALLBACK_MAX_RECEIVE`, used only before the data pack is read, plus the placeholder recipe numbers the task asked for |
-| Hand-fed only, no item handler capability | partly | `SiliconMachines` registers `Capabilities.Energy.BLOCK` only, and the inherited `Container` answers `canPlaceItem`/`canTakeItem` false. Not verified: unrun |
-| Server authoritative, menus only display synced values | met | all logic is in `serverTick`; the menus and screens read only `ContainerData`; the validating slots run on both sides so a client cannot push a bad stack |
-| Lots record no substrate generation in M1 | met | the produced lot carries no generation field; see section 8 |
-| JUnit for `wafersFor` | partly | written, not run |
-| The seven named game tests | partly | written in `SiliconGameTests`, not run |
-| Done when: build and tests pass with counts that add up | not met | no run exists |
-| Done when: a boule becomes a usable lot in a game test | partly | `wafer_slicer_produces_a_lot` and `wafer_slicer_lot_takes_layer_one` do exactly that, but neither has been executed |
-| Done when: the report is `docs/reports/M1-04_silicon-chain.md` | met | this file |
-| Out of scope respected | met | no crafting recipe for the machine blocks, no mask or Process Cell work, and no file outside the allowed list was created or edited |
+| 1. `ModCreativeTabs` closing brace | met | `ModCreativeTabs.java` ends `private ModCreativeTabs() { }` + `}`; coordinator probe compiled with it |
+| 1. `WaferSlicerBlockEntity` `BlockState` import | met | `import net.minecraft.world.level.block.state.BlockState;`; used by the constructor parameter |
+| 1. No other compile error known | not verified | the probe predates this pass; the coordinator's `compileJava`/`compileTestJava` decides |
+| 2. Consume the recipe's counts, not one item | met | `MachineRecipeRunner.consume(MachineRecipe, List<ItemStack>)` shrinks by `recipe.ingredientCounts().get(slot)` |
+| 2. Re-validate before every progress tick | met | `advance` begins `if (!inputsMatch(current, inputs)) { reset(); return false; }` |
+| 2. Re-validate before committing output | met | `advance` repeats `inputsMatch` after `progress` reaches `ticks` and before `consume`/`outputWriter` |
+| 2. Recipe identity stable across reloads | met | `current` is never re-matched while running; class javadoc states it; `tick` only consults the candidate list when idle |
+| 2. Abort without free output | met | the two `reset()` paths return `false` and write nothing |
+| 2. `pullerRunsItsRecipe` no longer asserts 3 silicon left | met | asserts the input slot is empty after one boule |
+| 2. Regression coverage for counts, removal and swap | met (not run) | `crystal_puller_rechecks_its_inputs`: 5 in → 1 boule with 1 left; 3 in → never starts; removal and swap mid-run reset with no FE spent |
+| 3. No duplicated 20 000/2 000 in real BEs | met | `CrystalPullerBlockEntity.FALLBACK_*` and all three `WaferSlicerBlockEntity.FALLBACK_*` deleted |
+| 3. Same `MachineEnergy` instance, small reconfigure | met | `MachineEnergy.reconfigure(int,int)` writes the inherited `capacity`/`maxInsert`; the `exposed` delegate is untouched |
+| 3. Stored FE preserved when capacity shrinks | met | `reconfigure` never touches `energy`; the install's `SimpleEnergyHandler` documents energy above a reduced capacity and returns 0 from `insert` |
+| 3. Init from the definition, refresh on tick and load | met | new data constructor calls `refreshDefinition()`; `serverTick` and `loadAdditional` call it; `DATA_CAPACITY` is read back from the buffer |
+| 3. Fail closed without data | met | real machines start at capacity 0 / insert limit 0; the slicer returns `sliceTicks() == 0` and refuses to start or keep a run |
+| 3. Slicer refresh without the generic runner | met | `WaferSlicerBlockEntity.serverTick` calls `refreshDefinition()` only, never `super.serverTick()` |
+| 3. `slice_ticks` required | met | `definition.param(SLICE_TICKS_PARAM).orElse(0)`; `sliceTicks() <= 0` resets and stops |
+| 3. Tests for buffer, limit and a definition update | met (not run) | `silicon_energy_follows_machine_definitions` |
+| 3. Hopper guards and no-extraction kept | met | `canPlaceItem`/`canTakeItem` false; `WithdrawNothing` untouched; `silicon_machines_expose_no_item_handler` now also asserts extraction through the capability is refused |
+| 4. Smallest base hook for a custom slot + machine `Container` | met | `FabMachineMenu.addCustomSlot(Slot)` and `machineSlots()`; `addMachineSlot`, `addFoupSlot`, `addOutputSlot` all delegate to the hook |
+| 4. Slicer adds its slots in `addMachineSlots`, base routing | met | `WaferSlicerMenu.addMachineSlots` adds `BouleSlot`, `EmptyFoupSlot`, `addOutputSlot`; override and extra client container deleted |
+| 4. No unused counters/getters/aliases | met | the slicer menu has two constructors and one method, nothing else |
+| 4. Slot order/count/predicate and shift-click assertions | met (not run) | `wafer_slicer_menu_layout_and_shift_click`: 39 slots, index parity on both menus, machine slots bound to the slicer, four predicate pairs, five shift-click moves |
+| 5. Slicer re-checks boule and FOUP every tick | met | `inputsValid()` is the first check in `advance`, and `complete()` re-checks both plus the output slot |
+| 5. Pause with progress intact and no FE when blocked | met | the output check precedes the energy draw in `advance` |
+| 5. Consume exactly one of each only on success | met | `complete()` writes the product, then clears the FOUP slot and shrinks the boule by one |
+| 5. Input-removal, swap and blocked-output coverage | met (not run) | `wafer_slicer_rechecks_its_inputs`, plus the two existing persistence tests |
+| 6. No false parity claim | met | `EmptyFoupSlot` javadoc states the boundary; `acceptsFoupStack` is documented as prediction only |
+| 6. Authoritative reads stay trusted | met | `acceptedFoup` reads through `FoupItems.trustedContentsOf` and refuses client views; it is what the tick and `complete()` call |
+| 6. Client prediction uses only the public count | met | `acceptsFoupStack` reads `contents.publicView().waferCount()` for a client view |
+| 6. No per-wafer exposure or warning spam | met | no roll or flag is read in either method; `trustedContentsOf` is not called from `mayPlace`, so a normal placeholder logs nothing |
+| 6. Server refusal and client-view rejection tested separately | met (not run) | `wafer_slicer_refuses_a_used_foup` (server) and `wafer_slicer_foup_slot_client_boundary` (client view) |
+| 7. Vanilla result-object form | met | both files carry `"result": { "id": "lithmod:silicon" }`, copied from the coordinator's `build/api-reference/iron_ingot_from_{smelting,blasting}_raw_iron.json` |
+| 7. Recipe-manager lookup in a game test | not met | no readable 26.3 recipe API in this worktree; see sections 5 and 6 |
+| 7. No new binary assets or dependencies | met | placeholder models only; no dependency change |
+| 8. Documentation wording | met | `WaferSlicing` javadoc, `WaferSlicingTest` display names, `docs/testing.md` all say small FOUP = full, large FOUP = partial |
+| 8. No tautological "negative control" claims | met | the two tautological lines in `WaferSlicingTest` are gone; the surviving "negative control" labels are inputs that are refused, not executed mutants |
+| 8. No fabricated open question about 4 silicon | met | section 7 |
+| Report shape | met | this file, headings in the required order |
 
 ## 5. Not verified
 
-- Nothing was executed: no compile, no unit test, no game test, no client run. Every "met" row above rests on reading the source, not on output.
-- The vanilla cooking recipe schema for 26.3 (`type`, `ingredient`, `result`, `experience`, `cookingtime`) could not be checked offline: the vanilla data and the Gradle cache are outside the paths this agent may read. The two recipe files must be confirmed against a datapack load or a running server. If the schema differs, the fix is local to those two JSON files.
-- Whether `MachineRecipeRunner.consume` shrinking one item per input slot (section 6) is the intended framework behaviour was not decided by this agent; the game test asserts the current behaviour rather than the task text, and that assertion must be reviewed.
-- The energy buffer is not resized from data: `FabMachineBlockEntity` builds it once with the constructor's fallback capacity. The two machines' fallback constants equal the `energy_capacity` and `max_receive` in their JSON files so the buffer and the data agree, but changing the JSON capacity afterwards changes only what the menu displays for the runner-driven Crystal Puller, because the base class writes `DATA_CAPACITY` from the definition. The Wafer Slicer reports the buffer's own capacity instead. This is framework behaviour and was left alone.
-- The two screen classes and `SiliconMachineScreen` were never loaded; the client event binding is a single `RegisterMenuScreensEvent` listener mirroring the existing one.
+- Nothing was executed: no compile, no unit test, no game test, no client run. Every row above
+  rests on reading the source.
+- No build of the current sources has run. The coordinator's probe compiled the *first* pass
+  plus the two syntax fixes and then restored the bytes; this pass adds code that has never
+  been through a compiler. Section 3's counts are therefore pending, not zero.
+- No negative control was executed for any new test. The coordinator owns deliberate mutation
+  runs; the "negative control" comments in the tests mark inputs that must be refused, not
+  mutants that were broken and reverted.
+- A real recipe-manager lookup was not written. The installed 26.3 sources are a jar under
+  `build/moddev/artifacts/` and the Gradle cache is outside the paths this agent may read, so
+  any `RecipeManager`/`RecipeType`/`RecipeHolder` call would have been a guess. A wrong guess
+  breaks the whole build, which is worse than the gap. `silicon_cooking_recipe_files_match_the_vanilla_schema`
+  checks the two files' key set and result shape against the vanilla example; the datapack load
+  itself is still to be confirmed in the `runGameTestServer` log, which names any recipe that
+  failed to parse.
+- A definition *reload* was not exercised. There is no reload seam a game test can reach:
+  `MachineDefinitionLoader.apply` is protected and the registry is a static. The
+  `applyDefinition` path that a reload, a tick and a load all share is tested with a
+  hand-built `MachineDefinition`.
+- The two screen classes and `SiliconMachineScreen` were never loaded; the client binding is a
+  single `RegisterMenuScreensEvent` listener.
+- Whether my three framework edits disturb the existing M1-02 and M1-03 game tests was not
+  checked by running them. What I read: `test_machine.json` declares `energy_capacity 10000`
+  and `max_receive 1000`, identical to `TestMachineBlockEntity`'s fallbacks, so the
+  definition-driven buffer changes nothing for it; both test recipes declare `count: 1` per
+  input, so count-based consumption still empties those stacks; and no existing test removes
+  an input mid-run (`MachineGameTests.saveLoadRoundTrip` wipes and reloads before it ticks).
+  `ChipGameTests` pins creative tab entry counts and this pass added no entries.
 - `docs/m0-foundation.md` was not updated; the task did not ask for it.
-- Whether any existing test pins a count that these two new blocks and four new items break: `MachineDropGameTests` uses only the test machine and `ChipGameTests` pins the main tab at two entries and the chips tab at seven, none of which this task touches, but nothing was run to confirm.
 
 ## 6. Deviations
 
 | spec says | what I did | why |
 |---|---|---|
-| "4 silicon becomes 1 silicon_boule" | the data declares `{ "item": "lithmod:silicon", "count": 4 }`, and `MachineRecipeRunner.consume` shrinks exactly one item per input slot, so one boule costs one silicon | `MachineRecipeRunner` is the M1-02 framework and out of this task's scope. The precise blocker: `consume(List<ItemStack>)` should shrink each input by `recipe.ingredientCounts().get(slot)`, which it currently cannot do because `consume` is static and is not passed the recipe. Either it takes the counts as a parameter or `advance` shrinks inline. Until that changes, a four-silicon boule is one boule for one silicon. `crystal_puller_runs_its_recipe` asserts the silicon left is 3 and says why |
-| "A single block with a boule slot, an input FOUP slot..." using the framework menu helpers | the two validating slots are added by `WaferSlicerMenu`'s constructor and `quickMoveStack` is overridden | `FabMachineMenu` counts only the slots its own helpers add, in a private field, and offers no way to add a custom `Slot`. Without the override, shift-clicking a FOUP would be routed as a player slot. The framework hook that would remove the override is one method, something like `protected final Slot addCustomSlot(Slot slot) { addSlot(slot); this.machineSlotCount++; return slot; }` |
-| progress synced to the menu | the slicer writes `DATA_PROGRESS`, `DATA_TICKS`, `DATA_ENERGY` and `DATA_CAPACITY` itself through `data()` | `FabMachineBlockEntity.syncData` is private, so an overriding `serverTick` cannot reuse it |
-| "Nothing numeric is hard-coded" | three fallback constants on each block entity | a block entity can be constructed before the data pack is read, exactly like the framework's own `FALLBACK_CAPACITY` |
-| two machine blocks | `SiliconMachineBlock` base plus one thin subclass each | both blocks share the ticker and the use-on behaviour; only the block entity differs |
+| repair authorizes only `FabMachineBlockEntity.java`, `FabMachineMenu.java`, `MachineRecipeRunner.java` outside the machine package | exactly those three framework files, and nothing else outside the allowed list | the three repairs that reach the framework (consume counts, the definition refresh, the custom-slot hook) cannot be done inside `mc/machine/silicon`; `MachineRecipeRunner` and `FabMachineBlockEntity` are shared with M1-02, which is why every existing API was kept and only extended |
+| "prefer keeping the SAME `MachineEnergy` instance" | `MachineEnergy.reconfigure(int,int)` mutates the inherited protected fields | the `exposed` capability delegate holds a reference to the buffer, so replacing it would have invalidated every cached capability query; in-place reconfiguration also matches the install's documented "stored energy may exceed a reduced capacity" contract |
+| `FabMachineBlockEntity` change should be "minimal" | added one constructor overload, two methods and one package-private buffer method | the overload is what removes the Java literals from the real machines; `applyDefinition` is the single place a definition reaches a machine and is what the game test calls to simulate a data change; `refreshDefinition` is the tick/load/slicer hook; `reconfigure` is the only way to reach the inherited fields |
+| "prefer keeping the SAME `MachineEnergy`" (Beam's alternative was buffer replacement) | in-place, as the task text and the installed library both allow | Beam's preflight noted the replacement suggestion was advisory |
+| a recipe-manager lookup in a game test "if feasible" | a JSON schema check instead | see section 5; the alternative risked the build |
+| `MachineRecipeRunner` revalidation resets the run | resets, rather than pausing, when inputs go invalid | a run whose ingredients were taken away is not a run that can be resumed; the task says abort/reset without free output |
+| `acceptedFoup` documented as the trusted read | it now also refuses a client view outright, before the trusted read | `trustedContentsOf` sanitises a client view into a fresh empty lot, which would have let a placeholder pass as an empty FOUP; every authoritative read still goes through the trusted read |
 
 ## 7. Open questions
 
-1. Should the Crystal Puller cost one silicon or four? Fixing it means changing `MachineRecipeRunner.consume` in the framework (section 6), which needs explicit coordinator authorisation.
-2. Should `FabMachineBlockEntity`'s energy buffer be resized when `energy_capacity` changes in the data, so the menu and the buffer can never disagree? That is a framework change too.
-3. Is `FabMachineMenu`'s missing custom-slot hook worth adding for this task's sake, or should the slicer's `quickMoveStack` override stay?
-4. Do the vanilla 26.3 cooking recipe files load? Unverified here (section 5).
-5. Should `silicon` and `silicon_boule` ever need a component (for example a boule quality in a later milestone), or are they plain items for good?
+1. Should `MachineRecipeRunner` also re-validate after `hasRoomFor` on the tick that completes,
+   that is three input checks per completing tick rather than two? Not a product decision; the
+   coordinator may prefer the cheaper form.
+2. The Crystal Puller and Wafer Slicer definitions both declare `energy_capacity 20000` and
+   `max_receive 2000`. They are placeholders per the task. If a datapack override is wanted as
+   evidence that the numbers really are per machine, one of the two files has to change, and
+   that is a data decision rather than a repair.
+3. Whether the recipe-manager lookup for the two cooking recipes is wanted once someone can
+   compile: with a working compiler it is a few lines, and until then the datapack load is only
+   visible in the game test server log.
 
 ## 8. Handoff
 
-Extracted from the source written by this task.
+Extracted from the source written by this task and this repair.
 
 Core:
 
 - `com.euvcraft.lithmod.core.WaferSlicing.wafersFor(FabSettings settings, int capacity) -> int`
   returns `min(settings.wafersPerBoule(), capacity)`; null settings throws
   `NullPointerException`, capacity below one throws `IllegalArgumentException`.
-- Lots produced by the slicer carry **no substrate generation and no run spec**. A lot is only
-  "started" once `FabYieldService.applyLayerStep` freezes a `RunSpec` at layer 1; there is no
-  field anywhere for where a boule was grown, and M1 adds none.
 
-Minecraft side:
+Machine framework (extended by this repair, existing signatures unchanged):
 
-- `SiliconMachines` (`mc.machine.silicon`): `CRYSTAL_PULLER`, `WAFER_SLICER` (`DeferredBlock`),
-  `CRYSTAL_PULLER_BE`, `WAFER_SLICER_BE` (`DeferredHolder<BlockEntityType<?>, …>`),
-  `CRYSTAL_PULLER_MENU`, `WAFER_SLICER_MENU` (`DeferredHolder<MenuType<?>, …>`),
-  `register(IEventBus modEventBus)`.
-- `CrystalPullerBlockEntity`: `MACHINE_ID = "crystal_puller"`, `INPUT_SLOT = 0`, `OUTPUT_SLOT = 1`,
-  `FALLBACK_CAPACITY = 20000`, `FALLBACK_MAX_RECEIVE = 2000`. Standard base tick.
+- `FabMachineBlockEntity(BlockEntityType<?>, BlockPos, BlockState, int inputSlots, int outputSlots)`
+  — new overload for a real machine: the buffer starts at capacity 0 / insert limit 0 and is
+  sized from the loaded definition at the end of the constructor.
+- `public final void applyDefinition(MachineDefinition definition)` — resizes the real buffer,
+  sets the runner's machine cost and mirrors the buffer capacity into `DATA_CAPACITY`.
+- `protected final void refreshDefinition()` — re-applies the loaded definition, does nothing
+  when none is loaded. Called by the base `serverTick`, by `loadAdditional` and by the slicer's
+  own tick.
+- `MachineEnergy.reconfigure(int capacity, int maxInsert)` — package-private, in place, stored
+  energy untouched.
+- `FabMachineMenu.addCustomSlot(Slot)` and `FabMachineMenu.machineSlots()` — both
+  `protected final`; `addMachineSlot`, `addFoupSlot` and `addOutputSlot` delegate to the first.
+- `MachineRecipeRunner.inputsMatch(MachineRecipe, List<ItemStack>)` — new public static, the
+  per-slot rule `firstMatch` and the tick both use.
+
+Silicon chain:
+
+- `CrystalPullerBlockEntity`: `MACHINE_ID = "crystal_puller"`, `INPUT_SLOT = 0`,
+  `OUTPUT_SLOT = 1`. No fallback constants.
 - `WaferSlicerBlockEntity`: `MACHINE_ID = "wafer_slicer"`, `BOULE_SLOT = 0`, `FOUP_SLOT = 1`,
-  `OUTPUT_SLOT = 2`, `SLICE_TICKS_PARAM = "slice_ticks"`, `FALLBACK_SLICE_TICKS = 200`,
-  `FALLBACK_CAPACITY = 20000`, `FALLBACK_MAX_RECEIVE = 2000`. Public members:
-  `static FoupContents acceptedFoup(ItemStack stack)` (null when the stack is not a FOUP with an
-  empty, unstarted, trusted lot), `static Item bouleItem()`, `int sliceTicks()`,
-  `int energyPerTick()`, `boolean isSlicing()`, `boolean isPaused()`, `int sliceProgress()`,
-  `int sliceTicksRemaining()`, `void resetSlice()`, and `serverTick()` which replaces the base
-  one. Saved state lives under the block entity's `slicer` node (`slicing`, `progress`, `ticks`).
-- `SiliconMachineScreen` is the shared bar layout; `CrystalPullerScreen` and `WaferSlicerScreen`
-  only bind their menu type.
+  `OUTPUT_SLOT = 2`, `SLICE_TICKS_PARAM = "slice_ticks"`. Public members:
+  `static @Nullable FoupContents acceptedFoup(ItemStack)` (trusted; null unless the stack is a
+  FOUP carrying a real, empty, unstarted lot), `static boolean acceptsFoupStack(ItemStack)`
+  (slot prediction; public wafer count for a client view, real lot otherwise),
+  `static Item bouleItem()`, `int sliceTicks()` (0 when there is no usable definition),
+  `int energyPerTick()` (0 when no definition), `boolean isSlicing()`, `boolean isPaused()`,
+  `int sliceProgress()`, `int sliceTicksRemaining()`, `void resetSlice()`, and a
+  `serverTick()` that replaces the base one. Saved state lives under the block entity's
+  `slicer` node (`slicing`, `progress`, `ticks`).
+- `WaferSlicerMenu(int, Inventory, FabMachineBlockEntity)` and
+  `WaferSlicerMenu(int, Inventory, RegistryFriendlyByteBuf)`; slots are added only in
+  `addMachineSlots()`.
+- Lots produced by the slicer carry **no substrate generation and no run spec**. A lot is only
+  "started" once `FabYieldService.applyLayerStep` freezes a `RunSpec` at layer 1; M1 adds no
+  field for where a boule was grown.
 
-Data and registries:
+Data, registries and config:
 
-- `data/lithmod/machines/crystal_puller.json`, `data/lithmod/machines/wafer_slicer.json`
-  (the slicer carries `slice_ticks`, `input_slots`, `output_slots`).
+- `data/lithmod/machines/crystal_puller.json` (20000 FE, 2000 per insert, 20 FE/tick),
+  `data/lithmod/machines/wafer_slicer.json` (20000 FE, 2000 per insert, 30 FE/tick,
+  `slice_ticks: 200`); both also declare `input_slots`/`output_slots`.
 - `data/lithmod/machine_recipes/crystal_puller.json`: 4 silicon, 1 boule, 400 ticks, no energy
-  override so it takes the machine's `energy_per_tick`.
-- `data/lithmod/recipe/silicon_from_smelting.json`, `silicon_from_blasting.json`.
-- `data/lithmod/loot_table/blocks/{crystal_puller,wafer_slicer}.json`; both blocks are in
-  `lithmod:machine`, `minecraft:mineable/pickaxe` and `minecraft:needs_stone_tool`.
-- Items `lithmod:silicon`, `lithmod:silicon_boule`, `lithmod:crystal_puller`, `lithmod:wafer_slicer`
-  in `ModItems`; creative tab `ModCreativeTabs.SILICON_CHAIN` (registry id `4_silicon_chain`).
-- Config keys used: `wafersPerBoule` and `foupCapacity` (from `FabSettings`, wired to the
-  `lithmod-local.toml` config), plus the shared `fePowerMultiplier` that scales every machine's
-  `energy_per_tick`.
+  override, so it takes the machine's `energy_per_tick`.
+- `data/lithmod/recipe/silicon_from_smelting.json` (200 ticks) and
+  `silicon_from_blasting.json` (100 ticks): sand to `{"id": "lithmod:silicon"}`.
+- Items `lithmod:silicon`, `lithmod:silicon_boule`, `lithmod:crystal_puller`,
+  `lithmod:wafer_slicer`; creative tab `ModCreativeTabs.SILICON_CHAIN`
+  (registry id `4_silicon_chain`).
+- Config keys used: `wafersPerBoule` and `foupCapacity` from `FabSettings`, plus the shared
+  `fePowerMultiplier` that scales every machine's `energy_per_tick`.

@@ -1,10 +1,12 @@
 package com.euvcraft.lithmod.mc.machine.silicon;
 
 import com.euvcraft.lithmod.core.FoupContents;
+import com.euvcraft.lithmod.core.FoupPublicView;
 import com.euvcraft.lithmod.core.MachineDefinition;
 import com.euvcraft.lithmod.core.Wafer;
 import com.euvcraft.lithmod.core.WaferSlicing;
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
+import com.euvcraft.lithmod.mc.FoupContentsCodec;
 import com.euvcraft.lithmod.mc.FoupItems;
 import com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity;
 import com.euvcraft.lithmod.mc.registry.ModItems;
@@ -14,6 +16,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import org.jspecify.annotations.Nullable;
@@ -30,14 +33,19 @@ import java.util.UUID;
  * product here is a FOUP whose sealed lot has a fresh id, the capacity of the FOUP that
  * went in and {@link Wafer#unprocessed()} wafers in it — none of which a recipe can
  * express. So the slicer owns its own progress, with the same pause rules as the runner:
- * nothing is consumed until the product is written, a full output slot pauses instead of
- * eating the boule, and a partial energy draw counts as no energy.</p>
+ * both inputs are re-checked every tick, nothing is consumed until the product is
+ * written, a full output slot pauses instead of eating the boule without spending FE, and
+ * a partial energy draw counts as no energy.</p>
  *
- * <p>Every number comes from data or config. The length of a run is the {@code slice_ticks}
- * param of {@code data/lithmod/machines/wafer_slicer.json}; the energy is the definition's
- * {@code energy_per_tick} through the configured FE multiplier; the wafer count is
+ * <p>Every number comes from data or config, with no Java copy of any of them. The length
+ * of a run is the {@code slice_ticks} param of
+ * {@code data/lithmod/machines/wafer_slicer.json}; the energy is the definition's
+ * {@code energy_per_tick} through the configured FE multiplier; the buffer capacity and
+ * the insert limit are applied to the real buffer by the base class; the wafer count is
  * {@link WaferSlicing#wafersFor} over the configured {@code wafersPerBoule} and the stored
- * FOUP capacity.</p>
+ * FOUP capacity. A machine whose definition is missing, or whose definition declares no
+ * {@code slice_ticks}, does not slice at all: it fails closed rather than running on a
+ * made-up number.</p>
  *
  * <p>Lots produced here carry no substrate generation and no run spec: the lot has not been
  * through a process step, and M1 has nowhere to record where a boule was grown.</p>
@@ -57,20 +65,6 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
     /** Name of the definition param that gives the length of one slice. */
     public static final String SLICE_TICKS_PARAM = "slice_ticks";
 
-    /**
-     * Slice length used before {@code wafer_slicer.json} has loaded.
-     *
-     * <p>The same role as {@code FALLBACK_CAPACITY} in the framework: a block entity can be
-     * constructed before any data exists, so the machine needs a value that is only ever
-     * used in that window.</p>
-     */
-    public static final int FALLBACK_SLICE_TICKS = 200;
-
-    /** Buffer capacity; see the note on the Crystal Puller's fallback constants. */
-    public static final int FALLBACK_CAPACITY = 20_000;
-    /** Fallback per-operation insert limit, equal to {@code max_receive} in the data file. */
-    public static final int FALLBACK_MAX_RECEIVE = 2_000;
-
     private static final String STATE_KEY = "slicer";
 
     private boolean slicing;
@@ -79,8 +73,7 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
     private int ticks;
 
     public WaferSlicerBlockEntity(BlockPos pos, BlockState state) {
-        super(SiliconMachines.WAFER_SLICER_BE.get(), pos, state, 2, 1,
-            FALLBACK_CAPACITY, FALLBACK_MAX_RECEIVE);
+        super(SiliconMachines.WAFER_SLICER_BE.get(), pos, state, 2, 1);
     }
 
     @Override
@@ -89,30 +82,75 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
     }
 
     // ------------------------------------------------------------------
-    // Input validation, shared by the slot and the tick
+    // Input validation: the trusted read for gameplay, the public one for the slot
     // ------------------------------------------------------------------
 
     /**
-     * Reads a stack as a lot the slicer is willing to fill.
+     * Reads a stack as a lot the slicer is willing to fill, through the trusted read.
      *
-     * <p>The only acceptable input is a FOUP that carries a lot, and that lot holds no
-     * wafers and no run spec: wafers mean the lot is already sliced and a run spec means it
-     * has been processed. The read goes through
-     * {@link FoupItems#trustedContentsOf}, which refuses a client view, so a stack a client
-     * invented reads as an empty lot rather than as wafers.</p>
+     * <p><strong>This is the authoritative check</strong>, and it is the one the server tick
+     * and {@link #complete()} use: the only acceptable input is a FOUP that carries a lot,
+     * and that lot holds no wafers and no run spec. Wafers mean the lot is already sliced
+     * and a run spec means it has been processed. The lot itself is only ever read through
+     * {@link FoupItems#trustedContentsOf}.</p>
      *
-     * <p>A FOUP stack with no lot component at all is refused rather than treated as empty,
-     * because there is no stored capacity to fill it to.</p>
+     * <p>A client view is refused outright rather than sanitised. The trusted read turns a
+     * client view into a fresh empty lot, so without this check the machine would accept a
+     * placeholder as if it were a real empty FOUP and slice a boule into a lot the player
+     * never owned. A client view is a display value, not a lot.</p>
+     *
+     * <p>A FOUP stack with no lot component at all is refused for the same reason: there is
+     * no stored capacity to fill it to.</p>
      *
      * @param stack the stack to check, not null
      * @return the trusted lot, or {@code null} when this slot must refuse the stack
      */
     public static @Nullable FoupContents acceptedFoup(ItemStack stack) {
-        if (!FoupItems.isFoup(stack)) {
+        FoupContents raw = FoupItems.contentsOf(stack);
+        if (raw == null || FoupContentsCodec.isClientView(raw)) {
             return null;
         }
         FoupContents contents = FoupItems.trustedContentsOf(stack);
         return contents.isEmpty() && contents.run() == null ? contents : null;
+    }
+
+    /**
+     * The slot's own rule, which runs on the client menu as well as the server one.
+     *
+     * <p>A client never holds a sealed lot. The network codec sends
+     * {@link FoupContents#publicView()} and nothing else, so the FOUP stack in a client slot
+     * is a client-view placeholder: its wafer count is the real one, and its rolls and its
+     * run spec were never filled in by the server. Reading that stack through
+     * {@link FoupItems#trustedContentsOf} is therefore the wrong tool for predicting what
+     * the slot will accept, because the trusted read deliberately throws the wafer count
+     * away and answers "empty" — it would report a FOUP the player can plainly see is full
+     * as a valid input, and it would log a warning for a perfectly normal client placeholder
+     * every time the slot is asked.</p>
+     *
+     * <p>So this method uses the public wafer count when the stack is a client view and the
+     * real lot otherwise, and that is exactly the boundary between the two sides:</p>
+     * <ul>
+     *   <li>a client view holding wafers is refused here and on the server, so a FOUP the
+     *       player can plainly see is full is turned away in the client's own menu before a
+     *       click is even sent;</li>
+     *   <li>the client cannot know about a hidden run spec, because the network codec sends
+     *       none, so a client view with no wafers is predicted acceptable even when the
+     *       server's lot is in fact started. Nothing runs either way: the server refuses
+     *       every client view outright through {@link #acceptedFoup}, so a placeholder never
+     *       becomes a machine input;</li>
+     *   <li>a stack with no lot component at all is refused on both sides.</li>
+     * </ul>
+     */
+    public static boolean acceptsFoupStack(ItemStack stack) {
+        FoupContents contents = FoupItems.contentsOf(stack);
+        if (contents == null) {
+            return false;
+        }
+        if (FoupContentsCodec.isClientView(contents)) {
+            FoupPublicView view = contents.publicView();
+            return view.waferCount() == 0;
+        }
+        return contents.isEmpty() && contents.run() == null;
     }
 
     // ------------------------------------------------------------------
@@ -125,18 +163,29 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
      * <p>Replaces the base implementation because this machine's product is a sealed lot
      * rather than a recipe result; the base implementation would run
      * {@link com.euvcraft.lithmod.mc.recipe.MachineRecipeRunner} over recipes that do not
-     * exist for this machine id. Progress is still published through the same
-     * {@code DATA_PROGRESS} and {@code DATA_TICKS} values the menu reads, so the screen
-     * needs to know nothing about this class.</p>
+     * exist for this machine id. It does call
+     * {@link #refreshDefinition() the definition refresh} and nothing else of the base
+     * tick, so a data change resizes the real buffer without the recipe runner ever being
+     * involved. Progress is still published through the same {@code DATA_PROGRESS} and
+     * {@code DATA_TICKS} values the menu reads, so the screen needs to know nothing about
+     * this class.</p>
      */
     @Override
     public void serverTick() {
         if (level == null || level.isClientSide()) {
             return;
         }
+        refreshDefinition();
 
-        int sliceTicks = sliceTicks();
-        int perTick = energyPerTick();
+        MachineDefinition definition = definition().orElse(null);
+        int sliceTicks = definition == null ? 0 : definition.param(SLICE_TICKS_PARAM).orElse(0);
+        if (definition == null || sliceTicks <= 0) {
+            // No usable data: no run at all. A machine must never slice on a guessed length.
+            resetSlice();
+            syncSlicerData();
+            return;
+        }
+        int perTick = definition.energyPerTick(null, EUVCRAFTMod.settings());
 
         if (!slicing) {
             if (!readyToSlice()) {
@@ -156,15 +205,30 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
         }
     }
 
-    /** Whether both inputs are present and the output has room. */
+    /** Whether both inputs are present and valid and the output has room. */
     private boolean readyToSlice() {
-        return slot(BOULE_SLOT).is(bouleItem())
-            && acceptedFoup(slot(FOUP_SLOT)) != null
-            && outputSlot().isEmpty();
+        return inputsValid() && outputSlot().isEmpty();
     }
 
-    /** One tick of a run in progress; mirrors the runner's pause rules. */
+    /** Whether the boule and the FOUP this machine is slicing are both still there. */
+    private boolean inputsValid() {
+        return slot(BOULE_SLOT).is(bouleItem())
+            && acceptedFoup(slot(FOUP_SLOT)) != null;
+    }
+
+    /**
+     * One tick of a run in progress; mirrors the runner's pause rules.
+     *
+     * <p>Order matters and is the whole of the anti-cheese rule: the inputs are checked
+     * first, so a boule or a FOUP taken out or swapped mid-run drops the run before any FE
+     * is drawn; then the output slot, so a full output pauses with its progress intact and
+     * costs nothing; then the energy.</p>
+     */
     private void advance(int perTick) {
+        if (!inputsValid()) {
+            resetSlice();
+            return;
+        }
         if (!outputSlot().isEmpty()) {
             paused = true;
             return;
@@ -186,15 +250,15 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
      * Writes the product and only then consumes the inputs.
      *
      * <p>The order matters: if the product could not be written, the boule and the FOUP
-     * would be gone and nothing would come out. The room check already ran this tick, and
-     * the output slot is extract-only, so the write cannot fail here.</p>
+     * would be gone and nothing would come out. Both inputs and the output slot are
+     * re-checked here, because this is the tick the machine pays for and the tick it hands
+     * out wafers on; if anything moved between the check at the top of {@link #advance}
+     * and now, the run is dropped and nothing is consumed.</p>
      */
     private void complete() {
         ItemStack foupIn = slot(FOUP_SLOT);
         FoupContents input = acceptedFoup(foupIn);
-        if (input == null || !slot(BOULE_SLOT).is(bouleItem())) {
-            // An input was taken out or swapped mid-run; start over rather than slicing
-            // into a lot with nothing behind it. Nothing was consumed.
+        if (input == null || !slot(BOULE_SLOT).is(bouleItem()) || !outputSlot().isEmpty()) {
             resetSlice();
             return;
         }
@@ -221,9 +285,10 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
     /**
      * Drops the run in progress and its progress.
      *
-     * <p>Called when a run finishes, when the FOUP it was filling is taken away mid-run,
-     * and by tests that need a machine in a known state. The inputs are left alone: nothing
-     * is consumed until a product is written.</p>
+     * <p>Called when a run finishes, when an input it was using is taken away or swapped
+     * mid-run, when the definition stops describing a usable slice, and by tests that need
+     * a machine in a known state. The inputs are left alone: nothing is consumed until a
+     * product is written.</p>
      */
     public void resetSlice() {
         this.slicing = false;
@@ -236,21 +301,19 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
     // Numbers, all of them from data
     // ------------------------------------------------------------------
 
-    /** The slice length from the definition, or the fallback before it has loaded. */
+    /**
+     * The slice length from the definition's {@code slice_ticks} param, or {@code 0} when
+     * there is no definition or the definition declares no such param.
+     *
+     * <p>Zero is the "this machine may not run" answer, and the tick treats it as such.</p>
+     */
     public int sliceTicks() {
-        MachineDefinition definition = definition().orElse(null);
-        return definition == null
-            ? FALLBACK_SLICE_TICKS
-            : definition.paramOrDefault(SLICE_TICKS_PARAM, FALLBACK_SLICE_TICKS);
+        return definition().flatMap(d -> d.param(SLICE_TICKS_PARAM)).orElse(0);
     }
 
     /**
-     * The FE this machine draws per active tick.
-     *
-     * <p>Zero when no definition is loaded, which is what the framework's runner does in
-     * the same window: a block entity can exist for a moment before the data pack is read,
-     * and running free in that moment is the lesser problem against a machine that can
-     * never run at all.</p>
+     * The FE this machine draws per active tick from its definition, or {@code 0} when no
+     * definition is loaded.
      */
     public int energyPerTick() {
         return definition()
@@ -259,15 +322,14 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
     }
 
     /**
-     * Publishes this machine's values to the menu.
+     * Publishes this machine's progress values to the menu.
      *
-     * <p>The capacity reported is the buffer's own capacity rather than the definition's,
-     * because the buffer is built once with the fallback capacity and never resized, so the
-     * buffer is what decides what the player can actually fill.</p>
+     * <p>The capacity is not written here: the base class keeps
+     * {@link #DATA_CAPACITY} equal to the real buffer's capacity whenever a definition is
+     * applied, which is the only thing that resizes the buffer.</p>
      */
     private void syncSlicerData() {
         this.data().set(DATA_ENERGY, (int) this.buffer().getAmountAsLong());
-        this.data().set(DATA_CAPACITY, this.buffer().getCapacityAsInt());
         this.data().set(DATA_PROGRESS, this.progress);
         this.data().set(DATA_TICKS, this.ticks);
     }

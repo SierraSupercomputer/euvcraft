@@ -6,6 +6,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Runs one machine's recipes: finds the recipe that fits the input slots, draws energy every
@@ -18,12 +19,28 @@ import java.util.List;
  *
  * <p>The rules, in the order they are checked each tick:</p>
  * <ol>
- *   <li>The output must have room. Checked before any energy is drawn, so a full output slot
- *       never eats the player's FE for nothing.</li>
+ *   <li>The inputs must still satisfy the running recipe, item <em>and</em> count. A
+ *       player can pull an ingredient back out or swap it mid-run, and a recipe that
+ *       finished against inputs that are no longer there would be free output, so a run
+ *       whose inputs went invalid is dropped whole: progress is lost and nothing is
+ *       consumed and nothing is written.</li>
+ *   <li>The output must have room. Checked before any energy is drawn, so a full output
+ *       slot never eats the player's FE for nothing.</li>
  *   <li>Energy must be there in full. A partial draw counts as no energy and pauses.</li>
  *   <li>A running recipe is never re-matched, so a reload cannot swap a recipe out from
  *       under a half-built product.</li>
  * </ol>
+ *
+ * <p><b>Recipe identity across a datapack reload.</b> {@link #current} is the resolved
+ * recipe object itself, and it is kept for the whole run: {@link #tick} only ever looks at
+ * the candidate list while nothing is running. A reload replaces the loaded registry, but
+ * a half-finished run keeps the recipe it started with rather than silently becoming a
+ * different recipe with a different cost and a different product.</p>
+ *
+ * <p><b>What a completed run consumes.</b> Exactly the recipe's own
+ * {@link MachineRecipe#ingredientCounts()}: four silicon for one boule costs four silicon,
+ * whatever the stack size in the slot. Counts are re-read from the same recipe that is
+ * being run, so a stack can never be shrunk by a number that belongs to another recipe.</p>
  */
 public final class MachineRecipeRunner {
 
@@ -126,20 +143,29 @@ public final class MachineRecipeRunner {
             : ingredient.id().equals(stackItemId);
     }
 
+    /**
+     * Whether every input slot currently satisfies {@code recipe}, item and count.
+     *
+     * <p>This is the revalidation the tick performs on the recipe that is already running:
+     * the same rules {@link #firstMatch} uses to choose one, applied again so a mid-run
+     * removal or swap is caught before any energy is spent or any product is written.</p>
+     */
+    public static boolean inputsMatch(MachineRecipe recipe, List<ItemStack> inputs) {
+        if (recipe.inputSlotCount() != inputs.size()) {
+            return false;
+        }
+        for (int slot = 0; slot < inputs.size(); slot++) {
+            if (!matchesSlot(recipe, slot, inputs.get(slot))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /** The first recipe in {@code recipes} whose ingredients the inputs satisfy. */
     public static MachineRecipe firstMatch(List<MachineRecipe> recipes, List<ItemStack> inputs) {
         for (MachineRecipe recipe : recipes) {
-            if (recipe.inputSlotCount() != inputs.size()) {
-                continue;
-            }
-            boolean matches = true;
-            for (int slot = 0; slot < inputs.size(); slot++) {
-                if (!matchesSlot(recipe, slot, inputs.get(slot))) {
-                    matches = false;
-                    break;
-                }
-            }
-            if (matches) {
+            if (inputsMatch(recipe, inputs)) {
                 return recipe;
             }
         }
@@ -159,7 +185,7 @@ public final class MachineRecipeRunner {
     public boolean tick(List<MachineRecipe> recipes,
                         List<ItemStack> inputs,
                         ItemStack output,
-                        java.util.function.Consumer<ItemStack> outputWriter,
+                        Consumer<ItemStack> outputWriter,
                         EnergySource energy) {
         if (current != null) {
             return advance(inputs, output, outputWriter, energy);
@@ -179,11 +205,22 @@ public final class MachineRecipeRunner {
         return advance(inputs, output, outputWriter, energy);
     }
 
-    /** Runs one tick of the recipe that is already selected. */
+    /**
+     * Runs one tick of the recipe that is already selected.
+     *
+     * <p>The inputs are checked twice on the tick a recipe completes: once at the top, so
+     * a run that has become invalid is dropped before it costs the player any FE, and once
+     * again immediately before the product is written, so nothing is consumed for a product
+     * that came out of inputs that had just been taken away.</p>
+     */
     private boolean advance(List<ItemStack> inputs,
                             ItemStack output,
-                            java.util.function.Consumer<ItemStack> outputWriter,
+                            Consumer<ItemStack> outputWriter,
                             EnergySource energy) {
+        if (!inputsMatch(current, inputs)) {
+            reset();
+            return false;
+        }
         if (!hasRoomFor(current, output)) {
             paused = true;
             return false;
@@ -199,18 +236,27 @@ public final class MachineRecipeRunner {
             return false;
         }
 
+        if (!inputsMatch(current, inputs)) {
+            reset();
+            return false;
+        }
+
         ItemStack product = current.assemble();
-        consume(inputs);
+        consume(current, inputs);
         outputWriter.accept(product);
         reset();
         return true;
     }
 
-    private static void consume(List<ItemStack> inputs) {
-        for (ItemStack stack : inputs) {
-            if (!stack.isEmpty()) {
-                stack.shrink(1);
+    /** Shrinks each input slot by exactly the count its own ingredient declares. */
+    private static void consume(MachineRecipe recipe, List<ItemStack> inputs) {
+        for (int slot = 0; slot < inputs.size(); slot++) {
+            int count = recipe.ingredientCounts().get(slot);
+            ItemStack stack = inputs.get(slot);
+            if (stack.isEmpty() || count <= 0) {
+                continue;
             }
+            stack.shrink(count);
         }
     }
 

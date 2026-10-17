@@ -1,12 +1,14 @@
 package com.euvcraft.lithmod.mc.gametest;
 
 import com.euvcraft.lithmod.core.FoupContents;
+import com.euvcraft.lithmod.core.MachineDefinition;
 import com.euvcraft.lithmod.core.RunSpec;
 import com.euvcraft.lithmod.core.Tier;
 import com.euvcraft.lithmod.core.Wafer;
 import com.euvcraft.lithmod.core.WaferSlicing;
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.euvcraft.lithmod.mc.FabYieldService;
+import com.euvcraft.lithmod.mc.FoupContentsCodec;
 import com.euvcraft.lithmod.mc.FoupDebugCommand;
 import com.euvcraft.lithmod.mc.FoupItems;
 import com.euvcraft.lithmod.mc.data.TierDataLoader;
@@ -18,6 +20,8 @@ import com.euvcraft.lithmod.mc.machine.silicon.WaferSlicerMenu;
 import com.euvcraft.lithmod.mc.recipe.MachineRecipe;
 import com.euvcraft.lithmod.mc.registry.ModItems;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.mojang.authlib.GameProfile;
 
 import io.netty.buffer.Unpooled;
@@ -58,6 +62,12 @@ import net.neoforged.neoforge.transfer.transaction.Transaction;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -65,8 +75,10 @@ import java.util.function.Consumer;
  * Game tests for the M1-04 silicon chain on a real server level, with the real registries
  * and the real loaded data pack.
  *
- * <p>Every positive assertion has a matching negative, so a passing run cannot come from an
- * assertion that never fires. The negatives are marked "negative control".</p>
+ * <p>Every machine is driven through its own {@code serverTick}, so what is measured here is
+ * the same code path the game runs. Where a test needs an input the data cannot produce (a
+ * FOUP that is full, a client-view FOUP, a definition with different numbers) it builds that
+ * input explicitly and says so.</p>
  */
 public final class SiliconGameTests {
 
@@ -80,14 +92,23 @@ public final class SiliconGameTests {
     private static final String SLICER_ROUND_TRIP = "wafer_slicer_save_load_round_trip";
     private static final String PULLER_RUNS_RECIPE = "crystal_puller_runs_its_recipe";
     private static final String NO_ITEM_HANDLER = "silicon_machines_expose_no_item_handler";
+    private static final String PULLER_RECHECKS_INPUTS = "crystal_puller_rechecks_its_inputs";
+    private static final String SLICER_RECHECKS_INPUTS = "wafer_slicer_rechecks_its_inputs";
+    private static final String SLICER_LOT_SIZE = "wafer_slicer_lot_size_follows_the_foup_capacity";
+    private static final String SLICER_MENU = "wafer_slicer_menu_layout_and_shift_click";
+    private static final String SLICER_FOUP_BOUNDARY = "wafer_slicer_foup_slot_client_boundary";
+    private static final String ENERGY_FOLLOWS_DATA = "silicon_energy_follows_machine_definitions";
+    private static final String RECIPE_FILES = "silicon_cooking_recipe_files_match_the_vanilla_schema";
 
     private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS =
         DeferredRegister.create(net.minecraft.core.registries.Registries.TEST_FUNCTION, "lithmod");
 
     /** Where the machine under test is placed. */
     private static final BlockPos MACHINE = new BlockPos(1, 1, 1);
-    /** A second position, used for the negative controls. */
+    /** A second position, used for the controls. */
     private static final BlockPos SECOND = new BlockPos(3, 1, 1);
+    /** A third position, for the cases that need two machines at once. */
+    private static final BlockPos THIRD = new BlockPos(5, 1, 1);
 
     static {
         FUNCTIONS.register(SLICER_PRODUCES_LOT, () -> SiliconGameTests::slicerProducesLot);
@@ -97,6 +118,13 @@ public final class SiliconGameTests {
         FUNCTIONS.register(SLICER_ROUND_TRIP, () -> SiliconGameTests::slicerSaveLoadRoundTrip);
         FUNCTIONS.register(PULLER_RUNS_RECIPE, () -> SiliconGameTests::pullerRunsItsRecipe);
         FUNCTIONS.register(NO_ITEM_HANDLER, () -> SiliconGameTests::noItemHandler);
+        FUNCTIONS.register(PULLER_RECHECKS_INPUTS, () -> SiliconGameTests::pullerRechecksItsInputs);
+        FUNCTIONS.register(SLICER_RECHECKS_INPUTS, () -> SiliconGameTests::slicerRechecksItsInputs);
+        FUNCTIONS.register(SLICER_LOT_SIZE, () -> SiliconGameTests::slicerLotSizeFollowsCapacity);
+        FUNCTIONS.register(SLICER_MENU, () -> SiliconGameTests::slicerMenuLayoutAndShiftClick);
+        FUNCTIONS.register(SLICER_FOUP_BOUNDARY, () -> SiliconGameTests::slicerFoupSlotBoundary);
+        FUNCTIONS.register(ENERGY_FOLLOWS_DATA, () -> SiliconGameTests::energyFollowsDefinitions);
+        FUNCTIONS.register(RECIPE_FILES, () -> SiliconGameTests::cookingRecipeFiles);
     }
 
     private SiliconGameTests() {
@@ -121,6 +149,13 @@ public final class SiliconGameTests {
         register(event, data, SLICER_ROUND_TRIP);
         register(event, data, PULLER_RUNS_RECIPE);
         register(event, data, NO_ITEM_HANDLER);
+        register(event, data, PULLER_RECHECKS_INPUTS);
+        register(event, data, SLICER_RECHECKS_INPUTS);
+        register(event, data, SLICER_LOT_SIZE);
+        register(event, data, SLICER_MENU);
+        register(event, data, SLICER_FOUP_BOUNDARY);
+        register(event, data, ENERGY_FOLLOWS_DATA);
+        register(event, data, RECIPE_FILES);
         LOGGER.info("Registered EUVCRAFT silicon chain game tests");
     }
 
@@ -272,7 +307,7 @@ public final class SiliconGameTests {
     }
 
     // ------------------------------------------------------------------
-    // 3. The input slot refuses a lot that already holds wafers or a run spec
+    // 3. The server refuses a lot that already holds wafers or a run spec
     // ------------------------------------------------------------------
 
     private static void slicerRefusesUsedFoup(GameTestHelper helper) {
@@ -287,35 +322,17 @@ public final class SiliconGameTests {
         ServerPlayer player = connect(level);
         WaferSlicerMenu menu = new WaferSlicerMenu(1, player.getInventory(), slicer);
 
-        // The registered MenuType builds the client-shaped menu; its rules must match.
-        Identifier blockId = Identifier.fromNamespaceAndPath("lithmod", "wafer_slicer");
-        var menuType = net.minecraft.core.registries.BuiltInRegistries.MENU.getValue(blockId);
-        helper.assertTrue(menuType == SiliconMachines.WAFER_SLICER_MENU.get(),
-            "lithmod:wafer_slicer menu type is not registered to the expected MenuType");
-        RegistryFriendlyByteBuf buffer =
-            new RegistryFriendlyByteBuf(Unpooled.buffer(), level.registryAccess());
-        AbstractContainerMenu clientMenu = menuType.create(2, player.getInventory(), buffer);
-        helper.assertTrue(clientMenu instanceof WaferSlicerMenu,
-            "the registered MenuType factory did not return a WaferSlicerMenu");
-        helper.assertValueEqual(menu.slots.size(), clientMenu.slots.size(),
-            "client and server menu slot layouts disagree");
-
         Slot bouleSlot = menu.slots.get(WaferSlicerBlockEntity.BOULE_SLOT);
         Slot foupSlot = menu.slots.get(WaferSlicerBlockEntity.FOUP_SLOT);
         Slot outputSlot = menu.slots.get(WaferSlicerBlockEntity.OUTPUT_SLOT);
-        Slot clientFoupSlot = clientMenu.slots.get(WaferSlicerBlockEntity.FOUP_SLOT);
 
         ItemStack empty = FoupItems.emptyFoup(ModItems.FOUP_MK1.get());
         helper.assertTrue(foupSlot.mayPlace(empty), "the FOUP slot refused an empty FOUP");
-        helper.assertTrue(clientFoupSlot.mayPlace(empty),
-            "the client FOUP slot refused an empty FOUP");
 
         ItemStack filled = FoupItems.with(ModItems.FOUP_MK1.get(),
             FoupDebugCommand.fillContents(level, UUID.randomUUID(), 25, 3, 2));
         helper.assertFalse(foupSlot.mayPlace(filled),
             "the FOUP slot accepted a lot that already holds wafers");
-        helper.assertFalse(clientFoupSlot.mayPlace(filled),
-            "the client FOUP slot accepted a lot that already holds wafers");
 
         Tier t1 = TierDataLoader.getRegistry().getById("T1");
         ItemStack started = FoupItems.with(ModItems.FOUP_MK1.get(),
@@ -323,14 +340,14 @@ public final class SiliconGameTests {
                 EUVCRAFTMod.settings())));
         helper.assertFalse(foupSlot.mayPlace(started),
             "the FOUP slot accepted a lot that carries a run spec");
-        helper.assertFalse(clientFoupSlot.mayPlace(started),
-            "the client FOUP slot accepted a lot that carries a run spec");
 
-        // NEGATIVE CONTROL: a plain item, and a boule in the FOUP slot.
+        // NEGATIVE CONTROL: a plain item, a boule, and a FOUP item with no lot in it.
         helper.assertFalse(foupSlot.mayPlace(new ItemStack(Items.IRON_INGOT)),
             "the FOUP slot accepted a plain iron ingot (negative control)");
         helper.assertFalse(foupSlot.mayPlace(new ItemStack(ModItems.SILICON_BOULE.get())),
             "the FOUP slot accepted a boule (negative control)");
+        helper.assertFalse(foupSlot.mayPlace(new ItemStack(ModItems.FOUP_MK1.get())),
+            "the FOUP slot accepted a FOUP item that carries no lot (negative control)");
         helper.assertFalse(bouleSlot.mayPlace(new ItemStack(ModItems.SILICON.get())),
             "the boule slot accepted raw silicon (negative control)");
         helper.assertTrue(bouleSlot.mayPlace(new ItemStack(ModItems.SILICON_BOULE.get())),
@@ -359,8 +376,10 @@ public final class SiliconGameTests {
             "the server ticked on a FOUP that carries a run spec");
         helper.assertTrue(slicer.outputSlot().isEmpty(),
             "the server produced a lot from a FOUP that carries a run spec");
-        LOGGER.info("[M1-04] wafer_slicer_refuses_a_used_foup: menu and server both refused filled "
-            + "and started lots");
+        helper.assertFalse(slicer.slot(WaferSlicerBlockEntity.BOULE_SLOT).isEmpty(),
+            "the server consumed a boule for a lot it refused");
+        LOGGER.info("[M1-04] wafer_slicer_refuses_a_used_foup: the server refused filled, started "
+            + "and component-less stacks, in the menu and in the tick");
 
         player.closeContainer();
         helper.succeed();
@@ -532,7 +551,7 @@ public final class SiliconGameTests {
     }
 
     // ------------------------------------------------------------------
-    // 6. The Crystal Puller runs its data recipe end to end
+    // 6. The Crystal Puller runs its data recipe end to end, four silicon per boule
     // ------------------------------------------------------------------
 
     private static void pullerRunsItsRecipe(GameTestHelper helper) {
@@ -586,16 +605,15 @@ public final class SiliconGameTests {
             - puller.buffer().getAmountAsLong();
         helper.assertValueEqual((long) perTick * recipe.ticks(), spent,
             "the puller did not spend exactly energy_per_tick * ticks");
-        LOGGER.info("[M1-04] crystal_puller_runs_its_recipe: {} FE/tick x {} ticks = {} FE spent, {} boule",
-            perTick, recipe.ticks(), spent, output);
 
-        // The framework's runner consumes one item per input slot whatever the ingredient
-        // count is, so a stack of four silicon comes back holding three. That is recorded
-        // here rather than worked around, because MachineRecipeRunner is out of this task's
-        // scope; see the report.
-        helper.assertValueEqual(siliconIn - 1,
-            puller.slot(CrystalPullerBlockEntity.INPUT_SLOT).getCount(),
-            "the puller consumed a different number of silicon than the runner's consume rule gives");
+        // The recipe's own counts are what is consumed: four silicon for one boule, all
+        // four of them, not one.
+        ItemStack leftover = puller.slot(CrystalPullerBlockEntity.INPUT_SLOT);
+        helper.assertTrue(leftover.isEmpty(),
+            "one boule left " + leftover.getCount() + " silicon behind; the recipe asks for four");
+        LOGGER.info("[M1-04] crystal_puller_runs_its_recipe: {} FE/tick x {} ticks = {} FE spent, "
+                + "{} boule, {} silicon left", perTick, recipe.ticks(), spent, output,
+            leftover.getCount());
 
         // NEGATIVE CONTROL: the puller with no input never runs, however full the buffer.
         helper.setBlock(SECOND, SiliconMachines.CRYSTAL_PULLER.get());
@@ -612,8 +630,8 @@ public final class SiliconGameTests {
         }
 
         // NEGATIVE CONTROL: a boule in the puller's input slot is not silicon.
-        helper.setBlock(new BlockPos(5, 1, 1), SiliconMachines.CRYSTAL_PULLER.get());
-        FabMachineBlockEntity wrongInput = pullerAt(helper, new BlockPos(5, 1, 1));
+        helper.setBlock(THIRD, SiliconMachines.CRYSTAL_PULLER.get());
+        FabMachineBlockEntity wrongInput = pullerAt(helper, THIRD);
         if (wrongInput != null) {
             wrongInput.setSlot(CrystalPullerBlockEntity.INPUT_SLOT,
                 new ItemStack(ModItems.SILICON_BOULE.get(), 4));
@@ -623,6 +641,8 @@ public final class SiliconGameTests {
             }
             helper.assertTrue(wrongInput.outputSlot().isEmpty(),
                 "the puller ran on a boule instead of silicon (negative control)");
+            helper.assertValueEqual(4, wrongInput.slot(CrystalPullerBlockEntity.INPUT_SLOT).getCount(),
+                "the puller consumed a boule it refused (negative control)");
         }
 
         helper.succeed();
@@ -657,14 +677,20 @@ public final class SiliconGameTests {
             EnergyHandler energy = level.getCapability(Capabilities.Energy.BLOCK, pos, Direction.WEST);
             helper.assertTrue(energy != null, "no energy capability at " + pos);
             if (energy != null) {
-                int pushed;
-                try (Transaction transaction = Transaction.openRoot()) {
-                    pushed = energy.insert(500, transaction);
-                    transaction.commit();
-                }
+                int pushed = insert(energy, 500);
                 helper.assertTrue(pushed > 0, "the energy capability at " + pos + " accepted nothing");
                 helper.assertTrue(energy.getCapacityAsLong() > 0,
                     "the energy capability at " + pos + " has no capacity");
+                long stored = energy.getAmountAsLong();
+                int pulled;
+                try (Transaction transaction = Transaction.openRoot()) {
+                    pulled = energy.extract((int) stored, transaction);
+                    transaction.commit();
+                }
+                helper.assertValueEqual(0, pulled,
+                    "the energy capability at " + pos + " let FE be pulled back out");
+                helper.assertValueEqual(stored, energy.getAmountAsLong(),
+                    "the stored amount at " + pos + " changed while extraction was refused");
             }
         }
 
@@ -712,13 +738,622 @@ public final class SiliconGameTests {
 
         // NEGATIVE CONTROL: a chest does expose an item handler, so the nulls above are a
         // real answer rather than the capability system being unavailable.
-        helper.setBlock(new BlockPos(5, 1, 1), net.minecraft.world.level.block.Blocks.CHEST);
+        helper.setBlock(THIRD, net.minecraft.world.level.block.Blocks.CHEST);
         helper.assertTrue(level.getCapability(Capabilities.Item.BLOCK,
-                helper.absolutePos(new BlockPos(5, 1, 1)), Direction.NORTH) != null,
+                helper.absolutePos(THIRD), Direction.NORTH) != null,
             "a chest has no item handler either, so the negative assertions are vacuous "
                 + "(negative control)");
         LOGGER.info("[M1-04] silicon_machines_expose_no_item_handler: neither machine is reachable "
             + "by an item handler, a fluid handler or a hopper");
+
+        helper.succeed();
+    }
+
+    // ------------------------------------------------------------------
+    // 8. The runner consumes the recipe's counts, and re-checks its inputs
+    // ------------------------------------------------------------------
+
+    private static void pullerRechecksItsInputs(GameTestHelper helper) {
+        helper.setBlock(MACHINE, SiliconMachines.CRYSTAL_PULLER.get());
+        FabMachineBlockEntity puller = pullerAt(helper, MACHINE);
+        helper.assertTrue(puller != null, "no crystal puller block entity");
+        if (puller == null) {
+            return;
+        }
+        MachineRecipe recipe = pullerRecipe();
+        helper.assertTrue(recipe != null, "no crystal_puller recipe loaded");
+        if (recipe == null) {
+            return;
+        }
+
+        // One tick so the runner picks the recipe up and the definition's cost applies.
+        puller.serverTick();
+        int cost = puller.runner().energyPerTick();
+        helper.assertTrue(cost > 0, "the puller has no energy cost, so nothing below can run");
+        if (cost <= 0) {
+            return;
+        }
+
+        // Five silicon in, one boule out, one silicon left: the recipe's own count of four
+        // is what leaves the slot.
+        puller.setSlot(CrystalPullerBlockEntity.INPUT_SLOT, new ItemStack(ModItems.SILICON.get(), 5));
+        puller.setStoredEnergy(cost * (recipe.ticks() + 5));
+        runPuller(puller, recipe.ticks() + 5);
+        helper.assertFalse(puller.outputSlot().isEmpty(), "five silicon produced no boule");
+        helper.assertValueEqual(1, puller.outputSlot().getCount(), "the boule count is wrong");
+        helper.assertValueEqual(5 - recipe.ingredientCounts().get(0),
+            puller.slot(CrystalPullerBlockEntity.INPUT_SLOT).getCount(),
+            "the puller consumed a different number of silicon than the recipe declares");
+
+        // One silicon short of the recipe's count: no run at all, however much energy.
+        helper.setBlock(SECOND, SiliconMachines.CRYSTAL_PULLER.get());
+        FabMachineBlockEntity shortOf = pullerAt(helper, SECOND);
+        if (shortOf != null) {
+            int wanted = recipe.ingredientCounts().get(0);
+            shortOf.setSlot(CrystalPullerBlockEntity.INPUT_SLOT,
+                new ItemStack(ModItems.SILICON.get(), wanted - 1));
+            shortOf.setStoredEnergy(1_000_000);
+            runPuller(shortOf, recipe.ticks() + 5);
+            helper.assertValueEqual(0, shortOf.runner().progress(),
+                "the puller ran a recipe it did not have the ingredients for");
+            helper.assertTrue(shortOf.outputSlot().isEmpty(),
+                "the puller produced a boule from " + (wanted - 1) + " silicon");
+            helper.assertValueEqual(wanted - 1,
+                shortOf.slot(CrystalPullerBlockEntity.INPUT_SLOT).getCount(),
+                "the puller consumed silicon from a run it never made");
+        }
+
+        // Taking the ingredient back out mid-run drops the run, writes nothing and costs
+        // nothing.
+        helper.setBlock(THIRD, SiliconMachines.CRYSTAL_PULLER.get());
+        FabMachineBlockEntity removal = pullerAt(helper, THIRD);
+        if (removal != null) {
+            removal.setSlot(CrystalPullerBlockEntity.INPUT_SLOT,
+                new ItemStack(ModItems.SILICON.get(), 8));
+            removal.setStoredEnergy(cost * (recipe.ticks() + 5));
+            runPuller(removal, 10);
+            helper.assertTrue(removal.runner().isRunning() && removal.runner().progress() > 0,
+                "the test did not get the puller part-way through a recipe");
+            long energyBefore = removal.buffer().getAmountAsLong();
+            removal.clearSlot(CrystalPullerBlockEntity.INPUT_SLOT);
+            removal.serverTick();
+            helper.assertFalse(removal.runner().isRunning(),
+                "the puller kept running after its ingredient was taken away");
+            helper.assertValueEqual(0, removal.runner().progress(),
+                "the puller kept its progress after its ingredient was taken away");
+            helper.assertTrue(removal.outputSlot().isEmpty(),
+                "the puller produced a boule after its ingredient was taken away");
+            helper.assertValueEqual(energyBefore, removal.buffer().getAmountAsLong(),
+                "the puller charged the player for the tick it dropped the run on");
+
+            // Swapping the ingredient for something else mid-run is the same case.
+            removal.setSlot(CrystalPullerBlockEntity.INPUT_SLOT, new ItemStack(ModItems.SILICON.get(), 8));
+            removal.setStoredEnergy(cost * (recipe.ticks() + 5));
+            runPuller(removal, 10);
+            helper.assertTrue(removal.runner().isRunning(), "the puller did not start again");
+            removal.setSlot(CrystalPullerBlockEntity.INPUT_SLOT,
+                new ItemStack(ModItems.SILICON_BOULE.get(), 3));
+            removal.serverTick();
+            helper.assertFalse(removal.runner().isRunning(),
+                "the puller kept running after its ingredient was swapped for a boule");
+            helper.assertTrue(removal.outputSlot().isEmpty(),
+                "the puller produced a boule from a swapped input");
+            helper.assertValueEqual(3, removal.slot(CrystalPullerBlockEntity.INPUT_SLOT).getCount(),
+                "the puller consumed the boule that was swapped in");
+        }
+        LOGGER.info("[M1-04] crystal_puller_rechecks_its_inputs: 5 silicon -> 1 boule with 1 left, "
+            + "3 silicon never start, removal and swap mid-run drop the run");
+
+        helper.succeed();
+    }
+
+    // ------------------------------------------------------------------
+    // 9. The slicer re-checks the boule and the FOUP on every tick
+    // ------------------------------------------------------------------
+
+    private static void slicerRechecksItsInputs(GameTestHelper helper) {
+        placeSlicer(helper, MACHINE);
+        WaferSlicerBlockEntity slicer = slicerAt(helper, MACHINE);
+        if (slicer == null) {
+            helper.fail("no wafer slicer block entity");
+            return;
+        }
+        int perTick = slicer.energyPerTick();
+        int ticks = slicer.sliceTicks();
+        helper.assertTrue(perTick > 0 && ticks > 0,
+            "the slicer has no data to run on: " + perTick + " FE/tick over " + ticks + " ticks");
+        if (perTick <= 0 || ticks <= 0) {
+            return;
+        }
+        int half = Math.max(1, ticks / 2);
+
+        // Taking the boule away mid-run drops the run and charges nothing for the tick.
+        slicer.setSlot(WaferSlicerBlockEntity.BOULE_SLOT, new ItemStack(ModItems.SILICON_BOULE.get(), 2));
+        slicer.setSlot(WaferSlicerBlockEntity.FOUP_SLOT, FoupItems.emptyFoup(ModItems.FOUP_MK1.get()));
+        slicer.setStoredEnergy(perTick * (ticks + 2));
+        runSlicer(slicer, half);
+        helper.assertTrue(slicer.isSlicing() && slicer.sliceProgress() > 0,
+            "the slicer did not get part-way through a run");
+        long energyBefore = slicer.buffer().getAmountAsLong();
+        slicer.clearSlot(WaferSlicerBlockEntity.BOULE_SLOT);
+        slicer.serverTick();
+        helper.assertFalse(slicer.isSlicing(),
+            "the slicer kept running after its boule was taken away");
+        helper.assertValueEqual(0, slicer.sliceProgress(),
+            "the slicer kept its progress after its boule was taken away");
+        helper.assertTrue(slicer.outputSlot().isEmpty(),
+            "the slicer produced a lot after its boule was taken away");
+        helper.assertValueEqual(energyBefore, slicer.buffer().getAmountAsLong(),
+            "the slicer charged the player for the tick it dropped the run on");
+        helper.assertFalse(slicer.slot(WaferSlicerBlockEntity.FOUP_SLOT).isEmpty(),
+            "the slicer consumed the FOUP of the run it dropped");
+
+        // Swapping the boule for another item mid-run is refused, and the replacement stays.
+        startRun(slicer, perTick, half, new ItemStack(ModItems.SILICON_BOULE.get()));
+        slicer.setSlot(WaferSlicerBlockEntity.BOULE_SLOT, new ItemStack(ModItems.SILICON.get(), 5));
+        slicer.serverTick();
+        helper.assertFalse(slicer.isSlicing(),
+            "the slicer kept running after its boule was swapped for raw silicon");
+        helper.assertTrue(slicer.outputSlot().isEmpty(),
+            "the slicer produced a lot from a swapped boule");
+        helper.assertValueEqual(5, slicer.slot(WaferSlicerBlockEntity.BOULE_SLOT).getCount(),
+            "the slicer consumed the silicon that was swapped in");
+
+        // Swapping the FOUP for one that already holds wafers is refused too.
+        startRun(slicer, perTick, half, new ItemStack(ModItems.SILICON_BOULE.get()));
+        slicer.setSlot(WaferSlicerBlockEntity.FOUP_SLOT, FoupItems.with(ModItems.FOUP_MK1.get(),
+            FoupDebugCommand.fillContents(helper.getLevel(), UUID.randomUUID(), 25, 4, 1)));
+        slicer.serverTick();
+        helper.assertFalse(slicer.isSlicing(),
+            "the slicer kept running after its FOUP was swapped for a full one");
+        helper.assertTrue(slicer.outputSlot().isEmpty(),
+            "the slicer sliced into a FOUP that already held wafers");
+        helper.assertValueEqual(4,
+            FoupItems.trustedContentsOf(slicer.slot(WaferSlicerBlockEntity.FOUP_SLOT)).size(),
+            "the slicer wrote into the full FOUP that was swapped in");
+
+        // A blocked output pauses the run instead of dropping it, and costs no FE.
+        placeSlicer(helper, SECOND);
+        WaferSlicerBlockEntity blocked = slicerAt(helper, SECOND);
+        if (blocked != null) {
+            startRun(blocked, blocked.energyPerTick(), half, new ItemStack(ModItems.SILICON_BOULE.get()));
+            int progressBefore = blocked.sliceProgress();
+            long energyBeforeBlock = blocked.buffer().getAmountAsLong();
+            blocked.setSlot(WaferSlicerBlockEntity.OUTPUT_SLOT,
+                FoupItems.emptyFoup(ModItems.FOUP_MK2.get()));
+            runSlicer(blocked, 30);
+            helper.assertTrue(blocked.isPaused(),
+                "a slicer with a full output slot is not marked paused");
+            helper.assertTrue(blocked.isSlicing(),
+                "a full output slot dropped the run instead of pausing it");
+            helper.assertValueEqual(progressBefore, blocked.sliceProgress(),
+                "a full output slot advanced the run");
+            helper.assertValueEqual(energyBeforeBlock, blocked.buffer().getAmountAsLong(),
+                "a full output slot cost the player FE");
+            helper.assertTrue(blocked.slot(WaferSlicerBlockEntity.OUTPUT_SLOT)
+                    .is(ModItems.FOUP_MK2.get()),
+                "the slicer overwrote the FOUP in its output slot");
+
+            // Clearing the output resumes the same run rather than starting a new one.
+            blocked.clearSlot(WaferSlicerBlockEntity.OUTPUT_SLOT);
+            blocked.setStoredEnergy(blocked.energyPerTick() * (ticks + 2));
+            runSlicer(blocked, ticks + 5);
+            helper.assertFalse(blocked.outputSlot().isEmpty(),
+                "the paused slicer did not finish after the output was cleared");
+            helper.assertTrue(blocked.slot(WaferSlicerBlockEntity.BOULE_SLOT).isEmpty(),
+                "the finished run did not consume exactly its one boule");
+        }
+        LOGGER.info("[M1-04] wafer_slicer_rechecks_its_inputs: boule removal, boule swap and FOUP "
+            + "swap drop the run; a full output pauses it without spending FE");
+
+        helper.succeed();
+    }
+
+    // ------------------------------------------------------------------
+    // 10. The lot size follows the stored FOUP capacity
+    // ------------------------------------------------------------------
+
+    private static void slicerLotSizeFollowsCapacity(GameTestHelper helper) {
+        int perBoule = EUVCRAFTMod.settings().wafersPerBoule();
+        int smallCapacity = Math.max(1, perBoule / 4);
+        int largeCapacity = perBoule * 4;
+
+        // A FOUP smaller than one boule's yield comes back filled to its own capacity.
+        placeSlicer(helper, MACHINE);
+        WaferSlicerBlockEntity small = slicerAt(helper, MACHINE);
+        if (small != null) {
+            sliceOnce(small, smallCapacity);
+            FoupContents lot = FoupItems.trustedContentsOf(small.outputSlot());
+            helper.assertFalse(lot.isEmpty(), "the small-FOUP slicer produced nothing");
+            helper.assertValueEqual(smallCapacity, lot.size(),
+                "a capacity " + smallCapacity + " FOUP must come back full, not at "
+                    + perBoule + " wafers");
+            helper.assertTrue(lot.isFull(),
+                "a FOUP smaller than the yield must end up full");
+        }
+
+        // A FOUP larger than one boule's yield comes back partially filled.
+        placeSlicer(helper, SECOND);
+        WaferSlicerBlockEntity large = slicerAt(helper, SECOND);
+        if (large != null) {
+            sliceOnce(large, largeCapacity);
+            FoupContents lot = FoupItems.trustedContentsOf(large.outputSlot());
+            helper.assertFalse(lot.isEmpty(), "the large-FOUP slicer produced nothing");
+            helper.assertValueEqual(perBoule, lot.size(),
+                "a capacity " + largeCapacity + " FOUP must come back holding one boule's "
+                    + perBoule + " wafers");
+            helper.assertTrue(!lot.isFull(),
+                "a FOUP larger than the yield must stay partially filled");
+        }
+        LOGGER.info("[M1-04] wafer_slicer_lot_size_follows_the_foup_capacity: capacity {} filled "
+            + "to {}, capacity {} filled to {} of {}", smallCapacity, smallCapacity,
+            largeCapacity, perBoule, largeCapacity);
+
+        helper.succeed();
+    }
+
+    // ------------------------------------------------------------------
+    // 11. The slicer menu: slot order, predicates and shift-click routing
+    // ------------------------------------------------------------------
+
+    private static void slicerMenuLayoutAndShiftClick(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        placeSlicer(helper, MACHINE);
+        WaferSlicerBlockEntity slicer = slicerAt(helper, MACHINE);
+        if (slicer == null) {
+            helper.fail("no wafer slicer block entity");
+            return;
+        }
+
+        ServerPlayer player = connect(level);
+        WaferSlicerMenu menu = new WaferSlicerMenu(1, player.getInventory(), slicer);
+
+        // The registered MenuType builds the client-shaped menu; both must have the machine
+        // slots first and the 36 player slots after, in the same order.
+        Identifier blockId = Identifier.fromNamespaceAndPath("lithmod", "wafer_slicer");
+        var menuType = net.minecraft.core.registries.BuiltInRegistries.MENU.getValue(blockId);
+        helper.assertTrue(menuType == SiliconMachines.WAFER_SLICER_MENU.get(),
+            "lithmod:wafer_slicer menu type is not registered to the expected MenuType");
+        RegistryFriendlyByteBuf buffer =
+            new RegistryFriendlyByteBuf(Unpooled.buffer(), level.registryAccess());
+        AbstractContainerMenu clientMenu = menuType.create(2, player.getInventory(), buffer);
+        helper.assertTrue(clientMenu instanceof WaferSlicerMenu,
+            "the registered MenuType factory did not return a WaferSlicerMenu");
+
+        // 3 machine slots + 27 inventory + 9 hotbar.
+        helper.assertValueEqual(39, menu.slots.size(), "the server menu has an unexpected slot count");
+        helper.assertValueEqual(menu.slots.size(), clientMenu.slots.size(),
+            "client and server menu slot layouts disagree");
+        for (int index = 0; index < menu.slots.size(); index++) {
+            helper.assertValueEqual(menu.slots.get(index).index, clientMenu.slots.get(index).index,
+                "client/server slot index differs at " + index);
+        }
+
+        // The machine slots are the first three and they are bound to the machine itself.
+        for (int index : new int[] {WaferSlicerBlockEntity.BOULE_SLOT,
+                WaferSlicerBlockEntity.FOUP_SLOT, WaferSlicerBlockEntity.OUTPUT_SLOT}) {
+            helper.assertTrue(menu.slots.get(index).container == slicer,
+                "machine slot " + index + " is not bound to the wafer slicer");
+            helper.assertTrue(clientMenu.slots.get(index).container != null,
+                "client machine slot " + index + " has no container");
+            helper.assertFalse(clientMenu.slots.get(index).container == slicer,
+                "client machine slot " + index + " is bound to the server block entity");
+        }
+
+        // The predicates both sides can know agree, on the same stacks.
+        Slot bouleSlot = menu.slots.get(WaferSlicerBlockEntity.BOULE_SLOT);
+        Slot outputSlot = menu.slots.get(WaferSlicerBlockEntity.OUTPUT_SLOT);
+        Slot foupSlot = menu.slots.get(WaferSlicerBlockEntity.FOUP_SLOT);
+        Slot clientBoule = clientMenu.slots.get(WaferSlicerBlockEntity.BOULE_SLOT);
+        Slot clientOutput = clientMenu.slots.get(WaferSlicerBlockEntity.OUTPUT_SLOT);
+        Slot clientFoup = clientMenu.slots.get(WaferSlicerBlockEntity.FOUP_SLOT);
+        ItemStack boule = new ItemStack(ModItems.SILICON_BOULE.get());
+        ItemStack ingot = new ItemStack(Items.IRON_INGOT, 3);
+        helper.assertTrue(bouleSlot.mayPlace(boule) && clientBoule.mayPlace(boule),
+            "the boule slot refused a boule on one of the two sides");
+        helper.assertFalse(bouleSlot.mayPlace(ingot) || clientBoule.mayPlace(ingot),
+            "the boule slot accepted an iron ingot on one of the two sides");
+        helper.assertFalse(outputSlot.mayPlace(ingot) || clientOutput.mayPlace(ingot),
+            "the output slot accepted placement on one of the two sides");
+        ItemStack emptyFoup = FoupItems.emptyFoup(ModItems.FOUP_MK1.get());
+        helper.assertTrue(foupSlot.mayPlace(emptyFoup) && clientFoup.mayPlace(emptyFoup),
+            "the FOUP slot refused an empty FOUP on one of the two sides");
+        helper.assertFalse(foupSlot.mayPlace(ingot) || clientFoup.mayPlace(ingot),
+            "the FOUP slot accepted an iron ingot on one of the two sides");
+
+        // Shift-click routing. Both menus share the inherited implementation; if the
+        // machine slots were counted wrongly, these moves would land in player slots or
+        // nowhere at all.
+        player.getInventory().clearContent();
+        int hotbar = menu.slots.size() - 9;
+        player.getInventory().setItem(0, new ItemStack(ModItems.SILICON_BOULE.get(), 2));
+        player.getInventory().setItem(1, emptyFoup);
+        player.getInventory().setItem(2, ingot);
+        player.containerMenu = menu;
+
+        ItemStack moved = menu.quickMoveStack(player, hotbar);
+        helper.assertFalse(moved.isEmpty(), "shift-clicking a boule moved nothing");
+        helper.assertValueEqual(2, slicer.slot(WaferSlicerBlockEntity.BOULE_SLOT).getCount(),
+            "the boule did not land in the boule slot");
+        helper.assertTrue(slicer.slot(WaferSlicerBlockEntity.FOUP_SLOT).isEmpty(),
+            "the boule landed in the FOUP slot instead");
+
+        ItemStack foupMoved = menu.quickMoveStack(player, hotbar + 1);
+        helper.assertFalse(foupMoved.isEmpty(), "shift-clicking a FOUP moved nothing");
+        helper.assertTrue(slicer.slot(WaferSlicerBlockEntity.FOUP_SLOT).is(ModItems.FOUP_MK1.get()),
+            "the FOUP did not land in the FOUP slot");
+
+        ItemStack ingotMoved = menu.quickMoveStack(player, hotbar + 2);
+        helper.assertTrue(ingotMoved.isEmpty(),
+            "shift-clicking an iron ingot was routed into a machine slot");
+        helper.assertValueEqual(3, player.getInventory().getItem(hotbar + 2).getCount(),
+            "the refused iron ingot left the player inventory");
+
+        // With the FOUP slot empty, a FOUP that already holds wafers is still refused.
+        slicer.clearSlot(WaferSlicerBlockEntity.FOUP_SLOT);
+        player.getInventory().setItem(3, FoupItems.with(ModItems.FOUP_MK1.get(),
+            FoupDebugCommand.fillContents(level, UUID.randomUUID(), 25, 2, 1)));
+        ItemStack filledMoved = menu.quickMoveStack(player, hotbar + 3);
+        helper.assertTrue(filledMoved.isEmpty(),
+            "shift-clicking a FOUP that holds wafers was routed into the machine");
+        helper.assertTrue(slicer.slot(WaferSlicerBlockEntity.FOUP_SLOT).isEmpty(),
+            "a FOUP that holds wafers landed in the FOUP slot");
+
+        // Machine slot to player: both an input and the output slot move back out.
+        ItemStack back = menu.quickMoveStack(player, WaferSlicerBlockEntity.BOULE_SLOT);
+        helper.assertFalse(back.isEmpty(), "shift-clicking the boule out of the machine moved nothing");
+        helper.assertTrue(slicer.slot(WaferSlicerBlockEntity.BOULE_SLOT).isEmpty(),
+            "the boule stayed in the machine after a shift-click out");
+
+        slicer.setSlot(WaferSlicerBlockEntity.OUTPUT_SLOT, emptyFoup.copy());
+        ItemStack productOut = menu.quickMoveStack(player, WaferSlicerBlockEntity.OUTPUT_SLOT);
+        helper.assertFalse(productOut.isEmpty(),
+            "shift-clicking the product out of the machine moved nothing");
+        helper.assertTrue(slicer.outputSlot().isEmpty(),
+            "the product stayed in the machine after a shift-click out");
+        LOGGER.info("[M1-04] wafer_slicer_menu_layout_and_shift_click: {} slots, machine slots first, "
+            + "boule and FOUP routed in, ingot and used FOUP refused, output routed out",
+            menu.slots.size());
+
+        player.closeContainer();
+        helper.succeed();
+    }
+
+    // ------------------------------------------------------------------
+    // 12. What the client can predict about a FOUP, and what it cannot
+    // ------------------------------------------------------------------
+
+    private static void slicerFoupSlotBoundary(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        placeSlicer(helper, MACHINE);
+        WaferSlicerBlockEntity slicer = slicerAt(helper, MACHINE);
+        if (slicer == null) {
+            helper.fail("no wafer slicer block entity");
+            return;
+        }
+
+        ServerPlayer player = connect(level);
+        WaferSlicerMenu menu = new WaferSlicerMenu(1, player.getInventory(), slicer);
+        var menuType = net.minecraft.core.registries.BuiltInRegistries.MENU.getValue(
+            Identifier.fromNamespaceAndPath("lithmod", "wafer_slicer"));
+        helper.assertTrue(menuType == SiliconMachines.WAFER_SLICER_MENU.get(),
+            "lithmod:wafer_slicer menu type is not registered to the expected MenuType");
+        AbstractContainerMenu clientMenu = menuType.create(3, player.getInventory(),
+            new RegistryFriendlyByteBuf(Unpooled.buffer(), level.registryAccess()));
+        helper.assertTrue(clientMenu instanceof WaferSlicerMenu,
+            "the registered MenuType factory did not return a WaferSlicerMenu");
+        Slot serverFoup = menu.slots.get(WaferSlicerBlockEntity.FOUP_SLOT);
+        Slot clientFoup = clientMenu.slots.get(WaferSlicerBlockEntity.FOUP_SLOT);
+
+        // What a client actually holds: the public view, so a real wafer count and no run
+        // spec and no rolls. A full one is refused from the public count alone, on both
+        // menus, because that is the one thing both sides can see.
+        ItemStack clientViewFull = clientView(25, 6);
+        helper.assertFalse(WaferSlicerBlockEntity.acceptsFoupStack(clientViewFull),
+            "a client-view FOUP that visibly holds wafers was predicted acceptable");
+        helper.assertFalse(clientFoup.mayPlace(clientViewFull),
+            "the client slot accepted a client-view FOUP the player can see is full");
+        helper.assertFalse(serverFoup.mayPlace(clientViewFull),
+            "the server slot accepted a client-view FOUP that holds wafers");
+
+        // An empty client view must be predicted acceptable: the client cannot know about a
+        // hidden run spec, because the network form does not carry one.
+        ItemStack clientViewEmpty = clientView(25, 0);
+        helper.assertTrue(WaferSlicerBlockEntity.acceptsFoupStack(clientViewEmpty),
+            "an empty client-view FOUP was refused on a count it can see is zero");
+        helper.assertTrue(clientFoup.mayPlace(clientViewEmpty),
+            "the client slot refused an empty client-view FOUP");
+
+        // The server refuses every client view outright, so a placeholder never becomes a
+        // machine input and never produces a lot.
+        slicer.setSlot(WaferSlicerBlockEntity.BOULE_SLOT, new ItemStack(ModItems.SILICON_BOULE.get()));
+        slicer.setSlot(WaferSlicerBlockEntity.FOUP_SLOT, clientViewEmpty);
+        slicer.setStoredEnergy(1_000_000);
+        runSlicer(slicer, 40);
+        helper.assertValueEqual(0, slicer.sliceProgress(),
+            "the slicer ran on a client-view FOUP");
+        helper.assertTrue(slicer.outputSlot().isEmpty(),
+            "the slicer produced a lot from a client-view FOUP");
+        helper.assertFalse(slicer.slot(WaferSlicerBlockEntity.BOULE_SLOT).isEmpty(),
+            "the slicer consumed a boule for a client-view FOUP");
+        helper.assertFalse(slicer.slot(WaferSlicerBlockEntity.FOUP_SLOT).isEmpty(),
+            "the slicer consumed the client-view FOUP it refused");
+
+        // A real lot holding wafers is refused by the trusted read, on both the slot and
+        // the tick.
+        ItemStack realFull = FoupItems.with(ModItems.FOUP_MK1.get(),
+            FoupDebugCommand.fillContents(level, UUID.randomUUID(), 25, 6, 1));
+        helper.assertFalse(WaferSlicerBlockEntity.acceptsFoupStack(realFull),
+            "a real FOUP holding wafers was predicted acceptable");
+        helper.assertTrue(WaferSlicerBlockEntity.acceptedFoup(realFull) == null,
+            "the trusted read accepted a real FOUP holding wafers");
+        helper.assertTrue(WaferSlicerBlockEntity.acceptedFoup(clientViewEmpty) == null,
+            "the trusted read accepted a client view as if it were a lot");
+        helper.assertTrue(WaferSlicerBlockEntity.acceptedFoup(
+                FoupItems.emptyFoup(ModItems.FOUP_MK1.get())) != null,
+            "the trusted read refused a real empty FOUP");
+        LOGGER.info("[M1-04] wafer_slicer_foup_slot_client_boundary: the public wafer count is "
+            + "refused on both sides, the hidden run spec is invisible to the client and "
+            + "every client view is refused by the server");
+
+        player.closeContainer();
+        helper.succeed();
+    }
+
+    // ------------------------------------------------------------------
+    // 13. The energy buffer and the insert limit follow the loaded definition
+    // ------------------------------------------------------------------
+
+    private static void energyFollowsDefinitions(GameTestHelper helper) {
+        placeSlicer(helper, MACHINE);
+        helper.setBlock(SECOND, SiliconMachines.CRYSTAL_PULLER.get());
+        WaferSlicerBlockEntity slicer = slicerAt(helper, MACHINE);
+        FabMachineBlockEntity puller = pullerAt(helper, SECOND);
+        helper.assertTrue(slicer != null && puller != null, "a machine block entity is missing");
+        if (slicer == null || puller == null) {
+            return;
+        }
+
+        MachineDefinition slicerDefinition = slicer.definition().orElse(null);
+        MachineDefinition pullerDefinition = puller.definition().orElse(null);
+        helper.assertTrue(slicerDefinition != null && pullerDefinition != null,
+            "a machine definition did not load from data/lithmod/machines");
+        if (slicerDefinition == null || pullerDefinition == null) {
+            return;
+        }
+
+        // The buffer is sized from the definition, not from a number in Java.
+        helper.assertValueEqual(slicerDefinition.energyCapacity(),
+            slicer.buffer().getCapacityAsInt(),
+            "the slicer's buffer capacity is not the definition's energy_capacity");
+        helper.assertValueEqual(pullerDefinition.energyCapacity(),
+            puller.buffer().getCapacityAsInt(),
+            "the puller's buffer capacity is not the definition's energy_capacity");
+        helper.assertValueEqual(slicer.buffer().getCapacityAsInt(),
+            slicer.data().get(FabMachineBlockEntity.DATA_CAPACITY),
+            "the slicer's synced capacity does not match its real buffer");
+        helper.assertValueEqual(slicerDefinition.paramOrDefault("slice_ticks", 0),
+            slicer.sliceTicks(), "the slice length is not the definition's slice_ticks");
+        helper.assertValueEqual(pullerDefinition.energyPerTick(null, EUVCRAFTMod.settings()),
+            puller.runner().energyPerTick(),
+            "the puller's per-tick cost is not the definition's energy_per_tick");
+        helper.assertValueEqual(slicerDefinition.energyPerTick(null, EUVCRAFTMod.settings()),
+            slicer.energyPerTick(),
+            "the slicer's per-tick cost is not the definition's energy_per_tick");
+
+        // The per-operation insert limit follows max_receive, and repeated inserts fill the
+        // buffer to exactly energy_capacity.
+        int maxReceive = pullerDefinition.maxReceive();
+        helper.assertValueEqual(maxReceive, insert(puller.energy(), maxReceive * 4),
+            "one insert took more than max_receive");
+        helper.assertValueEqual(maxReceive, (int) puller.buffer().getAmountAsLong(),
+            "the first insert did not take exactly max_receive");
+        for (int call = 0; call < 40; call++) {
+            insert(puller.energy(), maxReceive);
+        }
+        helper.assertValueEqual(pullerDefinition.energyCapacity(),
+            (int) puller.buffer().getAmountAsLong(),
+            "repeated inserts did not fill the buffer to energy_capacity");
+        helper.assertValueEqual(0, insert(puller.energy(), maxReceive),
+            "a full buffer accepted more energy");
+
+        // A different definition resizes the real buffer, keeps the energy already stored
+        // and moves the insert limit with it. This is the data-change path the tick and
+        // the load use; the definitions here are built by hand because a GameTest cannot
+        // reload the data pack.
+        puller.setStoredEnergy(pullerDefinition.energyCapacity());
+        MachineDefinition smaller = new MachineDefinition(CrystalPullerBlockEntity.MACHINE_ID,
+            pullerDefinition.energyCapacity() / 5, maxReceive / 5,
+            pullerDefinition.energyPerTick(), Map.of(), Map.of());
+        puller.applyDefinition(smaller);
+
+        helper.assertValueEqual(smaller.energyCapacity(), puller.buffer().getCapacityAsInt(),
+            "the real buffer did not take the new capacity");
+        helper.assertValueEqual(smaller.energyCapacity(),
+            puller.data().get(FabMachineBlockEntity.DATA_CAPACITY),
+            "the synced capacity did not take the new capacity");
+        helper.assertValueEqual((long) pullerDefinition.energyCapacity(),
+            puller.buffer().getAmountAsLong(),
+            "lowering the capacity destroyed the energy already stored");
+        helper.assertValueEqual(0, insert(puller.energy(), smaller.maxReceive()),
+            "a buffer holding more than its new capacity accepted energy");
+
+        // Spending the surplus still works, and only then does the buffer take energy
+        // again: NeoForge's contract is that insertion returns zero until there is room.
+        long surplus = puller.buffer().getAmountAsLong() - (long) smaller.energyCapacity() + 1;
+        puller.energySource().draw((int) surplus);
+        helper.assertValueEqual((long) smaller.energyCapacity() - 1,
+            puller.buffer().getAmountAsLong(),
+            "the machine could not spend the surplus above its new capacity");
+        helper.assertValueEqual(1, insert(puller.energy(), smaller.energyCapacity()),
+            "a buffer one FE below its new capacity did not take that FE");
+
+        // And from empty, one insert takes the new limit and repeated inserts stop at the
+        // new capacity.
+        puller.energySource().draw(Integer.MAX_VALUE);
+        helper.assertValueEqual(0L, puller.buffer().getAmountAsLong(),
+            "the buffer could not be emptied through its own draw");
+        helper.assertValueEqual(smaller.maxReceive(), insert(puller.energy(), Integer.MAX_VALUE),
+            "the per-operation insert limit did not follow the new definition");
+        for (int call = 0; call < 40; call++) {
+            insert(puller.energy(), smaller.maxReceive());
+        }
+        helper.assertValueEqual(smaller.energyCapacity(), (int) puller.buffer().getAmountAsLong(),
+            "repeated inserts did not stop at the new capacity");
+
+        // Putting the loaded definition back restores the real numbers.
+        puller.applyDefinition(pullerDefinition);
+        helper.assertValueEqual(pullerDefinition.energyCapacity(), puller.buffer().getCapacityAsInt(),
+            "restoring the loaded definition did not restore the capacity");
+        helper.assertValueEqual(pullerDefinition.energyCapacity(),
+            puller.data().get(FabMachineBlockEntity.DATA_CAPACITY),
+            "restoring the loaded definition did not restore the synced capacity");
+        LOGGER.info("[M1-04] silicon_energy_follows_machine_definitions: puller {} FE capacity, "
+            + "max_receive {}, per tick {}; slicer {} FE capacity, slice_ticks {}",
+            pullerDefinition.energyCapacity(), maxReceive, puller.runner().energyPerTick(),
+            slicerDefinition.energyCapacity(), slicer.sliceTicks());
+
+        helper.succeed();
+    }
+
+    // ------------------------------------------------------------------
+    // 14. The two cooking recipe files use the vanilla 26.3 schema
+    // ------------------------------------------------------------------
+
+    private static void cookingRecipeFiles(GameTestHelper helper) {
+        // The vanilla 26.3 examples the coordinator copied out of the official client jar
+        // (build/api-reference/iron_ingot_from_smelting_raw_iron.json and its blasting
+        // twin) spell the result as an object with an "id", not as a bare item id string.
+        // This checks the two bundled files against that shape. It does NOT prove the
+        // datapack loads them: that is what the coordinator's game test server run and its
+        // log are for.
+        for (String name : List.of("silicon_from_smelting", "silicon_from_blasting")) {
+            JsonObject recipe = readDataRecipe(name);
+            helper.assertTrue(recipe != null, "data/lithmod/recipe/" + name + ".json is missing");
+            if (recipe == null) {
+                continue;
+            }
+            helper.assertValueEqual(5, recipe.size(),
+                name + " carries keys " + recipe.keySet() + " rather than the vanilla five");
+            for (String key : List.of("type", "ingredient", "result", "experience", "cookingtime")) {
+                helper.assertTrue(recipe.has(key), name + " has no " + key + " key");
+            }
+            helper.assertTrue(recipe.get("type").getAsString().startsWith("minecraft:"),
+                name + " is not a vanilla cooking type: " + recipe.get("type"));
+            helper.assertValueEqual("minecraft:sand", recipe.get("ingredient").getAsString(),
+                name + " does not cook sand");
+            helper.assertTrue(recipe.get("result").isJsonObject(),
+                name + ": the cooking result must be an object with an id, not a bare id");
+            helper.assertTrue(recipe.getAsJsonObject("result").has("id"),
+                name + ": the result object has no id");
+            helper.assertValueEqual("lithmod:silicon",
+                recipe.getAsJsonObject("result").get("id").getAsString(),
+                name + " does not produce silicon");
+            helper.assertTrue(recipe.get("cookingtime").getAsInt() > 0,
+                name + " has no cooking time");
+        }
+        LOGGER.info("[M1-04] silicon_cooking_recipe_files_match_the_vanilla_schema: both files "
+            + "carry the vanilla cooking keys with a result object");
 
         helper.succeed();
     }
@@ -745,6 +1380,70 @@ public final class SiliconGameTests {
     private static void runSlicer(WaferSlicerBlockEntity slicer, int maxTicks) {
         for (int tick = 0; tick < maxTicks; tick++) {
             slicer.serverTick();
+        }
+    }
+
+    /** Ticks the puller until its output appears, with a hard bound. */
+    private static void runPuller(FabMachineBlockEntity puller, int maxTicks) {
+        for (int tick = 0; tick < maxTicks; tick++) {
+            if (!puller.outputSlot().isEmpty()) {
+                return;
+            }
+            puller.serverTick();
+        }
+    }
+
+    /** Fills a slicer with one boule and one empty FOUP of the given capacity, charged and run. */
+    private static void sliceOnce(WaferSlicerBlockEntity slicer, int capacity) {
+        int perTick = slicer.energyPerTick();
+        slicer.setSlot(WaferSlicerBlockEntity.BOULE_SLOT, new ItemStack(ModItems.SILICON_BOULE.get()));
+        slicer.setSlot(WaferSlicerBlockEntity.FOUP_SLOT, FoupItems.with(ModItems.FOUP_MK2.get(),
+            FoupContents.empty(UUID.randomUUID(), capacity)));
+        slicer.setStoredEnergy(perTick * (slicer.sliceTicks() + 2));
+        runSlicer(slicer, slicer.sliceTicks() + 5);
+    }
+
+    /** Puts a fresh boule and empty FOUP into a slicer and runs it {@code ticks} ticks. */
+    private static void startRun(WaferSlicerBlockEntity slicer, int perTick, int ticks,
+            ItemStack boule) {
+        slicer.clearContent();
+        slicer.setSlot(WaferSlicerBlockEntity.BOULE_SLOT, boule);
+        slicer.setSlot(WaferSlicerBlockEntity.FOUP_SLOT, FoupItems.emptyFoup(ModItems.FOUP_MK1.get()));
+        slicer.setStoredEnergy(perTick * (slicer.sliceTicks() + 2));
+        runSlicer(slicer, ticks);
+    }
+
+    /** A FOUP stack as a client holds it: the public view, with a real wafer count. */
+    private static ItemStack clientView(int capacity, int wafers) {
+        List<Wafer> placeholders = new ArrayList<>(wafers);
+        for (int wafer = 0; wafer < wafers; wafer++) {
+            placeholders.add(new Wafer(Wafer.UNPROCESSED_LAYER, FoupContentsCodec.CLIENT_VIEW_ROLL,
+                Wafer.NO_FLAGS));
+        }
+        return FoupItems.with(ModItems.FOUP_MK1.get(),
+            new FoupContents(FoupContentsCodec.CLIENT_VIEW_LOT_ID, capacity, placeholders));
+    }
+
+    /** Reads a bundled data recipe off the classpath, the way a datapack load would read it. */
+    private static @Nullable JsonObject readDataRecipe(String name) {
+        try (InputStream stream =
+                SiliconGameTests.class.getResourceAsStream("/data/lithmod/recipe/" + name + ".json")) {
+            if (stream == null) {
+                return null;
+            }
+            return JsonParser.parseReader(
+                new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
+        } catch (java.io.IOException e) {
+            throw new AssertionError("could not read data/lithmod/recipe/" + name + ".json", e);
+        }
+    }
+
+    /** Inserts through a real transaction and reports how much was taken. */
+    private static int insert(EnergyHandler handler, int amount) {
+        try (Transaction transaction = Transaction.openRoot()) {
+            int inserted = handler.insert(amount, transaction);
+            transaction.commit();
+            return inserted;
         }
     }
 

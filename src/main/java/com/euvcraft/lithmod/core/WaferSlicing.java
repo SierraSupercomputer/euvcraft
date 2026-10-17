@@ -7,9 +7,10 @@ import java.util.Objects;
  *
  * <p>A boule yields {@link FabSettings#wafersPerBoule()} wafers, but a FOUP only has
  * {@link FoupContents#capacity()} slots, so the lot that lands in the FOUP is the smaller
- * of the two. A boule sliced into a small FOUP leaves that FOUP partially filled rather
- * than throwing the surplus away; the surplus simply never existed, because no wafer was
- * created for it.</p>
+ * of the two. The two directions are not symmetric and are both worth stating plainly: a
+ * FOUP <em>smaller</em> than the yield comes back filled to its own capacity, because the
+ * surplus wafers are never created; a FOUP <em>larger</em> than the yield comes back
+ * partially filled, because one boule only ever produced that many.</p>
  *
  * <p>This is pure core logic on purpose: the rule is the only part of the slicer worth unit
  * testing without a world, and the machine asks this class rather than repeating the

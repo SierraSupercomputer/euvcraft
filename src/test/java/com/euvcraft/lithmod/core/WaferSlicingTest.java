@@ -2,6 +2,7 @@ package com.euvcraft.lithmod.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -9,8 +10,10 @@ import org.junit.jupiter.api.Test;
 /**
  * Unit tests for {@link WaferSlicing}, the wafer count the Wafer Slicer produces.
  *
- * <p>Every positive case has a matching negative, so a passing run cannot come from an
- * assertion that never fires.</p>
+ * <p>Each case names the claim it checks and asserts the count behind it. The two
+ * "partially filled" cases also assert the property the name claims — a small FOUP is full,
+ * a large one is not — because that is the part a reader is meant to take away, and the
+ * refusal cases are ordinary input validation rather than evidence of anything.</p>
  */
 class WaferSlicingTest {
 
@@ -23,25 +26,22 @@ class WaferSlicingTest {
     }
 
     @Test
-    @DisplayName("a smaller FOUP takes the smaller count and stays partially filled")
+    @DisplayName("a FOUP smaller than the yield comes back filled to its own capacity")
     void smallFoup() {
         FabSettings settings = FabSettings.builder().wafersPerBoule(25).build();
-        assertEquals(6, WaferSlicing.wafersFor(settings, 6),
-            "a capacity 6 FOUP should come back holding 6 wafers, not 25");
-        // NEGATIVE CONTROL: the boule count must not leak through when the FOUP is smaller.
-        assertEquals(6 < 25, WaferSlicing.wafersFor(settings, 6) < settings.wafersPerBoule(),
-            "a small FOUP should come back under-filled (negative control)");
+        int count = WaferSlicing.wafersFor(settings, 6);
+        assertEquals(6, count, "a capacity 6 FOUP comes back holding its own capacity of 6, not 25");
+        assertTrue(count < settings.wafersPerBoule(),
+            "the boule's 25 must not survive a FOUP that cannot hold it");
     }
 
     @Test
-    @DisplayName("a larger FOUP is only filled up to the wafers one boule yields")
+    @DisplayName("a FOUP larger than the yield comes back partially filled")
     void largeFoup() {
         FabSettings settings = FabSettings.builder().wafersPerBoule(25).build();
-        assertEquals(25, WaferSlicing.wafersFor(settings, 64),
-            "a capacity 64 FOUP should come back holding only what one boule yields");
-        // NEGATIVE CONTROL: the capacity must not fill the lot on its own.
-        assertEquals(25 < 64, WaferSlicing.wafersFor(settings, 64) < 64,
-            "a large FOUP should come back partially filled (negative control)");
+        int count = WaferSlicing.wafersFor(settings, 64);
+        assertEquals(25, count, "a capacity 64 FOUP comes back holding only what one boule yields");
+        assertTrue(count < 64, "a FOUP larger than the yield stays partially filled");
     }
 
     @Test
@@ -52,16 +52,13 @@ class WaferSlicingTest {
     }
 
     @Test
-    @DisplayName("the count follows a changed wafersPerBoule and ignores nothing else")
+    @DisplayName("the count follows a changed wafersPerBoule and stops caring about capacity above it")
     void followsSettings() {
         FabSettings settings = FabSettings.builder().wafersPerBoule(3).build();
         assertEquals(3, WaferSlicing.wafersFor(settings, 25),
             "three wafers per boule must give three wafers whatever the capacity is");
-
-        // NEGATIVE CONTROL: raising the capacity above the boule count changes nothing.
-        assertEquals(WaferSlicing.wafersFor(settings, 25),
-            WaferSlicing.wafersFor(settings, 64),
-            "the capacity must stop mattering once it exceeds wafersPerBoule (negative control)");
+        assertEquals(WaferSlicing.wafersFor(settings, 25), WaferSlicing.wafersFor(settings, 64),
+            "the capacity stops mattering once it exceeds wafersPerBoule");
     }
 
     @Test
