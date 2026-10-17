@@ -149,7 +149,9 @@ public final class ProcessRun implements ProcessStartResult {
                     || maskUseConsumed != finished || finishEventsEmitted != finished
                     || (finished && (progressTicks != 0 || resistPaid))
                     || (state == ProcessState.IDLE && (progressTicks != 0 || resistPaid))
-                    || (state == ProcessState.PAUSED_NO_RESIST && (progressTicks != 0 || resistPaid))) {
+                    || (state == ProcessState.PAUSED_NO_RESIST && (progressTicks != 0 || resistPaid))
+                    || (state == ProcessState.RUNNING && progressTicks == 0 && resistPaid)
+                    || (state == ProcessState.PAUSED_NO_POWER && !resistPaid)) {
                 throw new IllegalArgumentException("Inconsistent process snapshot");
             }
         }

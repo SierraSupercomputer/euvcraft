@@ -503,4 +503,20 @@ class ProcessRunTest {
             4, new LineStats(100, 10, 10, Double.NaN, 2, 2, 2), true, true,
             installed(), matrix(), settings(Map.of()), 5));
     }
+
+    @Test
+    void runningSnapshotCannotClaimPaidResistBeforeAnyProgress() {
+        assertThrows(IllegalArgumentException.class, () ->
+            new ProcessRun.Snapshot(ProcessState.RUNNING, 2, 0, true, false, false));
+        assertDoesNotThrow(() ->
+            new ProcessRun.Snapshot(ProcessState.RUNNING, 2, 0, false, false, false));
+    }
+
+    @Test
+    void powerPausedSnapshotMustRetainItsPaidResist() {
+        assertThrows(IllegalArgumentException.class, () ->
+            new ProcessRun.Snapshot(ProcessState.PAUSED_NO_POWER, 1, 0, false, false, false));
+        assertDoesNotThrow(() ->
+            new ProcessRun.Snapshot(ProcessState.PAUSED_NO_POWER, 1, 0, true, false, false));
+    }
 }
