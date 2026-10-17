@@ -4,6 +4,7 @@ import java.util.function.Supplier;
 
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.euvcraft.lithmod.mc.FoupItems;
+import com.euvcraft.lithmod.core.DieTypes;
 import com.euvcraft.lithmod.core.MaskData;
 
 import net.minecraft.core.registries.Registries;
@@ -147,9 +148,9 @@ public final class ModCreativeTabs {
             .icon(() -> new ItemStack(ModItems.MASK.get()))
             .displayItems((parameters, output) -> {
                 output.accept(ModItems.BLANK_MASK.get());
-                output.accept(sampleMask("lithmod:logic", 1));
-                output.accept(sampleMask("lithmod:logic", 2));
-                output.accept(sampleMask("lithmod:memory", 2));
+                output.accept(sampleMask(DieTypes.LOGIC, 1));
+                output.accept(sampleMask(DieTypes.LOGIC, 2));
+                output.accept(sampleMask(DieTypes.MEMORY, 2));
             })
             .build()
     );
@@ -160,13 +161,16 @@ public final class ModCreativeTabs {
      * <p>The tab hands out masks that are actually patterned: a design a writer
      * would accept, not a bare {@code mask} stack with no design at all. The die
      * types have to be members of {@link com.euvcraft.lithmod.core.DieTypes#ALL},
-     * because that is what {@link com.euvcraft.lithmod.core.MaskData} accepts.</p>
+     * because that is what {@link com.euvcraft.lithmod.core.MaskData} accepts;
+     * the samples therefore pass the canonical constants rather than literal ids,
+     * because those constants are the bare ids and a namespaced literal is
+     * rejected.</p>
      *
      * <p>The remaining uses come from the config binding rather than from a number
      * written here, so the samples follow the configured {@code maskUses} instead
      * of pinning a balance value into a tab.</p>
      *
-     * @param dieType   canonical die type id
+     * @param dieType   canonical bare die type id
      * @param tierIndex 1-based node tier the sample mask is cut for
      * @return a mask stack with the public design component filled in
      */

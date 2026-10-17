@@ -63,6 +63,10 @@ public final class MaskDataCodec {
      * constructor before anything has looked at them, and that constructor must
      * not throw.</p>
      *
+     * <p>The reverse mapping takes a validated {@link MaskData} back to the same
+     * three public fields, so encoding never has to invent values that decoding
+     * would not accept.</p>
+     *
      * @return the persistent {@code MaskData} codec
      */
     private static Codec<MaskData> persistentCodec() {
@@ -71,7 +75,8 @@ public final class MaskDataCodec {
             Codec.INT.fieldOf("tier_index").forGetter(Fields::tierIndex),
             Codec.INT.optionalFieldOf("uses_remaining", 0).forGetter(Fields::usesRemaining))
             .apply(instance, Fields::new));
-        return fields.flatXmap(MaskDataCodec::maskData, DataResult::success);
+        return fields.flatXmap(MaskDataCodec::maskData,
+            data -> DataResult.success(new Fields(data.dieType(), data.tierIndex(), data.usesRemaining())));
     }
 
     /**

@@ -4,18 +4,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.euvcraft.lithmod.core.DieTypes;
 import com.euvcraft.lithmod.core.MaskData;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.nbt.CompoundTag;
-import com.mojang.nbt.NbtElement;
-import com.mojang.nbt.NbtOps;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.codec.ByteBufCodecs;
 
 import org.junit.jupiter.api.Test;
@@ -34,17 +36,23 @@ import org.junit.jupiter.api.Test;
  */
 class MaskDataCodecTest {
 
-    /** One die type {@link MaskData} accepts, used wherever the value is not the point. */
-    private static final String LOGIC = "lithmod:logic";
+    /** One die type {@link MaskData} accepts, used wherever the value is not the point.
+     *
+     * <p>The bare canonical id from {@link DieTypes}, taken from the constant rather
+     * than written out: {@link MaskData} compares against {@link DieTypes#ALL}, so a
+     * namespaced id would be refused.</p>
+     */
+    private static final String LOGIC = DieTypes.LOGIC;
 
     /** A second one, so a test never proves itself with a single die type. */
-    private static final String MEMORY = "lithmod:memory";
+    private static final String MEMORY = DieTypes.MEMORY;
 
     @Test
     void jsonRoundTripKeepsThePublicFields() {
         MaskData data = new MaskData(LOGIC, 2, 7);
 
-        JsonObject json = MaskDataCodec.CODEC.encodeStart(JsonOps.INSTANCE, data).result().orElseThrow();
+        JsonElement encodedElement = MaskDataCodec.CODEC.encodeStart(JsonOps.INSTANCE, data).result().orElseThrow();
+        JsonObject json = encodedElement.getAsJsonObject();
         assertEquals(LOGIC, json.get("die_type").getAsString());
         assertEquals(2, json.get("tier_index").getAsInt());
         assertEquals(7, json.get("uses_remaining").getAsInt());
@@ -57,7 +65,7 @@ class MaskDataCodecTest {
         MaskData data = new MaskData(MEMORY, 1, 3);
         MaskData decoded = data;
         for (int cycle = 0; cycle < 3; cycle++) {
-            NbtElement encoded = MaskDataCodec.CODEC.encodeStart(NbtOps.INSTANCE, decoded).result().orElseThrow();
+            Tag encoded = MaskDataCodec.CODEC.encodeStart(NbtOps.INSTANCE, decoded).result().orElseThrow();
             decoded = MaskDataCodec.CODEC.parse(NbtOps.INSTANCE, encoded).result().orElseThrow();
             assertEquals(data, decoded);
         }
@@ -65,13 +73,13 @@ class MaskDataCodecTest {
 
     @Test
     void nbtUsesThePublicFieldNames() {
-        NbtElement encoded =
+        Tag encoded =
             MaskDataCodec.CODEC.encodeStart(NbtOps.INSTANCE, new MaskData(MEMORY, 1, 3)).result().orElseThrow();
 
-        CompoundTag tag = encoded.getAsCompound();
-        assertEquals(MEMORY, tag.getString("die_type"));
-        assertEquals(1, tag.getInt("tier_index"));
-        assertEquals(3, tag.getInt("uses_remaining"));
+        CompoundTag tag = (CompoundTag) encoded;
+        assertEquals(MEMORY, tag.getString("die_type").orElseThrow());
+        assertEquals(1, tag.getInt("tier_index").orElseThrow().intValue());
+        assertEquals(3, tag.getInt("uses_remaining").orElseThrow().intValue());
     }
 
     @Test
@@ -94,7 +102,7 @@ class MaskDataCodecTest {
 
     @Test
     void anUnknownDieTypeIsRejected() {
-        assertRejected("dieType", fields("lithmod:photons", 1, 4));
+        assertRejected("dieType", fields("photons", 1, 4));
     }
 
     @Test
@@ -119,8 +127,9 @@ class MaskDataCodecTest {
     void streamCodecRoundTripsTheSamePublicData() {
         MaskData data = new MaskData(MEMORY, 2, 5);
 
-        ByteBuf buffer = MaskDataCodec.STREAM_CODEC.encodeAlways(data);
+        ByteBuf buffer = Unpooled.buffer();
         try {
+            MaskDataCodec.STREAM_CODEC.encode(buffer, data);
             assertEquals(data, MaskDataCodec.STREAM_CODEC.decode(buffer));
         } finally {
             buffer.release();
@@ -129,7 +138,7 @@ class MaskDataCodecTest {
 
     @Test
     void streamCodecRejectsInvalidData() {
-        assertStreamRejected("lithmod:photons", 1, 4);
+        assertStreamRejected("photons", 1, 4);
         assertStreamRejected(LOGIC, 0, 4);
         assertStreamRejected(LOGIC, 1, -1);
     }
@@ -161,7 +170,7 @@ class MaskDataCodecTest {
     private static void assertRejected(String expectedPart, JsonObject json) {
         DataResult<MaskData> parsed = MaskDataCodec.CODEC.parse(JsonOps.INSTANCE, json);
         assertTrue(parsed.result().isEmpty(), () -> "expected " + json + " to be refused");
-        String reason = parsed.error().orElseThrow().message().getString();
+        String reason = parsed.error().orElseThrow().message();
         assertTrue(reason.contains(expectedPart),
             () -> "refusal '" + reason + "' should name " + expectedPart);
     }
@@ -181,9 +190,9 @@ class MaskDataCodecTest {
      */
     private static void assertStreamRejected(String dieType, int tierIndex, int usesRemaining) {
         ByteBuf buffer = Unpooled.buffer();
-        ByteBufCodecs.STRING_UTF8.encode(buffer, dieType, ByteBuf::writeBytes);
-        ByteBufCodecs.VAR_INT.encode(buffer, tierIndex, ByteBuf::writeBytes);
-        ByteBufCodecs.VAR_INT.encode(buffer, usesRemaining, ByteBuf::writeBytes);
+        ByteBufCodecs.STRING_UTF8.encode(buffer, dieType);
+        ByteBufCodecs.VAR_INT.encode(buffer, tierIndex);
+        ByteBufCodecs.VAR_INT.encode(buffer, usesRemaining);
         try {
             assertThrows(RuntimeException.class, () -> MaskDataCodec.STREAM_CODEC.decode(buffer),
                 () -> "expected " + dieType + "/" + tierIndex + "/" + usesRemaining + " to be refused");
