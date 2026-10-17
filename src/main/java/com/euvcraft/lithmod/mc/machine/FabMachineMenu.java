@@ -49,10 +49,19 @@ public abstract class FabMachineMenu extends AbstractContainerMenu {
     private final Container machineSlots;
     /** Counted as machine slots are added; see {@link #addMachineSlot(int, int, int, boolean)}. */
     private int machineSlotCount;
+    private final int inputSlotCount;
 
     protected FabMachineMenu(MenuType<?> type, int containerId, Inventory playerInventory,
-                             @Nullable FabMachineBlockEntity blockEntity, int inventorySize) {
+                             @Nullable FabMachineBlockEntity blockEntity, int inputSlotCount, int inventorySize) {
         super(type, containerId);
+        if (inputSlotCount < 0 || inputSlotCount > inventorySize) {
+            throw new IllegalArgumentException("Invalid machine slot layout");
+        }
+        if (blockEntity != null && (blockEntity.getContainerSize() != inventorySize
+                || blockEntity.inputSlotCount() != inputSlotCount)) {
+            throw new IllegalArgumentException("Menu layout does not match machine inventory");
+        }
+        this.inputSlotCount = inputSlotCount;
         this.blockEntity = blockEntity;
         // The client needs the same machine slots as the server for correct packet indices.
         this.data = blockEntity == null ? new SimpleContainerData(FabMachineBlockEntity.DATA_COUNT)
@@ -92,7 +101,7 @@ public abstract class FabMachineMenu extends AbstractContainerMenu {
         addSlot(new Slot(this.machineSlots, index, x, y) {
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return mayPlace && (blockEntity == null || index < blockEntity.inputSlotCount());
+                return mayPlace && index < inputSlotCount;
             }
         });
         this.machineSlotCount++;

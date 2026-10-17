@@ -614,6 +614,9 @@ public final class MachineGameTests {
         for (int index = 0; index < menu.slots.size(); index++) {
             helper.assertValueEqual(menu.slots.get(index).index, fromFactory.slots.get(index).index,
                 "client/server slot index differs at " + index);
+            helper.assertValueEqual(menu.slots.get(index).mayPlace(new ItemStack(Items.IRON_INGOT)),
+                fromFactory.slots.get(index).mayPlace(new ItemStack(Items.IRON_INGOT)),
+                "client/server placement rules differ at " + index);
         }
         helper.assertTrue(menu.energyCapacity() > 0, "the menu reports no energy capacity");
         helper.assertValueEqual(0, menu.progress(), "a fresh menu reports progress");

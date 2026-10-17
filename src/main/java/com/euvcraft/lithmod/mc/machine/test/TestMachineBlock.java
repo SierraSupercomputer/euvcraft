@@ -65,18 +65,4 @@ public class TestMachineBlock extends BaseEntityBlock {
         return InteractionResult.PASS;
     }
 
-    /**
-     * Drops the machine's contents when it is broken.
-     *
-     * <p>26.3 removed {@code BlockBehaviour.onRemove}, so there is no code hook left to do
-     * this from a block subclass. {@link FabMachineBlockEntity#dropContents()} is the API a
-     * concrete machine wires up, most naturally through a loot-table {@code contents}
-     * entry; this test-only block does not ship one, and nothing in this task claims the
-     * contents survive a break.</p>
-     */
-    @Override
-    protected void spawnAfterBreak(BlockState state, net.minecraft.server.level.ServerLevel level,
-                                   BlockPos pos, ItemStack tool, boolean creative) {
-        super.spawnAfterBreak(state, level, pos, tool, creative);
-    }
 }

@@ -63,7 +63,6 @@ public class TestMachineBlockEntity extends FabMachineBlockEntity {
     protected void dropExtraContents(Level level, BlockPos pos) {
         super.dropExtraContents(level, pos);
         dropContainer(level, pos, extraInventory);
-        extraInventory.clearContent();
     }
 
     @Override
