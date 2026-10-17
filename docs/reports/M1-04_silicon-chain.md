@@ -53,6 +53,13 @@ folded in on the way, at coordinator or Beam request:
    JSON), and checks both typed holders do not match a boule. It documents that this proves
    recipe loading, not default furnace selection.
 
+Pending the coordinator's next run: this repair fixes the overlapping decoy-spec compile
+error, moves restored-progress adoption into `MachineRecipeRunner.tick` alone, makes a second
+save before any adoption tick keep the pending restored run, and extends
+`crystal_puller_resumes_only_the_same_recipe` (decoy-first `firstMatch` proof, pending-snapshot
+reload) plus `wafer_slicer_save_load_round_trip` (zero-FE paused slice restored and resumed);
+all of it is unread-by-runtime evidence until then.
+
 Not applied, deliberately: Beam's second wafer-count clamp (redundant with `FabSettings`'s
 `[1, 64]` clamp; documented in `WaferSlicing` and `docs/testing.md`), and no recipe change for
 the sand/vanilla-glass overlap, which is a pending product decision (section 7).

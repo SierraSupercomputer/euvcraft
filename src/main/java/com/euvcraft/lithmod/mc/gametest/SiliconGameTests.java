@@ -23,6 +23,7 @@ import com.euvcraft.lithmod.mc.machine.silicon.SiliconMachines;
 import com.euvcraft.lithmod.mc.machine.silicon.WaferSlicerBlockEntity;
 import com.euvcraft.lithmod.mc.machine.silicon.WaferSlicerMenu;
 import com.euvcraft.lithmod.mc.recipe.MachineRecipe;
+import com.euvcraft.lithmod.mc.recipe.MachineRecipeRunner;
 import com.euvcraft.lithmod.mc.registry.ModItems;
 
 import com.mojang.authlib.GameProfile;
@@ -598,6 +599,70 @@ public final class SiliconGameTests {
                 "a fresh slicer claims to be slicing");
             helper.assertTrue(fresh.outputSlot().isEmpty(),
                 "a fresh slicer produced output");
+        }
+
+        // A run that has started but not yet paid for a tick is a real paused slice, not
+        // corruption: zero FE starts the run at progress zero, and a save/load taken
+        // there must keep it so the player's started slice survives a world reload.
+        placeSlicer(helper, THIRD);
+        WaferSlicerBlockEntity unpaid = slicerAt(helper, THIRD);
+        if (unpaid != null) {
+            unpaid.setSlot(WaferSlicerBlockEntity.BOULE_SLOT,
+                new ItemStack(ModItems.SILICON_BOULE.get()));
+            unpaid.setSlot(WaferSlicerBlockEntity.FOUP_SLOT,
+                FoupItems.emptyFoup(ModItems.FOUP_MK1.get()));
+            unpaid.setStoredEnergy(0);
+            unpaid.serverTick();
+            helper.assertTrue(unpaid.isSlicing(),
+                "a zero-FE slicer did not start its slice");
+            helper.assertTrue(unpaid.isPaused(),
+                "a zero-FE slicer did not pause its unstarted slice");
+            helper.assertValueEqual(0, unpaid.sliceProgress(),
+                "the zero-FE slice paid a tick it had no FE for");
+            helper.assertTrue(unpaid.sliceTicksRemaining() > 0,
+                "the zero-FE slice has no total length");
+            long noEnergy = unpaid.buffer().getAmountAsLong();
+
+            CompoundTag unpaidTag;
+            TagValueOutput unpaidOutput = TagValueOutput.createWithContext(
+                net.minecraft.util.ProblemReporter.DISCARDING, level.registryAccess());
+            unpaid.saveWithId(unpaidOutput);
+            unpaidTag = unpaidOutput.buildResult();
+
+            unpaid.resetSlice();
+            unpaid.clearContent();
+            unpaid.setStoredEnergy(0);
+            unpaid.loadWithComponents(
+                TagValueInput.create(net.minecraft.util.ProblemReporter.DISCARDING,
+                    level.registryAccess(), unpaidTag));
+
+            helper.assertTrue(unpaid.isSlicing(),
+                "the zero-progress paused slice was not restored as slicing");
+            helper.assertValueEqual(0, unpaid.sliceProgress(),
+                "the zero-progress paused slice loaded as paid progress");
+            helper.assertTrue(unpaid.sliceTicksRemaining() > 0,
+                "the zero-progress paused slice loaded with no length");
+            helper.assertValueEqual(0, unpaid.data().get(WaferSlicerBlockEntity.DATA_PROGRESS),
+                "synced DATA_PROGRESS did not show the zero-progress slice immediately after load");
+            helper.assertValueEqual(unpaid.sliceTicksRemaining(),
+                unpaid.data().get(WaferSlicerBlockEntity.DATA_TICKS),
+                "synced DATA_TICKS did not show the zero-progress slice immediately after load");
+            helper.assertValueEqual(noEnergy, unpaid.buffer().getAmountAsLong(),
+                "the zero-FE slice's buffer changed across the round trip");
+            helper.assertFalse(unpaid.slot(WaferSlicerBlockEntity.BOULE_SLOT).isEmpty(),
+                "the zero-FE slice lost its boule");
+            helper.assertFalse(unpaid.slot(WaferSlicerBlockEntity.FOUP_SLOT).isEmpty(),
+                "the zero-FE slice lost its FOUP");
+
+            // Paying from there resumes the same unstarted run instead of restarting it.
+            unpaid.setStoredEnergy(perTick * unpaid.sliceTicksRemaining());
+            runSlicer(unpaid, unpaid.sliceTicksRemaining() + 5);
+            helper.assertFalse(unpaid.outputSlot().isEmpty(),
+                "the zero-progress paused slice did not resume and finish");
+            FoupContents unpaidLot = FoupItems.trustedContentsOf(unpaid.outputSlot());
+            helper.assertValueEqual(
+                WaferSlicing.wafersFor(EUVCRAFTMod.settings(), unpaidLot.capacity()),
+                unpaidLot.size(), "the zero-progress resumed slice produced the wrong lot size");
         }
 
         helper.succeed();
@@ -1619,6 +1684,20 @@ public final class SiliconGameTests {
         helper.assertValueEqual(perTick, puller.runner().energyPerTick(),
             "the frozen per-tick cost did not survive the round trip");
 
+        // A second save taken now, still before any tick has re-attached the recipe,
+        // must carry the pending restored run too: the paid progress, its length and its
+        // frozen cost are all machine state even when no recipe is running yet.
+        CompoundTag restoredTag = saveTag(level, puller);
+        puller.runner().reset();
+        puller.setStoredEnergy(0);
+        loadTag(level, puller, restoredTag);
+        helper.assertValueEqual(progressBefore, puller.runner().progress(),
+            "the pending restored progress did not survive a second save/load");
+        helper.assertValueEqual(recipe.ticks(), puller.runner().ticks(),
+            "the pending restored run lost its saved length");
+        helper.assertValueEqual(perTick, puller.runner().energyPerTick(),
+            "the pending restored run lost its frozen per-tick cost");
+
         puller.setStoredEnergy(perTick * (recipe.ticks() + 2));
         puller.serverTick();
         helper.assertTrue(puller.runner().isRunning(),
@@ -1693,7 +1772,7 @@ public final class SiliconGameTests {
         // A "decoy" recipe that matches the same input but has different product/length/cost.
         MachineRecipeSpec decoySpec = new MachineRecipeSpec(recipe.spec().machineId(),
             recipe.spec().ingredients(), new MachineResult("minecraft:iron_ingot", 1, Map.of()),
-            recipe.spec().ticks() + 100, Optional.of(perTick + 5));
+            recipe.spec().ticks() + 100, perTick + 5);
         // Load BOTH: decoy first (higher priority), then the original spec.
         withRecipes(List.of(decoySpec, recipe.spec()), () -> {
             overlapping.runner().reset();
@@ -1701,6 +1780,14 @@ public final class SiliconGameTests {
             loadTag(level, overlapping, overlappingTag);
             helper.assertValueEqual(overlappingProgress, overlapping.runner().progress(),
                 "the overlapping-recipe case did not start from the saved numbers");
+
+            // Prove the fixture is honest: with the decoy loaded first, the plain
+            // matcher still picks it, so the adoption below can only come from the
+            // saved spec, not from candidate order.
+            MachineRecipe decoyFirst = MachineRecipeRunner.firstMatch(overlapping.recipes(),
+                overlapping.inputSlots());
+            helper.assertTrue(decoyFirst != null && decoyFirst.spec().equals(decoySpec),
+                "the test fixture did not actually place the decoy recipe first");
 
             overlapping.setStoredEnergy(perTick * (recipe.ticks() + 2));
             overlapping.serverTick();

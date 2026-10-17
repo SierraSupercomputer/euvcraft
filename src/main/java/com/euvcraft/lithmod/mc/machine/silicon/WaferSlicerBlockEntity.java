@@ -381,9 +381,11 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
     /**
      * Restores a run in progress.
      *
-     * <p>Only a flag with progress below its tick count is trusted, the same rule the
-     * runner uses: anything else can only have come from a hand-edited tag, and restarting
-     * from tick one is the safe answer.</p>
+     * <p>Only a flag whose progress stays below its tick count is trusted, the same rule
+     * the runner uses: anything else can only have come from a hand-edited tag.
+     * Zero progress is accepted, because a run paused before its first FE payment is a
+     * legitimate slice-in-progress, not corruption. A negative progress is still not
+     * trusted, and restarting from tick one is the safe answer.</p>
      *
      * <p>Restores only when a definition is present and declares a valid {@code slice_ticks};
      * otherwise the machine must fail closed and the run is dropped. Stale {@code paused}
@@ -408,7 +410,7 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
         int sliceTicks = definition == null ? 0 : definition.param(SLICE_TICKS_PARAM).orElse(0);
 
         if (savedSlicing && definition != null && sliceTicks > 0
-                && savedTicks > 0 && savedProgress > 0 && savedProgress < savedTicks) {
+                && savedTicks > 0 && savedProgress >= 0 && savedProgress < savedTicks) {
             this.slicing = true;
             this.progress = savedProgress;
             this.ticks = savedTicks;

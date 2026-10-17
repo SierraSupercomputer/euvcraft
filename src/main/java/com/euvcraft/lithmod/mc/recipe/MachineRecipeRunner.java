@@ -207,21 +207,31 @@ public final class MachineRecipeRunner {
             return advance(inputs, output, outputWriter, energy);
         }
 
-        // If we have restored progress, we must find the exact recipe it belongs to.
-        // Iterate all candidates and adopt the first that both matches the current inputs
-        // AND is the exact spec the progress was saved for. If none adopts, reset.
+        // Progress restored from a save is adopted here, and only here. The first
+        // candidate whose inputs match AND whose spec is the exact one the progress was
+        // saved for takes the run over and this tick immediately advances it, at the
+        // frozen cost loadState restored: another matching recipe that happens to come
+        // first must never replace it or restart the count. If no candidate is the saved
+        // recipe the progress is dropped; when the saved spec itself is gone nothing is
+        // matched at all this tick (fail closed), while a surviving-but-changed recipe
+        // lets fresh matching start its own run on this same tick.
         if (hasRestoredProgress()) {
-            boolean adopted = false;
             for (MachineRecipe candidate : recipes) {
                 if (inputsMatch(candidate, inputs) && adoptRestored(candidate)) {
-                    adopted = true;
-                    break;
+                    return advance(inputs, output, outputWriter, energy);
                 }
             }
-            if (!adopted) {
-                reset();
+            // reset() clears restoredSpec, so whether it survived must be read first.
+            boolean specSurvived = restoredSpec != null;
+            reset();
+            if (!specSurvived) {
+                // Fail closed: the save carried no usable spec, so the paid progress has
+                // no identity left. Drop it without handing the tick to whatever recipe
+                // now happens to fit; a fresh run may only start on a later tick.
                 return false;
             }
+            // The spec survived and simply matches no candidate: the recipe changed or
+            // vanished, so fresh matching below starts its own run on this same tick.
         }
 
         MachineRecipe chosen = firstMatch(recipes, inputs);
@@ -311,24 +321,37 @@ public final class MachineRecipeRunner {
      * running: same ingredients, same product, same length, same cost override. The frozen
      * per-tick cost is written separately because it can differ from what the definition
      * says today. {@link #adoptRestored} will only give this progress back to that spec.</p>
+     *
+     * <p>A restored-but-not-yet-adopted run is part of the machine's state too: if a save
+     * lands between a load and the next tick, the spec the loaded progress belongs to is
+     * written just as if the recipe were already re-attached, so the paid progress
+     * survives a save/reload cycle that never got a tick.</p>
      */
     public void saveState(net.minecraft.world.level.storage.ValueOutput output) {
         output.putInt("progress", progress);
         output.putInt("ticks", ticks);
         output.putInt("energy_per_tick", runningEnergyPerTick);
-        output.putBoolean("running", current != null);
-        if (current != null) {
-            output.store(SPEC_KEY, MachineRecipeSpecCodec.CODEC, current.spec());
+        MachineRecipeSpec savedSpec = current != null ? current.spec()
+            : hasRestoredProgress() ? restoredSpec : null;
+        output.putBoolean("running", savedSpec != null);
+        if (savedSpec != null) {
+            output.store(SPEC_KEY, MachineRecipeSpecCodec.CODEC, savedSpec);
         }
     }
 
     /**
      * Reads back what {@link #saveState} wrote.
      *
-     * <p>A saved "running" flag with no progress, or progress at or past the saved ticks, is
-     * discarded rather than trusted: it can only come from a hand-edited or truncated tag.
-     * The saved spec is kept as it is, including when it cannot be decoded: a run whose
-     * identity did not survive must not be resumed on whatever recipe now fits.</p>
+     * <p>A saved "running" flag whose progress has reached or passed the saved ticks is
+     * discarded rather than trusted: it comes from a hand-edited or truncated tag, not
+     * from this class, which never writes a finished run. Zero progress is also refused
+     * and the machine restarts fresh, but that is not corruption: a run paused before its
+     * first FE payment is a normal running state, this loader just chooses the existing
+     * behavior of not restoring an unpaid run.</p>
+     *
+     * <p>The saved spec is kept as it is, including when it cannot be decoded: a run whose
+     * identity did not survive must not be resumed on whatever recipe now fits. With no
+     * spec at all, the run also fails closed rather than being re-attached to a guess.</p>
      */
     public void loadState(net.minecraft.world.level.storage.ValueInput input) {
         int savedProgress = input.getIntOr("progress", 0);

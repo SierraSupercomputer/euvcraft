@@ -326,22 +326,8 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
             return;
         }
 
-        // Progress restored from a save belongs to one exact recipe, so it is re-attached
-        // to that spec alone; a recipe that changed or vanished restarts the machine.
-        if (this.runner.hasRestoredProgress()) {
-            boolean adopted = false;
-            for (MachineRecipe candidate : recipes()) {
-                if (MachineRecipeRunner.inputsMatch(candidate, inputSlots())
-                        && this.runner.adoptRestored(candidate)) {
-                    adopted = true;
-                    break;
-                }
-            }
-            if (!adopted) {
-                this.runner.reset();
-            }
-        }
-
+        // Restored progress is re-attached to its exact saved recipe by the runner's own
+        // tick; the machine just runs that one owner so adoption is never done twice.
         boolean completed = this.runner.tick(recipes(), inputSlots(), outputSlot(),
             this::giveOutput, energySource());
         syncData();
