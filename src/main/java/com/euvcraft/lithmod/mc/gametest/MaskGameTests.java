@@ -340,7 +340,7 @@ public final class MaskGameTests {
                 "the design ingredient was not consumed");
             helper.assertFalse(generator.runner().isRunning(),
                 "the recipe did not finish");
-            helper.assertValueEqual(0, (int) generator.buffer().getAmountAsLong(),
+            helper.assertValueEqual(0L, generator.buffer().getAmountAsLong(),
                 "the machine was charged more than the recipe cost");
 
             LOGGER.info("[M1-06] {}: {} mask for die {} at tier {} carrying {} uses "
@@ -672,7 +672,7 @@ public final class MaskGameTests {
             generator.serverTick();
             helper.assertFalse(generator.outputSlot().isEmpty(),
                 "the resumed run did not finish on the tick it was due");
-            helper.assertValueEqual(0, (int) generator.buffer().getAmountAsLong(),
+            helper.assertValueEqual(0L, generator.buffer().getAmountAsLong(),
                 "the resumed run did not cost exactly one charge per remaining tick");
 
             LOGGER.info("[M1-06] {}: paused at {}/{} with the output slot full, {} FE kept, "
@@ -709,7 +709,7 @@ public final class MaskGameTests {
                 "the test did not get the generator part-way through a recipe: " + generator.runner());
 
             generator.setStoredEnergy(0);
-            helper.assertValueEqual(0, (int) generator.buffer().getAmountAsLong(),
+            helper.assertValueEqual(0L, generator.buffer().getAmountAsLong(),
                 "the machine could not be emptied");
 
             runGenerator(generator, RECIPE_TICKS + 5);
@@ -719,7 +719,7 @@ public final class MaskGameTests {
                 "a machine with an empty buffer is not marked paused");
             helper.assertValueEqual(before, generator.runner().progress(),
                 "an empty buffer advanced the run");
-            helper.assertValueEqual(0, (int) generator.buffer().getAmountAsLong(),
+            helper.assertValueEqual(0L, generator.buffer().getAmountAsLong(),
                 "an empty buffer somehow gained FE");
             helper.assertValueEqual(1, generator.slot(PatternGeneratorBlockEntity.BLANK_SLOT).getCount(),
                 "a paused run consumed the blank plate");
@@ -735,7 +735,7 @@ public final class MaskGameTests {
                 "cost-1 FE did not pause the machine");
             helper.assertValueEqual(before, generator.runner().progress(),
                 "cost-1 FE advanced the run");
-            helper.assertValueEqual(cost - 1, (int) generator.buffer().getAmountAsLong(),
+            helper.assertValueEqual((long) cost - 1, generator.buffer().getAmountAsLong(),
                 "the machine spent FE it could not pay a full tick with");
 
             // Paying for the rest resumes the same run.
@@ -747,7 +747,7 @@ public final class MaskGameTests {
             generator.serverTick();
             helper.assertFalse(generator.outputSlot().isEmpty(),
                 "the resumed run did not finish on the tick it was due");
-            helper.assertValueEqual(0, (int) generator.buffer().getAmountAsLong(),
+            helper.assertValueEqual(0L, generator.buffer().getAmountAsLong(),
                 "the resumed run did not cost exactly one charge per remaining tick");
             helper.assertTrue(generator.outputSlot().getItem() == ModItems.MASK.get(),
                 "the resumed run produced " + generator.outputSlot().getItem());
@@ -843,9 +843,11 @@ public final class MaskGameTests {
      * through the recipe spec codec, not by id, and the component payload inside it has to
      * come back the same shape it went in.</p>
      *
-     * <p>The machine is charged once, for the whole recipe, and never recharged. A reload
-     * that restarted the run, or that adopted a different recipe, or that restored a
-     * different per-tick cost, would all show up as either the wrong progress or a buffer
+     * <p>The machine is charged once, for the whole recipe, and never recharged: the only FE
+     * the resumed run gets is the balance the save/load cycles brought back with the
+     * progress. A reload that restarted the run, or that adopted a different recipe, or that
+     * restored a different per-tick cost, or that dropped the stored energy, would all show
+     * up as the wrong progress, a buffer that is not the one the payment left, or a buffer
      * that does not land on zero.</p>
      */
     private static void saveLoadRoundTrip(GameTestHelper helper) {
@@ -880,8 +882,8 @@ public final class MaskGameTests {
                 "the saved tag has no Items entry, so the inputs could not survive");
 
             // Three save/load cycles, none of them followed by a tick: a world reload can land
-            // between a load and the next tick, and every one of those states has to be a
-            // machine state worth saving.
+            // between a load and the next tick, and every one of those states has to carry the
+            // progress, the frozen cost and the FE the ticks have already paid for.
             for (int cycle = 1; cycle <= 3; cycle++) {
                 CompoundTag live = saveTag(level, generator);
                 wipe(generator);
@@ -900,15 +902,17 @@ public final class MaskGameTests {
                     "save/load cycle " + cycle + " lost the blank plate");
                 helper.assertValueEqual(1, generator.slot(PatternGeneratorBlockEntity.DESIGN_SLOT).getCount(),
                     "save/load cycle " + cycle + " lost the design ingredient");
-                // Nothing was recharged, so the buffer is still the one the ticks left.
-                helper.assertValueEqual(0, (int) generator.buffer().getAmountAsLong(),
-                    "save/load cycle " + cycle + " invented stored energy");
+                // Nothing is ever recharged below, so the FE the paid ticks left has to come
+                // back with the progress: the buffer is part of the state under test here.
+                helper.assertValueEqual(energyAfterPaidTicks, generator.buffer().getAmountAsLong(),
+                    "save/load cycle " + cycle + " did not restore the energy the paid ticks left");
             }
 
-            // The first tick re-attaches the run to the exact recipe it was running, and
-            // continues it. Adoption compares the whole decoded spec against the live one,
-            // so this also pins the spec's own round trip through NBT.
-            generator.setStoredEnergy(Math.toIntExact(energyAfterPaidTicks));
+            // The buffer the three cycles restored is the only payment this run ever gets:
+            // nothing is injected between the initial charge and the finish below. The first
+            // tick re-attaches the run to the exact recipe it was running and continues it.
+            // Adoption compares the whole decoded spec against the live one, so this also
+            // pins the spec's own round trip through NBT.
             generator.serverTick();
             helper.assertTrue(generator.runner().isRunning(),
                 "the restored run did not re-attach to a recipe at all");
@@ -921,7 +925,7 @@ public final class MaskGameTests {
                 "the restored run adopted a different recipe length");
             helper.assertValueEqual(cost, generator.runner().energyPerTick(),
                 "the restored run was charged at a new rate");
-            helper.assertValueEqual(energyAfterPaidTicks - cost, (int) generator.buffer().getAmountAsLong(),
+            helper.assertValueEqual(energyAfterPaidTicks - cost, generator.buffer().getAmountAsLong(),
                 "the first tick after the restore did not cost exactly one frozen charge");
             helper.assertTrue(generator.outputSlot().isEmpty(),
                 "the restored run wrote its product on the first tick after the restore");
@@ -935,7 +939,7 @@ public final class MaskGameTests {
             generator.serverTick();
             helper.assertFalse(generator.outputSlot().isEmpty(),
                 "the restored run did not finish on the tick it was due");
-            helper.assertValueEqual(0, (int) generator.buffer().getAmountAsLong(),
+            helper.assertValueEqual(0L, generator.buffer().getAmountAsLong(),
                 "the whole recipe did not cost exactly one charge per tick from a single payment");
             helper.assertTrue(generator.slot(PatternGeneratorBlockEntity.BLANK_SLOT).isEmpty(),
                 "the restored run did not consume its blank plate");
@@ -954,9 +958,10 @@ public final class MaskGameTests {
                     "the restored run did not stamp the configured exposure count");
             }
 
-            LOGGER.info("[M1-06] {}: {} FE for {} ticks at {} FE/tick paid up front; progress {} and "
-                    + "the frozen cost survived three save/load cycles taken before any tick, and "
-                    + "the run finished the remaining {} ticks on that same payment",
+            LOGGER.info("[M1-06] {}: {} FE for {} ticks at {} FE/tick paid up front; progress {}, "
+                    + "the frozen cost and the remaining FE survived three save/load cycles taken "
+                    + "before any tick, and the run finished the remaining {} ticks on that same "
+                    + "payment",
                 SAVE_LOAD_ROUND_TRIP, cost * RECIPE_TICKS, RECIPE_TICKS, cost, paid,
                 RECIPE_TICKS - paid);
         });
@@ -1208,8 +1213,8 @@ public final class MaskGameTests {
                 "a machine with no level made progress");
             helper.assertTrue(detached.outputSlot().isEmpty(),
                 "a machine with no level produced a mask");
-            helper.assertValueEqual(detached.buffer().getCapacityAsInt(),
-                (int) detached.buffer().getAmountAsLong(),
+            helper.assertValueEqual((long) detached.buffer().getCapacityAsInt(),
+                detached.buffer().getAmountAsLong(),
                 "a machine with no level charged the player");
             helper.assertValueEqual(1, detached.slot(PatternGeneratorBlockEntity.BLANK_SLOT).getCount(),
                 "a machine with no level consumed its blank plate");
@@ -1611,14 +1616,18 @@ public final class MaskGameTests {
         helper.assertValueEqual(4, lines.size(),
             "a patterned mask must show a name line and exactly three public lines, got: " + lines);
 
-        // The first line is the stack's own name and nothing else. It is compared against the
-        // stack's own name rather than against a hard-coded translation key, so the check
-        // does not depend on how this version spells an item name.
+        // The first line is the stack's own name and nothing else. getTooltipLines adds
+        // getStyledHoverName rather than the raw hover name, so the line is compared against
+        // that exact rendered component instead of a re-spelled copy of it. The styled name
+        // is an empty root carrying the hover name as its sibling, so translatability is
+        // checked on the hover name's own contents. Neither value is a hard-coded
+        // translation key, so the check does not depend on how this version spells an item
+        // name.
         Component name = lines.get(0);
-        helper.assertTrue(name.equals(stack.getHoverName()),
-            "the first tooltip line of a mask is not its own name: " + name);
-        helper.assertTrue(name.getContents() instanceof TranslatableContents,
-            "the mask name line is not translatable: " + name);
+        helper.assertTrue(name.equals(stack.getStyledHoverName()),
+            "the first tooltip line of a mask is not its own styled name: " + name);
+        helper.assertTrue(stack.getHoverName().getContents() instanceof TranslatableContents,
+            "the mask name line is not translatable: " + stack.getHoverName());
 
         TranslatableContents dieLine = translatable(helper, lines.get(1),
             "tooltip.lithmod.mask.die", dieType + " at tier " + tierIndex);
@@ -1770,7 +1779,7 @@ public final class MaskGameTests {
                 break;
             }
         }
-        helper.assertValueEqual(target, (int) generator.buffer().getAmountAsLong(),
+        helper.assertValueEqual((long) target, generator.buffer().getAmountAsLong(),
             "the machine could not be charged to " + target + " FE; its capacity is "
                 + definition.energyCapacity());
     }
