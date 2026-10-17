@@ -109,6 +109,9 @@ public final class ComponentGameTests {
         LineLoadout loadout = LineLoadoutReader.read(light, optics, stage, cleanroom, metrology, resist, 1);
         LineLoadout expected = new LineLoadout(1, 1, 1, 1, 1, 1, 1, 1.0);
         helper.assertTrue(loadout.equals(expected), "T1 reader mismatch: " + loadout + " != " + expected);
+        LineLoadout wrongKind = LineLoadoutReader.read(light, light, stage, cleanroom, metrology, resist, 1);
+        helper.assertValueEqual(0, wrongKind.opticsTier(), "a lamp in the optics slot must not count as optics");
+        helper.assertValueEqual(1, wrongKind.lightSourceTier(), "valid lamp slot must still count");
         helper.succeed();
     }
 
@@ -127,19 +130,7 @@ public final class ComponentGameTests {
     }
 
     private static void slotValidation(GameTestHelper helper) {
-        Container container = new Container() {
-            private final ItemStack[] items = new ItemStack[1];
-            public int getContainerSize() { return 1; }
-            public boolean isEmpty() { return items[0].isEmpty(); }
-            public ItemStack getItem(int i) { return items[i]; }
-            public ItemStack removeItem(int i, int count) { ItemStack s = items[i]; items[i] = ItemStack.EMPTY; return s; }
-            public ItemStack removeItemNoUpdate(int i) { ItemStack s = items[i]; items[i] = ItemStack.EMPTY; return s; }
-            public void setItem(int i, ItemStack s) { items[i] = s; }
-            public int getMaxStackSize() { return 64; }
-            public void setChanged() { }
-            public boolean stillValid(net.minecraft.world.entity.player.Player p) { return true; }
-            public void clearContent() { items[0] = ItemStack.EMPTY; }
-        };
+        Container container = new net.minecraft.world.SimpleContainer(1);
         ComponentSlot slot = new ComponentSlot(container, 0, 0, 0, "light_source");
         helper.assertTrue(slot.mayPlace(new ItemStack(ModItems.MERCURY_LAMP.get())),
             "matching kind rejected");

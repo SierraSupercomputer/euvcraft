@@ -66,4 +66,9 @@ class LineLoadoutTest {
         assertEquals(5, c.metrologyTier());
         assertEquals(0.5, c.maintenance());
     }
+    @org.junit.jupiter.api.Test
+    void nonFiniteMaintenanceCannotEnterLineStatistics() {
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+            () -> new LineLoadout(1, 1, 1, 1, 1, 1, 1, Double.NaN));
+    }
 }

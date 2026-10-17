@@ -30,7 +30,7 @@ public record LineLoadout(
         requireTier("metrologyTier", metrologyTier);
         requireTier("maskTier", maskTier);
         requireTier("resistTier", resistTier);
-        if (maintenance < 0.0 || maintenance > 1.0) {
+        if (!Double.isFinite(maintenance) || maintenance < 0.0 || maintenance > 1.0) {
             throw new IllegalArgumentException("maintenance must be in [0.0, 1.0], got " + maintenance);
         }
     }
