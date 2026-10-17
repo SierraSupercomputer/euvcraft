@@ -133,13 +133,20 @@ public final class ModCreativeTabs {
     );
 
     /**
-     * The photomask group: the blank plate and one example mask per die type the
-     * milestone designs for.
+     * The photomask group: the blank plate, one example mask per die type the
+     * milestone designs for, and the machine that cuts them.
      *
      * <p>A fifth tab for the same reason the others exist: the game tests pin the
      * entry count of the main, chips, process cell, line component and silicon
      * chain tabs, so a new item group gets a new tab rather than a new entry in
      * one of those.</p>
+     *
+     * <p>The Pattern Generator is appended last so the four entries above keep
+     * their positions: a creative tab's entry order is what a test asserting on
+     * "the fourth entry" reads, and only the total grows. It has no recipes in
+     * this milestone, so it is here for look and layout rather than as a way to
+     * reach the machine in a survival game — {@code /give} and the game tests
+     * place it.</p>
      */
     public static final Supplier<CreativeModeTab> MASKS = CREATIVE_MODE_TABS.register(
         "5_masks",
@@ -151,6 +158,7 @@ public final class ModCreativeTabs {
                 output.accept(sampleMask(DieTypes.LOGIC, 1));
                 output.accept(sampleMask(DieTypes.LOGIC, 2));
                 output.accept(sampleMask(DieTypes.MEMORY, 2));
+                output.accept(ModItems.PATTERN_GENERATOR.get());
             })
             .build()
     );

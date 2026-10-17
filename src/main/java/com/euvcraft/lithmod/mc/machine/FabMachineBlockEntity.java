@@ -311,6 +311,51 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
         return registry == null ? List.of() : registry.forMachine(machineId());
     }
 
+    /**
+     * Narrows the recipes this machine is willing to consider, without touching
+     * {@link #recipes()}.
+     *
+     * <p>Identity by default: a machine that has nothing extra to say about its recipes runs
+     * everything its own id selects, which is every machine built before this hook existed.
+     * A machine that does have a rule — the Pattern Generator, which refuses any recipe whose
+     * product is not a mask this player's mask shop may cut — overrides this and returns only
+     * the recipes it accepts.</p>
+     *
+     * <p>The filtered list is what the runner is handed, so a refused recipe cannot be
+     * started, cannot adopt restored progress and cannot be charged for: refusal happens
+     * before any energy, ingredient or output is touched, not after. {@link #recipes()}
+     * itself stays unfiltered and final, because that is the registry answer and tests read
+     * it directly.</p>
+     *
+     * <p>Called from {@link #serverTick()} once per tick, never from the constructor, so an
+     * override may safely use fields and loaded data.</p>
+     *
+     * @param candidates every recipe this machine's id selects
+     * @return the recipes the runner may match against; the same list by default
+     */
+    protected List<MachineRecipe> filterRecipes(List<MachineRecipe> candidates) {
+        return candidates;
+    }
+
+    /**
+     * The last word on the product of a completed recipe, before it reaches the output slot.
+     *
+     * <p>Identity by default, so every existing machine writes exactly what its recipe
+     * assembled. A machine whose product is built from a template rather than from the data
+     * pack alone overrides this: the Pattern Generator replaces the exposure count a mask
+     * template was written with by the number of uses the config asks for right now.</p>
+     *
+     * <p>Called only on the tick a recipe completes, from the callback the runner writes the
+     * product with, so reading the current settings here means a config change made during a
+     * run is the one that applies to the recipe that finishes after it.</p>
+     *
+     * @param product a fresh stack from {@link MachineRecipe#assemble()}, owned by the caller
+     * @return the stack to write; the same stack by default
+     */
+    protected ItemStack prepareOutput(ItemStack product) {
+        return product;
+    }
+
     /** One server tick. Subclasses call this from their ticker. */
     public void serverTick() {
         if (level == null || level.isClientSide()) {
@@ -327,9 +372,12 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
         }
 
         // Restored progress is re-attached to its exact saved recipe by the runner's own
-        // tick; the machine just runs that one owner so adoption is never done twice.
-        boolean completed = this.runner.tick(recipes(), inputSlots(), outputSlot(),
-            this::giveOutput, energySource());
+        // tick; the machine just runs that one owner so adoption is never done twice. The
+        // runner only ever sees the recipes filterRecipes allows, and only ever writes a
+        // stack prepareOutput approved, so both hooks sit in front of every decision that
+        // costs the player anything.
+        boolean completed = this.runner.tick(filterRecipes(recipes()), inputSlots(), outputSlot(),
+            product -> this.giveOutput(prepareOutput(product)), energySource());
         syncData();
         if (completed || this.runner.isRunning()) {
             setChanged();

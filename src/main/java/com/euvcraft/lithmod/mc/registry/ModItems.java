@@ -198,6 +198,20 @@ public final class ModItems {
         ITEMS.registerSimpleBlockItem("wafer_slicer",
             () -> com.euvcraft.lithmod.mc.machine.silicon.SiliconMachines.WAFER_SLICER.get());
 
+    /**
+     * The Pattern Generator's block item.
+     *
+     * <p>Same rule as every machine item above: without a block item the machine cannot drop
+     * itself, so the {@code .get()} call sits inside a lambda and the block comes from
+     * {@link com.euvcraft.lithmod.mc.machine.mask.MaskMachines}, which is the mask chain's
+     * own registry class. The machine has no recipes in this milestone, so it is placed last
+     * in the photomask tab rather than given a tab of its own: every tab's entry count is
+     * pinned by a passing game test, and appending keeps the existing entries in place.</p>
+     */
+    public static final DeferredItem<BlockItem> PATTERN_GENERATOR =
+        ITEMS.registerSimpleBlockItem("pattern_generator",
+            () -> com.euvcraft.lithmod.mc.machine.mask.MaskMachines.PATTERN_GENERATOR.get());
+
     private ModItems() {
     }
 }
