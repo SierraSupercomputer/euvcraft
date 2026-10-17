@@ -1,11 +1,14 @@
 package com.euvcraft.lithmod.mc.recipe;
 
 import com.euvcraft.lithmod.core.EnergySource;
+import com.euvcraft.lithmod.core.MachineRecipeSpec;
+import com.euvcraft.lithmod.mc.data.MachineRecipeSpecCodec;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Runs one machine's recipes: finds the recipe that fits the input slots, draws energy every
@@ -18,14 +21,42 @@ import java.util.List;
  *
  * <p>The rules, in the order they are checked each tick:</p>
  * <ol>
- *   <li>The output must have room. Checked before any energy is drawn, so a full output slot
- *       never eats the player's FE for nothing.</li>
+ *   <li>The inputs must still satisfy the running recipe, item <em>and</em> count. A
+ *       player can pull an ingredient back out or swap it mid-run, and a recipe that
+ *       finished against inputs that are no longer there would be free output, so a run
+ *       whose inputs went invalid is dropped whole: progress is lost and nothing is
+ *       consumed and nothing is written.</li>
+ *   <li>The output must have room. Checked before any energy is drawn, so a full output
+ *       slot never eats the player's FE for nothing.</li>
  *   <li>Energy must be there in full. A partial draw counts as no energy and pauses.</li>
  *   <li>A running recipe is never re-matched, so a reload cannot swap a recipe out from
  *       under a half-built product.</li>
  * </ol>
+ *
+ * <p><b>Recipe identity across a datapack reload.</b> {@link #current} is the resolved
+ * recipe object itself, and it is kept for the whole run: {@link #tick} only ever looks at
+ * the candidate list while nothing is running. A reload replaces the loaded registry, but
+ * a half-finished run keeps the recipe it started with rather than silently becoming a
+ * different recipe with a different cost and a different product.</p>
+ *
+ * <p><b>Recipe identity across a save and load.</b> A run has to survive a world reload
+ * too, so {@link #saveState} writes the running recipe's own
+ * {@link MachineRecipeSpec} next to its numbers and {@link #adoptRestored} re-attaches
+ * progress only to that exact spec. Re-matching by input alone would let a datapack edit
+ * hand old progress to a different product or a different length for free; a spec that is
+ * missing or has changed drops the run instead, and the machine starts again from tick one.
+ * The frozen per-tick cost is kept with it, so a resumed run is charged exactly what an
+ * uninterrupted one would have been charged.</p>
+ *
+ * <p><b>What a completed run consumes.</b> Exactly the recipe's own
+ * {@link MachineRecipe#ingredientCounts()}: four silicon for one boule costs four silicon,
+ * whatever the stack size in the slot. Counts are re-read from the same recipe that is
+ * being run, so a stack can never be shrunk by a number that belongs to another recipe.</p>
  */
 public final class MachineRecipeRunner {
+
+    /** Key the running recipe's spec is written under, inside the save node. */
+    private static final String SPEC_KEY = "spec";
 
     private final String machineId;
 
@@ -35,6 +66,8 @@ public final class MachineRecipeRunner {
     private int progress;
     private int ticks;
     private boolean paused;
+    /** The spec restored progress belongs to, until it is adopted or thrown away. */
+    private MachineRecipeSpec restoredSpec;
 
     /**
      * @param machineId the machine whose recipes this runner may use
@@ -126,20 +159,29 @@ public final class MachineRecipeRunner {
             : ingredient.id().equals(stackItemId);
     }
 
+    /**
+     * Whether every input slot currently satisfies {@code recipe}, item and count.
+     *
+     * <p>This is the revalidation the tick performs on the recipe that is already running:
+     * the same rules {@link #firstMatch} uses to choose one, applied again so a mid-run
+     * removal or swap is caught before any energy is spent or any product is written.</p>
+     */
+    public static boolean inputsMatch(MachineRecipe recipe, List<ItemStack> inputs) {
+        if (recipe.inputSlotCount() != inputs.size()) {
+            return false;
+        }
+        for (int slot = 0; slot < inputs.size(); slot++) {
+            if (!matchesSlot(recipe, slot, inputs.get(slot))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /** The first recipe in {@code recipes} whose ingredients the inputs satisfy. */
     public static MachineRecipe firstMatch(List<MachineRecipe> recipes, List<ItemStack> inputs) {
         for (MachineRecipe recipe : recipes) {
-            if (recipe.inputSlotCount() != inputs.size()) {
-                continue;
-            }
-            boolean matches = true;
-            for (int slot = 0; slot < inputs.size(); slot++) {
-                if (!matchesSlot(recipe, slot, inputs.get(slot))) {
-                    matches = false;
-                    break;
-                }
-            }
-            if (matches) {
+            if (inputsMatch(recipe, inputs)) {
                 return recipe;
             }
         }
@@ -147,7 +189,7 @@ public final class MachineRecipeRunner {
     }
 
     /**
-     * Advances the runner by one tick.
+     * One server tick.
      *
      * @param recipes candidate recipes for this machine
      * @param inputs the input slots, in slot order; consumed when a recipe completes
@@ -159,10 +201,37 @@ public final class MachineRecipeRunner {
     public boolean tick(List<MachineRecipe> recipes,
                         List<ItemStack> inputs,
                         ItemStack output,
-                        java.util.function.Consumer<ItemStack> outputWriter,
+                        Consumer<ItemStack> outputWriter,
                         EnergySource energy) {
         if (current != null) {
             return advance(inputs, output, outputWriter, energy);
+        }
+
+        // Progress restored from a save is adopted here, and only here. The first
+        // candidate whose inputs match AND whose spec is the exact one the progress was
+        // saved for takes the run over and this tick immediately advances it, at the
+        // frozen cost loadState restored: another matching recipe that happens to come
+        // first must never replace it or restart the count. If no candidate is the saved
+        // recipe the progress is dropped; when the saved spec itself is gone nothing is
+        // matched at all this tick (fail closed), while a surviving-but-changed recipe
+        // lets fresh matching start its own run on this same tick.
+        if (hasRestoredProgress()) {
+            for (MachineRecipe candidate : recipes) {
+                if (inputsMatch(candidate, inputs) && adoptRestored(candidate)) {
+                    return advance(inputs, output, outputWriter, energy);
+                }
+            }
+            // reset() clears restoredSpec, so whether it survived must be read first.
+            boolean specSurvived = restoredSpec != null;
+            reset();
+            if (!specSurvived) {
+                // Fail closed: the save carried no usable spec, so the paid progress has
+                // no identity left. Drop it without handing the tick to whatever recipe
+                // now happens to fit; a fresh run may only start on a later tick.
+                return false;
+            }
+            // The spec survived and simply matches no candidate: the recipe changed or
+            // vanished, so fresh matching below starts its own run on this same tick.
         }
 
         MachineRecipe chosen = firstMatch(recipes, inputs);
@@ -179,11 +248,22 @@ public final class MachineRecipeRunner {
         return advance(inputs, output, outputWriter, energy);
     }
 
-    /** Runs one tick of the recipe that is already selected. */
+    /**
+     * Runs one tick of the recipe that is already selected.
+     *
+     * <p>The inputs are checked twice on the tick a recipe completes: once at the top, so
+     * a run that has become invalid is dropped before it costs the player any FE, and once
+     * again immediately before the product is written, so nothing is consumed for a product
+     * that came out of inputs that had just been taken away.</p>
+     */
     private boolean advance(List<ItemStack> inputs,
                             ItemStack output,
-                            java.util.function.Consumer<ItemStack> outputWriter,
+                            Consumer<ItemStack> outputWriter,
                             EnergySource energy) {
+        if (!inputsMatch(current, inputs)) {
+            reset();
+            return false;
+        }
         if (!hasRoomFor(current, output)) {
             paused = true;
             return false;
@@ -199,18 +279,27 @@ public final class MachineRecipeRunner {
             return false;
         }
 
+        if (!inputsMatch(current, inputs)) {
+            reset();
+            return false;
+        }
+
         ItemStack product = current.assemble();
-        consume(inputs);
+        consume(current, inputs);
         outputWriter.accept(product);
         reset();
         return true;
     }
 
-    private static void consume(List<ItemStack> inputs) {
-        for (ItemStack stack : inputs) {
-            if (!stack.isEmpty()) {
-                stack.shrink(1);
+    /** Shrinks each input slot by exactly the count its own ingredient declares. */
+    private static void consume(MachineRecipe recipe, List<ItemStack> inputs) {
+        for (int slot = 0; slot < inputs.size(); slot++) {
+            int count = recipe.ingredientCounts().get(slot);
+            ItemStack stack = inputs.get(slot);
+            if (stack.isEmpty() || count <= 0) {
+                continue;
             }
+            stack.shrink(count);
         }
     }
 
@@ -221,27 +310,48 @@ public final class MachineRecipeRunner {
         ticks = 0;
         runningEnergyPerTick = machineEnergyPerTick;
         paused = false;
+        restoredSpec = null;
     }
 
     /**
      * Writes the numeric state of a half-finished recipe, so a world reload resumes it.
      *
-     * <p>Only numbers are written; the recipe itself is re-matched from the loaded data on
-     * the next tick. That is what lets a datapack edit a recipe without stranding a machine
-     * on a definition that no longer exists.</p>
+     * <p>The recipe is not written as an id but as its own
+     * {@link MachineRecipeSpecCodec#CODEC}-encoded spec, which is the exact recipe that is
+     * running: same ingredients, same product, same length, same cost override. The frozen
+     * per-tick cost is written separately because it can differ from what the definition
+     * says today. {@link #adoptRestored} will only give this progress back to that spec.</p>
+     *
+     * <p>A restored-but-not-yet-adopted run is part of the machine's state too: if a save
+     * lands between a load and the next tick, the spec the loaded progress belongs to is
+     * written just as if the recipe were already re-attached, so the paid progress
+     * survives a save/reload cycle that never got a tick.</p>
      */
     public void saveState(net.minecraft.world.level.storage.ValueOutput output) {
         output.putInt("progress", progress);
         output.putInt("ticks", ticks);
         output.putInt("energy_per_tick", runningEnergyPerTick);
-        output.putBoolean("running", current != null);
+        MachineRecipeSpec savedSpec = current != null ? current.spec()
+            : hasRestoredProgress() ? restoredSpec : null;
+        output.putBoolean("running", savedSpec != null);
+        if (savedSpec != null) {
+            output.store(SPEC_KEY, MachineRecipeSpecCodec.CODEC, savedSpec);
+        }
     }
 
     /**
      * Reads back what {@link #saveState} wrote.
      *
-     * <p>A saved "running" flag with no progress, or progress at or past the saved ticks, is
-     * discarded rather than trusted: it can only come from a hand-edited or truncated tag.</p>
+     * <p>A saved "running" flag whose progress has reached or passed the saved ticks is
+     * discarded rather than trusted: it comes from a hand-edited or truncated tag, not
+     * from this class, which never writes a finished run. Zero progress is also refused
+     * and the machine restarts fresh, but that is not corruption: a run paused before its
+     * first FE payment is a normal running state, this loader just chooses the existing
+     * behavior of not restoring an unpaid run.</p>
+     *
+     * <p>The saved spec is kept as it is, including when it cannot be decoded: a run whose
+     * identity did not survive must not be resumed on whatever recipe now fits. With no
+     * spec at all, the run also fails closed rather than being re-attached to a guess.</p>
      */
     public void loadState(net.minecraft.world.level.storage.ValueInput input) {
         int savedProgress = input.getIntOr("progress", 0);
@@ -252,9 +362,15 @@ public final class MachineRecipeRunner {
             reset();
             return;
         }
+        // Loading can run on a block entity that is already mid-run, not only a fresh
+        // constructor: drop any live run first, so the saved numbers below are the whole
+        // of the restored state rather than a patch over it.
+        this.current = null;
+        this.paused = false;
         this.progress = savedProgress;
         this.ticks = savedTicks;
         this.runningEnergyPerTick = Math.max(0, input.getIntOr("energy_per_tick", this.machineEnergyPerTick));
+        this.restoredSpec = input.read(SPEC_KEY, MachineRecipeSpecCodec.CODEC).orElse(null);
     }
 
     /** Whether progress was restored but no recipe has been matched to it yet. */
@@ -262,10 +378,23 @@ public final class MachineRecipeRunner {
         return this.current == null && this.ticks > 0 && this.progress > 0 && this.progress < this.ticks;
     }
 
-    /** Adopts {@code recipe} as the one whose progress was restored. */
-    public void adopt(MachineRecipe recipe) {
-        this.current = recipe;
-        this.runningEnergyPerTick = recipe.energyPerTick(this.runningEnergyPerTick);
+    /**
+     * Gives restored progress back to {@code candidate}, but only to the same recipe.
+     *
+     * <p>Returns false when the save carried no spec or a spec that is not
+     * {@code candidate}'s, which is the caller's signal to {@link #reset()}: progress paid
+     * for one recipe must never be handed to another. The frozen per-tick cost stays as
+     * {@link #loadState} restored it, so a resumed run costs what it was already costing.</p>
+     *
+     * @return true when {@code candidate} is the recipe the saved progress belongs to
+     */
+    public boolean adoptRestored(MachineRecipe candidate) {
+        if (restoredSpec == null || !restoredSpec.equals(candidate.spec())) {
+            return false;
+        }
+        this.current = candidate;
+        this.restoredSpec = null;
+        return true;
     }
 
     @Override

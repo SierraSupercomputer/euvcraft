@@ -53,6 +53,22 @@ public final class ModItems {
     /** One failed chip, recycled back into a usable die. */
     public static final DeferredItem<Item> CHIP_SCRAP = ITEMS.registerSimpleItem("chip_scrap");
 
+    /**
+     * Smelted sand: the feedstock of the Crystal Puller.
+     *
+     * <p>Made from {@code minecraft:sand} by the vanilla smelting and blasting recipes in
+     * {@code data/lithmod/recipe}, so it needs no behaviour of its own.</p>
+     */
+    public static final DeferredItem<Item> SILICON = ITEMS.registerSimpleItem("silicon");
+
+    /**
+     * A pulled single-crystal boule.
+     *
+     * <p>The product of the Crystal Puller and the only input the Wafer Slicer takes;
+     * one boule becomes one FOUP of wafers.</p>
+     */
+    public static final DeferredItem<Item> SILICON_BOULE = ITEMS.registerSimpleItem("silicon_boule");
+
     /** Photoresist for node tier 1 lithography. */
     public static final DeferredItem<Item> RESIST_T1 =
         ITEMS.registerSimpleItem("resist_t1", properties -> properties.component(ModDataComponents.RESIST_TIER, 1));
@@ -140,6 +156,21 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> TEST_MACHINE =
         ITEMS.registerSimpleBlockItem("test_machine",
             () -> ModMachines.TEST_MACHINE.get());
+
+    /**
+     * The two silicon chain machines' block items.
+     *
+     * <p>Without a block item a machine cannot drop itself, so same rule as above: the
+     * {@code .get()} call sits inside a lambda and the blocks come from
+     * {@link com.euvcraft.lithmod.mc.machine.silicon.SiliconMachines}.</p>
+     */
+    public static final DeferredItem<BlockItem> CRYSTAL_PULLER =
+        ITEMS.registerSimpleBlockItem("crystal_puller",
+            () -> com.euvcraft.lithmod.mc.machine.silicon.SiliconMachines.CRYSTAL_PULLER.get());
+
+    public static final DeferredItem<BlockItem> WAFER_SLICER =
+        ITEMS.registerSimpleBlockItem("wafer_slicer",
+            () -> com.euvcraft.lithmod.mc.machine.silicon.SiliconMachines.WAFER_SLICER.get());
 
     private ModItems() {
     }

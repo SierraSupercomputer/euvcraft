@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:blasting",
+  "ingredient": "minecraft:quartz",
+  "result": {
+    "id": "lithmod:silicon"
+  },
+  "experience": 0.1,
+  "cookingtime": 100
+}

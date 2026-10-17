@@ -1,0 +1,11 @@
+{
+  "machine": "crystal_puller",
+  "ingredients": [
+    { "item": "lithmod:silicon", "count": 4 }
+  ],
+  "result": {
+    "item": "lithmod:silicon_boule",
+    "count": 1
+  },
+  "ticks": 400
+}

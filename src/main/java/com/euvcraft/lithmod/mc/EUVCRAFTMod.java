@@ -24,6 +24,8 @@ import com.euvcraft.lithmod.mc.registry.ModItems;
 import com.euvcraft.lithmod.mc.gametest.MachineDropGameTests;
 import com.euvcraft.lithmod.mc.gametest.MachineGameTests;
 import com.euvcraft.lithmod.mc.gametest.MultiblockGameTests;
+import com.euvcraft.lithmod.mc.gametest.SiliconGameTests;
+import com.euvcraft.lithmod.mc.machine.silicon.SiliconMachines;
 import com.euvcraft.lithmod.mc.machine.test.ModMachines;
 import com.euvcraft.lithmod.mc.multiblock.ModMultiblocks;
 
@@ -39,6 +41,7 @@ public class EUVCRAFTMod {
         ModItems.ITEMS.register(modEventBus);
         ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
         ModMachines.register(modEventBus);
+        SiliconMachines.register(modEventBus);
         ModMultiblocks.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
@@ -54,6 +57,7 @@ com.euvcraft.lithmod.mc.gametest.ComponentGameTests.register(modEventBus);
         MachineGameTests.register(modEventBus);
         MachineDropGameTests.register(modEventBus);
         MultiblockGameTests.register(modEventBus);
+        SiliconGameTests.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.LOCAL, FabConfig.getSpec());
         config = new FabConfig();
