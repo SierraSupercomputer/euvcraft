@@ -27,8 +27,14 @@ import net.neoforged.neoforge.registries.DeferredRegister.Items;
  * number in an item definition is part of which resist that item is, not a tunable
  * gameplay number.</p>
  *
- * <p>Chips and consumables use the vanilla maximum of 64. FOUPs and line components
- * stack to one; block items use their normal defaults.</p>
+ * <p>{@link #MASK} is the one item here that carries data of its own: its
+ * {@link ModDataComponents#MASK_DATA} component names the die type and node tier
+ * the mask was cut for and counts down the exposures it has left. All of that is
+ * public, so the client reads the same design the server keeps.</p>
+ *
+ * <p>Chips and consumables use the vanilla maximum of 64. Blank mask plates are a
+ * consumable and stack to 64; FOUPs, photomasks and line components stack to one;
+ * block items use their normal defaults.</p>
  */
 public final class ModItems {
 
@@ -79,6 +85,26 @@ public final class ModItems {
 
     /** The packaging consumable the Test and Package machine feeds on. */
     public static final DeferredItem<Item> CHIP_PACKAGE = ITEMS.registerSimpleItem("chip_package");
+
+    /**
+     * An unexposed photomask plate.
+     *
+     * <p>The raw input a Mask Writer exposes: a plate with no design on it at all,
+     * which is why it carries no {@link ModDataComponents#MASK_DATA} either. It is
+     * a bulk consumable, so it uses the vanilla stack size of 64.</p>
+     */
+    public static final DeferredItem<Item> BLANK_MASK = ITEMS.registerSimpleItem("blank_mask");
+
+    /**
+     * A photomask carrying one design.
+     *
+     * <p>The design is public stack data rather than part of the item, so a stack
+     * that does carry one can name any die type at any tier. Deliberately no
+     * default component: a stack with no {@link ModDataComponents#MASK_DATA} has
+     * no die type, and the Mask Writer has to keep rejecting it instead of
+     * guessing one. Masks do not stack, so the stack size is one.</p>
+     */
+    public static final DeferredItem<Item> MASK = ITEMS.registerSimpleItem("mask", properties -> properties.stacksTo(1));
 
     /** Line component: mercury lamp, light_source, node tier 1. */
     public static final DeferredItem<LineComponentItem> MERCURY_LAMP =

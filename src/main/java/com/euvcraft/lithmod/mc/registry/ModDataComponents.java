@@ -2,7 +2,9 @@ package com.euvcraft.lithmod.mc.registry;
 
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.euvcraft.lithmod.mc.FoupContentsCodec;
+import com.euvcraft.lithmod.mc.machine.mask.MaskDataCodec;
 import com.euvcraft.lithmod.core.FoupContents;
+import com.euvcraft.lithmod.core.MaskData;
 import com.mojang.serialization.Codec;
 
 import net.minecraft.core.component.DataComponentType;
@@ -49,6 +51,23 @@ public final class ModDataComponents {
         DATA_COMPONENTS.registerComponentType("resist_tier", builder -> builder
             .persistent(Codec.INT)
             .networkSynchronized(ByteBufCodecs.VAR_INT));
+
+    /**
+     * The design a photomask item carries.
+     *
+     * <p>Unlike the FOUP lot this component has no hidden half, so
+     * {@link MaskDataCodec#CODEC} and {@link MaskDataCodec#STREAM_CODEC} persist
+     * and send the same three public values, and the tooltip of a mask can read
+     * the component the client was given.</p>
+     *
+     * <p>A stack without this component is not a patterned mask: a bare
+     * {@code mask} item has no design until something writes one, and the machine
+     * has to keep rejecting that stack rather than guess a die type.</p>
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<MaskData>> MASK_DATA =
+        DATA_COMPONENTS.registerComponentType("mask_data", builder -> builder
+            .persistent(MaskDataCodec.CODEC)
+            .networkSynchronized(MaskDataCodec.STREAM_CODEC));
 
     private ModDataComponents() {
     }
