@@ -108,6 +108,27 @@ public final class ModCreativeTabs {
             .build()
     );
 
+    /**
+     * The silicon chain: the two feedstock items and the two machines that turn them into
+     * a lot of wafers.
+     *
+     * <p>A fourth tab for the same reason the others exist: the game tests pin the main tab
+     * to exactly two entries and the chips tab to exactly seven, so adding to either would
+     * break a passing test.</p>
+     */
+    public static final Supplier<CreativeModeTab> SILICON_CHAIN = CREATIVE_MODE_TABS.register(
+        "4_silicon_chain",
+        () -> CreativeModeTab.builder()
+            .title(Component.translatable("itemGroup.lithmod.silicon_chain"))
+            .icon(() -> new ItemStack(ModItems.SILICON.get()))
+            .displayItems((parameters, output) -> {
+                output.accept(ModItems.SILICON.get());
+                output.accept(ModItems.SILICON_BOULE.get());
+                output.accept(ModItems.CRYSTAL_PULLER.get());
+                output.accept(ModItems.WAFER_SLICER.get());
+            })
+            .build()
+    );
+
     private ModCreativeTabs() {
     }
-}

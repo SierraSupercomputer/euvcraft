@@ -1,6 +1,8 @@
 {
   "values": [
     "lithmod:test_machine",
+    "lithmod:crystal_puller",
+    "lithmod:wafer_slicer",
     "lithmod:process_cell_controller",
     "lithmod:process_cell_casing",
     "lithmod:process_cell_power_port"

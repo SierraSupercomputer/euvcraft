@@ -1,0 +1,12 @@
+{
+  "id": "wafer_slicer",
+  "energy_capacity": 20000,
+  "max_receive": 2000,
+  "energy_per_tick": 30,
+  "per_tier_energy_per_tick": {},
+  "params": {
+    "slice_ticks": 200,
+    "input_slots": 2,
+    "output_slots": 1
+  }
+}

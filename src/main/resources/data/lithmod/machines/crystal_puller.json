@@ -1,0 +1,11 @@
+{
+  "id": "crystal_puller",
+  "energy_capacity": 20000,
+  "max_receive": 2000,
+  "energy_per_tick": 20,
+  "per_tier_energy_per_tick": {},
+  "params": {
+    "input_slots": 1,
+    "output_slots": 1
+  }
+}

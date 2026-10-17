@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "lithmod:block/wafer_slicer" }
+  }
+}

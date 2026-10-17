@@ -68,6 +68,33 @@ The yield engine game tests run in the `lithmod:yield_default` environment:
 | `lithmod:yield_layer_step` | a lot on a real `ServerLevel` moves one layer at a time up to the tier's last layer, every hidden roll moves strictly down from 1.0, repeating or skipping a layer is refused, and judging the finished lot does not change it |
 | `lithmod:yield_pass_rate` | 1000 wafers are run through T1 and T3 with the world salt and the observed pass rates are logged next to the tier yields; the assertion is deliberately wide (10 points) because this is wiring evidence, and the accuracy claim lives in `YieldCalibrationTest` |
 
+## Silicon chain
+
+`WaferSlicingTest` is the one unit test for the chain:
+
+```powershell
+.\gradlew.bat test --offline --tests "com.euvcraft.lithmod.core.WaferSlicingTest"
+```
+
+It covers `WaferSlicing.wafersFor(FabSettings, int)`: a boule exactly fills a FOUP of the
+same size, a smaller FOUP comes back partially filled, a larger one only holds what one
+boule yields, the count follows `wafersPerBoule`, and a capacity below one or a null
+settings object is refused.
+
+The silicon chain game tests run in the `lithmod:silicon_chain` environment:
+
+| test | what it proves |
+|---|---|
+| `lithmod:wafer_slicer_produces_a_lot` | a boule plus an empty FOUP of a known capacity becomes a FOUP of the same item type holding `wafersFor` wafers, at layer 0, with a fresh lot id, no run spec and the input's capacity; both inputs are consumed only when the product appears |
+| `lithmod:wafer_slicer_lot_takes_layer_one` | `FabYieldService.applyLayerStep` moves that lot to layer 1 at T1 for the logic die type and freezes a run spec, and refuses the same lot at a die type T1 cannot make |
+| `lithmod:wafer_slicer_refuses_a_used_foup` | the server menu slot and the client menu slot both refuse a FOUP holding wafers and a FOUP carrying a run spec, and the server tick refuses the same stacks when they are set into the slot directly |
+| `lithmod:wafer_slicer_pauses_without_energy` | three ticks of FE start a run and then pause it without consuming the boule or the FOUP, progress does not creep with an empty buffer, and recharging resumes the same run to a finished lot |
+| `lithmod:wafer_slicer_save_load_round_trip` | progress, energy, the boule and the FOUP survive a `saveWithId`/`loadWithComponents` pair mid-slice and the restored run finishes without starting again |
+| `lithmod:crystal_puller_runs_its_recipe` | the data recipe in `data/lithmod/machine_recipes/crystal_puller.json` runs end to end for exactly `energy_per_tick * ticks` FE and yields one boule |
+| `lithmod:silicon_machines_expose_no_item_handler` | neither block exposes an item handler, a fluid handler or a hopper on any side, both expose energy, and a chest still does expose an item handler so the negative is not vacuous |
+
+Every one of those tests logs a line beginning `[M1-04]` with the numbers it asserted on.
+
 ## Debug commands
 
 `/debug foup fill <count> <layer>` and `/debug foup inspect` are only registered when
