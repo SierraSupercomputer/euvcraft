@@ -599,6 +599,12 @@ public final class MaskGameTests {
                     + "no output, both inputs intact",
                 what, expectedStatus, energyBefore);
         });
+
+        // Every refusal case ends here, so the shared contract is also where the test is
+        // finished. It is after withRecipes rather than before the assertions: the fixture
+        // registry is only restored once the body returns, so a succeed() raised from inside
+        // it could pass before the state it borrowed had been put back.
+        helper.succeed();
     }
 
     // ------------------------------------------------------------------

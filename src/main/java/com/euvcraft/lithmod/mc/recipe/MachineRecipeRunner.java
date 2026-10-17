@@ -4,10 +4,19 @@ import com.euvcraft.lithmod.core.EnergySource;
 import com.euvcraft.lithmod.core.MachineRecipeSpec;
 import com.euvcraft.lithmod.mc.data.MachineRecipeSpecCodec;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.Dynamic;
+import com.mojang.serialization.JsonOps;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -48,6 +57,12 @@ import java.util.function.Consumer;
  * The frozen per-tick cost is kept with it, so a resumed run is charged exactly what an
  * uninterrupted one would have been charged.</p>
  *
+ * <p><b>That snapshot is written as JSON text</b>, encoded and decoded through
+ * {@link JsonOps} rather than through the save tag's {@code NbtOps}. A recipe's components
+ * are compact JSON text already, so a snapshot routed through NBT comes back as structured
+ * NBT whose compact text no longer equals what was written; the restored spec would then not
+ * equal the recipe the player paid for, and the whole paid progress would be dropped.</p>
+ *
  * <p><b>What a completed run consumes.</b> Exactly the recipe's own
  * {@link MachineRecipe#ingredientCounts()}: four silicon for one boule costs four silicon,
  * whatever the stack size in the slot. Counts are re-read from the same recipe that is
@@ -55,8 +70,50 @@ import java.util.function.Consumer;
  */
 public final class MachineRecipeRunner {
 
-    /** Key the running recipe's spec is written under, inside the save node. */
+    /**
+     * Key the running recipe's spec used to be written under, inside the save node.
+     *
+     * <p>The older compound form. Kept as a reader so a world saved before
+     * {@link #SPEC_TEXT_KEY} existed still restores its progress, and never written, so a
+     * new save cannot carry both forms of the same recipe.</p>
+     */
     private static final String SPEC_KEY = "spec";
+
+    /**
+     * Key the running recipe's spec text is written under, inside the save node.
+     *
+     * <p>A private save format, not part of any datapack or network syntax: it carries the
+     * spec as JSON text rather than as an NBT compound so a save/load cycle reproduces the
+     * recipe exactly.</p>
+     *
+     * <p>Only this key is written. {@link #SPEC_KEY} is the older compound form and is read
+     * but never written, so a world saved by an earlier build still loads while a new save
+     * carries exactly one copy of the spec.</p>
+     */
+    private static final String SPEC_TEXT_KEY = "spec_text";
+
+    /**
+     * The spec text of {@link #SPEC_TEXT_KEY}, as a plain string.
+     *
+     * <p>The decode half never fails on purpose. A value that is present but is not a string
+     * comes back as empty text rather than as a missing key, which is what tells "this save
+     * wrote a spec and it is broken" apart from "this save was written before the text key
+     * existed": a broken new-format save then fails closed instead of quietly falling back
+     * to whatever legacy compound sits beside it.</p>
+     */
+    private static final Codec<String> SPEC_TEXT_CODEC =
+        Codec.PASSTHROUGH.flatComapMap(
+            (Dynamic<?> dynamic) -> specTextOf(dynamic),
+            (String text) -> DataResult.success(
+                new Dynamic<JsonElement>(JsonOps.INSTANCE, new JsonPrimitive(text))));
+
+    /** The string held under a present value, or empty text for any other shape. */
+    private static String specTextOf(Dynamic<?> dynamic) {
+        JsonElement element = dynamic.convert(JsonOps.INSTANCE).getValue();
+        return element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()
+            ? element.getAsString()
+            : "";
+    }
 
     private final String machineId;
 
@@ -316,11 +373,16 @@ public final class MachineRecipeRunner {
     /**
      * Writes the numeric state of a half-finished recipe, so a world reload resumes it.
      *
-     * <p>The recipe is not written as an id but as its own
-     * {@link MachineRecipeSpecCodec#CODEC}-encoded spec, which is the exact recipe that is
-     * running: same ingredients, same product, same length, same cost override. The frozen
-     * per-tick cost is written separately because it can differ from what the definition
-     * says today. {@link #adoptRestored} will only give this progress back to that spec.</p>
+     * <p>The recipe is not written as an id but as its own spec, which is the exact recipe
+     * that is running: same ingredients, same product, same length, same cost override. It
+     * is written as JSON text under {@link #SPEC_TEXT_KEY}, through
+     * {@link MachineRecipeSpecCodec#CODEC} on {@link JsonOps}, because the component payload
+     * inside a spec is compact JSON text: encoded through the save tag's {@code NbtOps} it
+     * would be rewritten as structured NBT and come back as text whose ordering and numeric
+     * shape had moved, so the restored spec would no longer equal the recipe the progress was
+     * paid for and {@link #adoptRestored} would drop the run. The frozen per-tick cost is
+     * written separately because it can differ from what the definition says today.
+     * {@link #adoptRestored} will only give this progress back to that spec.</p>
      *
      * <p>A restored-but-not-yet-adopted run is part of the machine's state too: if a save
      * lands between a load and the next tick, the spec the loaded progress belongs to is
@@ -335,7 +397,7 @@ public final class MachineRecipeRunner {
             : hasRestoredProgress() ? restoredSpec : null;
         output.putBoolean("running", savedSpec != null);
         if (savedSpec != null) {
-            output.store(SPEC_KEY, MachineRecipeSpecCodec.CODEC, savedSpec);
+            output.store(SPEC_TEXT_KEY, SPEC_TEXT_CODEC, encodeSpecText(savedSpec));
         }
     }
 
@@ -351,7 +413,11 @@ public final class MachineRecipeRunner {
      *
      * <p>The saved spec is kept as it is, including when it cannot be decoded: a run whose
      * identity did not survive must not be resumed on whatever recipe now fits. With no
-     * spec at all, the run also fails closed rather than being re-attached to a guess.</p>
+     * spec at all, the run also fails closed rather than being re-attached to a guess.
+     * {@link #SPEC_TEXT_KEY} is the whole truth about the recipe whenever it is present at
+     * all, and a value that is present but will not decode restores no spec rather than
+     * falling back to the legacy {@link #SPEC_KEY} compound, so a corrupted new-format save
+     * can never be quietly repaired from a stale older one.</p>
      */
     public void loadState(net.minecraft.world.level.storage.ValueInput input) {
         int savedProgress = input.getIntOr("progress", 0);
@@ -370,7 +436,42 @@ public final class MachineRecipeRunner {
         this.progress = savedProgress;
         this.ticks = savedTicks;
         this.runningEnergyPerTick = Math.max(0, input.getIntOr("energy_per_tick", this.machineEnergyPerTick));
-        this.restoredSpec = input.read(SPEC_KEY, MachineRecipeSpecCodec.CODEC).orElse(null);
+        Optional<String> savedText = input.read(SPEC_TEXT_KEY, SPEC_TEXT_CODEC);
+        this.restoredSpec = savedText.isPresent()
+            ? decodeSpecText(savedText.get())
+            : input.read(SPEC_KEY, MachineRecipeSpecCodec.CODEC).orElse(null);
+    }
+
+    /**
+     * The running recipe's spec as JSON text, or empty text when it will not encode.
+     *
+     * <p>{@link JsonOps} carries the spec exactly as the codec wrote it, so the snapshot and
+     * the recipe it was taken from come back equal. Empty text is the fail-closed answer: a
+     * save carrying no readable spec restores no progress instead of a guessed one.</p>
+     */
+    private static String encodeSpecText(MachineRecipeSpec spec) {
+        return MachineRecipeSpecCodec.CODEC.encodeStart(JsonOps.INSTANCE, spec)
+            .result()
+            .map(JsonElement::toString)
+            .orElse("");
+    }
+
+    /**
+     * The spec behind the saved JSON text, or null when that text will not decode.
+     *
+     * <p>Never throws: malformed saved JSON, a spec the record itself rejects and a
+     * component the codec cannot read all come back as null, which is what keeps the load
+     * fail-closed rather than throwing out of a world load.</p>
+     */
+    private static MachineRecipeSpec decodeSpecText(String text) {
+        try {
+            return MachineRecipeSpecCodec.CODEC
+                .parse(JsonOps.INSTANCE, JsonParser.parseString(text))
+                .result()
+                .orElse(null);
+        } catch (RuntimeException malformed) {
+            return null;
+        }
     }
 
     /** Whether progress was restored but no recipe has been matched to it yet. */
