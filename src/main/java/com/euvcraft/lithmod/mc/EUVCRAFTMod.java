@@ -23,6 +23,7 @@ import com.euvcraft.lithmod.mc.registry.ModDataComponents;
 import com.euvcraft.lithmod.mc.registry.ModItems;
 import com.euvcraft.lithmod.mc.gametest.MachineDropGameTests;
 import com.euvcraft.lithmod.mc.gametest.MachineGameTests;
+import com.euvcraft.lithmod.mc.gametest.MaskGameTests;
 import com.euvcraft.lithmod.mc.gametest.MultiblockGameTests;
 import com.euvcraft.lithmod.mc.gametest.SiliconGameTests;
 import com.euvcraft.lithmod.mc.machine.mask.MaskMachines;
@@ -62,6 +63,7 @@ com.euvcraft.lithmod.mc.gametest.ComponentGameTests.register(modEventBus);
         MachineDropGameTests.register(modEventBus);
         MultiblockGameTests.register(modEventBus);
         SiliconGameTests.register(modEventBus);
+        MaskGameTests.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.LOCAL, FabConfig.getSpec());
         config = new FabConfig();
