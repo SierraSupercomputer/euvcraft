@@ -1,6 +1,8 @@
 package com.euvcraft.lithmod.mc.recipe;
 
 import com.euvcraft.lithmod.core.EnergySource;
+import com.euvcraft.lithmod.core.MachineRecipeSpec;
+import com.euvcraft.lithmod.mc.data.MachineRecipeSpecCodec;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
@@ -37,12 +39,24 @@ import java.util.function.Consumer;
  * a half-finished run keeps the recipe it started with rather than silently becoming a
  * different recipe with a different cost and a different product.</p>
  *
+ * <p><b>Recipe identity across a save and load.</b> A run has to survive a world reload
+ * too, so {@link #saveState} writes the running recipe's own
+ * {@link MachineRecipeSpec} next to its numbers and {@link #adoptRestored} re-attaches
+ * progress only to that exact spec. Re-matching by input alone would let a datapack edit
+ * hand old progress to a different product or a different length for free; a spec that is
+ * missing or has changed drops the run instead, and the machine starts again from tick one.
+ * The frozen per-tick cost is kept with it, so a resumed run is charged exactly what an
+ * uninterrupted one would have been charged.</p>
+ *
  * <p><b>What a completed run consumes.</b> Exactly the recipe's own
  * {@link MachineRecipe#ingredientCounts()}: four silicon for one boule costs four silicon,
  * whatever the stack size in the slot. Counts are re-read from the same recipe that is
  * being run, so a stack can never be shrunk by a number that belongs to another recipe.</p>
  */
 public final class MachineRecipeRunner {
+
+    /** Key the running recipe's spec is written under, inside the save node. */
+    private static final String SPEC_KEY = "spec";
 
     private final String machineId;
 
@@ -52,6 +66,8 @@ public final class MachineRecipeRunner {
     private int progress;
     private int ticks;
     private boolean paused;
+    /** The spec restored progress belongs to, until it is adopted or thrown away. */
+    private MachineRecipeSpec restoredSpec;
 
     /**
      * @param machineId the machine whose recipes this runner may use
@@ -267,27 +283,35 @@ public final class MachineRecipeRunner {
         ticks = 0;
         runningEnergyPerTick = machineEnergyPerTick;
         paused = false;
+        restoredSpec = null;
     }
 
     /**
      * Writes the numeric state of a half-finished recipe, so a world reload resumes it.
      *
-     * <p>Only numbers are written; the recipe itself is re-matched from the loaded data on
-     * the next tick. That is what lets a datapack edit a recipe without stranding a machine
-     * on a definition that no longer exists.</p>
+     * <p>The recipe is not written as an id but as its own
+     * {@link MachineRecipeSpecCodec#CODEC}-encoded spec, which is the exact recipe that is
+     * running: same ingredients, same product, same length, same cost override. The frozen
+     * per-tick cost is written separately because it can differ from what the definition
+     * says today. {@link #adoptRestored} will only give this progress back to that spec.</p>
      */
     public void saveState(net.minecraft.world.level.storage.ValueOutput output) {
         output.putInt("progress", progress);
         output.putInt("ticks", ticks);
         output.putInt("energy_per_tick", runningEnergyPerTick);
         output.putBoolean("running", current != null);
+        if (current != null) {
+            output.store(SPEC_KEY, MachineRecipeSpecCodec.CODEC, current.spec());
+        }
     }
 
     /**
      * Reads back what {@link #saveState} wrote.
      *
      * <p>A saved "running" flag with no progress, or progress at or past the saved ticks, is
-     * discarded rather than trusted: it can only come from a hand-edited or truncated tag.</p>
+     * discarded rather than trusted: it can only come from a hand-edited or truncated tag.
+     * The saved spec is kept as it is, including when it cannot be decoded: a run whose
+     * identity did not survive must not be resumed on whatever recipe now fits.</p>
      */
     public void loadState(net.minecraft.world.level.storage.ValueInput input) {
         int savedProgress = input.getIntOr("progress", 0);
@@ -301,6 +325,7 @@ public final class MachineRecipeRunner {
         this.progress = savedProgress;
         this.ticks = savedTicks;
         this.runningEnergyPerTick = Math.max(0, input.getIntOr("energy_per_tick", this.machineEnergyPerTick));
+        this.restoredSpec = input.read(SPEC_KEY, MachineRecipeSpecCodec.CODEC).orElse(null);
     }
 
     /** Whether progress was restored but no recipe has been matched to it yet. */
@@ -308,10 +333,23 @@ public final class MachineRecipeRunner {
         return this.current == null && this.ticks > 0 && this.progress > 0 && this.progress < this.ticks;
     }
 
-    /** Adopts {@code recipe} as the one whose progress was restored. */
-    public void adopt(MachineRecipe recipe) {
-        this.current = recipe;
-        this.runningEnergyPerTick = recipe.energyPerTick(this.runningEnergyPerTick);
+    /**
+     * Gives restored progress back to {@code candidate}, but only to the same recipe.
+     *
+     * <p>Returns false when the save carried no spec or a spec that is not
+     * {@code candidate}'s, which is the caller's signal to {@link #reset()}: progress paid
+     * for one recipe must never be handed to another. The frozen per-tick cost stays as
+     * {@link #loadState} restored it, so a resumed run costs what it was already costing.</p>
+     *
+     * @return true when {@code candidate} is the recipe the saved progress belongs to
+     */
+    public boolean adoptRestored(MachineRecipe candidate) {
+        if (restoredSpec == null || !restoredSpec.equals(candidate.spec())) {
+            return false;
+        }
+        this.current = candidate;
+        this.restoredSpec = null;
+        return true;
     }
 
     @Override

@@ -2,6 +2,8 @@ package com.euvcraft.lithmod.mc.gametest;
 
 import com.euvcraft.lithmod.core.FoupContents;
 import com.euvcraft.lithmod.core.MachineDefinition;
+import com.euvcraft.lithmod.core.MachineRecipeSpec;
+import com.euvcraft.lithmod.core.MachineResult;
 import com.euvcraft.lithmod.core.RunSpec;
 import com.euvcraft.lithmod.core.Tier;
 import com.euvcraft.lithmod.core.Wafer;
@@ -11,6 +13,9 @@ import com.euvcraft.lithmod.mc.FabYieldService;
 import com.euvcraft.lithmod.mc.FoupContentsCodec;
 import com.euvcraft.lithmod.mc.FoupDebugCommand;
 import com.euvcraft.lithmod.mc.FoupItems;
+import com.euvcraft.lithmod.mc.data.JsonResourceDataLoader;
+import com.euvcraft.lithmod.mc.data.MachineDefinitionLoader;
+import com.euvcraft.lithmod.mc.data.MachineRecipeLoader;
 import com.euvcraft.lithmod.mc.data.TierDataLoader;
 import com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity;
 import com.euvcraft.lithmod.mc.machine.silicon.CrystalPullerBlockEntity;
@@ -20,8 +25,6 @@ import com.euvcraft.lithmod.mc.machine.silicon.WaferSlicerMenu;
 import com.euvcraft.lithmod.mc.recipe.MachineRecipe;
 import com.euvcraft.lithmod.mc.registry.ModItems;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.mojang.authlib.GameProfile;
 
 import io.netty.buffer.Unpooled;
@@ -30,6 +33,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.FunctionGameTestInstance;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.gametest.framework.TestData;
@@ -48,9 +52,18 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.AbstractCookingRecipe;
+import net.minecraft.world.item.crafting.BlastingRecipe;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.SingleRecipeInput;
+import net.minecraft.world.item.crafting.SmeltingRecipe;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.storage.TagValueInput;
 import net.minecraft.world.level.storage.TagValueOutput;
 import net.neoforged.bus.api.IEventBus;
@@ -62,12 +75,11 @@ import net.neoforged.neoforge.transfer.transaction.Transaction;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -78,7 +90,9 @@ import java.util.function.Consumer;
  * <p>Every machine is driven through its own {@code serverTick}, so what is measured here is
  * the same code path the game runs. Where a test needs an input the data cannot produce (a
  * FOUP that is full, a client-view FOUP, a definition with different numbers) it builds that
- * input explicitly and says so.</p>
+ * input explicitly and says so. Two tests need the <em>loaded</em> data itself to change, and
+ * swap it synchronously for the length of the test and put the live value back in a
+ * {@code finally}: see {@link #withoutDefinitions} and {@link #withRecipes}.</p>
  */
 public final class SiliconGameTests {
 
@@ -98,7 +112,9 @@ public final class SiliconGameTests {
     private static final String SLICER_MENU = "wafer_slicer_menu_layout_and_shift_click";
     private static final String SLICER_FOUP_BOUNDARY = "wafer_slicer_foup_slot_client_boundary";
     private static final String ENERGY_FOLLOWS_DATA = "silicon_energy_follows_machine_definitions";
-    private static final String RECIPE_FILES = "silicon_cooking_recipe_files_match_the_vanilla_schema";
+    private static final String FAIL_CLOSED = "silicon_machines_fail_closed_without_a_definition";
+    private static final String RESUMES_SAME_RECIPE = "crystal_puller_resumes_only_the_same_recipe";
+    private static final String COOKING_RECIPES = "silicon_cooking_recipes_load_and_match";
 
     private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS =
         DeferredRegister.create(net.minecraft.core.registries.Registries.TEST_FUNCTION, "lithmod");
@@ -124,7 +140,9 @@ public final class SiliconGameTests {
         FUNCTIONS.register(SLICER_MENU, () -> SiliconGameTests::slicerMenuLayoutAndShiftClick);
         FUNCTIONS.register(SLICER_FOUP_BOUNDARY, () -> SiliconGameTests::slicerFoupSlotBoundary);
         FUNCTIONS.register(ENERGY_FOLLOWS_DATA, () -> SiliconGameTests::energyFollowsDefinitions);
-        FUNCTIONS.register(RECIPE_FILES, () -> SiliconGameTests::cookingRecipeFiles);
+        FUNCTIONS.register(FAIL_CLOSED, () -> SiliconGameTests::machinesFailClosedWithoutDefinition);
+        FUNCTIONS.register(RESUMES_SAME_RECIPE, () -> SiliconGameTests::pullerResumesOnlyTheSameRecipe);
+        FUNCTIONS.register(COOKING_RECIPES, () -> SiliconGameTests::cookingRecipesLoadAndMatch);
     }
 
     private SiliconGameTests() {
@@ -155,7 +173,9 @@ public final class SiliconGameTests {
         register(event, data, SLICER_MENU);
         register(event, data, SLICER_FOUP_BOUNDARY);
         register(event, data, ENERGY_FOLLOWS_DATA);
-        register(event, data, RECIPE_FILES);
+        register(event, data, FAIL_CLOSED);
+        register(event, data, RESUMES_SAME_RECIPE);
+        register(event, data, COOKING_RECIPES);
         LOGGER.info("Registered EUVCRAFT silicon chain game tests");
     }
 
@@ -228,7 +248,7 @@ public final class SiliconGameTests {
         LOGGER.info("[M1-04] wafer_slicer_produces_a_lot: {} -> {} wafers, capacity {}, no run spec",
             output.getItem(), lot.size(), lot.capacity());
 
-        // NEGATIVE CONTROL: a boule in the FOUP slot is not a valid input and never runs.
+        // Refused input: a boule in the FOUP slot is not a valid input and never runs.
         placeSlicer(helper, SECOND);
         WaferSlicerBlockEntity idle = slicerAt(helper, SECOND);
         if (idle != null) {
@@ -238,9 +258,9 @@ public final class SiliconGameTests {
             idle.setStoredEnergy(1_000_000);
             runSlicer(idle, 40);
             helper.assertValueEqual(0, idle.sliceProgress(),
-                "the slicer ran on a boule in its FOUP slot (negative control)");
+                "the slicer ran on a boule in its FOUP slot");
             helper.assertTrue(idle.outputSlot().isEmpty(),
-                "the slicer produced output from a non-FOUP input (negative control)");
+                "the slicer produced output from a non-FOUP input");
         }
 
         helper.succeed();
@@ -291,8 +311,8 @@ public final class SiliconGameTests {
         LOGGER.info("[M1-04] wafer_slicer_lot_takes_layer_one: {} wafers processed at T1 for logic, "
                 + "run spec frozen", processed.size());
 
-        // NEGATIVE CONTROL: the same lot at a die type that T1 cannot make must be refused, so
-        // the positive result above is not just "applyLayerStep never throws".
+        // Refused input: the same lot at a die type that T1 cannot make is turned away, so the
+        // positive result above is not just "applyLayerStep never throws".
         boolean refusedDieType = false;
         try {
             FabYieldService.applyLayerStep(level, lot, t1, "compute", null, 1, 0.1);
@@ -300,8 +320,7 @@ public final class SiliconGameTests {
             refusedDieType = true;
         }
         helper.assertTrue(refusedDieType,
-            "the yield service accepted a die type that cannot be made at T1 "
-                + "(negative control)");
+            "the yield service accepted a die type that cannot be made at T1");
 
         helper.succeed();
     }
@@ -341,19 +360,19 @@ public final class SiliconGameTests {
         helper.assertFalse(foupSlot.mayPlace(started),
             "the FOUP slot accepted a lot that carries a run spec");
 
-        // NEGATIVE CONTROL: a plain item, a boule, and a FOUP item with no lot in it.
+        // Refused input: a plain item, a boule, and a FOUP item with no lot in it.
         helper.assertFalse(foupSlot.mayPlace(new ItemStack(Items.IRON_INGOT)),
-            "the FOUP slot accepted a plain iron ingot (negative control)");
+            "the FOUP slot accepted a plain iron ingot");
         helper.assertFalse(foupSlot.mayPlace(new ItemStack(ModItems.SILICON_BOULE.get())),
-            "the FOUP slot accepted a boule (negative control)");
+            "the FOUP slot accepted a boule");
         helper.assertFalse(foupSlot.mayPlace(new ItemStack(ModItems.FOUP_MK1.get())),
-            "the FOUP slot accepted a FOUP item that carries no lot (negative control)");
+            "the FOUP slot accepted a FOUP item that carries no lot");
         helper.assertFalse(bouleSlot.mayPlace(new ItemStack(ModItems.SILICON.get())),
-            "the boule slot accepted raw silicon (negative control)");
+            "the boule slot accepted raw silicon");
         helper.assertTrue(bouleSlot.mayPlace(new ItemStack(ModItems.SILICON_BOULE.get())),
             "the boule slot refused a boule");
         helper.assertFalse(outputSlot.mayPlace(new ItemStack(Items.IRON_INGOT)),
-            "the output slot accepted placement (negative control)");
+            "the output slot accepted placement");
         helper.assertTrue(outputSlot.mayPickup(player), "the output slot refuses pickup");
 
         // The server refuses the same stack even when it is put in the slot directly, so
@@ -428,9 +447,9 @@ public final class SiliconGameTests {
             slicer.serverTick();
         }
         helper.assertValueEqual(progressBefore, slicer.sliceProgress(),
-            "progress advanced with no energy (negative control)");
+            "progress advanced with no energy");
         helper.assertTrue(slicer.outputSlot().isEmpty(),
-            "the paused slicer produced output (negative control)");
+            "the paused slicer produced output");
 
         // Recharge and let it finish: a paused run resumes rather than restarting.
         slicer.setStoredEnergy(perTick * slicer.sliceTicksRemaining());
@@ -441,7 +460,7 @@ public final class SiliconGameTests {
         helper.assertValueEqual(WaferSlicing.wafersFor(EUVCRAFTMod.settings(), lot.capacity()),
             lot.size(), "the resumed slicer produced the wrong lot size");
 
-        // NEGATIVE CONTROL: a slicer that is never charged never produces anything.
+        // A slicer that is never charged never produces anything.
         placeSlicer(helper, SECOND);
         WaferSlicerBlockEntity starved = slicerAt(helper, SECOND);
         if (starved != null) {
@@ -452,11 +471,11 @@ public final class SiliconGameTests {
             starved.setStoredEnergy(0);
             runSlicer(starved, 100);
             helper.assertValueEqual(0, starved.sliceProgress(),
-                "an uncharged slicer made progress (negative control)");
+                "an uncharged slicer made progress");
             helper.assertTrue(starved.outputSlot().isEmpty(),
-                "an uncharged slicer produced output (negative control)");
+                "an uncharged slicer produced output");
             helper.assertFalse(starved.slot(WaferSlicerBlockEntity.BOULE_SLOT).isEmpty(),
-                "an uncharged slicer consumed a boule (negative control)");
+                "an uncharged slicer consumed a boule");
         }
 
         helper.succeed();
@@ -535,16 +554,16 @@ public final class SiliconGameTests {
             lot.size(), "the restored slice produced the wrong lot size");
         helper.assertTrue(lot.run() == null, "the restored slice produced a started lot");
 
-        // NEGATIVE CONTROL: a fresh machine has no progress to restore.
+        // A fresh machine has no progress to restore.
         placeSlicer(helper, SECOND);
         WaferSlicerBlockEntity fresh = slicerAt(helper, SECOND);
         if (fresh != null) {
             helper.assertValueEqual(0, fresh.sliceProgress(),
-                "a fresh slicer reported progress (negative control)");
+                "a fresh slicer reported progress");
             helper.assertFalse(fresh.isSlicing(),
-                "a fresh slicer claims to be slicing (negative control)");
+                "a fresh slicer claims to be slicing");
             helper.assertTrue(fresh.outputSlot().isEmpty(),
-                "a fresh slicer produced output (negative control)");
+                "a fresh slicer produced output");
         }
 
         helper.succeed();
@@ -615,7 +634,7 @@ public final class SiliconGameTests {
                 + "{} boule, {} silicon left", perTick, recipe.ticks(), spent, output,
             leftover.getCount());
 
-        // NEGATIVE CONTROL: the puller with no input never runs, however full the buffer.
+        // The puller with no input never runs, however full the buffer.
         helper.setBlock(SECOND, SiliconMachines.CRYSTAL_PULLER.get());
         FabMachineBlockEntity idle = pullerAt(helper, SECOND);
         if (idle != null) {
@@ -624,12 +643,12 @@ public final class SiliconGameTests {
                 idle.serverTick();
             }
             helper.assertFalse(idle.runner().isRunning(),
-                "the puller ran a recipe with no input (negative control)");
+                "the puller ran a recipe with no input");
             helper.assertTrue(idle.outputSlot().isEmpty(),
-                "the puller produced output with no input (negative control)");
+                "the puller produced output with no input");
         }
 
-        // NEGATIVE CONTROL: a boule in the puller's input slot is not silicon.
+        // Refused input: a boule in the puller's input slot is not silicon.
         helper.setBlock(THIRD, SiliconMachines.CRYSTAL_PULLER.get());
         FabMachineBlockEntity wrongInput = pullerAt(helper, THIRD);
         if (wrongInput != null) {
@@ -640,9 +659,9 @@ public final class SiliconGameTests {
                 wrongInput.serverTick();
             }
             helper.assertTrue(wrongInput.outputSlot().isEmpty(),
-                "the puller ran on a boule instead of silicon (negative control)");
+                "the puller ran on a boule instead of silicon");
             helper.assertValueEqual(4, wrongInput.slot(CrystalPullerBlockEntity.INPUT_SLOT).getCount(),
-                "the puller consumed a boule it refused (negative control)");
+                "the puller consumed a boule it refused");
         }
 
         helper.succeed();
@@ -736,13 +755,12 @@ public final class SiliconGameTests {
                 "a hopper changed the puller's inventory");
         }
 
-        // NEGATIVE CONTROL: a chest does expose an item handler, so the nulls above are a
-        // real answer rather than the capability system being unavailable.
+        // A chest does expose an item handler, so the nulls above are a real answer rather
+        // than the capability system being unavailable.
         helper.setBlock(THIRD, net.minecraft.world.level.block.Blocks.CHEST);
         helper.assertTrue(level.getCapability(Capabilities.Item.BLOCK,
                 helper.absolutePos(THIRD), Direction.NORTH) != null,
-            "a chest has no item handler either, so the negative assertions are vacuous "
-                + "(negative control)");
+            "a chest has no item handler either, so the null assertions are vacuous");
         LOGGER.info("[M1-04] silicon_machines_expose_no_item_handler: neither machine is reachable "
             + "by an item handler, a fluid handler or a hopper");
 
@@ -1086,7 +1104,7 @@ public final class SiliconGameTests {
         ItemStack ingotMoved = menu.quickMoveStack(player, hotbar + 2);
         helper.assertTrue(ingotMoved.isEmpty(),
             "shift-clicking an iron ingot was routed into a machine slot");
-        helper.assertValueEqual(3, player.getInventory().getItem(hotbar + 2).getCount(),
+        helper.assertValueEqual(3, player.getInventory().getItem(2).getCount(),
             "the refused iron ingot left the player inventory");
 
         // With the FOUP slot empty, a FOUP that already holds wafers is still refused.
@@ -1317,45 +1335,298 @@ public final class SiliconGameTests {
     }
 
     // ------------------------------------------------------------------
-    // 14. The two cooking recipe files use the vanilla 26.3 schema
+    // 14. Both machines fail closed while their definition is not loaded
     // ------------------------------------------------------------------
 
-    private static void cookingRecipeFiles(GameTestHelper helper) {
-        // The vanilla 26.3 examples the coordinator copied out of the official client jar
-        // (build/api-reference/iron_ingot_from_smelting_raw_iron.json and its blasting
-        // twin) spell the result as an object with an "id", not as a bare item id string.
-        // This checks the two bundled files against that shape. It does NOT prove the
-        // datapack loads them: that is what the coordinator's game test server run and its
-        // log are for.
-        for (String name : List.of("silicon_from_smelting", "silicon_from_blasting")) {
-            JsonObject recipe = readDataRecipe(name);
-            helper.assertTrue(recipe != null, "data/lithmod/recipe/" + name + ".json is missing");
-            if (recipe == null) {
-                continue;
-            }
-            helper.assertValueEqual(5, recipe.size(),
-                name + " carries keys " + recipe.keySet() + " rather than the vanilla five");
-            for (String key : List.of("type", "ingredient", "result", "experience", "cookingtime")) {
-                helper.assertTrue(recipe.has(key), name + " has no " + key + " key");
-            }
-            helper.assertTrue(recipe.get("type").getAsString().startsWith("minecraft:"),
-                name + " is not a vanilla cooking type: " + recipe.get("type"));
-            helper.assertValueEqual("minecraft:sand", recipe.get("ingredient").getAsString(),
-                name + " does not cook sand");
-            helper.assertTrue(recipe.get("result").isJsonObject(),
-                name + ": the cooking result must be an object with an id, not a bare id");
-            helper.assertTrue(recipe.getAsJsonObject("result").has("id"),
-                name + ": the result object has no id");
-            helper.assertValueEqual("lithmod:silicon",
-                recipe.getAsJsonObject("result").get("id").getAsString(),
-                name + " does not produce silicon");
-            helper.assertTrue(recipe.get("cookingtime").getAsInt() > 0,
-                name + " has no cooking time");
+    /**
+     * A machine whose definition is gone must not work, however it is set up.
+     *
+     * <p>The puller is part-way through a real recipe with a matching ingredient and a full
+     * buffer when its definition is taken away, which is the case the old refresh could not
+     * see: the capacity, the per-tick cost and the run all survived. The swap lasts only for
+     * the synchronous body below and is put back in a {@code finally}, so the rest of the
+     * suite sees the real registry.</p>
+     */
+    private static void machinesFailClosedWithoutDefinition(GameTestHelper helper) {
+        helper.setBlock(MACHINE, SiliconMachines.CRYSTAL_PULLER.get());
+        FabMachineBlockEntity puller = pullerAt(helper, MACHINE);
+        MachineRecipe recipe = pullerRecipe();
+        helper.assertTrue(puller != null && recipe != null,
+            "the crystal puller or its recipe is missing");
+        if (puller == null || recipe == null) {
+            return;
         }
-        LOGGER.info("[M1-04] silicon_cooking_recipe_files_match_the_vanilla_schema: both files "
-            + "carry the vanilla cooking keys with a result object");
+
+        puller.setSlot(CrystalPullerBlockEntity.INPUT_SLOT, new ItemStack(ModItems.SILICON.get(), 8));
+        puller.serverTick();
+        int perTick = puller.runner().energyPerTick();
+        helper.assertTrue(perTick > 0, "the puller has no per-tick cost, so nothing below can run");
+        if (perTick <= 0) {
+            return;
+        }
+        puller.setStoredEnergy(perTick * (recipe.ticks() + 2));
+        runPuller(puller, 10);
+        helper.assertTrue(puller.runner().isRunning() && puller.runner().progress() > 0,
+            "the test did not get the puller part-way through a recipe");
+        long energyBefore = puller.buffer().getAmountAsLong();
+        int capacityBefore = puller.buffer().getCapacityAsInt();
+
+        // The slicer is charged and loaded first, because a machine with no definition cannot
+        // be charged through setStoredEnergy either: its capacity is then zero.
+        placeSlicer(helper, SECOND);
+        WaferSlicerBlockEntity slicer = slicerAt(helper, SECOND);
+        helper.assertTrue(slicer != null, "no wafer slicer block entity");
+        if (slicer == null) {
+            return;
+        }
+        slicer.setSlot(WaferSlicerBlockEntity.BOULE_SLOT, new ItemStack(ModItems.SILICON_BOULE.get(), 2));
+        slicer.setSlot(WaferSlicerBlockEntity.FOUP_SLOT, FoupItems.emptyFoup(ModItems.FOUP_MK1.get()));
+        slicer.setStoredEnergy(slicer.energyPerTick() * (slicer.sliceTicks() + 2));
+        long slicerEnergyBefore = slicer.buffer().getAmountAsLong();
+        helper.assertTrue(slicerEnergyBefore > 0,
+            "the slicer was not charged, so the removed definition has nothing to refuse");
+
+        withoutDefinitions(List.of(CrystalPullerBlockEntity.MACHINE_ID,
+                WaferSlicerBlockEntity.MACHINE_ID), () -> {
+            runPuller(puller, 30);
+            helper.assertFalse(puller.runner().isRunning(),
+                "the puller kept running after its definition was removed");
+            helper.assertValueEqual(0, puller.runner().progress(),
+                "the puller kept its progress after its definition was removed");
+            helper.assertTrue(puller.outputSlot().isEmpty(),
+                "the puller produced a boule with no definition loaded");
+            helper.assertValueEqual(energyBefore, puller.buffer().getAmountAsLong(),
+                "the puller spent stored FE with no definition loaded");
+            helper.assertValueEqual(8, puller.slot(CrystalPullerBlockEntity.INPUT_SLOT).getCount(),
+                "the puller consumed silicon with no definition loaded");
+            helper.assertValueEqual(0, puller.buffer().getCapacityAsInt(),
+                "the removed definition left the buffer its capacity");
+            helper.assertValueEqual(0, puller.data().get(FabMachineBlockEntity.DATA_CAPACITY),
+                "the removed definition left the menu its capacity");
+            helper.assertValueEqual(0, insert(puller.energy(), 2_000),
+                "the buffer accepted FE with no definition loaded");
+
+            runSlicer(slicer, 40);
+            helper.assertFalse(slicer.isSlicing(),
+                "the slicer kept slicing after its definition was removed");
+            helper.assertValueEqual(0, slicer.sliceProgress(),
+                "the slicer kept its progress after its definition was removed");
+            helper.assertTrue(slicer.outputSlot().isEmpty(),
+                "the slicer produced a lot with no definition loaded");
+            helper.assertValueEqual(slicerEnergyBefore, slicer.buffer().getAmountAsLong(),
+                "the slicer spent stored FE with no definition loaded");
+            helper.assertValueEqual(0, slicer.buffer().getCapacityAsInt(),
+                "the removed definition left the slicer's buffer its capacity");
+            helper.assertValueEqual(0, insert(slicer.energy(), 2_000),
+                "the slicer's buffer accepted FE with no definition loaded");
+            helper.assertFalse(slicer.slot(WaferSlicerBlockEntity.BOULE_SLOT).isEmpty(),
+                "the slicer consumed a boule with no definition loaded");
+        });
+        LOGGER.info("[M1-04] silicon_machines_fail_closed_without_a_definition: with no definition "
+            + "both machines kept their stored FE, drew none, wrote nothing, accepted no FE and "
+            + "published a capacity of 0");
+
+        // The definition is back, so the machine works again on the FE it kept. One tick
+        // re-applies it to the buffer; that tick has no energy to draw and so does nothing.
+        puller.serverTick();
+        helper.assertTrue(puller.definition().isPresent(),
+            "the definition registry was not restored after the swap");
+        helper.assertValueEqual(capacityBefore, puller.buffer().getCapacityAsInt(),
+            "the restored definition did not restore the buffer capacity");
+        helper.assertValueEqual(capacityBefore, puller.data().get(FabMachineBlockEntity.DATA_CAPACITY),
+            "the restored definition did not restore the capacity the menu shows");
+        helper.assertValueEqual(energyBefore, puller.buffer().getAmountAsLong(),
+            "the machine could not even spend one tick of the FE it kept");
+        puller.setStoredEnergy(perTick * (recipe.ticks() + 2));
+        runPuller(puller, recipe.ticks() + 5);
+        helper.assertFalse(puller.outputSlot().isEmpty(),
+            "the puller did not run again once its definition came back");
+        helper.assertTrue(puller.outputSlot().getItem() == ModItems.SILICON_BOULE.get(),
+            "the resumed puller produced " + puller.outputSlot().getItem());
+        helper.assertTrue(slicer.definition().isPresent(),
+            "the wafer slicer definition was not restored after the swap");
 
         helper.succeed();
+    }
+
+    // ------------------------------------------------------------------
+    // 15. A restored run is resumed only by the recipe it belongs to
+    // ------------------------------------------------------------------
+
+    /**
+     * Progress restored from a save is handed back to the recipe that paid for it and to
+     * nothing else.
+     *
+     * <p>Both machines here run the same recipe from the same data; the second one is
+     * restored against a loaded recipe that takes the same silicon and runs twice as long
+     * for twice the product, which is the conservation case: old progress must not be
+     * handed to it.</p>
+     */
+    private static void pullerResumesOnlyTheSameRecipe(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        helper.setBlock(MACHINE, SiliconMachines.CRYSTAL_PULLER.get());
+        FabMachineBlockEntity puller = pullerAt(helper, MACHINE);
+        MachineRecipe recipe = pullerRecipe();
+        helper.assertTrue(puller != null && recipe != null,
+            "the crystal puller or its recipe is missing");
+        if (puller == null || recipe == null) {
+            return;
+        }
+
+        puller.setSlot(CrystalPullerBlockEntity.INPUT_SLOT, new ItemStack(ModItems.SILICON.get(), 8));
+        puller.serverTick();
+        int perTick = puller.runner().energyPerTick();
+        helper.assertTrue(perTick > 0, "the puller has no per-tick cost, so nothing below can run");
+        if (perTick <= 0) {
+            return;
+        }
+        int half = Math.max(1, recipe.ticks() / 2);
+        puller.setStoredEnergy(perTick * (recipe.ticks() + 2));
+        runPuller(puller, half);
+        int progressBefore = puller.runner().progress();
+        helper.assertTrue(puller.runner().isRunning() && progressBefore > 0,
+            "the test did not get the puller part-way through a recipe");
+
+        CompoundTag tag = saveTag(level, puller);
+        helper.assertTrue(tag.contains("recipe"), "the saved tag has no recipe node");
+
+        // Wipe and load the unchanged recipe back: the same run resumes at the same cost.
+        puller.runner().reset();
+        puller.setStoredEnergy(0);
+        loadTag(level, puller, tag);
+        helper.assertValueEqual(progressBefore, puller.runner().progress(),
+            "the recipe progress did not survive the round trip");
+        helper.assertValueEqual(perTick, puller.runner().energyPerTick(),
+            "the frozen per-tick cost did not survive the round trip");
+
+        puller.setStoredEnergy(perTick * (recipe.ticks() + 2));
+        puller.serverTick();
+        helper.assertTrue(puller.runner().isRunning(),
+            "the restored run did not re-attach to the recipe it was running");
+        helper.assertValueEqual(progressBefore + 1, puller.runner().progress(),
+            "the restored run did not continue from its own progress");
+        helper.assertValueEqual(recipe.ticks(), puller.runner().ticks(),
+            "the restored run adopted a different recipe length");
+        helper.assertValueEqual(perTick, puller.runner().energyPerTick(),
+            "the restored run was charged at a new rate");
+        runPuller(puller, recipe.ticks() + 5);
+        helper.assertFalse(puller.outputSlot().isEmpty(), "the restored run did not finish");
+        helper.assertTrue(puller.outputSlot().getItem() == ModItems.SILICON_BOULE.get(),
+            "the restored run produced " + puller.outputSlot().getItem());
+        LOGGER.info("[M1-04] crystal_puller_resumes_only_the_same_recipe: resumed at {}/{} ticks "
+            + "for {} FE/tick and finished; a changed recipe inherited nothing",
+            progressBefore, recipe.ticks(), perTick);
+
+        // The second machine is saved the same way, then restored against a loaded recipe
+        // that takes the same silicon, runs twice as long and gives twice the product.
+        helper.setBlock(SECOND, SiliconMachines.CRYSTAL_PULLER.get());
+        FabMachineBlockEntity swapped = pullerAt(helper, SECOND);
+        if (swapped == null) {
+            helper.fail("no crystal puller block entity at the second position");
+            return;
+        }
+        swapped.setSlot(CrystalPullerBlockEntity.INPUT_SLOT, new ItemStack(ModItems.SILICON.get(), 8));
+        swapped.setStoredEnergy(perTick * (recipe.ticks() * 2 + 2));
+        runPuller(swapped, half);
+        helper.assertTrue(swapped.runner().isRunning(), "the second puller did not start a run");
+        int swappedProgress = swapped.runner().progress();
+        CompoundTag savedTag = saveTag(level, swapped);
+
+        MachineRecipeSpec changedSpec = new MachineRecipeSpec(recipe.spec().machineId(),
+            recipe.spec().ingredients(), new MachineResult("lithmod:silicon_boule", 2, Map.of()),
+            recipe.spec().ticks() * 2, recipe.spec().energyPerTickOverride());
+        withRecipes(List.of(changedSpec), () -> {
+            swapped.runner().reset();
+            swapped.setStoredEnergy(0);
+            loadTag(level, swapped, savedTag);
+            helper.assertValueEqual(swappedProgress, swapped.runner().progress(),
+                "the changed-recipe case did not start from the saved numbers");
+
+            swapped.setStoredEnergy(perTick * (changedSpec.ticks() + 2));
+            swapped.serverTick();
+            helper.assertValueEqual(1, swapped.runner().progress(),
+                "the changed recipe inherited the progress the old one had paid for");
+            helper.assertValueEqual(changedSpec.ticks(), swapped.runner().ticks(),
+                "the changed recipe was not picked up as its own run");
+            helper.assertTrue(swapped.outputSlot().isEmpty(),
+                "the changed recipe wrote a product on its first tick");
+        });
+        helper.assertTrue(swapped.definition().isPresent(),
+            "the definition registry was not restored after the swap");
+
+        helper.succeed();
+    }
+
+    // ------------------------------------------------------------------
+    // 16. The two bundled cooking recipes are loaded and match real input
+    // ------------------------------------------------------------------
+
+    private static void cookingRecipesLoadAndMatch(GameTestHelper helper) {
+        // The real lookup, against the live RecipeManager: the question is not whether the
+        // files are shaped like the 26.3 examples but whether the datapack loaded them and
+        // what they produce. Optional vanilla fields such as group are therefore allowed,
+        // and every time and experience number still lives in the JSON.
+        ServerLevel level = helper.getLevel();
+        RecipeManager manager = level.getServer().getRecipeManager();
+        SingleRecipeInput sand = new SingleRecipeInput(new ItemStack(Items.SAND));
+        ItemStack smelted = ItemStack.EMPTY;
+        ItemStack blasted = ItemStack.EMPTY;
+        int smeltingTicks = -1;
+        int blastingTicks = -1;
+
+        Optional<RecipeHolder<SmeltingRecipe>> smelting =
+            manager.getRecipeFor(RecipeType.SMELTING, sand, level);
+        helper.assertTrue(smelting.isPresent(), "no smelting recipe matched a stack of sand");
+        if (smelting.isPresent()) {
+            helper.assertValueEqual(recipeKey("silicon_from_smelting"), smelting.get().id(),
+                "the smelting recipe that matched sand is not the bundled one");
+            helper.assertTrue(smelting.get().value().matches(sand, level),
+                "the returned smelting recipe does not match the input it was found by");
+            smelted = smelting.get().value().assemble(sand);
+            helper.assertTrue(smelted.getItem() == ModItems.SILICON.get(),
+                "smelting sand produced " + smelted.getItem() + " rather than silicon");
+            if (smelting.get().value() instanceof AbstractCookingRecipe cooking) {
+                smeltingTicks = cooking.cookingTime();
+                helper.assertValueEqual(200, smeltingTicks,
+                    "the smelting recipe did not keep cookingtime 200 from the JSON");
+            } else {
+                helper.fail("the smelting recipe that matched sand is not a cooking recipe");
+            }
+        }
+
+        Optional<RecipeHolder<BlastingRecipe>> blasting =
+            manager.getRecipeFor(RecipeType.BLASTING, sand, level);
+        helper.assertTrue(blasting.isPresent(), "no blasting recipe matched a stack of sand");
+        if (blasting.isPresent()) {
+            helper.assertValueEqual(recipeKey("silicon_from_blasting"), blasting.get().id(),
+                "the blasting recipe that matched sand is not the bundled one");
+            blasted = blasting.get().value().assemble(sand);
+            helper.assertTrue(blasted.getItem() == ModItems.SILICON.get(),
+                "blasting sand produced " + blasted.getItem() + " rather than silicon");
+            if (blasting.get().value() instanceof AbstractCookingRecipe cooking) {
+                blastingTicks = cooking.cookingTime();
+                helper.assertValueEqual(100, blastingTicks,
+                    "the blasting recipe did not keep cookingtime 100 from the JSON");
+            } else {
+                helper.fail("the blasting recipe that matched sand is not a cooking recipe");
+            }
+        }
+
+        // A boule is not sand, so the bundled recipes must not answer for it.
+        SingleRecipeInput boule = new SingleRecipeInput(new ItemStack(ModItems.SILICON_BOULE.get()));
+        helper.assertTrue(manager.getRecipeFor(RecipeType.SMELTING, boule, level)
+                .map(holder -> recipeKey("silicon_from_smelting").equals(holder.id())).orElse(true),
+            "a boule matched the bundled smelting recipe, which cooks sand");
+        LOGGER.info("[M1-04] silicon_cooking_recipes_load_and_match: {} smelts to {} in {} ticks and "
+            + "{} blasts to {} in {} ticks", Items.SAND, smelted, smeltingTicks, Items.SAND,
+            blasted, blastingTicks);
+
+        helper.succeed();
+    }
+
+    /** The recipe id one bundled cooking file is loaded under. */
+    private static ResourceKey<Recipe<?>> recipeKey(String name) {
+        return ResourceKey.create(Registries.RECIPE, Identifier.fromNamespaceAndPath("lithmod", name));
     }
 
     // ------------------------------------------------------------------
@@ -1424,17 +1695,72 @@ public final class SiliconGameTests {
             new FoupContents(FoupContentsCodec.CLIENT_VIEW_LOT_ID, capacity, placeholders));
     }
 
-    /** Reads a bundled data recipe off the classpath, the way a datapack load would read it. */
-    private static @Nullable JsonObject readDataRecipe(String name) {
-        try (InputStream stream =
-                SiliconGameTests.class.getResourceAsStream("/data/lithmod/recipe/" + name + ".json")) {
-            if (stream == null) {
-                return null;
+    /** Saves a block entity the way the server does and hands back its NBT. */
+    private static CompoundTag saveTag(ServerLevel level, BlockEntity blockEntity) {
+        TagValueOutput output = TagValueOutput.createWithContext(
+            net.minecraft.util.ProblemReporter.DISCARDING, level.registryAccess());
+        blockEntity.saveWithId(output);
+        return output.buildResult();
+    }
+
+    /** Loads a block entity from an NBT the way the server does. */
+    private static void loadTag(ServerLevel level, BlockEntity blockEntity, CompoundTag tag) {
+        blockEntity.loadWithComponents(TagValueInput.create(
+            net.minecraft.util.ProblemReporter.DISCARDING, level.registryAccess(), tag));
+    }
+
+    /**
+     * Runs {@code body} with {@code removedIds} absent from the loaded machine definitions.
+     *
+     * <p>The loader keeps the loaded registry on the instance the reload listener created and
+     * offers no setter, so this writes that field and puts the previous registry back in a
+     * {@code finally}. The swap is synchronous and lives only for the body, so nothing after
+     * this test sees it, and no other machine's definition is touched.</p>
+     */
+    private static void withoutDefinitions(List<String> removedIds, Runnable body) {
+        try {
+            Field live = MachineDefinitionLoader.class.getDeclaredField("CURRENT");
+            live.setAccessible(true);
+            Field loaded = JsonResourceDataLoader.class.getDeclaredField("current");
+            loaded.setAccessible(true);
+            Object loader = live.get(null);
+            MachineDefinitionLoader.Registry previous =
+                (MachineDefinitionLoader.Registry) loaded.get(loader);
+            try {
+                List<MachineDefinition> kept = previous.all().stream()
+                    .filter(definition -> !removedIds.contains(definition.id())).toList();
+                loaded.set(loader, MachineDefinitionLoader.build(kept, "game test, without "
+                    + removedIds));
+                body.run();
+            } finally {
+                loaded.set(loader, previous);
             }
-            return JsonParser.parseReader(
-                new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
-        } catch (java.io.IOException e) {
-            throw new AssertionError("could not read data/lithmod/recipe/" + name + ".json", e);
+        } catch (ReflectiveOperationException | ClassCastException failure) {
+            throw new AssertionError("the machine definition registry could not be swapped", failure);
+        }
+    }
+
+    /**
+     * Runs {@code body} with {@code specs} as the whole loaded machine recipe set.
+     *
+     * <p>{@link MachineRecipeLoader} caches what it resolved in a static field for the same
+     * reason {@link #withoutDefinitions} has to reach into one: it is the value every machine
+     * reads, and there is no reload a game test can drive. The previous set is put back in a
+     * {@code finally}.</p>
+     */
+    private static void withRecipes(List<MachineRecipeSpec> specs, Runnable body) {
+        try {
+            Field resolved = MachineRecipeLoader.class.getDeclaredField("resolved");
+            resolved.setAccessible(true);
+            MachineRecipeLoader.Registry previous = (MachineRecipeLoader.Registry) resolved.get(null);
+            try {
+                resolved.set(null, MachineRecipeLoader.build(specs, "game test recipes"));
+                body.run();
+            } finally {
+                resolved.set(null, previous);
+            }
+        } catch (ReflectiveOperationException | ClassCastException failure) {
+            throw new AssertionError("the machine recipe registry could not be swapped", failure);
         }
     }
 
@@ -1448,7 +1774,7 @@ public final class SiliconGameTests {
     }
 
     private static @Nullable MachineRecipe pullerRecipe() {
-        var recipes = com.euvcraft.lithmod.mc.data.MachineRecipeLoader.getRegistry();
+        var recipes = MachineRecipeLoader.getRegistry();
         if (recipes == null) {
             return null;
         }

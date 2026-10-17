@@ -43,9 +43,10 @@ import java.util.UUID;
  * {@code energy_per_tick} through the configured FE multiplier; the buffer capacity and
  * the insert limit are applied to the real buffer by the base class; the wafer count is
  * {@link WaferSlicing#wafersFor} over the configured {@code wafersPerBoule} and the stored
- * FOUP capacity. A machine whose definition is missing, or whose definition declares no
- * {@code slice_ticks}, does not slice at all: it fails closed rather than running on a
- * made-up number.</p>
+ * FOUP capacity. A machine whose definition is missing or has been removed, or whose
+ * definition declares no {@code slice_ticks}, does not slice at all and refuses FE: it
+ * fails closed rather than running on a made-up number, and the stored FE it already holds
+ * is kept for the day the definition comes back.</p>
  *
  * <p>Lots produced here carry no substrate generation and no run spec: the lot has not been
  * through a process step, and M1 has nowhere to record where a boule was grown.</p>
@@ -166,9 +167,10 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
      * exist for this machine id. It does call
      * {@link #refreshDefinition() the definition refresh} and nothing else of the base
      * tick, so a data change resizes the real buffer without the recipe runner ever being
-     * involved. Progress is still published through the same {@code DATA_PROGRESS} and
-     * {@code DATA_TICKS} values the menu reads, so the screen needs to know nothing about
-     * this class.</p>
+     * involved, and a definition that has gone closes the buffer and the run rather than
+     * leaving the machine half-chargable. Progress is still published through the same
+     * {@code DATA_PROGRESS} and {@code DATA_TICKS} values the menu reads, so the screen
+     * needs to know nothing about this class.</p>
      */
     @Override
     public void serverTick() {

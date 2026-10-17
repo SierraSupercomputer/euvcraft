@@ -19,7 +19,9 @@ import net.minecraft.world.level.block.state.BlockState;
  * <p>Every number comes from {@code data/lithmod/machines/crystal_puller.json}: the base
  * class sizes the energy buffer from the loaded definition, so there is no Java copy of the
  * capacity or the insert limit to drift out of step with the data, and a machine with no
- * definition loaded accepts no energy at all and therefore cannot run.</p>
+ * definition loaded accepts no energy at all and therefore cannot run. Removing the
+ * definition closes the machine again on the next tick, keeping the FE already stored but
+ * spending none of it and writing no boule.</p>
  *
  * <p>Hand-fed only: the base class implements {@code Container} for menus and for the drop
  * path but answers {@code canPlaceItem} and {@code canTakeItem} with {@code false}, so no

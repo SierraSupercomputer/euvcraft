@@ -80,7 +80,9 @@ It covers `WaferSlicing.wafersFor(FabSettings, int)`: a boule exactly fills a FO
 same size, a FOUP smaller than the yield comes back filled to its own capacity, a FOUP
 larger than the yield comes back partially filled, the count follows `wafersPerBoule` and
 stops caring about capacity above it, and a capacity below one or a null settings object is
-refused.
+refused. There is no case for a non-positive yield and none is needed: `FabSettings` clamps
+`wafersPerBoule` into `[1, 64]` in its canonical constructor, so `min(wafersPerBoule,
+capacity)` cannot come out below one once the capacity has been checked.
 
 The silicon chain game tests run in the `lithmod:silicon_chain` environment:
 
@@ -98,17 +100,26 @@ The silicon chain game tests run in the `lithmod:silicon_chain` environment:
 | `lithmod:crystal_puller_runs_its_recipe` | the data recipe in `data/lithmod/machine_recipes/crystal_puller.json` runs end to end for exactly `energy_per_tick * ticks` FE, yields one boule and consumes all four silicon |
 | `lithmod:crystal_puller_rechecks_its_inputs` | five silicon leave one behind next to the boule, three silicon (one short of the recipe) never start a run, and removing or swapping the ingredient mid-run drops the run, writes nothing, consumes nothing and costs no FE |
 | `lithmod:silicon_energy_follows_machine_definitions` | each machine's real buffer capacity, per-operation insert limit and per-tick cost equal its loaded definition, one insert takes at most `max_receive` and repeated inserts stop at `energy_capacity`, a hand-built smaller definition resizes the real buffer and the synced value, keeps the energy already stored, refuses insertion until the surplus is spent and moves the insert limit with it, and re-applying the loaded definition restores both numbers |
-| `lithmod:silicon_cooking_recipe_files_match_the_vanilla_schema` | both bundled cooking recipes carry the vanilla 26.3 key set with `result` as an object holding `lithmod:silicon` |
-| `lithmod:silicon_machines_expose_no_item_handler` | neither block exposes an item handler, a fluid handler or a hopper on any side, both expose energy that accepts FE and refuses to give it back, and a chest still does expose an item handler so the negative is not vacuous |
+| `lithmod:silicon_machines_fail_closed_without_a_definition` | with the two definitions removed from the loaded registry for the length of the test, a part-way Crystal Puller and a charged Wafer Slicer both stop: no progress, no FE spent, no product, no input consumed, a capacity and a synced capacity of 0 and no FE accepted; restoring the definitions puts the capacity, the cost and the run back and the FE the machines kept is still theirs |
+| `lithmod:crystal_puller_resumes_only_the_same_recipe` | a run saved half-way and loaded back resumes at the same progress, the same recipe length and the same frozen per-tick cost and finishes as a boule; a run saved against a recipe and loaded against a different one that takes the same silicon, runs twice as long and gives twice the product starts from tick one instead of inheriting the paid-for progress |
+| `lithmod:silicon_cooking_recipes_load_and_match` | the live `RecipeManager` returns `lithmod:silicon_from_smelting` for a stack of sand and `lithmod:silicon_from_blasting` for a blasting lookup, both assemble `lithmod:silicon`, and keep the `cookingtime` of 200 and 100 from their JSON; a boule matches neither |
+| `lithmod:silicon_machines_expose_no_item_handler` | neither block exposes an item handler, a fluid handler or a hopper on any side, both expose energy that accepts FE and refuses to give it back, and a chest still does expose an item handler so the null assertions are not vacuous |
 
 Every one of those tests logs a line beginning `[M1-04]` with the numbers it asserted on.
 
-Two gaps in that table are deliberate and belong to the coordinator, not to the tests:
-`silicon_cooking_recipe_files_match_the_vanilla_schema` checks the shape of the two JSON
-files and not a datapack load, and `silicon_energy_follows_machine_definitions` simulates a
-definition change by applying a hand-built definition because a game test cannot reload the
-data pack. The datapack load itself is checked by the server log of
-`.\gradlew.bat runGameTestServer --offline`, which names any recipe that failed to parse.
+Two tests reach past what a game test can type at a machine and change the loaded data itself,
+synchronously and only for the length of the test, putting the live registry back in a
+`finally`: `silicon_machines_fail_closed_without_a_definition` builds a definition registry
+without the two machine ids and `crystal_puller_resumes_only_the_same_recipe` installs a
+recipe that takes the same silicon, runs twice as long and gives twice the product. No
+production seam was added for either. Everything else in the table is driven through the
+public tick with the real data pack.
+
+A removed machine definition closes a machine rather than only refusing to size it: the
+buffer's capacity and insert limit go to 0, the synced capacity follows, the per-tick cost
+goes to 0 and the run in progress is dropped, while the FE already stored is left alone and
+is there again when the definition returns. This is the same code path a real datapack edit
+takes, because `refreshDefinition` runs on every tick.
 
 ## Debug commands
 

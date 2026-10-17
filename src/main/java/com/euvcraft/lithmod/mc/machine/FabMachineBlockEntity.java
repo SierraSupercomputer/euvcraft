@@ -89,8 +89,8 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
      * {@code maxInsert} of zero) and is sized from the loaded
      * {@link MachineDefinition} by the {@link #refreshDefinition()} call at the end of the
      * constructor, so a machine is already chargeable the moment it exists if the data pack
-     * has been read, and inert if it has not. That is the fail-closed answer: no data, no
-     * energy, and therefore no work.</p>
+     * has been read, and closed if it has not. That is the fail-closed answer: no data, no
+     * capacity, no insert limit and no run.</p>
      *
      * <p>The overloads that take explicit fallback numbers stay for the test-only machine,
      * whose block entity can be built before any data exists.</p>
@@ -249,12 +249,36 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
     /**
      * Re-reads the loaded definition and applies it.
      *
-     * <p>A machine with no definition is left exactly as it was rather than being given a
-     * made-up capacity: it stays at whatever the constructor gave it, which for a real
-     * machine means a buffer that accepts nothing.</p>
+     * <p>A machine with no definition is closed down rather than left as it was: see
+     * {@link #withoutDefinition()}. That is the whole of the fail-closed answer, and it
+     * runs on every tick, so a definition that is <em>removed</em> closes the machine just
+     * as firmly as one that was never there.</p>
      */
     protected final void refreshDefinition() {
-        definition().ifPresent(this::applyDefinition);
+        definition().ifPresentOrElse(this::applyDefinition, this::withoutDefinition);
+    }
+
+    /**
+     * The answer when this machine's definition is not loaded.
+     *
+     * <p>Capacity and insert limit both go to zero on the real buffer and
+     * {@code DATA_CAPACITY} follows it, so nothing can be charged into a machine that has no
+     * numbers for charging, and the menu cannot show a capacity the buffer does not have.
+     * The per-tick cost goes to zero and the run in progress is dropped, so a definition
+     * that is deleted mid-run cannot finish a product under the numbers of the definition
+     * that used to be there.</p>
+     *
+     * <p>Stored energy is deliberately left alone, exactly as
+     * {@link MachineEnergy#reconfigure} leaves it when a capacity shrinks: deleting a
+     * machine definition must not quietly destroy a player's charged buffer, and the tick
+     * refuses to spend it. Putting the definition back restores the capacity and the cost,
+     * and the machine carries on with the FE it had.</p>
+     */
+    private void withoutDefinition() {
+        this.buffer.reconfigure(0, 0);
+        this.runner.setMachineEnergyPerTick(0);
+        this.runner.reset();
+        this.data.set(DATA_CAPACITY, this.buffer.getCapacityAsInt());
     }
 
     /** The machine's internal energy draw, as the runner sees it. */
@@ -284,13 +308,19 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
         }
         refreshDefinition();
 
-        // Progress restored from a save is re-attached to whichever recipe now fits, rather
-        // than starting the machine over from tick one.
+        if (definition().isEmpty()) {
+            // No definition, no work. refreshDefinition has already closed the buffer and
+            // dropped the run, and nothing below may re-adopt one, draw energy or write a
+            // product: stored FE and a matching recipe are not permission to run.
+            syncData();
+            return;
+        }
+
+        // Progress restored from a save belongs to one exact recipe, so it is re-attached
+        // to that spec alone; a recipe that changed or vanished restarts the machine.
         if (this.runner.hasRestoredProgress()) {
             MachineRecipe restored = MachineRecipeRunner.firstMatch(recipes(), inputSlots());
-            if (restored != null) {
-                this.runner.adopt(restored);
-            } else {
+            if (restored == null || !this.runner.adoptRestored(restored)) {
                 this.runner.reset();
             }
         }
@@ -317,7 +347,12 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
         // The capacity is data, so it is re-read before anything is published: a save
         // written under a larger buffer must not be clamped by a smaller one.
         refreshDefinition();
-        this.runner.loadState(input.childOrEmpty("recipe"));
+        if (definition().isEmpty()) {
+            // Saved progress belongs to a machine that may work, and this one may not.
+            this.runner.reset();
+        } else {
+            this.runner.loadState(input.childOrEmpty("recipe"));
+        }
         this.data.set(DATA_CAPACITY, this.buffer.getCapacityAsInt());
         syncData();
     }

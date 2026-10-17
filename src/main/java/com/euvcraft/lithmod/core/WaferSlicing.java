@@ -16,6 +16,12 @@ import java.util.Objects;
  * testing without a world, and the machine asks this class rather than repeating the
  * comparison.</p>
  *
+ * <p>There is deliberately no clamp of its own here. {@link FabSettings}'s canonical
+ * constructor already clamps {@code wafersPerBoule} into its valid positive range, so this
+ * {@code min} of a validated value and a capacity that is checked for at least one here can
+ * never be non-positive, and a second bound would only be a second place for the same number
+ * to be changed.</p>
+ *
  * <p>This class has no Minecraft or NeoForge dependencies.</p>
  */
 public final class WaferSlicing {
