@@ -570,7 +570,7 @@ public final class MaskGameTests {
                 "the machine made progress on " + what);
             helper.assertFalse(generator.runner().isPaused(),
                 "the machine reports a paused run it never started");
-            helper.assertValueEqual(energyBefore, (int) generator.buffer().getAmountAsLong(),
+            helper.assertValueEqual(energyBefore, generator.buffer().getAmountAsLong(),
                 "the machine charged the player for refusing " + what);
             helper.assertTrue(generator.outputSlot().isEmpty(),
                 "the machine produced output from " + what);
@@ -650,7 +650,7 @@ public final class MaskGameTests {
                 "a machine with a full output slot is not marked paused");
             helper.assertValueEqual(before, generator.runner().progress(),
                 "a full output slot advanced the run");
-            helper.assertValueEqual(energyBefore, (int) generator.buffer().getAmountAsLong(),
+            helper.assertValueEqual(energyBefore, generator.buffer().getAmountAsLong(),
                 "a full output slot cost the player FE");
             helper.assertValueEqual(1, generator.slot(PatternGeneratorBlockEntity.BLANK_SLOT).getCount(),
                 "a full output slot consumed the blank plate");
@@ -795,7 +795,7 @@ public final class MaskGameTests {
                 "the machine kept its progress after its design ingredient was taken away");
             helper.assertFalse(generator.runner().isPaused(),
                 "a dropped run still reports itself paused");
-            helper.assertValueEqual(energyBefore, (int) generator.buffer().getAmountAsLong(),
+            helper.assertValueEqual(energyBefore, generator.buffer().getAmountAsLong(),
                 "the machine charged the player for the tick it dropped the run on");
             helper.assertTrue(generator.outputSlot().isEmpty(),
                 "the machine produced a mask after its design ingredient was taken away");
@@ -814,7 +814,7 @@ public final class MaskGameTests {
             generator.serverTick();
             helper.assertFalse(generator.runner().isRunning(),
                 "the machine kept running after its design ingredient was swapped for another item");
-            helper.assertValueEqual(energyBeforeSwap, (int) generator.buffer().getAmountAsLong(),
+            helper.assertValueEqual(energyBeforeSwap, generator.buffer().getAmountAsLong(),
                 "the machine charged the player for the tick it dropped the swapped run on");
             helper.assertTrue(generator.outputSlot().isEmpty(),
                 "the machine produced a mask from a swapped design ingredient");
@@ -1173,7 +1173,7 @@ public final class MaskGameTests {
                     "one tick through the block's ticker did not start the recipe");
                 helper.assertValueEqual(1, generator.runner().progress(),
                     "one tick through the block's ticker did not advance the recipe by one tick");
-                helper.assertValueEqual(energyBefore - cost, (int) generator.buffer().getAmountAsLong(),
+                helper.assertValueEqual(energyBefore - cost, generator.buffer().getAmountAsLong(),
                     "one tick through the block's ticker did not cost exactly one charge");
             });
         }
