@@ -189,7 +189,7 @@ public final class MachineRecipeRunner {
     }
 
     /**
-     * Advances the runner by one tick.
+     * One server tick.
      *
      * @param recipes candidate recipes for this machine
      * @param inputs the input slots, in slot order; consumed when a recipe completes
@@ -205,6 +205,23 @@ public final class MachineRecipeRunner {
                         EnergySource energy) {
         if (current != null) {
             return advance(inputs, output, outputWriter, energy);
+        }
+
+        // If we have restored progress, we must find the exact recipe it belongs to.
+        // Iterate all candidates and adopt the first that both matches the current inputs
+        // AND is the exact spec the progress was saved for. If none adopts, reset.
+        if (hasRestoredProgress()) {
+            boolean adopted = false;
+            for (MachineRecipe candidate : recipes) {
+                if (inputsMatch(candidate, inputs) && adoptRestored(candidate)) {
+                    adopted = true;
+                    break;
+                }
+            }
+            if (!adopted) {
+                reset();
+                return false;
+            }
         }
 
         MachineRecipe chosen = firstMatch(recipes, inputs);

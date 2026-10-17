@@ -384,22 +384,38 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
      * <p>Only a flag with progress below its tick count is trusted, the same rule the
      * runner uses: anything else can only have come from a hand-edited tag, and restarting
      * from tick one is the safe answer.</p>
+     *
+     * <p>Restores only when a definition is present and declares a valid {@code slice_ticks};
+     * otherwise the machine must fail closed and the run is dropped. Stale {@code paused}
+     * and {@code slicing} fields are cleared before applying any saved data, because this
+     * method can run on an existing block entity that was already mid-run. The synced
+     * {@code DATA_PROGRESS} and {@code DATA_TICKS} are published at the end so the menu
+     * sees the restored numbers immediately.</p>
      */
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+        // Clear any stale state from a previous run on this BE before restoring.
+        this.slicing = false;
+        this.paused = false;
+
         ValueInput state = input.childOrEmpty(STATE_KEY);
         boolean savedSlicing = state.getBooleanOr("slicing", false);
         int savedProgress = state.getIntOr("progress", 0);
         int savedTicks = state.getIntOr("ticks", 0);
 
-        if (savedSlicing && savedTicks > 0 && savedProgress > 0 && savedProgress < savedTicks) {
+        MachineDefinition definition = definition().orElse(null);
+        int sliceTicks = definition == null ? 0 : definition.param(SLICE_TICKS_PARAM).orElse(0);
+
+        if (savedSlicing && definition != null && sliceTicks > 0
+                && savedTicks > 0 && savedProgress > 0 && savedProgress < savedTicks) {
             this.slicing = true;
             this.progress = savedProgress;
             this.ticks = savedTicks;
         } else {
             resetSlice();
         }
+        syncSlicerData();
     }
 
     @Override
