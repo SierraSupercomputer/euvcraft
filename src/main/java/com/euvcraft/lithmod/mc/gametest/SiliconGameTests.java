@@ -1523,8 +1523,7 @@ public final class SiliconGameTests {
         slicer.setSlot(WaferSlicerBlockEntity.BOULE_SLOT, new ItemStack(ModItems.SILICON_BOULE.get(), 2));
         slicer.setSlot(WaferSlicerBlockEntity.FOUP_SLOT, FoupItems.emptyFoup(ModItems.FOUP_MK1.get()));
         slicer.setStoredEnergy(slicer.energyPerTick() * (slicer.sliceTicks() + 2));
-        long slicerEnergyBefore = slicer.buffer().getAmountAsLong();
-        helper.assertTrue(slicerEnergyBefore > 0,
+        helper.assertTrue(slicer.buffer().getAmountAsLong() > 0,
             "the slicer was not charged, so the removed definition has nothing to refuse");
 
         // Run the slicer part-way so it has progress to save.
@@ -1540,6 +1539,11 @@ public final class SiliconGameTests {
             net.minecraft.util.ProblemReporter.DISCARDING, helper.getLevel().registryAccess());
         slicer.saveWithId(slicerOutput);
         slicerTag = slicerOutput.buildResult();
+
+        // Capture the baseline AFTER the paid setup ticks and the snapshot, so it equals the
+        // FE actually stored in the saved tag; comparing the earlier pre-spend charge against
+        // the snapshot would treat the setup cost as lost production FE.
+        long slicerEnergyBefore = slicer.buffer().getAmountAsLong();
 
         withoutDefinitions(List.of(CrystalPullerBlockEntity.MACHINE_ID,
                 WaferSlicerBlockEntity.MACHINE_ID), () -> {
@@ -1838,8 +1842,8 @@ public final class SiliconGameTests {
         SingleRecipeInput sand = new SingleRecipeInput(new ItemStack(Items.SAND));
         ItemStack smelted = ItemStack.EMPTY;
         ItemStack blasted = ItemStack.EMPTY;
-        boolean smeltingCooking = false;
-        boolean blastingCooking = false;
+        int smeltingCooking = 0;
+        int blastingCooking = 0;
 
         Optional<RecipeHolder<SmeltingRecipe>> smelting =
             manager.getRecipeFor(RecipeType.SMELTING, sand, level, recipeKey("silicon_from_smelting"));
@@ -1854,9 +1858,9 @@ public final class SiliconGameTests {
             helper.assertTrue(smelted.getItem() == ModItems.SILICON.get(),
                 "smelting sand produced " + smelted.getItem() + " rather than silicon");
             if (smelting.get().value() instanceof AbstractCookingRecipe cooking) {
-                smeltingCooking = cooking.cookingTime() > 0;
+                smeltingCooking = cooking.cookingTime();
             }
-            helper.assertTrue(smeltingCooking,
+            helper.assertTrue(smeltingCooking > 0,
                 "the smelting recipe did not load a positive cooking time");
         }
 
@@ -1873,9 +1877,9 @@ public final class SiliconGameTests {
             helper.assertTrue(blasted.getItem() == ModItems.SILICON.get(),
                 "blasting sand produced " + blasted.getItem() + " rather than silicon");
             if (blasting.get().value() instanceof AbstractCookingRecipe cooking) {
-                blastingCooking = cooking.cookingTime() > 0;
+                blastingCooking = cooking.cookingTime();
             }
-            helper.assertTrue(blastingCooking,
+            helper.assertTrue(blastingCooking > 0,
                 "the blasting recipe did not load a positive cooking time");
         }
 
