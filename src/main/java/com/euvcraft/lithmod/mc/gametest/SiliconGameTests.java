@@ -476,6 +476,32 @@ public final class SiliconGameTests {
                 "an uncharged slicer produced output");
             helper.assertFalse(starved.slot(WaferSlicerBlockEntity.BOULE_SLOT).isEmpty(),
                 "an uncharged slicer consumed a boule");
+
+            // Exactly perTick-1 FE is a partial buffer: the draw is full-or-zero, so the
+            // FE stay, the run waits and nothing is produced.
+            int starvedPerTick = starved.energyPerTick();
+            helper.assertTrue(starvedPerTick > 0,
+                "the starved slicer has no per-tick cost to probe with");
+            starved.setStoredEnergy(starvedPerTick - 1);
+            starved.serverTick();
+            helper.assertTrue(starved.isPaused(),
+                "perTick-1 FE did not pause the slicer");
+            helper.assertValueEqual(starvedPerTick - 1L, starved.buffer().getAmountAsLong(),
+                "the slicer spent FE it could not pay a full tick with");
+            helper.assertValueEqual(0, starved.sliceProgress(),
+                "perTick-1 FE advanced the slice");
+            helper.assertTrue(starved.outputSlot().isEmpty(),
+                "perTick-1 FE produced output");
+
+            // One FE more is a full tick: one progress tick and exactly perTick spent.
+            starved.setStoredEnergy(starvedPerTick);
+            starved.serverTick();
+            helper.assertValueEqual(1, starved.sliceProgress(),
+                "a full perTick draw did not advance the run by one tick");
+            helper.assertValueEqual(0L, starved.buffer().getAmountAsLong(),
+                "the full-tick draw did not spend exactly energy_per_tick");
+            helper.assertFalse(starved.isPaused(),
+                "the slicer stayed paused with a full tick of FE available");
         }
 
         helper.succeed();
@@ -858,6 +884,34 @@ public final class SiliconGameTests {
                 "the puller produced a boule from a swapped input");
             helper.assertValueEqual(3, removal.slot(CrystalPullerBlockEntity.INPUT_SLOT).getCount(),
                 "the puller consumed the boule that was swapped in");
+
+            // Exactly cost-1 FE is a partial buffer: the draw is full-or-zero, so the FE
+            // stay, the run pauses at progress 0 and nothing is produced.
+            removal.setSlot(CrystalPullerBlockEntity.INPUT_SLOT,
+                new ItemStack(ModItems.SILICON.get(), 8));
+            removal.setStoredEnergy(cost - 1);
+            removal.serverTick();
+            helper.assertTrue(removal.runner().isRunning(),
+                "cost-1 FE did not even start a run");
+            helper.assertTrue(removal.runner().isPaused(), "cost-1 FE did not pause the puller");
+            helper.assertValueEqual(0, removal.runner().progress(),
+                "cost-1 FE advanced the puller");
+            helper.assertValueEqual(cost - 1L, removal.buffer().getAmountAsLong(),
+                "the puller spent FE it could not pay a full tick with");
+            helper.assertTrue(removal.outputSlot().isEmpty(),
+                "cost-1 FE produced output");
+
+            // One FE more is a full tick: one progress tick and exactly cost spent.
+            removal.setStoredEnergy(cost);
+            removal.serverTick();
+            helper.assertValueEqual(1, removal.runner().progress(),
+                "a full cost draw did not advance the run by one tick");
+            helper.assertValueEqual(0L, removal.buffer().getAmountAsLong(),
+                "the full-tick draw did not spend exactly the per-tick cost");
+            helper.assertFalse(removal.runner().isPaused(),
+                "the puller stayed paused with a full tick of FE available");
+            helper.assertTrue(removal.outputSlot().isEmpty(),
+                "one progress tick produced output");
         }
         LOGGER.info("[M1-04] crystal_puller_rechecks_its_inputs: 5 silicon -> 1 boule with 1 left, "
             + "3 silicon never start, removal and swap mid-run drop the run");
@@ -1307,8 +1361,14 @@ public final class SiliconGameTests {
             "a buffer one FE below its new capacity did not take that FE");
 
         // And from empty, one insert takes the new limit and repeated inserts stop at the
-        // new capacity.
+        // new capacity. Emptying the buffer can no longer happen through an over-large
+        // draw: full-or-zero aborts one that the buffer cannot cover entirely, so the
+        // exact stored amount is what drains it.
         puller.energySource().draw(Integer.MAX_VALUE);
+        helper.assertValueEqual((long) smaller.energyCapacity(),
+            puller.buffer().getAmountAsLong(),
+            "an over-large draw must abort rather than partially drain the buffer");
+        puller.energySource().draw((int) puller.buffer().getAmountAsLong());
         helper.assertValueEqual(0L, puller.buffer().getAmountAsLong(),
             "the buffer could not be emptied through its own draw");
         helper.assertValueEqual(smaller.maxReceive(), insert(puller.energy(), Integer.MAX_VALUE),
@@ -1427,16 +1487,19 @@ public final class SiliconGameTests {
             + "published a capacity of 0");
 
         // The definition is back, so the machine works again on the FE it kept. One tick
-        // re-applies it to the buffer; that tick has no energy to draw and so does nothing.
-        puller.serverTick();
+        // re-applies it to the buffer and, with a valid input and stored FE, also restarts
+        // the run: that tick is a legitimate one and spends exactly perTick.
         helper.assertTrue(puller.definition().isPresent(),
             "the definition registry was not restored after the swap");
+        puller.serverTick();
         helper.assertValueEqual(capacityBefore, puller.buffer().getCapacityAsInt(),
             "the restored definition did not restore the buffer capacity");
         helper.assertValueEqual(capacityBefore, puller.data().get(FabMachineBlockEntity.DATA_CAPACITY),
             "the restored definition did not restore the capacity the menu shows");
-        helper.assertValueEqual(energyBefore, puller.buffer().getAmountAsLong(),
-            "the machine could not even spend one tick of the FE it kept");
+        helper.assertValueEqual(energyBefore - perTick, puller.buffer().getAmountAsLong(),
+            "the first tick on the restored definition did not spend exactly perTick");
+        helper.assertValueEqual(1, puller.runner().progress(),
+            "the first tick on the restored definition did not restart a run");
         puller.setStoredEnergy(perTick * (recipe.ticks() + 2));
         runPuller(puller, recipe.ticks() + 5);
         helper.assertFalse(puller.outputSlot().isEmpty(),

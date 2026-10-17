@@ -322,6 +322,11 @@ public final class MachineRecipeRunner {
             reset();
             return;
         }
+        // Loading can run on a block entity that is already mid-run, not only a fresh
+        // constructor: drop any live run first, so the saved numbers below are the whole
+        // of the restored state rather than a patch over it.
+        this.current = null;
+        this.paused = false;
         this.progress = savedProgress;
         this.ticks = savedTicks;
         this.runningEnergyPerTick = Math.max(0, input.getIntOr("energy_per_tick", this.machineEnergyPerTick));

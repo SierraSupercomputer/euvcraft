@@ -281,7 +281,14 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
         this.data.set(DATA_CAPACITY, this.buffer.getCapacityAsInt());
     }
 
-    /** The machine's internal energy draw, as the runner sees it. */
+    /**
+     * The machine's internal energy draw, as the runner sees it.
+     *
+     * <p>Full-or-zero on purpose: a partial extraction is never committed, so the
+     * transaction aborts on close and rolls it back, and the draw returns 0. Without
+     * this, a buffer holding less than one tick's cost would be drained for no progress
+     * — the runner pauses correctly, but the FE would already be gone.</p>
+     */
     public final EnergySource energySource() {
         return amount -> {
             if (amount <= 0) {
@@ -289,6 +296,9 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
             }
             try (Transaction transaction = Transaction.openRoot()) {
                 int drawn = this.buffer.extract(amount, transaction);
+                if (drawn != amount) {
+                    return 0;
+                }
                 transaction.commit();
                 return drawn;
             }

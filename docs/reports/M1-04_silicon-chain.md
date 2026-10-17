@@ -11,6 +11,49 @@
 - `git worktree list`, `git branch --show-current`, `git status --short`: not run (no shell).
   The coordinator must take them before and after committing.
 
+## 0. Third repair pass (this pass): full-or-zero internal energy draw
+
+One small correctness repair fed back from coordinator source inspection after checkpoint
+`152ddf4` (which compiled clean in 11s, main + test). Nothing else was touched.
+
+1. **Full-or-zero internal draw** (`FabMachineBlockEntity.energySource`): the internal
+   adapter used to extract and commit unconditionally, so a buffer holding
+   `energy_per_tick - 1` FE drained those FE with no work done — the runner and the slicer
+   paused correctly, but the partial spend was already gone. The draw now commits only when
+   the extraction equals the full requested positive amount; otherwise it returns 0 and the
+   transaction aborts on close, rolling the partial extraction back. Zero-cost config stays
+   coherent (`amount <= 0` returns 0 as before); external extraction stays forbidden through
+   `WithdrawNothing`; stored-energy persistence and definition-resize behavior are unchanged.
+2. **`MachineRecipeRunner.loadState` clears a previous run first**: `loadAdditional` can run
+   on a block entity that is already mid-run, not only a fresh constructor, and the valid
+   restore used to overwrite `progress`/`ticks` while a stale `current` survived. The valid
+   branch now nulls `current` and `paused` before restoring the saved numbers; the frozen
+   per-tick cost and the exact-spec adoption are unchanged.
+3. **Test-extension and expectation fixes in `SiliconGameTests`** (no new test functions):
+   `wafer_slicer_pauses_without_energy` and `crystal_puller_rechecks_its_inputs` now put in
+   exactly `perTick - 1` FE and tick once (unchanged FE, zero progress, no output, paused),
+   then add exactly 1 FE and tick once (one progress tick, exactly `perTick` spent);
+   `machinesFailClosedWithoutDefinition` no longer claims the restored-registry tick does
+   nothing — with valid inputs and stored FE it legitimately restarts the run, so the
+   expectation is now `energyBefore - perTick` with progress 1 (the missing-definition
+   no-progress/no-spend assertions are untouched); and the drain in
+   `silicon_energy_follows_machine_definitions` now asserts an over-large draw aborts
+   (FE kept) and drains with the exact stored amount, because `draw(MAX_VALUE)` can no
+   longer partially drain. `docs/testing.md` rows and the pause-semantics note follow.
+
+| path | change |
+|---|---|
+| `src/main/java/com/euvcraft/lithmod/mc/machine/FabMachineBlockEntity.java` | `energySource()` commits only a full-amount extraction; partial draw is rolled back and returns 0 |
+| `src/main/java/com/euvcraft/lithmod/mc/recipe/MachineRecipeRunner.java` | `loadState` valid branch clears `current` and `paused` before restoring the saved numbers |
+| `src/main/java/com/euvcraft/lithmod/mc/gametest/SiliconGameTests.java` | perTick-1/+1 FE probes in the slicer pause and puller recheck cases; fail-closed restored-tick expectation (`energyBefore - perTick`, progress 1); over-large draw refuses and exact stored amount drains in the definitions test |
+| `docs/testing.md` | three silicon table rows and the pause-semantics note updated |
+| `docs/reports/M1-04_silicon-chain.md` | this section |
+
+Verification pending until the coordinator supplies real results: `checkCoreImports`,
+`test`, `runGameTestServer` and any negative-control runs on this tree are **pending**, as
+marked in section 3. Nothing in this pass was compiled or run by the reporting agent.
+
+
 ## 1. Summary
 
 Second repair pass, scoped to four things the coordinator fed back.
@@ -76,7 +119,9 @@ command and started no JVM):
   `wafer_slicer_refuses_a_used_foup` failure was already fixed and did not recur.
   **The full runtime run therefore did not pass**, and nothing here claims it did.
 
-Still pending, all of it the coordinator's:
+Still pending, all of it the coordinator's (and it applies to the current tree — checkpoint
+`152ddf4` plus the section-0 repair — where nothing has been compiled or run yet, and to any
+negative-control runs on the new full-or-zero and probe assertions):
 
 ```powershell
 .\gradlew.bat checkCoreImports --offline   # on the new tree
