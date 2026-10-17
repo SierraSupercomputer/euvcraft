@@ -4,6 +4,9 @@ import com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity;
 import com.euvcraft.lithmod.mc.machine.FabMachineMenu;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.block.state.BlockState;
@@ -48,6 +51,20 @@ public class TestMachineBlockEntity extends FabMachineBlockEntity {
 
     /** Storage slot index: holds items but is never part of a recipe. */
     public static final int STORAGE_SLOT = 2;
+
+    private SimpleContainer extraInventory = new SimpleContainer(0);
+
+    /** Test fixture for the real subclass extension point, kept out of the base machine. */
+    public void setExtraInventoryForTest(ItemStack... stacks) {
+        extraInventory = new SimpleContainer(stacks);
+    }
+
+    @Override
+    protected void dropExtraContents(Level level, BlockPos pos) {
+        super.dropExtraContents(level, pos);
+        dropContainer(level, pos, extraInventory);
+        extraInventory.clearContent();
+    }
 
     @Override
     protected String machineId() {

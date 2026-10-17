@@ -352,6 +352,17 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
         }
     }
 
+    /** Container exists for menus and removal drops, never for hopper automation. */
+    @Override
+    public boolean canPlaceItem(int index, ItemStack stack) {
+        return false;
+    }
+
+    @Override
+    public boolean canTakeItem(Container into, int index, ItemStack stack) {
+        return false;
+    }
+
     @Override
     public int getMaxStackSize() {
         return 64;
@@ -375,14 +386,9 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
      * block entity rather than the block means it runs for any removal path, including an
      * explosion or a piston, without the block having to know.</p>
      *
-     * <p>The base implementation handles the test-only second inventory so the hook has
-     * coverage; a real subclass calls {@code super} and adds its own.</p>
      */
     protected void dropExtraContents(@Nullable Level level, BlockPos pos) {
-        if (this.extraInventory != null && !this.extraInventory.isEmpty()) {
-            dropContainer(level, pos, new ListContainer(this.extraInventory));
-            this.extraInventory.clear();
-        }
+        // Subclasses owning extra containers override this hook.
     }
 
     /** Drops one extra container's contents at {@code pos}; the helper for subclasses. */
@@ -398,80 +404,6 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
         // Drops this machine's item slots because it is a Container. Never drops energy.
         super.preRemoveSideEffects(pos, state);
         dropExtraContents(this.level, pos);
-    }
-
-    /** A second inventory used only to exercise {@link #dropExtraContents} from a test. */
-    private @Nullable NonNullList<ItemStack> extraInventory;
-
-    /**
-     * Gives this machine a second inventory and opts into {@link #dropExtraContents}.
-     *
-     * <p>Exists so the extension point has a test rather than only documentation. A real
-     * subclass that owns extra storage overrides {@code dropExtraContents} and drops its
-     * own containers; the test machine does the same thing with a fixed pair of stacks.</p>
-     */
-    public final void setExtraInventoryForTest(ItemStack... stacks) {
-        this.extraInventory = NonNullList.withSize(stacks.length, ItemStack.EMPTY);
-        for (int index = 0; index < stacks.length; index++) {
-            this.extraInventory.set(index, stacks[index]);
-        }
-    }
-
-    /** A minimal {@link Container} over a fixed list, for the extension point only. */
-    private static final class ListContainer implements Container {
-
-        private final NonNullList<ItemStack> list;
-
-        ListContainer(NonNullList<ItemStack> list) {
-            this.list = list;
-        }
-
-        @Override
-        public int getContainerSize() {
-            return this.list.size();
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return this.list.stream().allMatch(ItemStack::isEmpty);
-        }
-
-        @Override
-        public ItemStack getItem(int index) {
-            return this.list.get(index);
-        }
-
-        @Override
-        public ItemStack removeItem(int index, int count) {
-            ItemStack stack = this.list.get(index).split(count);
-            return stack;
-        }
-
-        @Override
-        public ItemStack removeItemNoUpdate(int index) {
-            ItemStack stack = this.list.get(index);
-            this.list.set(index, ItemStack.EMPTY);
-            return stack;
-        }
-
-        @Override
-        public void setItem(int index, ItemStack stack) {
-            this.list.set(index, stack);
-        }
-
-        @Override
-        public void setChanged() {
-        }
-
-        @Override
-        public boolean stillValid(Player player) {
-            return true;
-        }
-
-        @Override
-        public void clearContent() {
-            this.list.clear();
-        }
     }
 
     @Override

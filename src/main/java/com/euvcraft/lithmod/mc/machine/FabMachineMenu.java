@@ -1,6 +1,7 @@
 package com.euvcraft.lithmod.mc.machine;
 
 import net.minecraft.world.Container;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -45,25 +46,22 @@ public abstract class FabMachineMenu extends AbstractContainerMenu {
      * a {@code Container} itself, and having the menu go through the same object keeps one
      * route to the inventory rather than two.</p>
      */
-    private final @Nullable Container machineSlots;
+    private final Container machineSlots;
     /** Counted as machine slots are added; see {@link #addMachineSlot(int, int, int, boolean)}. */
     private int machineSlotCount;
 
     protected FabMachineMenu(MenuType<?> type, int containerId, Inventory playerInventory,
-                             @Nullable FabMachineBlockEntity blockEntity) {
+                             @Nullable FabMachineBlockEntity blockEntity, int inventorySize) {
         super(type, containerId);
         this.blockEntity = blockEntity;
-        // On the client there is no block entity, so the synced values are served from a
-        // local dummy and the machine slots are not added at all.
+        // The client needs the same machine slots as the server for correct packet indices.
         this.data = blockEntity == null ? new SimpleContainerData(FabMachineBlockEntity.DATA_COUNT)
             : blockEntity.data();
-        this.machineSlots = blockEntity;
+        this.machineSlots = blockEntity == null ? new SimpleContainer(inventorySize) : blockEntity;
         this.machineSlotCount = 0;
 
         addDataSlots(this.data);
-        if (this.machineSlots != null) {
-            addMachineSlots();
-        }
+        addMachineSlots();
         addPlayerSlots(playerInventory);
     }
 
@@ -94,7 +92,7 @@ public abstract class FabMachineMenu extends AbstractContainerMenu {
         addSlot(new Slot(this.machineSlots, index, x, y) {
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return mayPlace && index < blockEntity.inputSlotCount();
+                return mayPlace && (blockEntity == null || index < blockEntity.inputSlotCount());
             }
         });
         this.machineSlotCount++;

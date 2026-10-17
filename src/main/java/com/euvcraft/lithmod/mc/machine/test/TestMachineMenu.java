@@ -14,7 +14,7 @@ public class TestMachineMenu extends FabMachineMenu {
 
     /** Server-side constructor, reached through {@code BlockEntity.createMenu}. */
     public TestMachineMenu(int containerId, Inventory playerInventory, FabMachineBlockEntity machine) {
-        super(ModMenus.TEST_MACHINE.get(), containerId, playerInventory, machine);
+        super(ModMenus.TEST_MACHINE.get(), containerId, playerInventory, machine, TestMachineBlockEntity.STORAGE_SLOT + 1);
     }
 
     /**
@@ -22,7 +22,7 @@ public class TestMachineMenu extends FabMachineMenu {
      * {@code IMenuTypeExtension.create} installed.
      */
     public TestMachineMenu(int containerId, Inventory playerInventory, RegistryFriendlyByteBuf buffer) {
-        super(ModMenus.TEST_MACHINE.get(), containerId, playerInventory, null);
+        super(ModMenus.TEST_MACHINE.get(), containerId, playerInventory, null, TestMachineBlockEntity.STORAGE_SLOT + 1);
     }
 
     @Override

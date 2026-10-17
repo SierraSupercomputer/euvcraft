@@ -451,7 +451,7 @@ public final class MachineDropGameTests {
 
         // Stand in for the Process Cell controller: a machine that also owns a second
         // inventory and opts into the extension point.
-        machine.setExtraInventoryForTest(new ItemStack(Items.EMERALD, 9), new ItemStack(Items.DIAMOND, 2));
+        ((TestMachineBlockEntity) machine).setExtraInventoryForTest(new ItemStack(Items.EMERALD, 9), new ItemStack(Items.DIAMOND, 2));
         machine.setSlot(TestMachineBlockEntity.STORAGE_SLOT, new ItemStack(Items.IRON_INGOT, 4));
 
         helper.assertValueEqual(1, countNonEmptySlots(machine),

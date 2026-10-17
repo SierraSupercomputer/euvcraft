@@ -70,6 +70,7 @@ public final class MachineGameTests {
     private static final String RECIPE_FROM_DATA = "machine_recipe_from_data";
     private static final String MENU_OPENS = "machine_menu_opens_server_side";
     private static final String FOUP_SLOT_REJECTS = "machine_foup_slot_rejects_plain_items";
+    private static final String HOPPERS_BLOCKED = "machine_rejects_hopper_transfers";
 
     private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS =
         DeferredRegister.create(net.minecraft.core.registries.Registries.TEST_FUNCTION, "lithmod");
@@ -81,6 +82,7 @@ public final class MachineGameTests {
 
     static {
         FUNCTIONS.register(ENERGY_CAPABILITY, () -> MachineGameTests::energyCapability);
+        FUNCTIONS.register(HOPPERS_BLOCKED, () -> MachineGameTests::hoppersBlocked);
         FUNCTIONS.register(RUNS_A_RECIPE, () -> MachineGameTests::runsARecipe);
         FUNCTIONS.register(PAUSES_WITHOUT_ENERGY, () -> MachineGameTests::pausesWithoutEnergy);
         FUNCTIONS.register(SAVE_LOAD_ROUND_TRIP, () -> MachineGameTests::saveLoadRoundTrip);
@@ -105,6 +107,7 @@ public final class MachineGameTests {
             200, 0, true, Rotation.NONE, false, 3, 3, false, 0);
 
         register(event, data, ENERGY_CAPABILITY);
+        register(event, data, HOPPERS_BLOCKED);
         register(event, data, RUNS_A_RECIPE);
         register(event, data, PAUSES_WITHOUT_ENERGY);
         register(event, data, SAVE_LOAD_ROUND_TRIP);
@@ -606,6 +609,12 @@ public final class MachineGameTests {
         helper.assertTrue(menu.isServerSide(), "the block entity menu is not server side");
         // 3 machine slots + 27 inventory + 9 hotbar.
         helper.assertValueEqual(39, menu.slots.size(), "the menu has an unexpected slot count");
+        helper.assertValueEqual(menu.slots.size(), fromFactory.slots.size(),
+            "client and server menu slot layouts disagree");
+        for (int index = 0; index < menu.slots.size(); index++) {
+            helper.assertValueEqual(menu.slots.get(index).index, fromFactory.slots.get(index).index,
+                "client/server slot index differs at " + index);
+        }
         helper.assertTrue(menu.energyCapacity() > 0, "the menu reports no energy capacity");
         helper.assertValueEqual(0, menu.progress(), "a fresh menu reports progress");
 
@@ -625,6 +634,30 @@ public final class MachineGameTests {
     // ------------------------------------------------------------------
     // FoupSlot validation, including shift-click
     // ------------------------------------------------------------------
+
+    private static void hoppersBlocked(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        place(helper);
+        FabMachineBlockEntity machine = blockEntity(level, helper.absolutePos(MACHINE));
+        helper.assertTrue(machine != null, "machine missing");
+        for (Direction side : Direction.values()) {
+            ItemStack remainder = net.minecraft.world.level.block.entity.HopperBlockEntity.addItem(
+                null, machine, new ItemStack(Items.IRON_INGOT), side);
+            helper.assertValueEqual(1, remainder.getCount(), "hopper inserted on " + side);
+            helper.assertTrue(machine.isEmpty(), "hopper changed machine inventory on " + side);
+        }
+        // Manual inventory access must still work while automation is denied.
+        machine.setSlot(TestMachineBlockEntity.STORAGE_SLOT, new ItemStack(Items.IRON_INGOT, 3));
+        BlockPos hopperPos = helper.absolutePos(MACHINE.below());
+        level.setBlock(hopperPos, net.minecraft.world.level.block.Blocks.HOPPER.defaultBlockState(), 3);
+        var hopper = (net.minecraft.world.level.block.entity.HopperBlockEntity) level.getBlockEntity(hopperPos);
+        helper.assertFalse(net.minecraft.world.level.block.entity.HopperBlockEntity.suckInItems(level, hopper),
+            "hopper extracted from a hand-fed machine");
+        helper.assertTrue(hopper.isEmpty(), "hopper received a machine item");
+        helper.assertValueEqual(3, machine.slot(TestMachineBlockEntity.STORAGE_SLOT).getCount(),
+            "blocked extraction changed inventory");
+        helper.succeed();
+    }
 
     private static void foupSlotRejectsPlainItems(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
