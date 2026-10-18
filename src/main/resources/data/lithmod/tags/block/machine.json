@@ -6,6 +6,7 @@
     "lithmod:pattern_generator",
     "lithmod:process_cell_controller",
     "lithmod:process_cell_casing",
-    "lithmod:process_cell_power_port"
+    "lithmod:process_cell_power_port",
+    "lithmod:test_package"
   ]
 }
