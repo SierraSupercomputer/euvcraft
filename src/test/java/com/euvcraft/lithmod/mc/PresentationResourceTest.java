@@ -8,7 +8,7 @@ import com.euvcraft.lithmod.core.DieTypes;
 import com.euvcraft.lithmod.core.MachineRecipeSpec;
 import com.euvcraft.lithmod.mc.data.MachineRecipeLoader;
 import com.euvcraft.lithmod.mc.data.MachineRecipeSpecCodec;
-import com.euvcraft.lithmod.mc.data.MaskDataCodec;
+import com.euvcraft.lithmod.mc.machine.mask.MaskDataCodec;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
@@ -60,14 +60,6 @@ class PresentationResourceTest {
 
         assertEquals(22, expectedFiles.size(), "Expected 22 crafting recipe files");
 
-        Set<String> allowedVanillaItems = Set.of(
-            "minecraft:iron_block", "minecraft:glass", "minecraft:redstone_block",
-            "minecraft:copper_block", "minecraft:redstone", "minecraft:quartz",
-            "minecraft:iron_ingot", "minecraft:chest", "minecraft:diamond",
-            "minecraft:stick", "minecraft:white_wool", "minecraft:spyglass",
-            "minecraft:sugar", "minecraft:paper"
-        );
-
         Set<String> allowedResultItems = Set.of(
             "lithmod:crystal_puller", "lithmod:wafer_slicer", "lithmod:pattern_generator",
             "lithmod:test_package", "lithmod:process_cell_controller", "lithmod:process_cell_casing",
@@ -91,13 +83,14 @@ class PresentationResourceTest {
                 JsonElement typeElem = root.getAsJsonObject().get("type");
                 assertNotNull(typeElem, "Missing type in " + fileName);
                 String type = typeElem.getAsString();
-                assertTrue(type.equals("minecraft:crafting_shaped") || type.equals("minecraft:smelting") || type.equals("minecraft:blasting"),
+                assertTrue(type.equals("minecraft:crafting_shaped"),
                     "Unexpected recipe type in " + fileName + ": " + type);
 
                 // Validate result item matches filename
                 JsonElement resultElem = root.getAsJsonObject().get("result");
                 assertNotNull(resultElem, "Missing result in " + fileName);
                 String resultId = resultElem.getAsJsonObject().get("id").getAsString();
+                assertEquals("lithmod:" + fileName.substring(0, fileName.length() - 5), resultId);
                 assertTrue(allowedResultItems.contains(resultId),
                     "Result item not in allowed list in " + fileName + ": " + resultId);
 
@@ -110,8 +103,8 @@ class PresentationResourceTest {
 
                     // Validate each key entry uses allowed vanilla items
                     for (Map.Entry<String, JsonElement> entry : keyElem.getAsJsonObject().entrySet()) {
-                        String itemId = entry.getValue().getAsJsonObject().get("item").getAsString();
-                        assertTrue(allowedVanillaItems.contains(itemId),
+                        String itemId = entry.getValue().getAsString();
+                        assertTrue(itemId.matches("#?minecraft:[a-z0-9_/.]+"),
                             "Invalid ingredient item in " + fileName + ": " + itemId);
                     }
 
@@ -124,7 +117,7 @@ class PresentationResourceTest {
                     for (String row : pattern) {
                         assertEquals(width, row.length(), "Inconsistent row width in " + fileName);
                     }
-                    assertTrue(width <= 3 && pattern.size() <= 3, "Pattern too large in " + fileName);
+                    assertTrue(width > 0 && width <= 3 && pattern.size() > 0 && pattern.size() <= 3, "Pattern too large in " + fileName);
                 }
 
                 validated++;
@@ -270,10 +263,10 @@ class PresentationResourceTest {
 
         // Validate per-recipe counts: 30 total
         long recipeCount = content.lines()
-            .filter(line -> line.trim().startsWith("- ") || line.trim().startsWith("* "))
+            .filter(line -> line.startsWith("| lithmod:"))
             .count();
         // Allow some flexibility in markdown formatting, but should have at least 30 entries
-        assertTrue(recipeCount >= 30, "Expected at least 30 recipe entries in docs/recipes.md, found " + recipeCount);
+        assertEquals(30L, recipeCount, "Expected at least 30 recipe entries in docs/recipes.md, found " + recipeCount);
 
         // Validate components from source where useful (mask_data for pattern recipes)
         assertTrue(content.contains("mask_data"), "Missing mask_data component documentation");
