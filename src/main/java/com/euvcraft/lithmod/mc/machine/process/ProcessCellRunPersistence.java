@@ -1,6 +1,9 @@
 package com.euvcraft.lithmod.mc.machine.process;
 
 import com.euvcraft.lithmod.core.DefaultStatRules;
+import com.euvcraft.lithmod.core.FoupContents;
+import com.mojang.serialization.DynamicOps;
+import com.mojang.datafixers.util.Pair;
 import com.euvcraft.lithmod.core.DieTypes;
 import com.euvcraft.lithmod.core.FabSettings;
 import com.euvcraft.lithmod.core.GenerationMatrix;
@@ -18,8 +21,8 @@ import com.euvcraft.lithmod.core.TierRegistry;
 import com.euvcraft.lithmod.mc.ComponentCatalog;
 import com.euvcraft.lithmod.mc.FoupItems;
 import com.euvcraft.lithmod.mc.LineLoadoutReader;
-import com.euvcraft.lithmod.mc.ModDataComponents;
-import com.euvcraft.lithmod.mc.ModItems;
+import com.euvcraft.lithmod.mc.registry.ModDataComponents;
+import com.euvcraft.lithmod.mc.registry.ModItems;
 import com.euvcraft.lithmod.mc.ResistCatalog;
 import com.euvcraft.lithmod.mc.data.TierCodec;
 import com.mojang.serialization.Codec;
@@ -135,7 +138,7 @@ public final class ProcessCellRunPersistence {
 
             // Validate selected tier equals corresponding saved tier
             Optional<Tier> savedTierOpt = tierRegistry.byIndex(tier.index());
-            if (savedTierOpt.isEmpty() || !savedTierOpt.get().id().equals(tier.id())) {
+            if (savedTierOpt.isEmpty() || !savedTierOpt.get().equals(tier)) {
                 throw new IllegalArgumentException("selected tier does not match saved tier at index " + tier.index());
             }
 
@@ -182,7 +185,7 @@ public final class ProcessCellRunPersistence {
             if (maskData.tierIndex() != tier.index()) {
                 throw new IllegalArgumentException("mask tierIndex mismatch: contract=" + tier.index() + ", mask=" + maskData.tierIndex());
             }
-            if (maskData.usesRemaining() <= 0) {
+            if (mask.getCount() != 1 || maskData.usesRemaining() != usesRemaining) {
                 throw new IllegalArgumentException("mask usesRemaining must be positive, got " + maskData.usesRemaining());
             }
             mask = mask.copy(); // defensive copy singleton
@@ -194,7 +197,7 @@ public final class ProcessCellRunPersistence {
             List<ItemStack> compCopy = new java.util.ArrayList<>(5);
             for (int i = 0; i < 5; i++) {
                 ItemStack stack = components.get(i);
-                if (stack == null || stack.isEmpty()) {
+                if (stack == null || stack.isEmpty() || stack.getCount() != 1) {
                     throw new IllegalArgumentException("component " + i + " (" + COMPONENT_KINDS.get(i) + ") must not be empty");
                 }
                 Optional<String> kind = ComponentCatalog.kindOf(stack);
@@ -210,7 +213,7 @@ public final class ProcessCellRunPersistence {
 
             // Validate resistTemplate: actual resist item, tier >= contract tier (matching or better)
             int resistTier = ResistCatalog.tierOf(resistTemplate);
-            if (resistTier < 1 || resistTier > 8) {
+            if (resistTemplate.getCount() != 1 || resistTier < 1 || resistTier > 8) {
                 throw new IllegalArgumentException("resistTemplate must be a valid resist item with tier in [1, 8], got " + resistTier);
             }
             if (resistTier < tier.index()) {
@@ -219,10 +222,10 @@ public final class ProcessCellRunPersistence {
             resistTemplate = resistTemplate.copy(); // defensive copy singleton
 
             // Validate foupTemplate: actual FOUP item, FOUP_CONTENTS removed by caller
-            if (!FoupItems.isFoup(foupTemplate)) {
+            if (foupTemplate.getCount() != 1 || !FoupItems.isFoup(foupTemplate)) {
                 throw new IllegalArgumentException("foupTemplate must be a FOUP item");
             }
-            if (FoupItems.contentsOf(foupTemplate) != null) {
+            if (foupTemplate.has(ModDataComponents.FOUP_CONTENTS.get())) {
                 throw new IllegalArgumentException("foupTemplate must not carry FOUP_CONTENTS (caller must strip it)");
             }
             foupTemplate = foupTemplate.copy(); // defensive copy singleton
@@ -264,7 +267,7 @@ public final class ProcessCellRunPersistence {
             if (computedStats.resolutionNm() != lineStats.resolutionNm()
                     || computedStats.overlayNm() != lineStats.overlayNm()
                     || computedStats.throughputWph() != lineStats.throughputWph()
-                    || Math.abs(computedStats.defectFactor() - lineStats.defectFactor()) > 1e-9
+                    || Double.compare(computedStats.defectFactor(), lineStats.defectFactor()) != 0
                     || computedStats.resolutionTier() != lineStats.resolutionTier()
                     || computedStats.overlayTier() != lineStats.overlayTier()
                     || computedStats.throughputTier() != lineStats.throughputTier()) {
@@ -335,174 +338,99 @@ public final class ProcessCellRunPersistence {
             );
         }
 
-        /**
-         * Raw unvalidated fields record for codec decoding.
-         */
-        private record RawContract(
-                Tier tier,
-                String dieType,
-                int usesRemaining,
-                int layerTicks,
-                int resistPerLayer,
-                int energyPerTick,
-                LineStats lineStats,
-                List<Tier> tiers,
-                Map<String, List<Integer>> requiredGenerations,
-                ItemStack mask,
-                List<ItemStack> components,
-                ItemStack resistTemplate,
-                UUID lotId,
-                ItemStack foupTemplate
-        ) {
-        }
-
-        /**
-         * Codec for Contract, wrapping validated constructor in flatXmap.
-         */
-        public static final Codec<Contract> CODEC = Codec.of(
-                RecordCodecBuilder.create(instance -> instance.group(
-                        TierCodec.CODEC.fieldOf("tier").forGetter(RawContract::tier),
-                        Codec.STRING.fieldOf("dieType").forGetter(RawContract::dieType),
-                        Codec.INT.fieldOf("usesRemaining").forGetter(RawContract::usesRemaining),
-                        Codec.INT.fieldOf("layerTicks").forGetter(RawContract::layerTicks),
-                        Codec.INT.fieldOf("resistPerLayer").forGetter(RawContract::resistPerLayer),
-                        Codec.INT.fieldOf("energyPerTick").forGetter(RawContract::energyPerTick),
-                        LineStats.CODEC.fieldOf("lineStats").forGetter(RawContract::lineStats),
-                        TierCodec.LIST_CODEC.fieldOf("tiers").forGetter(RawContract::tiers),
-                        Codec.unboundedMap(Codec.STRING, Codec.INT.listOf()).fieldOf("requiredGenerations").forGetter(RawContract::requiredGenerations),
-                        ItemStack.CODEC.fieldOf("mask").forGetter(RawContract::mask),
-                        ItemStack.CODEC.listOf().fieldOf("components").forGetter(RawContract::components),
-                        ItemStack.CODEC.fieldOf("resistTemplate").forGetter(RawContract::resistTemplate),
-                        Codec.STRING.comapFlatMap(
-                                s -> {
-                                    try {
-                                        return DataResult.success(UUID.fromString(s));
-                                    } catch (IllegalArgumentException e) {
-                                        return DataResult.error(() -> "Invalid UUID: " + s);
-                                    }
-                                },
-                                UUID::toString
-                        ).fieldOf("lotId").forGetter(RawContract::lotId),
-                        ItemStack.CODEC.fieldOf("foupTemplate").forGetter(RawContract::foupTemplate)
-                ).apply(instance, RawContract::new)),
-                raw -> {
-                    try {
-                        return DataResult.success(new Contract(
-                                raw.tier(), raw.dieType(), raw.usesRemaining(), raw.layerTicks(),
-                                raw.resistPerLayer(), raw.energyPerTick(), raw.lineStats(),
-                                raw.tiers(), raw.requiredGenerations(), raw.mask(),
-                                raw.components(), raw.resistTemplate(), raw.lotId(), raw.foupTemplate()
-                        ));
-                    } catch (RuntimeException e) {
-                        return DataResult.error(() -> "Contract validation failed: " + e.getMessage());
-                    }
-                },
-                contract -> DataResult.success(new RawContract(
-                        contract.tier(), contract.dieType(), contract.usesRemaining(), contract.layerTicks(),
-                        contract.resistPerLayer(), contract.energyPerTick(), contract.lineStats(),
-                        contract.tiers(), contract.requiredGenerations(), contract.mask(),
-                        contract.components(), contract.resistTemplate(), contract.lotId(), contract.foupTemplate()
-                ))
-        );
     }
 
-    /**
-     * Saved state combining a validated Contract with a ProcessRun.Snapshot.
-     */
     public record Saved(Contract contract, ProcessRun.Snapshot snapshot) {
-
-        private static final List<String> COMPONENT_KINDS = List.of(
-                "light_source", "optics", "stage", "cleanroom", "metrology"
-        );
-
-        /**
-         * Validated constructor.
-         */
         public Saved {
-            Objects.requireNonNull(contract, "contract must not be null");
-            Objects.requireNonNull(snapshot, "snapshot must not be null");
+            Objects.requireNonNull(contract);
+            Objects.requireNonNull(snapshot);
+            if (snapshot.progressTicks() >= contract.layerTicks()
+                    || snapshot.currentLayer() > contract.tier().layers() + 1)
+                throw new IllegalArgumentException("Progress exceeds frozen schedule");
         }
-
-        /**
-         * Restores a {@link ProcessRun} using the current persisted lot.
-         *
-         * @param lot the current lot from the FOUP slot (inventory is authoritative)
-         * @return restored ProcessRun, or throws if snapshot bounds mismatch
-         */
         public ProcessRun restore(FoupContents lot) {
-            ProcessRunRequest request = contract.request(lot);
-            return ProcessRun.restore(request, snapshot);
+            return ProcessRun.restore(contract.request(lot), snapshot);
         }
-
-        /**
-         * Raw unvalidated fields record for codec decoding.
-         */
-        private record RawSaved(Contract contract, ProcessRun.Snapshot snapshot) {
-        }
-
-        /**
-         * Codec for Saved, for private disk storage only (no network codec).
-         */
-        public static final Codec<Saved> CODEC = Codec.of(
-                RecordCodecBuilder.create(instance -> instance.group(
-                        Contract.CODEC.fieldOf("contract").forGetter(RawSaved::contract),
-                        ProcessRun.Snapshot.CODEC.fieldOf("snapshot").forGetter(RawSaved::snapshot)
-                ).apply(instance, RawSaved::new)),
-                raw -> {
-                    try {
-                        return DataResult.success(new Saved(raw.contract(), raw.snapshot()));
-                    } catch (RuntimeException e) {
-                        return DataResult.error(() -> "Saved validation failed: " + e.getMessage());
-                    }
-                },
-                saved -> DataResult.success(new RawSaved(saved.contract(), saved.snapshot()))
-        );
     }
 
-    /**
-     * Seven-field codec for LineStats with validation via flatXmap.
-     */
-    public static final Codec<LineStats> LINE_STATS_CODEC = Codec.of(
-            RecordCodecBuilder.create(instance -> instance.group(
-                    Codec.INT.fieldOf("resolutionNm").forGetter(LineStats::resolutionNm),
-                    Codec.INT.fieldOf("overlayNm").forGetter(LineStats::overlayNm),
-                    Codec.INT.fieldOf("throughputWph").forGetter(LineStats::throughputWph),
-                    Codec.DOUBLE.fieldOf("defectFactor").forGetter(LineStats::defectFactor),
-                    Codec.INT.fieldOf("resolutionTier").forGetter(LineStats::resolutionTier),
-                    Codec.INT.fieldOf("overlayTier").forGetter(LineStats::overlayTier),
-                    Codec.INT.fieldOf("throughputTier").forGetter(LineStats::throughputTier)
-            ).apply(instance, LineStats::new)),
-            ls -> DataResult.success(ls), // validation already in LineStats constructor
-            ls -> DataResult.success(ls)
-    );
+    private record StatsFields(int resolution, int overlay, int throughput, double defect,
+            int resolutionTier, int overlayTier, int throughputTier) {}
+    private static final Codec<LineStats> STATS_CODEC = RecordCodecBuilder.<StatsFields>create(i -> i.group(
+        Codec.INT.fieldOf("resolution").forGetter(StatsFields::resolution),
+        Codec.INT.fieldOf("overlay").forGetter(StatsFields::overlay),
+        Codec.INT.fieldOf("throughput").forGetter(StatsFields::throughput),
+        Codec.DOUBLE.fieldOf("defect").forGetter(StatsFields::defect),
+        Codec.INT.fieldOf("resolutionTier").forGetter(StatsFields::resolutionTier),
+        Codec.INT.fieldOf("overlayTier").forGetter(StatsFields::overlayTier),
+        Codec.INT.fieldOf("throughputTier").forGetter(StatsFields::throughputTier)
+    ).apply(i, StatsFields::new)).flatXmap(f -> validated(() -> new LineStats(f.resolution(),
+        f.overlay(), f.throughput(), f.defect(), f.resolutionTier(), f.overlayTier(), f.throughputTier())),
+        s -> DataResult.success(new StatsFields(s.resolutionNm(), s.overlayNm(), s.throughputWph(),
+            s.defectFactor(), s.resolutionTier(), s.overlayTier(), s.throughputTier())));
 
-    /**
-     * Six-field codec for ProcessRun.Snapshot with enum string validation via flatXmap.
-     */
-    public static final Codec<ProcessRun.Snapshot> SNAPSHOT_CODEC = Codec.of(
-            RecordCodecBuilder.create(instance -> instance.group(
-                    Codec.STRING.fieldOf("state").forGetter(s -> s.state().name()),
-                    Codec.INT.fieldOf("currentLayer").forGetter(ProcessRun.Snapshot::currentLayer),
-                    Codec.INT.fieldOf("progressTicks").forGetter(ProcessRun.Snapshot::progressTicks),
-                    Codec.BOOL.fieldOf("resistPaid").forGetter(ProcessRun.Snapshot::resistPaid),
-                    Codec.BOOL.fieldOf("maskUseConsumed").forGetter(ProcessRun.Snapshot::maskUseConsumed),
-                    Codec.BOOL.fieldOf("finishEventsEmitted").forGetter(ProcessRun.Snapshot::finishEventsEmitted)
-            ).apply(instance, (stateStr, currentLayer, progressTicks, resistPaid, maskUseConsumed, finishEventsEmitted) -> {
-                ProcessState state;
-                try {
-                    state = ProcessState.valueOf(stateStr);
-                } catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("Invalid ProcessState: " + stateStr);
-                }
-                return new ProcessRun.Snapshot(state, currentLayer, progressTicks, resistPaid, maskUseConsumed, finishEventsEmitted);
-            })),
-            snapshot -> {
-                try {
-                    return DataResult.success(snapshot);
-                } catch (RuntimeException e) {
-                    return DataResult.error(() -> "Snapshot validation failed: " + e.getMessage());
-                }
-            },
-            snapshot -> DataResult.success(snapshot)
-    );
+    private record SnapshotFields(String state, int layer, int progress, boolean resistPaid,
+            boolean maskConsumed, boolean finished) {}
+    private static final Codec<ProcessRun.Snapshot> SNAPSHOT_CODEC = RecordCodecBuilder.<SnapshotFields>create(i -> i.group(
+        Codec.STRING.fieldOf("state").forGetter(SnapshotFields::state),
+        Codec.INT.fieldOf("layer").forGetter(SnapshotFields::layer),
+        Codec.INT.fieldOf("progress").forGetter(SnapshotFields::progress),
+        Codec.BOOL.fieldOf("resistPaid").forGetter(SnapshotFields::resistPaid),
+        Codec.BOOL.fieldOf("maskConsumed").forGetter(SnapshotFields::maskConsumed),
+        Codec.BOOL.fieldOf("finished").forGetter(SnapshotFields::finished)
+    ).apply(i, SnapshotFields::new)).flatXmap(f -> validated(() -> new ProcessRun.Snapshot(
+        ProcessState.valueOf(f.state()), f.layer(), f.progress(), f.resistPaid(), f.maskConsumed(), f.finished())),
+        s -> DataResult.success(new SnapshotFields(s.state().name(), s.currentLayer(), s.progressTicks(),
+            s.resistPaid(), s.maskUseConsumed(), s.finishEventsEmitted())));
+
+    private record ContractFields(Tier tier, String dieType, int usesRemaining, int layerTicks,
+        int resistPerLayer, int energyPerTick, LineStats lineStats, List<Tier> tiers,
+        Map<String,List<Integer>> requiredGenerations, ItemStack mask, List<ItemStack> components,
+        ItemStack resistTemplate, String lotId, ItemStack foupTemplate) {}
+    private static final Codec<Contract> CONTRACT_CODEC = RecordCodecBuilder.<ContractFields>create(i -> i.group(
+        TierCodec.CODEC.fieldOf("tier").forGetter(ContractFields::tier),
+        Codec.STRING.fieldOf("dieType").forGetter(ContractFields::dieType),
+        Codec.INT.fieldOf("usesRemaining").forGetter(ContractFields::usesRemaining),
+        Codec.INT.fieldOf("layerTicks").forGetter(ContractFields::layerTicks),
+        Codec.INT.fieldOf("resistPerLayer").forGetter(ContractFields::resistPerLayer),
+        Codec.INT.fieldOf("energyPerTick").forGetter(ContractFields::energyPerTick),
+        STATS_CODEC.fieldOf("lineStats").forGetter(ContractFields::lineStats),
+        TierCodec.LIST_CODEC.fieldOf("tiers").forGetter(ContractFields::tiers),
+        Codec.unboundedMap(Codec.STRING, Codec.INT.listOf()).fieldOf("requiredGenerations").forGetter(ContractFields::requiredGenerations),
+        ItemStack.CODEC.fieldOf("mask").forGetter(ContractFields::mask),
+        ItemStack.CODEC.listOf().fieldOf("components").forGetter(ContractFields::components),
+        ItemStack.CODEC.fieldOf("resistTemplate").forGetter(ContractFields::resistTemplate),
+        Codec.STRING.fieldOf("lotId").forGetter(ContractFields::lotId),
+        ItemStack.CODEC.fieldOf("foupTemplate").forGetter(ContractFields::foupTemplate)
+    ).apply(i, ContractFields::new)).flatXmap(f -> validated(() -> new Contract(f.tier(), f.dieType(),
+        f.usesRemaining(), f.layerTicks(), f.resistPerLayer(), f.energyPerTick(), f.lineStats(), f.tiers(),
+        f.requiredGenerations(), f.mask(), f.components(), f.resistTemplate(), UUID.fromString(f.lotId()), f.foupTemplate())),
+        c -> DataResult.success(new ContractFields(c.tier(), c.dieType(), c.usesRemaining(), c.layerTicks(),
+            c.resistPerLayer(), c.energyPerTick(), c.lineStats(), c.tiers(), c.requiredGenerations(), c.mask(),
+            c.components(), c.resistTemplate(), c.lotId().toString(), c.foupTemplate())));
+
+    private record SavedFields(Contract contract, ProcessRun.Snapshot snapshot) {}
+    private static final Codec<Saved> SAVED_CODEC = RecordCodecBuilder.<SavedFields>create(i -> i.group(
+        CONTRACT_CODEC.fieldOf("contract").forGetter(SavedFields::contract),
+        SNAPSHOT_CODEC.fieldOf("snapshot").forGetter(SavedFields::snapshot)
+    ).apply(i, SavedFields::new)).flatXmap(f -> validated(() -> new Saved(f.contract(), f.snapshot())),
+        s -> DataResult.success(new SavedFields(s.contract(), s.snapshot())));
+
+    private static <A> DataResult<A> validated(java.util.function.Supplier<A> constructor) {
+        try { return DataResult.success(constructor.get()); }
+        catch (RuntimeException invalid) { return DataResult.error(() -> "Invalid process snapshot"); }
+    }
+
+    /** Tier and item component constructors may reject malformed nested data. Keep all errors local. */
+    public static final Codec<Saved> CODEC = new Codec<>() {
+        @Override
+        public <T> DataResult<Pair<Saved, T>> decode(DynamicOps<T> ops, T input) {
+            try { return SAVED_CODEC.decode(ops, input); }
+            catch (RuntimeException invalid) { return DataResult.error(() -> "Invalid process snapshot"); }
+        }
+        @Override
+        public <T> DataResult<T> encode(Saved saved, DynamicOps<T> ops, T prefix) {
+            try { return SAVED_CODEC.encode(saved, ops, prefix); }
+            catch (RuntimeException invalid) { return DataResult.error(() -> "Invalid process snapshot"); }
+        }
+    };
 }
