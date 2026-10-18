@@ -9,6 +9,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -43,7 +44,7 @@ public final class ModMultiblocks {
             DeferredRegister.create(Registries.MENU, EUVCRAFTMod.MODID);
 
     public static final DeferredHolder<MenuType<?>, MenuType<ProcessCellMenu>> PROCESS_CELL_MENU_TYPE =
-            MENU_TYPES.register("process_cell", () -> new MenuType<>(ProcessCellMenu::new));
+            MENU_TYPES.register("process_cell", () -> IMenuTypeExtension.create(ProcessCellMenu::new));
 
     // ---------------------------------------------------------------- blocks
 

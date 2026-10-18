@@ -1,40 +1,27 @@
 package com.euvcraft.lithmod.mc.multiblock;
 
-import com.euvcraft.lithmod.core.MachineDefinition;
 import com.euvcraft.lithmod.core.multiblock.BlockKind;
 import com.euvcraft.lithmod.core.multiblock.MatchResult;
 import com.euvcraft.lithmod.core.multiblock.MultiblockDirection;
 import com.euvcraft.lithmod.core.multiblock.MultiblockPos;
 import com.euvcraft.lithmod.core.multiblock.StructureMatcher;
 import com.euvcraft.lithmod.core.multiblock.StructureShape;
-import com.euvcraft.lithmod.mc.data.MachineDefinitionLoader;
 import com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity;
-import com.euvcraft.lithmod.mc.machine.FoupItems;
+import com.euvcraft.lithmod.mc.machine.process.ProcessCellMenu;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.world.Container;
-import net.minecraft.world.ContainerHelper;
-import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ContainerData;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
-import net.neoforged.neoforge.transfer.energy.EnergyHandler;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -52,7 +39,7 @@ import java.util.Set;
  * formed flags. {@link #members()} is that list; it is cleared on failure only after the previous
  * members have been updated.</p>
  */
-public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity implements EnergyBufferProvider, MenuProvider, Container {
+public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity implements EnergyBufferProvider {
 
     // Slot indices matching the 8-slot layout: 0 FOUP, 1 MASK, 2 RESIST, 3 LIGHT_SOURCE, 4 OPTICS, 5 STAGE, 6 CLEANROOM, 7 METROLOGY
     public static final int SLOT_FOUP = 0;
@@ -74,7 +61,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
     private String failureReason = "";
     private int ticksSinceValidation;
 
-    private static final int REVALIDATE_INTERVAL = 20;
+    public static final int REVALIDATE_INTERVAL = 20;
 
     public ProcessCellControllerBlockEntity(BlockPos pos, BlockState state) {
         super(ModMultiblocks.PROCESS_CELL_CONTROLLER_BE.get(), pos, state, INPUT_SLOTS, OUTPUT_SLOTS);
@@ -84,18 +71,6 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
     @Override
     protected String machineId() {
         return "process_cell";
-    }
-
-    // ---------------------------------------------------------------- energy
-
-    /**
-     * The cell's energy buffer: accepts from every side, refuses every extraction.
-     *
-     * @return the handler, never null
-     */
-    @Override
-    public EnergyHandler energy() {
-        return this.exposed; // WithdrawNothing wrapper around the real buffer
     }
 
     // ---------------------------------------------------------------- formation state
@@ -132,7 +107,6 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
      * an overridable-but-not-internal hook is the whole point of the method. It is not on
      * {@link EnergyBufferProvider}, because Java forbids narrowing an interface method to protected.</p>
      */
-    @Override
     protected void onFormed() {
     }
 
@@ -141,7 +115,6 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
      *
      * @see #onFormed()
      */
-    @Override
     protected void onUnformed() {
     }
 
@@ -315,93 +288,11 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         // Formation member list not persisted on purpose
     }
 
-    // ---------------------------------------------------------------- Container (for item drop on break)
-
-    @Override
-    public int getContainerSize() {
-        return SLOT_COUNT;
-    }
-
-    @Override
-    public boolean isEmpty() {
-        for (int i = 0; i < SLOT_COUNT; i++) {
-            if (!getItem(i).isEmpty()) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    @Override
-    public ItemStack getItem(int index) {
-        return slot(index);
-    }
-
-    @Override
-    public ItemStack removeItem(int index, int count) {
-        ItemStack stack = slot(index);
-        if (stack.isEmpty()) {
-            return ItemStack.EMPTY;
-        }
-        ItemStack removed = stack.split(Math.min(count, stack.getCount()));
-        if (stack.isEmpty()) {
-            clearSlot(index);
-        }
-        setChanged();
-        return removed;
-    }
-
-    @Override
-    public ItemStack removeItemNoUpdate(int index) {
-        ItemStack stack = slot(index);
-        clearSlot(index);
-        return stack;
-    }
-
-    @Override
-    public void setItem(int index, ItemStack stack) {
-        setSlot(index, stack);
-    }
-
-    @Override
-    public void clearContent() {
-        for (int i = 0; i < SLOT_COUNT; i++) {
-            clearSlot(i);
-        }
-    }
-
-    @Override
-    public boolean canPlaceItem(int index, ItemStack stack) {
-        // Hand-fed only; no automation
-        return false;
-    }
-
-    @Override
-    public boolean canTakeItem(Container into, int index, ItemStack stack) {
-        // Hand-fed only; no automation
-        return false;
-    }
-
-    @Override
-    public int getMaxStackSize() {
-        return 64;
-    }
-
-    @Override
-    public boolean stillValid(Player player) {
-        return super.stillValid(player);
-    }
-
     // ---------------------------------------------------------------- MenuProvider
 
     @Override
-    public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
-        return createMachineMenu(containerId, playerInventory, this);
-    }
-
-    @Override
     protected AbstractContainerMenu createMachineMenu(int containerId, Inventory playerInventory, FabMachineBlockEntity machine) {
-        return new ProcessCellMenu(ModMultiblocks.PROCESS_CELL_MENU_TYPE.get(), containerId, playerInventory, this);
+        return new ProcessCellMenu(containerId, playerInventory, this);
     }
 
     // ---------------------------------------------------------------- extra contents drop
