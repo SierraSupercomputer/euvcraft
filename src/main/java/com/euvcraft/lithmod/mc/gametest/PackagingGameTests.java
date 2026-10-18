@@ -758,8 +758,13 @@ public final class PackagingGameTests {
                 "the client view holds a real roll rather than the placeholder one");
         }
 
-        // A stack a client could actually have put into the slot.
-        ItemStack stack = FoupItems.with(ModItems.FOUP_MK1.get(), clientView);
+        // Preserve the real client-view marker while supplying an otherwise eligible
+        // spec. This isolates trustedContentsOf from the separate NO_SPEC safeguard.
+        FoupContents untrusted = new FoupContents(clientView.lotId(), clientView.capacity(),
+            clientView.wafers(), lot.contents().run());
+        helper.assertTrue(FoupContentsCodec.isClientView(untrusted),
+            "adding a spec must not remove the client-view marker");
+        ItemStack stack = FoupItems.with(ModItems.FOUP_MK1.get(), untrusted);
         int packages = VANILLA_STACK;
         loadPackages(machine, packages);
         machine.setSlot(TestPackageBlockEntity.FOUP_SLOT, stack);
@@ -1860,12 +1865,12 @@ public final class PackagingGameTests {
         }
         int originalChips = original.chipsPerWafer();
 
-        Lot first = mixedLot(helper, level, tier, DieTypes.LOGIC, null, original);
+        Lot first = mixedLot(level, tier, DieTypes.LOGIC, null, original);
         if (first == null) {
             helper.fail(noMixedLotMessage(DieTypes.LOGIC, 1, original));
             return;
         }
-        Lot second = mixedLot(helper, level, tier, DieTypes.LOGIC, null, original);
+        Lot second = mixedLot(level, tier, DieTypes.LOGIC, null, original);
         if (second == null) {
             helper.fail(noMixedLotMessage(DieTypes.LOGIC, 1, original));
             return;
@@ -1978,7 +1983,7 @@ public final class PackagingGameTests {
                 helper.assertValueEqual(newPackages, fresh.packagesPerWafer(),
                     "the fixture's package amount is not the one the definition now declares");
 
-                Lot next = mixedLot(helper, level, again, DieTypes.LOGIC, null, fresh);
+                Lot next = mixedLot(level, again, DieTypes.LOGIC, null, fresh);
                 if (next == null) {
                     helper.fail(noMixedLotMessage(DieTypes.LOGIC, 1, fresh));
                     return;
@@ -2636,19 +2641,13 @@ public final class PackagingGameTests {
                 + "actually opposite");
 
         // The default block entity update tag must not carry the private queue.
-        CompoundTag updateTag = updateTagOf(level, machine);
-        if (updateTag == null) {
-            helper.fail("net.minecraft.world.level.block.entity.BlockEntity has neither "
-                + "getUpdateTag(HolderLookup.Provider) nor getUpdatePacket(HolderLookup.Provider) "
-                + "in this API, so the private-queue update check cannot be made");
-            return;
-        }
+        CompoundTag updateTag = machine.getUpdateTag(level.registryAccess());
         helper.assertFalse(updateTag.contains(STATE_KEY),
             "the default update tag carries the private '" + STATE_KEY + "' node, so the pass "
                 + "flags, the frozen parameters and the per-wafer progress are published to "
                 + "every client the block update reaches");
-        helper.assertTrue(updatePacketOf(level, machine),
-            "the block entity produced no update packet from its own update tag");
+        helper.assertTrue(machine.getUpdatePacket() == null,
+            "the machine must not publish its private queue through a block entity update packet");
         LOGGER.info("[M1-10] {}: {} slots, 7 synced values with the machine's own on indices "
                 + "{}, {}, {}, two opposite-flag machines publishing identical values, and no "
                 + "'{}' node in the update tag", MENU_VALUES, menu.slots.size(),
@@ -3337,41 +3336,6 @@ public final class PackagingGameTests {
         queue.putInt(TIER_KEY, tierIndex);
         root.put(STATE_KEY, queue);
         return root;
-    }
-
-    /**
-     * The block entity's update tag, read reflectively.
-     *
-     * <p>{@code getUpdateTag} is a vanilla method, so its exact signature is a property of the
-     * API this build compiles against rather than of this mod. Reflection keeps the test honest
-     * either way: if the method is missing the case fails and names the signature it looked
-     * for, instead of quietly skipping the check.</p>
-     */
-    private static @Nullable CompoundTag updateTagOf(ServerLevel level, BlockEntity blockEntity) {
-        try {
-            Method method = BlockEntity.class.getMethod("getUpdateTag", HolderLookup.Provider.class);
-            return (CompoundTag) method.invoke(blockEntity, level.registryAccess());
-        } catch (NoSuchMethodException absent) {
-            LOGGER.info("[M1-10] BlockEntity.getUpdateTag(HolderLookup.Provider) is not present in "
-                + "this API, so the private-queue update check could not be made");
-            return null;
-        } catch (ReflectiveOperationException failure) {
-            throw new AssertionError("the block entity update tag could not be read", failure);
-        }
-    }
-
-    private static boolean updatePacketOf(ServerLevel level, BlockEntity blockEntity) {
-        try {
-            Method method = BlockEntity.class.getMethod("getUpdatePacket",
-                HolderLookup.Provider.class);
-            return method.invoke(blockEntity, level.registryAccess()) != null;
-        } catch (NoSuchMethodException absent) {
-            LOGGER.info("[M1-10] BlockEntity.getUpdatePacket(HolderLookup.Provider) is not "
-                + "present in this API, so the packet form could not be checked");
-            return false;
-        } catch (ReflectiveOperationException failure) {
-            throw new AssertionError("the block entity update packet could not be read", failure);
-        }
     }
 
     // ------------------------------------------------------------------
