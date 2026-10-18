@@ -222,7 +222,8 @@ public final class ProcessCellRunPersistence {
             resistTemplate = resistTemplate.copy(); // defensive copy singleton
 
             // Validate foupTemplate: actual FOUP item, FOUP_CONTENTS removed by caller
-            if (foupTemplate.getCount() != 1 || !FoupItems.isFoup(foupTemplate)) {
+            if (foupTemplate.getCount() != 1
+                    || !(foupTemplate.is(ModItems.FOUP_MK1.get()) || foupTemplate.is(ModItems.FOUP_MK2.get()))) {
                 throw new IllegalArgumentException("foupTemplate must be a FOUP item");
             }
             if (foupTemplate.has(ModDataComponents.FOUP_CONTENTS.get())) {
