@@ -19,7 +19,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.*;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
-import net.minecraft.network.PacketFlow;
+import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -30,6 +30,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
@@ -46,7 +47,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import net.neoforged.neoforge.common.util.CommonListenerCookie;
+import net.minecraft.server.network.CommonListenerCookie;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.level.GameType;
@@ -334,6 +335,17 @@ public final class ProcessCellGameTests {
     /**
      * Connects a mock ServerPlayer to the level for menu interaction tests.
      */
+    @SuppressWarnings("unchecked")
+    private static List<DataSlot> syncedData(AbstractContainerMenu menu) {
+        try {
+            java.lang.reflect.Field field = AbstractContainerMenu.class.getDeclaredField("dataSlots");
+            field.setAccessible(true);
+            return (List<DataSlot>) field.get(menu);
+        } catch (ReflectiveOperationException invalid) {
+            throw new AssertionError("Cannot inspect registered menu wire values", invalid);
+        }
+    }
+
     private static ServerPlayer connect(ServerLevel level) {
         CommonListenerCookie cookie = CommonListenerCookie.createInitial(
             new GameProfile(UUID.randomUUID(), "process-cell-test"), false);
@@ -419,7 +431,7 @@ public final class ProcessCellGameTests {
             // clicked(0, 2, CLONE) must not duplicate FOUP (creative middle-click)
             menu.clicked(0, 2, ContainerInput.CLONE, player);
             h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(0), foupBefore), "FOUP retained after CLONE");
-            h.assertTrue(menu.getCarried().isEmpty() || !menu.getCarried().is(ModItems.FOUP_MK1.get()), "CLONE must not put FOUP on cursor in locked state");
+            h.assertTrue(menu.getCarried().isEmpty(), "CLONE must leave the cursor empty in locked state");
 
             // Real normal resist top-up: menu.setCarried(new ItemStack(RESIST_T2, 3)); menu.clicked(2, 0, PICKUP, player)
             menu.setCarried(new ItemStack(ModItems.RESIST_T2.get(), 3));
@@ -448,7 +460,8 @@ public final class ProcessCellGameTests {
             // Player-to-machine shift: set slot 8 to RESIST_T2 stack 2; quickMoveStack(player, 8) adds 2 to existing resist, player stack empties
             menu.slots.get(8).set(new ItemStack(ModItems.RESIST_T2.get(), 2));
             ItemStack shifted = menu.quickMoveStack(player, 8);
-            h.assertTrue(shifted.isEmpty(), "shift-click from player inventory to machine empties player stack");
+            h.assertTrue(!shifted.isEmpty() && shifted.is(ModItems.RESIST_T2.get()), "shift-click returns the moved stack copy");
+            h.assertTrue(menu.slots.get(8).getItem().isEmpty(), "shift-click empties the player source slot");
             h.assertValueEqual(12, resist(cell), "shift-click adds 2 resist to machine");
 
             // Direct quickMoveStack(player, 2) cannot extract
@@ -465,13 +478,11 @@ public final class ProcessCellGameTests {
                 }
             }
             menu.setCarried(new ItemStack(ModItems.RESIST_T2.get(), 1));
-            // PICKUP_ALL is QUICK_CRAFT in modern API - but there's no direct PICKUP_ALL action
-            // The test says PICKUP_ALL with carried T2 count 1 cannot collect from locked resist slot
-            // We'll test by trying to quickMoveStack from player inventory with resist in hand
-            // Actually, PICKUP_ALL is handled by canTakeItemForPickAll. Let's test the predicate.
-            Slot resistSlot = menu.slots.get(2);
-            h.assertFalse(menu.canTakeItemForPickAll(menu.getCarried(), resistSlot), "PICKUP_ALL cannot collect from locked resist slot");
-            h.assertValueEqual(12, resist(cell), "machine resist unchanged after PICKUP_ALL attempt");
+            h.assertFalse(menu.canTakeItemForPickAll(menu.getCarried(), menu.slots.get(2)),
+                "PICKUP_ALL predicate protects the active resist slot");
+            menu.clicked(2, 0, ContainerInput.PICKUP_ALL, player);
+            h.assertValueEqual(12, resist(cell), "real PICKUP_ALL cannot extract active resist");
+            h.assertValueEqual(1, menu.getCarried().getCount(), "real PICKUP_ALL leaves the cursor count unchanged");
 
             // Verify physical FOUP UUID/item/count and cursor count assertions
             ItemStack finalFoup = cell.slot(0);
@@ -679,12 +690,8 @@ public final class ProcessCellGameTests {
             ProcessCellMenu clientMenu = new ProcessCellMenu(7, player.getInventory(), (ProcessCellControllerBlockEntity) null);
 
             // Reflection: AbstractContainerMenu.dataSlots list exactly 12 (base 4 + own 8) on both
-            java.lang.reflect.Field dataSlotsField = AbstractContainerMenu.class.getDeclaredField("dataSlots");
-            dataSlotsField.setAccessible(true);
-            @SuppressWarnings("unchecked")
-            List<ContainerData> serverDataSlots = (List<ContainerData>) dataSlotsField.get(serverMenu);
-            @SuppressWarnings("unchecked")
-            List<ContainerData> clientDataSlots = (List<ContainerData>) dataSlotsField.get(clientMenu);
+            List<DataSlot> serverDataSlots = syncedData(serverMenu);
+            List<DataSlot> clientDataSlots = syncedData(clientMenu);
             h.assertValueEqual(12, serverDataSlots.size(), "server menu has exactly 12 data slots (4 base + 8 own)");
             h.assertValueEqual(12, clientDataSlots.size(), "client menu has exactly 12 data slots (4 base + 8 own)");
 
@@ -692,7 +699,7 @@ public final class ProcessCellGameTests {
             // Base 4: DATA_ENERGY, DATA_CAPACITY, DATA_PROGRESS, DATA_TICKS
             // Own 8: DATA_STATUS, DATA_REFUSAL, DATA_LAYER, DATA_TOTAL, DATA_FORMED, DATA_TIER, DATA_DIE, DATA_LOCKED
             int storedFE = cell.buffer().getAmountAsInt();
-            int capacity = cell.data().get(FabMachineBlockEntity.DATA_CAPACITY);
+            int capacity = cell.definition().orElseThrow().energyCapacity();
             int progress = cell.progressTicks();
             int ticks = cell.data().get(FabMachineBlockEntity.DATA_TICKS);
             // Expected values
@@ -702,35 +709,35 @@ public final class ProcessCellGameTests {
 
             // Read server data slots in order
             // Index 0: DATA_ENERGY
-            h.assertValueEqual(storedFE, serverDataSlots.get(0).get(0), "dataSlot[0] = stored FE");
+            h.assertValueEqual(storedFE, serverDataSlots.get(0).get(), "dataSlot[0] = stored FE");
             // Index 1: DATA_CAPACITY
-            h.assertValueEqual(capacity, serverDataSlots.get(1).get(0), "dataSlot[1] = capacity");
+            h.assertValueEqual(capacity, serverDataSlots.get(1).get(), "dataSlot[1] = capacity");
             // Index 2: DATA_PROGRESS
-            h.assertValueEqual(progress, serverDataSlots.get(2).get(0), "dataSlot[2] = progress");
+            h.assertValueEqual(progress, serverDataSlots.get(2).get(), "dataSlot[2] = progress");
             // Index 3: DATA_TICKS
-            h.assertValueEqual(ticks, serverDataSlots.get(3).get(0), "dataSlot[3] = ticks");
+            h.assertValueEqual(ticks, serverDataSlots.get(3).get(), "dataSlot[3] = ticks");
             // Index 4: DATA_STATUS = RUNNING ordinal 1
-            h.assertValueEqual(ProcessState.RUNNING.ordinal(), serverDataSlots.get(4).get(0), "dataSlot[4] = status RUNNING ordinal 1");
+            h.assertValueEqual(ProcessState.RUNNING.ordinal(), serverDataSlots.get(4).get(), "dataSlot[4] = status RUNNING ordinal 1");
             // Index 5: DATA_REFUSAL = 0
-            h.assertValueEqual(0, serverDataSlots.get(5).get(0), "dataSlot[5] = refusal 0");
+            h.assertValueEqual(0, serverDataSlots.get(5).get(), "dataSlot[5] = refusal 0");
             // Index 6: DATA_LAYER = 1
-            h.assertValueEqual(1, serverDataSlots.get(6).get(0), "dataSlot[6] = layer 1");
+            h.assertValueEqual(1, serverDataSlots.get(6).get(), "dataSlot[6] = layer 1");
             // Index 7: DATA_TOTAL = 12
-            h.assertValueEqual(12, serverDataSlots.get(7).get(0), "dataSlot[7] = total 12");
+            h.assertValueEqual(12, serverDataSlots.get(7).get(), "dataSlot[7] = total 12");
             // Index 8: DATA_FORMED = 1
-            h.assertValueEqual(1, serverDataSlots.get(8).get(0), "dataSlot[8] = formed 1");
+            h.assertValueEqual(1, serverDataSlots.get(8).get(), "dataSlot[8] = formed 1");
             // Index 9: DATA_TIER = 2
-            h.assertValueEqual(2, serverDataSlots.get(9).get(0), "dataSlot[9] = tier 2");
+            h.assertValueEqual(2, serverDataSlots.get(9).get(), "dataSlot[9] = tier 2");
             // Index 10: DATA_DIE = DieTypes.ALL.indexOf(MEMORY) + 1
             int expectedDieIndex = DieTypes.ALL.indexOf(DieTypes.MEMORY) + 1;
-            h.assertValueEqual(expectedDieIndex, serverDataSlots.get(10).get(0), "dataSlot[10] = die index for MEMORY");
+            h.assertValueEqual(expectedDieIndex, serverDataSlots.get(10).get(), "dataSlot[10] = die index for MEMORY");
             // Index 11: DATA_LOCKED = 1
-            h.assertValueEqual(1, serverDataSlots.get(11).get(0), "dataSlot[11] = locked 1");
+            h.assertValueEqual(1, serverDataSlots.get(11).get(), "dataSlot[11] = locked 1");
 
             // Copy each serverDataSlot.get() into client.setData(index, value)
             for (int i = 0; i < 12; i++) {
-                int value = serverDataSlots.get(i).get(0);
-                clientDataSlots.get(i).set(0, value);
+                int value = serverDataSlots.get(i).get();
+                clientMenu.setData(i, value);
             }
 
             // Assert client state matches
@@ -744,8 +751,8 @@ public final class ProcessCellGameTests {
             // Abort actual controller then copy again
             cell.abortRun();
             for (int i = 0; i < 12; i++) {
-                int value = serverDataSlots.get(i).get(0);
-                clientDataSlots.get(i).set(0, value);
+                int value = serverDataSlots.get(i).get();
+                clientMenu.setData(i, value);
             }
             h.assertValueEqual(ProcessCellMenu.STATUS_ABORTED, clientMenu.status(), "client status ABORTED after abort");
             h.assertFalse(clientMenu.inputsLocked(), "client unlocked after abort");
