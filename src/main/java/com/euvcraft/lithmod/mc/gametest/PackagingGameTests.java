@@ -1668,7 +1668,7 @@ public final class PackagingGameTests {
         int expectedChips = firstPassed ? numbers.chipsPerWafer() : 0;
         int expectedScrap = firstPassed ? 0 : numbers.chipsPerWafer();
         int expectedPackages = packages - (firstPassed ? numbers.packagesPerWafer() : 0);
-        helper.assertValueEqual(expectedChips, totalOutput(machine),
+        helper.assertValueEqual(expectedChips + expectedScrap, totalOutput(machine),
             "the machine did not hold exactly the finished wafers' output before the break");
 
         helper.killAllEntitiesOfClass(ItemEntity.class);
