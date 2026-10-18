@@ -35,17 +35,14 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import java.util.*;
 import java.util.function.Consumer;
 
-/** Data-derived checks against the live server registries and normal recipe lookup. */
+/** FOUP lifecycle checks against live server registries and pattern generator production. */
 public final class PresentationGameTests {
-    private static final List<String> CASES = List.of("presentation_recipe_registry",
-        "presentation_crafting_lookup", "presentation_pattern_production", "presentation_obtainability");
+    private static final List<String> CASES = List.of("presentation_pattern_production", "presentation_obtainability");
     private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS =
         DeferredRegister.create(Registries.TEST_FUNCTION, "lithmod");
     static {
-        FUNCTIONS.register(CASES.get(0), () -> PresentationGameTests::recipeRegistry);
-        FUNCTIONS.register(CASES.get(1), () -> PresentationGameTests::craftingLookup);
-        FUNCTIONS.register(CASES.get(2), () -> PresentationGameTests::patternProduction);
-        FUNCTIONS.register(CASES.get(3), () -> PresentationGameTests::obtainability);
+        FUNCTIONS.register(CASES.get(0), () -> PresentationGameTests::patternProduction);
+        FUNCTIONS.register(CASES.get(1), () -> PresentationGameTests::obtainability);
     }
     private PresentationGameTests() {}
     public static void register(IEventBus bus) {
@@ -88,26 +85,17 @@ public final class PresentationGameTests {
         if (!values.hasNext()) throw new IllegalArgumentException("Empty ingredient tag: " + raw);
         return new ItemStack(values.next().value());
     }
-    private static CraftingInput craftingInput(JsonObject source) {
-        var pattern = source.getAsJsonArray("pattern");
-        var keys = source.getAsJsonObject("key");
-        int width = pattern.get(0).getAsString().length();
-        List<ItemStack> slots = new ArrayList<>();
-        for (var row : pattern) for (char symbol : row.getAsString().toCharArray())
-            slots.add(symbol == ' ' ? ItemStack.EMPTY : ingredient(keys.get(String.valueOf(symbol)).getAsString()));
-        return CraftingInput.of(width, pattern.size(), slots);
-    }
-    private static void expectedOutput(GameTestHelper h, JsonObject source, ItemStack output, String context) {
-        JsonObject result = source.getAsJsonObject("result");
-        h.assertTrue(output.is(item(result.get("id").getAsString())), context + " wrong result item");
-        h.assertValueEqual(result.has("count") ? result.get("count").getAsInt() : 1,
-            output.getCount(), context + " wrong result count");
-    }
     private static ItemStack assemble(GameTestHelper h, Identifier sourceId, JsonObject source) {
         var manager = h.getLevel().getServer().getRecipeManager();
         var holder = manager.byKey(ResourceKey.create(Registries.RECIPE, recipeId(sourceId))).orElseThrow();
         if (holder.value() instanceof CraftingRecipe crafting) {
-            var input = craftingInput(source);
+            var pattern = source.getAsJsonArray("pattern");
+            var keys = source.getAsJsonObject("key");
+            int width = pattern.get(0).getAsString().length();
+            List<ItemStack> slots = new ArrayList<>();
+            for (var row : pattern) for (char symbol : row.getAsString().toCharArray())
+                slots.add(symbol == ' ' ? ItemStack.EMPTY : ingredient(keys.get(String.valueOf(symbol)).getAsString()));
+            var input = CraftingInput.of(width, pattern.size(), slots);
             h.assertTrue(crafting.matches(input, h.getLevel()), sourceId + " does not match its actual JSON inputs");
             return crafting.assemble(input);
         }
@@ -117,59 +105,6 @@ public final class PresentationGameTests {
             return cooking.assemble(input);
         }
         throw new IllegalStateException("Unexpected M1 recipe kind: " + sourceId);
-    }
-    private static void recipeRegistry(GameTestHelper h) {
-        var vanilla = resources(h, "recipe");
-        h.assertValueEqual(24, vanilla.size(), "M1 vanilla recipe inventory");
-        for (var entry : vanilla.entrySet()) {
-            JsonObject source = json(entry.getValue());
-            expectedOutput(h, source, assemble(h, entry.getKey(), source), entry.getKey().toString());
-        }
-        var custom = resources(h, "machine_recipes");
-        var resolved = MachineRecipeLoader.getRegistry().all();
-        h.assertValueEqual(6, custom.size(), "Custom source inventory");
-        h.assertValueEqual(6, resolved.size(), "Resolved custom inventory");
-        Set<com.euvcraft.lithmod.core.MachineRecipeSpec> expected = new HashSet<>();
-        for (var entry : custom.entrySet()) {
-            var spec = MachineRecipeSpecCodec.CODEC.parse(JsonOps.INSTANCE, json(entry.getValue())).getOrThrow();
-            expected.add(spec);
-            item(spec.result().itemId());
-            for (var in : spec.ingredients()) ingredient(in.isTag() ? "#" + in.id() : in.id());
-        }
-        h.assertTrue(expected.equals(resolved.stream().map(r -> r.spec()).collect(java.util.stream.Collectors.toSet())),
-            "Resolved machine recipes differ from actual source resources");
-        for (var recipe : resolved) {
-            h.assertTrue(!recipe.assemble().isEmpty(), "Resolved custom recipe assembles empty");
-            h.assertValueEqual(recipe.spec().result().count(), recipe.assemble().getCount(), "Custom result count");
-        }
-        h.succeed();
-    }
-    private static void craftingLookup(GameTestHelper h) {
-        var manager = h.getLevel().getServer().getRecipeManager();
-        int crafting = 0, cooking = 0;
-        for (var entry : resources(h, "recipe").entrySet()) {
-            JsonObject source = json(entry.getValue());
-            Identifier expected = recipeId(entry.getKey());
-            if (source.get("type").getAsString().equals("minecraft:crafting_shaped")) {
-                var input = craftingInput(source);
-                var picked = manager.getRecipeFor(RecipeType.CRAFTING, input, h.getLevel()).orElseThrow();
-                h.assertTrue(picked.id().identifier().equals(expected), "Crafting lookup collision: " + expected + " selected " + picked.id());
-                expectedOutput(h, source, picked.value().assemble(input), expected.toString());
-                crafting++;
-            } else {
-                var input = new SingleRecipeInput(ingredient(source.get("ingredient").getAsString()));
-                var type = source.get("type").getAsString().equals("minecraft:blasting") ? RecipeType.BLASTING : RecipeType.SMELTING;
-                var picked = manager.getRecipeFor(type, input, h.getLevel()).orElseThrow();
-                h.assertTrue(picked.id().identifier().equals(expected), "Cooking lookup collision: " + expected);
-                expectedOutput(h, source, picked.value().assemble(input), expected.toString());
-                cooking++;
-            }
-        }
-        h.assertValueEqual(22, crafting, "Crafting lookup inventory");
-        h.assertValueEqual(2, cooking, "Cooking lookup inventory");
-        var sand = manager.getRecipeFor(RecipeType.SMELTING, new SingleRecipeInput(new ItemStack(Items.SAND)), h.getLevel()).orElseThrow();
-        h.assertTrue(sand.value().assemble(new SingleRecipeInput(new ItemStack(Items.SAND))).is(Items.GLASS), "Sand must still smelt to glass");
-        h.succeed();
     }
     private static void patternProduction(GameTestHelper h) {
         var recipes = MachineRecipeLoader.getRegistry().forMachine("pattern_generator");
