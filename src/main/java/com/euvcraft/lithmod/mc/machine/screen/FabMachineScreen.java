@@ -4,7 +4,6 @@ import com.euvcraft.lithmod.mc.machine.FabMachineMenu;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
@@ -100,7 +99,7 @@ public abstract class FabMachineScreen<M extends FabMachineMenu> extends Abstrac
         int y = topPos + energyBarY();
 
         // Dark empty background
-        graphics.fill(RenderPipelines.GUI_TEXTURED, x, y, x + ENERGY_BAR_WIDTH, y + ENERGY_BAR_HEIGHT, ENERGY_BAR_EMPTY_COLOR);
+        graphics.fill( x, y, x + ENERGY_BAR_WIDTH, y + ENERGY_BAR_HEIGHT, ENERGY_BAR_EMPTY_COLOR);
 
         // Energy fill rising bottom-up
         float fraction = menu.energyFraction();
@@ -108,7 +107,7 @@ public abstract class FabMachineScreen<M extends FabMachineMenu> extends Abstrac
             fraction = Math.min(1.0f, Math.max(0.0f, fraction));
             int fill = Math.round(ENERGY_BAR_HEIGHT * fraction);
             if (fill > 0) {
-                graphics.fill(RenderPipelines.GUI_TEXTURED,
+                graphics.fill(
                     x, y + ENERGY_BAR_HEIGHT - fill,
                     x + ENERGY_BAR_WIDTH, y + ENERGY_BAR_HEIGHT,
                     ENERGY_BAR_FILL_COLOR);
@@ -121,7 +120,7 @@ public abstract class FabMachineScreen<M extends FabMachineMenu> extends Abstrac
         int y = topPos + progressBarY();
 
         // Dark empty background
-        graphics.fill(RenderPipelines.GUI_TEXTURED, x, y, x + PROGRESS_BAR_WIDTH, y + PROGRESS_BAR_HEIGHT, PROGRESS_BAR_EMPTY_COLOR);
+        graphics.fill( x, y, x + PROGRESS_BAR_WIDTH, y + PROGRESS_BAR_HEIGHT, PROGRESS_BAR_EMPTY_COLOR);
 
         // Progress fill left-to-right
         float fraction = menu.progressFraction();
@@ -129,7 +128,7 @@ public abstract class FabMachineScreen<M extends FabMachineMenu> extends Abstrac
             fraction = Math.min(1.0f, Math.max(0.0f, fraction));
             int fill = Math.round(PROGRESS_BAR_WIDTH * fraction);
             if (fill > 0) {
-                graphics.fill(RenderPipelines.GUI_TEXTURED,
+                graphics.fill(
                     x, y,
                     x + fill, y + PROGRESS_BAR_HEIGHT,
                     PROGRESS_BAR_FILL_COLOR);
@@ -178,3 +177,4 @@ public abstract class FabMachineScreen<M extends FabMachineMenu> extends Abstrac
         return localX >= x && localX < x + width && localY >= y && localY < y + height;
     }
 }
+

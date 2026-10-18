@@ -1,6 +1,6 @@
 package com.euvcraft.lithmod.mc;
 
-import com.euvcraft.lithmod.mc.registry.ModItems;
+import com.euvcraft.lithmod.mc.registry.ModDataComponents;
 
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -45,7 +45,7 @@ public class FoupItem extends Item {
     @Override
     public void onCraftedPostProcess(ItemStack stack, Level level) {
         // Only initialize on server; inherited onCraftedBy invokes this override
-        if (level instanceof ServerLevel serverLevel) {
+        if (level instanceof ServerLevel) {
             FoupItems.initializeIfMissing(stack);
         }
     }
