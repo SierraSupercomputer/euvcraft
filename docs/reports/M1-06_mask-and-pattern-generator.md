@@ -1,15 +1,15 @@
 # M1-06: Mask and Pattern Generator
 
-- Date: October 17, 2026 (client date). Branch: `orchestrator/euvcraft-m1-06`. Head `433a8f5` (`433a8f59533137787b51fcf7cce037f3e34bfa5b`), base `5002607` (`50026071e1df5f8e92af0be24bf779d428ef639f`).
+- Date: October 17, 2026 (client date). Branch: `orchestrator/euvcraft-m1-06`. Verified code revision `433a8f5` (`433a8f59533137787b51fcf7cce037f3e34bfa5b`), base `5002607` (`50026071e1df5f8e92af0be24bf779d428ef639f`). `433a8f5` is the verified code revision this report documents, not the current documentation branch tip.
 - Toolchain: Java 25, Minecraft 26.3, NeoForge 26.3.0.69-beta, Gradle 9.2.1.
-- Start and end state: base and branch are the values retained in the coordinator's task metadata; the literal start worktree-list/status transcript was **not retained**, so no earlier command or git output is reconstructed here. The end state is branch `orchestrator/euvcraft-m1-06` with a clean source tree, and the worktree listing recorded in the evidence is the actual end listing with the home directory redacted.
+- Start and end state: the base and branch values are retained in the coordinator's task metadata, and the literal start worktree-list/status transcript was **not retained**, so no earlier command or git output is reconstructed here. The end verification state was clean at the verified revision `433a8f5`; the worktree listing recorded in the evidence is the actual end listing with the home directory redacted. No fresh command output is reconstructed.
 
 ## 1. Summary
 
-- Core. `MaskData` requires a die type that is one of the bare `DieTypes.ALL` names, a `tierIndex` of at least 1 with no upper cap, and `usesRemaining` of 0 or more; `consumeUse()` returns a new record with one use fewer and never mutates, `isSpent()` is true only at zero, and consuming a spent mask throws. `MaskRules.canPattern(...)` is the Gen 1 mask-shop gate: the die type must exist in both registries, then `DieRules.canMake` and a real `GenerationMatrix` decision for the `mask_shop`. The task prose and the source disagree on the matrix argument order; the source wins (see §6).
-- Items. `blank_mask` is stackable (64) and `mask` is stack size 1 with no default design, carrying a public persistent and stream codec component whose `uses_remaining` is optional and defaults to 0. Three translatable public tooltip lines (die type, tier, uses remaining) and an own MASKS creative tab with five entries (blank mask, three configured sample masks, generator).
+- Core. `MaskData` requires a die type that is one of the bare `DieTypes.ALL` names, a `tierIndex` of at least 1 with no upper cap, and `usesRemaining` of 0 or more; `consumeUse()` returns a new record with one use fewer and never mutates, `isSpent()` is true only at zero, and consuming a spent mask throws. `MaskRules.canPattern(...)` is the Gen 1 mask-shop gate: the **tier** must exist in both the die-rules and the generation-matrix tier registries, the die type is separately validated against the exact `DieTypes.ALL` and by `DieRules.canMake`, and then a real `GenerationMatrix` decision runs for the `mask_shop`. `MaskRules` takes the installed generation as its third argument; the concrete machine passes `1`. The task prose and the source disagree on the matrix argument order; the source wins (see §6).
+- Items. `blank_mask` is stackable (64) and `mask` is stack size 1 with no default design, carrying a public persistent component (`lithmod:mask_data`) networked through its registered stream codec; a present component's `uses_remaining` defaults to 0, but a bare mask has no component at all and is refused. Three translatable public tooltip lines (die type, tier, uses remaining) and an own MASKS creative tab with five entries (blank mask, three configured sample masks, generator).
 - Generator. A single hand-fed block on the generic `FabMachineBlockEntity` and `MachineRecipeRunner`, with two ordinary ingredient inputs and one output. The Gen 1 gate runs before FE, input and progress; `usesRemaining` is stamped from the `maskUses` config value only at completion; a refusal produces no output and a synced status the menu shows. Energy-only: no item or fluid capability, no hopper access, external extraction refused.
-- Persistence and verification. The run spec is a private `spec_text` JSON string, so NbtOps cannot rewrite object keys or numerics, and a broken new key is authoritative rather than falling back to a stale legacy identity. Verification: 71 unit suites / 450 tests / 0 failures, errors or skips, and 751 passing game-test case records that include all 81 registered project IDs; every new unit method (41) and new server case (19) has an executed negative control. Not merged or published.
+- Persistence and verification. The run spec is a private `spec_text` JSON string, so NbtOps cannot rewrite object keys or numerics, and a broken new key is authoritative rather than falling back to a stale legacy identity. Verification: 71 unit suites / 450 tests / 0 failures, errors or skips, and 751 passing game-test case records that include all 81 registered project IDs; every new unit method (41) and new server case (19) has an executed negative control. These measurements are from the pre-integration source checkpoint.
 
 ## 2. Files changed
 
@@ -43,10 +43,17 @@
 | `src/main/resources/assets/lithmod/models/item/mask.json` | A | Placeholder item model on vanilla textures. |
 | `src/main/resources/assets/lithmod/models/item/pattern_generator.json` | A | Placeholder item model on vanilla textures. |
 | `src/main/resources/data/lithmod/loot_table/blocks/pattern_generator.json` | A | Block loot table for the generator. |
+| `src/main/resources/data/lithmod/machines/pattern_generator.json` | A | Machine definition for `pattern_generator`. |
+| `src/main/resources/data/lithmod/tags/block/machine.json` | M | Adds the generator block to the machine tag. |
+| `src/main/resources/data/minecraft/tags/block/mineable/pickaxe.json` | M | Adds the generator block to the vanilla pickaxe tag. |
+| `src/main/resources/data/minecraft/tags/block/needs_stone_tool.json` | M | Adds the generator block to the vanilla stone-tool tag. |
+| `src/test/java/com/euvcraft/lithmod/core/MaskDataTest.java` | A | Unit tests for the mask record. |
+| `src/test/java/com/euvcraft/lithmod/core/MaskRulesTest.java` | A | Unit tests for the Gen 1 mask-shop gate. |
+| `src/test/java/com/euvcraft/lithmod/mc/machine/mask/MaskDataCodecTest.java` | A | Unit tests for the mask codec round trips. |
 | `docs/reports/M1-06_mask-and-pattern-generator.md` | A | This report. |
 | `docs/testing.md` | M | Appended M1-06 testing section. |
 
-30 paths are listed below: the 28 readable entries of `FACTS.json.files`, plus this report and the appended `docs/testing.md`. No deletions; every entry is an addition (`A`) or a modification (`M`). Evidence limit, stated rather than filled in: `FACTS.json` records **35** changed paths in total, but the `files` value available to this report is truncated by a 2,000-character line limit after its 28th entry, so the last 7 entries could not be read verbatim and are not reproduced above. By `UNIT-TABLE.md` and `UNIT-CONTROLS.md` those remaining entries must include the added unit-test classes `MaskDataTest`, `MaskRulesTest` and `MaskDataCodecTest` (their new methods are reported there), and by `TASK.txt` they include added files under `src/main/resources/data/lithmod/` — the machine definition `machines/pattern_generator.json` and test recipes under `machine_recipes/`. Those names are inference from readable evidence, not verbatim source paths.
+37 changed paths: 35 files under `src/` (main Java, resources, and the three new unit-test classes under `src/test/`) plus this report and the appended `docs/testing.md`. No deletions; every entry is an addition (`A`) or a modification (`M`).
 
 ## 3. Verification
 
@@ -219,7 +226,7 @@ Every one of the 41 new unit methods (MaskDataTest 12 + MaskRulesTest 19 + MaskD
 | Tests: logic at T1 and T2 pass, memory at T2 passes, memory at T1 fails, compute at T3 fails at Gen 1 (T3 needs mask_shop generation 2), NAND at T3 fails likewise | `logicT1AllowedAtGeneration1`, `logicT2AllowedAtGeneration1`, `memoryT2AllowedAtGeneration1`, `memoryT1Refused`, `computeAndNandT3RefusedAtGeneration1` | Verified |
 | `blank_mask` is stackable | Stack 64; item model and client item definition; `lithmod:mask_catalog_and_creative_tab` | Verified (server) |
 | `mask` is stack size 1 with a public codec and stream codec component, and tooltip lines for die type, tier and uses remaining | `MaskDataCodecTest` 10 tests / 4 mutants; `lithmod:mask_data_component_round_trip`, `lithmod:mask_tooltip_lines`; three lines in `lang/en_us.json` | Verified (server); client visuals not verified (§5) |
-| Pattern generator is a single block on `FabMachineBlockEntity`, hand-fed, with a definition under `data/lithmod/machines/` | `PatternGeneratorBlock`/`PatternGeneratorBlockEntity`; the definition path is named in the task; `lithmod:pattern_generator_block_use_opens_the_menu` | Verified (server) |
+| Pattern generator is a single block on `FabMachineBlockEntity`, hand-fed, with a definition under `data/lithmod/machines/` | `PatternGeneratorBlock`/`PatternGeneratorBlockEntity`; the changed path `src/main/resources/data/lithmod/machines/pattern_generator.json`; `lithmod:pattern_generator_block_use_opens_the_menu` | Verified (server) |
 | It runs machine recipes for machine id `pattern_generator`; the result is a mask whose components give die type and tier; `usesRemaining` may be omitted | `MACHINE_ID = "pattern_generator"`; the three cut cases; `aMissingUseCountDefaultsToZero()` | Verified |
 | On completion `usesRemaining` is set from the `maskUses` config value; the Gen 1 shop calls `canPattern` with generation 1 before starting; an invalid recipe produces no output and a short status in the menu | `lithmod:pattern_generator_uses_the_config_at_completion`; the four refusal cases; status values 0..3 synced at wire index 4 | Verified |
 | The blank mask is an ordinary ingredient of the recipe | The generator has two ordinary ingredient inputs and one output | Verified |
@@ -233,14 +240,14 @@ Out of scope and untouched: the real recipes (M1-11), the Process Cell, and how 
 
 - Live client rendering and the screens in a real client, and the actual client-side ticker branch: the dedicated server tests cover the server-side ticker and the detached-level guard, not `ClientLevel`; no client-side or manual in-game check was made, so no visual pass is claimed.
 - The pre-existing missing GUI bar assets remain a disclosed presentation follow-up for M1-06's screen, and the full playable processing and packaging path with the real recipes is outside this task and was not exercised.
-- The literal start worktree/status transcript was not retained, and 7 of the 35 changed paths in `FACTS.json.files` plus the tail of `API.txt` could not be read (see §2), so the API extract is not a complete listing of every new type.
+- The literal start worktree/status transcript was not retained, so no earlier command or git output is reconstructed; the changed-path list, the unit and game-test counts, and the API/registry extracts are read from the retained evidence packet.
 - No three-separate-process repeat of the game-test suite was run for M1-06 (that is M1-12 work), and no worker ran any check.
 
 ## 6. Deviations
 
 - `GenerationMatrix` argument order: the task prose and the source disagree, and the source order is the one the tests prove (`isSatisfied("mask_shop", installedGeneration, tierIndex)`).
 - Minimal shared seams were added because real tests caught defects: the identity-default `filterRecipes`/`prepareOutput` hooks on `FabMachineBlockEntity`, a private snapshot for the runner, and `MachineRecipeRunner.setMachineEnergyPerTick` so a restored, already-paid run keeps its frozen cost until it resumes. The base still syncs `DATA_COUNT` = 4.
-- The generator's block shell is the shared silicon machine block package reused as-is rather than a new shell, and authorship was mixed: the preferred Nemotron model plus approved free fallbacks where the provider returned 503s or rate limits, with the coordinator applying mechanical import fixes and the numeric-NBT test corrections. All workers ran at $0.
+- The generator's block shell is the shared silicon machine block package reused as-is rather than a new shell, and authorship was mixed: the preferred Nemotron model plus approved free fallbacks where the provider returned 503s/504s or rate limits, with the coordinator applying mechanical import fixes and the numeric-NBT test corrections. All workers ran at $0.
 
 ## 7. Open questions
 
@@ -248,52 +255,24 @@ None.
 
 ## 8. Handoff
 
-Signatures and constants below are quoted from `API.txt`; the mask data component id is not in the readable API extract, so read `src/main/java/com/euvcraft/lithmod/mc/registry/ModDataComponents.java` for it instead of assuming one.
+Signatures and constants below are complete actual declarations taken from `API.txt` (a deliberate declaration listing that omits class/method bodies and closing braces, not a truncated full source), the registry diff `REGISTRY.txt` and the machine definition. The mask data component id is `lithmod:mask_data` via `ModDataComponents.MASK_DATA`.
 
-```java
-public record MaskData(String dieType, int tierIndex, int usesRemaining) {
-    public MaskData {
-    public boolean isSpent() {
-    public MaskData consumeUse() {
-public final class MaskRules {
-    public static boolean canPattern(String dieType,
-                                     int tierIndex,
-                                     int installedMaskShopGeneration,
-                                     DieRules dieRules,
-                                     GenerationMatrix generationMatrix) {
-public static final Codec<MaskData> CODEC = persistentCodec();
-public static final StreamCodec<ByteBuf, MaskData> STREAM_CODEC = StreamCodec.composite(
-    ByteBufCodecs.STRING_UTF8, MaskData::dieType,
-    ByteBufCodecs.VAR_INT, MaskData::tierIndex,
-    ByteBufCodecs.VAR_INT, MaskData::usesRemaining,
-    MaskData::new);
+| Type | Selected verified signatures and constants (exact) |
+| --- | --- |
+| `MaskData` (`core`) | `record MaskData(String dieType, int tierIndex, int usesRemaining)`; `public boolean isSpent()`; `public MaskData consumeUse()` |
+| `MaskRules` (`core`) | `public static boolean canPattern(String dieType, int tierIndex, int installedMaskShopGeneration, DieRules dieRules, GenerationMatrix generationMatrix)`; the installed generation is argument 3 |
+| `MaskDataCodec` (`machine.mask`) | `public static final Codec<MaskData> CODEC = persistentCodec()`; `public static final StreamCodec<ByteBuf, MaskData> STREAM_CODEC = StreamCodec.composite(ByteBufCodecs.STRING_UTF8, MaskData::dieType, ByteBufCodecs.VAR_INT, MaskData::tierIndex, ByteBufCodecs.VAR_INT, MaskData::usesRemaining, MaskData::new)` |
+| `PatternGeneratorBlockEntity` (`machine.mask`) | `MACHINE_ID = "pattern_generator"`; `BLANK_SLOT = 0`, `DESIGN_SLOT = 1`, `INPUT_SLOTS = 2`, `OUTPUT_SLOT = 2`; `MASK_SHOP_GENERATION = 1`; `STATUS_NONE = 0`, `STATUS_NOT_A_MASK = 1`, `STATUS_MISSING_DESIGN = 2`, `STATUS_DESIGN_REFUSED = 3`, `STATUS_COUNT = 1`; `PatternGeneratorBlockEntity(BlockPos, BlockState)`; `protected String machineId()`; `protected AbstractContainerMenu createMachineMenu(int, Inventory, FabMachineBlockEntity)`; `public final ContainerData statusData()`; `public final int status()`; `protected List<MachineRecipe> filterRecipes(List<MachineRecipe>)`; `protected ItemStack prepareOutput(ItemStack)`; `public void serverTick()` |
+| `PatternGeneratorMenu` (`machine.mask`) | `STATUS_DATA_INDEX = 0`; `STATUS_WIRE_INDEX = FabMachineBlockEntity.DATA_COUNT + STATUS_DATA_INDEX`; two constructors `PatternGeneratorMenu(int, Inventory, FabMachineBlockEntity)` and `PatternGeneratorMenu(int, Inventory, RegistryFriendlyByteBuf)`; `protected void addMachineSlots()`; `public final int status()` |
+| `FabMachineBlockEntity` (`machine`) | `DATA_ENERGY = 0`, `DATA_CAPACITY = 1`, `DATA_PROGRESS = 2`, `DATA_TICKS = 3`, `DATA_COUNT = 4` |
+| `MachineRecipeRunner` (`recipe`) | `public void setMachineEnergyPerTick(int machineEnergyPerTick)` |
+| `ModDataComponents` (`registry`) | `MASK_DATA` = component id `lithmod:mask_data`; `.persistent(MaskDataCodec.CODEC).networkSynchronized(MaskDataCodec.STREAM_CODEC)` |
+| `ModItems` (`registry`) | `blank_mask`; `mask` (stack 1, no default `MASK_DATA`); `pattern_generator` |
+| slots | `BLANK_SLOT` 0 and `DESIGN_SLOT` 1 are the two inputs, `OUTPUT_SLOT` 2 is the output |
+| config | `general.maskUses` via `FabConfig.MASK_USES`, read as `settings().maskUses()`, `defineInRange("maskUses", FabSettings.DEFAULT_MASK_USES, 1, 1000)` |
+| machine definition | `data/lithmod/machines/pattern_generator.json`: `id "pattern_generator"`, `energy_capacity 20000`, `max_receive 2000`, `energy_per_tick 20`, `per_tier_energy_per_tick {}`, `input_slots 2`, `output_slots 1` |
 
-public class PatternGeneratorBlockEntity extends FabMachineBlockEntity {
-    public static final String MACHINE_ID = "pattern_generator";
-    public static final int BLANK_SLOT = 0;
-    public static final int DESIGN_SLOT = 1;
-    public static final int INPUT_SLOTS = 2;
-    public static final int OUTPUT_SLOT = 2;
-    public static final int MASK_SHOP_GENERATION = 1;
-    public static final int STATUS_NONE = 0;
-    public static final int STATUS_NOT_A_MASK = 1;
-    public static final int STATUS_MISSING_DESIGN = 2;
-    public static final int STATUS_DESIGN_REFUSED = 3;
-    public static final int STATUS_COUNT = 1;
-    protected String machineId() {
-    protected List<MachineRecipe> filterRecipes(List<MachineRecipe> candidates) {
-    protected ItemStack prepareOutput(ItemStack product) {
-    public void serverTick() {
-
-public class PatternGeneratorMenu extends FabMachineMenu {
-    public static final int STATUS_DATA_INDEX = 0;
-    public static final int STATUS_WIRE_INDEX =
-        FabMachineBlockEntity.DATA_COUNT + STATUS_DATA_INDEX;
-
-public void setMachineEnergyPerTick(int machineEnergyPerTick) {   // MachineRecipeRunner
-```
-
-- Machine id `pattern_generator`. The definition named by the task is `src/main/resources/data/lithmod/machines/pattern_generator.json`, and recipes for that id live under `src/main/resources/data/lithmod/machine_recipes/`.
-- Status values: `STATUS_NONE` 0, `STATUS_NOT_A_MASK` 1, `STATUS_MISSING_DESIGN` 2, `STATUS_DESIGN_REFUSED` 3, with the generator's own status synced at wire index `DATA_COUNT + STATUS_DATA_INDEX` = 4, so both sides see five slots while `DATA_COUNT` stays 4.
-- Config: on completion `usesRemaining` is stamped from the task's `maskUses` config value; the run's per-tick cost is frozen, and a restored paid run must adopt the recipe at that frozen cost.
-- Mask stack caveat: the mask item has no default design, and a mask stack with no component has `usesRemaining` absent, which reads as 0. The generator is energy-only: no item or fluid capability, no hopper access, and external extraction refused.
+- Machine id `pattern_generator`. The definition is `src/main/resources/data/lithmod/machines/pattern_generator.json`, and the machine has no recipes in this milestone.
+- Status values: `STATUS_NONE` 0, `STATUS_NOT_A_MASK` 1, `STATUS_MISSING_DESIGN` 2, `STATUS_DESIGN_REFUSED` 3, with the generator's own status synced at wire index `DATA_COUNT + STATUS_DATA_INDEX` = 4, so both sides receive five synced data values while `DATA_COUNT` stays 4.
+- Config: on completion `usesRemaining` is stamped from `general.maskUses` (`FabConfig.MASK_USES`, read as `settings().maskUses()`); the run's per-tick cost is frozen, and a restored paid run must adopt the recipe at that frozen cost.
+- Mask stack caveat: the mask item has no default design; a bare `mask` stack has **no** `MASK_DATA` component (null) and is refused, while `uses_remaining` defaults to 0 only inside a present component object that already carries the required die type and tier. The generator is energy-only: no item or fluid capability, no hopper access, and external extraction refused.

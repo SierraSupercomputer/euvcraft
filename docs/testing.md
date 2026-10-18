@@ -207,7 +207,7 @@ quoted in those logs are named JUnit assertions, not XML-regex matches.
 
 Game tests: the XML report holds 751 case records, all 751 passed, 0 required failures
 and 0 optional cases skipped, and all 81 registered `lithmod:*` IDs are present and
-passing. Most of the 751 come from the toolchain, so 751 is not the number of project
+passing. Most of the 751 come from other installed mods, so 751 is not the number of project
 tests, and the 81 IDs are cases, not assertions. The 19 new server cases are
 `lithmod:mask_catalog_and_creative_tab`, `lithmod:mask_data_component_round_trip`,
 `lithmod:mask_tooltip_lines`, and these 16: `pattern_generator_block_use_opens_the_menu`,
@@ -233,8 +233,9 @@ Client limit: no live client rendering or screen check was done, and the client-
 ticker branch is not covered — the server tests cover the server ticker and the
 detached-level guard only, not `ClientLevel`. The new models reuse vanilla textures as
 placeholders, and the pre-existing missing GUI bar assets are a disclosed presentation
-follow-up. No visual pass is claimed. The mask data is server persistence, not a network
-packet.
+follow-up. No visual pass is claimed. The public `MaskData` is intentionally networked
+through its registered stream codec; only the private running-recipe snapshot data is
+server persistence.
 
 No three-separate-process repeat of the suite was run for M1-06; that remains M1-12
 acceptance work.
