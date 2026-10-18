@@ -54,6 +54,16 @@ import net.minecraft.world.level.GameType;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import com.mojang.authlib.GameProfile;
+import com.euvcraft.lithmod.mc.data.MachineDefinitionLoader;
+import java.lang.reflect.Field;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.function.UnaryOperator;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.phys.AABB;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.transfer.transaction.Transaction;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.UUID;
@@ -73,6 +83,11 @@ public final class ProcessCellGameTests {
     private static final String ABORT_BUTTON_VALIDATION = "process_cell_abort_button_validation";
     private static final String MENU_PUBLIC_WIRE = "process_cell_menu_public_wire";
     private static final String BLOCK_USE_OPENS_MENU = "process_cell_block_use_opens_menu";
+    private static final String DEFINITION_PAUSE_RESTORE = "process_cell_definition_pause_restore";
+    private static final String MALFORMED_STATE_STAYS_STOPPED = "process_cell_malformed_state_stays_stopped";
+    private static final String ACTIVE_INPUT_TAMPER_STOPS = "process_cell_active_input_tamper_stops";
+    private static final String PARTIAL_BREAK_CONSERVES_INVENTORY = "process_cell_partial_break_conserves_inventory";
+    private static final String HAND_FED_CAPABILITIES = "process_cell_hand_fed_capabilities";
     private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS =
         DeferredRegister.create(Registries.TEST_FUNCTION, "lithmod");
     static {
@@ -86,6 +101,11 @@ public final class ProcessCellGameTests {
         FUNCTIONS.register(MENU_EMPTY_RESIST_TOP_UP, () -> ProcessCellGameTests::menuEmptyResistTopUp);
         FUNCTIONS.register(ABORT_BUTTON_VALIDATION, () -> ProcessCellGameTests::abortButtonValidation);
         FUNCTIONS.register(MENU_PUBLIC_WIRE, () -> ProcessCellGameTests::menuPublicWire);
+        FUNCTIONS.register(DEFINITION_PAUSE_RESTORE, () -> ProcessCellGameTests::definitionPauseRestore);
+        FUNCTIONS.register(MALFORMED_STATE_STAYS_STOPPED, () -> ProcessCellGameTests::malformedStateStaysStopped);
+        FUNCTIONS.register(ACTIVE_INPUT_TAMPER_STOPS, () -> ProcessCellGameTests::activeInputTamperStops);
+        FUNCTIONS.register(PARTIAL_BREAK_CONSERVES_INVENTORY, () -> ProcessCellGameTests::partialBreakConservesInventory);
+        FUNCTIONS.register(HAND_FED_CAPABILITIES, () -> ProcessCellGameTests::handFedCapabilities);
         FUNCTIONS.register(BLOCK_USE_OPENS_MENU, () -> ProcessCellGameTests::blockUseOpensMenu);
     }
     private ProcessCellGameTests() {}
@@ -108,6 +128,11 @@ public final class ProcessCellGameTests {
         register(event, data, MENU_EMPTY_RESIST_TOP_UP);
         register(event, data, ABORT_BUTTON_VALIDATION);
         register(event, data, MENU_PUBLIC_WIRE);
+        register(event, data, DEFINITION_PAUSE_RESTORE);
+        register(event, data, MALFORMED_STATE_STAYS_STOPPED);
+        register(event, data, ACTIVE_INPUT_TAMPER_STOPS);
+        register(event, data, PARTIAL_BREAK_CONSERVES_INVENTORY);
+        register(event, data, HAND_FED_CAPABILITIES);
         register(event, data, BLOCK_USE_OPENS_MENU);
     }
     private static void register(RegisterGameTestsEvent event,
@@ -881,5 +906,371 @@ public final class ProcessCellGameTests {
                 "closing menu after held item returns player to inventory menu");
         });
         h.succeed();
+    }
+
+    private static void definitionPauseRestore(GameTestHelper h) {
+        settings(() -> {
+            Fixture f = fixture(h, 2, 64, 4, false);
+            var cell = f.cell();
+            tick(cell, 4);
+            h.assertValueEqual(1, lot(cell).lotLayer(), "one layer before definition removal");
+            h.assertValueEqual(60, resist(cell), "resist 60 after first layer");
+            long expectedFE = 10000L - 4L * f.cost();
+            h.assertValueEqual(expectedFE, cell.buffer().getAmountAsLong(), "FE after four paid ticks");
+            h.assertValueEqual(4, uses(cell), "mask remains unspent before the run finishes");
+
+            // Save the original registry and swap to one without process_cell
+            swapDefinitions(defs -> without(defs, "process_cell"), () -> {
+                cell.refreshDefinition();
+                tick(cell, 1);
+                h.assertTrue(cell.definition().isEmpty(), "definition missing after swap");
+                h.assertTrue(cell.processState() == ProcessState.PAUSED_STRUCTURE, "PAUSED_STRUCTURE from missing definition");
+                h.assertValueEqual(1, cell.progressTicks(), "partial tick preserved");
+                h.assertValueEqual(1, lot(cell).lotLayer(), "physical layer unchanged");
+                h.assertValueEqual(60, resist(cell), "resist unchanged during pause");
+                h.assertValueEqual(expectedFE, cell.buffer().getAmountAsLong(), "FE unchanged during pause");
+
+                // Save and load while definition is missing
+                CompoundTag saved = save(h.getLevel(), cell);
+                load(h.getLevel(), cell, saved);
+                tick(cell, 1);
+                h.assertTrue(cell.processState() == ProcessState.PAUSED_STRUCTURE, "still paused after reload with missing definition");
+                h.assertValueEqual(1, cell.progressTicks(), "progress still preserved after reload");
+                h.assertValueEqual(f.lotId(), lot(cell).lotId(), "FOUP UUID preserved");
+            });
+
+            // Restore original registry (finally block in swapDefinitions)
+            cell.refreshDefinition();
+            h.assertTrue(cell.definition().isPresent(), "definition restored");
+
+            // Now swap to a modified process_cell with doubled T2 raw cost
+            swapDefinitions(defs -> {
+                MachineDefinition original = defs.stream()
+                    .filter(d -> d.id().equals("process_cell"))
+                    .findFirst()
+                    .orElseThrow();
+                Map<String, Integer> newPerTier = new LinkedHashMap<>(original.perTierEnergyPerTick());
+                Integer originalT2 = newPerTier.get("T2");
+                h.assertTrue(originalT2 != null && originalT2 > 0, "original T2 override exists");
+                newPerTier.put("T2", originalT2 * 2);
+                MachineDefinition modified = new MachineDefinition(
+                    original.id(),
+                    original.energyCapacity(),
+                    original.maxReceive(),
+                    original.energyPerTick(),
+                    newPerTier,
+                    original.params()
+                );
+                return replace(defs, modified);
+            }, () -> {
+                cell.refreshDefinition();
+                Tier tier = TierDataLoader.getRegistry().byIndex(2).orElseThrow();
+                int newCost = cell.definition().orElseThrow().energyPerTick(tier, EUVCRAFTMod.settings());
+                h.assertTrue(newCost != f.cost(), "new cost differs from original fixture cost");
+                // Run remaining 11 layers (32 ticks total = 4 already paid + 32 more = 36 total original paid ticks)
+                // With settings 3 ticks/layer, 12 layers = 36 ticks. We paid 4, need 32 more.
+                tick(cell, 32);
+                completed(h, f, 12, DieTypes.MEMORY);
+                h.assertValueEqual(40, resist(cell), "resist 40 after 12 layers at 2 per layer");
+                h.assertValueEqual(10000L - 36L * f.cost(), cell.buffer().getAmountAsLong(),
+                    "energy paid at original cost for 36 total ticks, not new doubled cost");
+                h.assertValueEqual(3, uses(cell), "mask uses 3 for full T2 run");
+            });
+            // swapDefinitions finally block restores original registry
+        });
+        h.succeed();
+    }
+
+    private static void malformedStateStaysStopped(GameTestHelper h) {
+        settings(() -> {
+            Fixture f = fixture(h, 2, 64, 4, false);
+            var cell = f.cell();
+            tick(cell, 4);
+            h.assertValueEqual(1, lot(cell).lotLayer(), "one layer before corruption test");
+            h.assertValueEqual(1, cell.progressTicks(), "one partial tick");
+            h.assertValueEqual(60, resist(cell), "resist 60");
+            long expectedFE = 10000L - 4L * f.cost();
+            h.assertValueEqual(expectedFE, cell.buffer().getAmountAsLong(), "FE after four ticks");
+            h.assertValueEqual(4, uses(cell), "mask uses 4");
+
+            CompoundTag originalTag = save(h.getLevel(), cell);
+            UUID originalLotId = f.lotId();
+            int originalResist = resist(cell);
+            long originalFE = cell.buffer().getAmountAsLong();
+            int originalUses = uses(cell);
+            int originalLayer = lot(cell).lotLayer();
+
+            // Corruption 1: processRun string bad
+            CompoundTag tag1 = originalTag.copy();
+            CompoundTag runTag1 = tag1.getCompound("processRun").orElseThrow();
+            runTag1.putString("snapshot", "not-a-compound");
+            tag1.put("processRun", runTag1);
+            loadAndAssertStopped(h, cell, tag1, originalLotId, originalLayer, originalResist, originalFE, originalUses);
+
+            // Corruption 2: processRun missing while processHasRun true
+            CompoundTag tag2 = originalTag.copy();
+            tag2.remove("processRun");
+            tag2.putBoolean("processHasRun", true);
+            loadAndAssertStopped(h, cell, tag2, originalLotId, originalLayer, originalResist, originalFE, originalUses);
+
+            // Corruption 3: processHasRun string bad with valid payload
+            CompoundTag tag3 = originalTag.copy();
+            tag3.putString("processHasRun", "not-a-boolean");
+            loadAndAssertStopped(h, cell, tag3, originalLotId, originalLayer, originalResist, originalFE, originalUses);
+
+            // Corruption 4: processHasRun false with valid payload
+            CompoundTag tag4 = originalTag.copy();
+            tag4.putBoolean("processHasRun", false);
+            loadAndAssertStopped(h, cell, tag4, originalLotId, originalLayer, originalResist, originalFE, originalUses);
+
+            // Corruption 5: processAbortLatched string bad with valid payload
+            CompoundTag tag5 = originalTag.copy();
+            tag5.putString("processAbortLatched", "not-a-boolean");
+            loadAndAssertStopped(h, cell, tag5, originalLotId, originalLayer, originalResist, originalFE, originalUses);
+
+            // Corruption 6: processRun.snapshot.progress = -1
+            CompoundTag tag6 = originalTag.copy();
+            CompoundTag runTag6 = tag6.getCompound("processRun").orElseThrow();
+            CompoundTag snapshotTag6 = runTag6.getCompound("snapshot").orElseThrow();
+            snapshotTag6.putInt("progress", -1);
+            runTag6.put("snapshot", snapshotTag6);
+            tag6.put("processRun", runTag6);
+            loadAndAssertStopped(h, cell, tag6, originalLotId, originalLayer, originalResist, originalFE, originalUses);
+
+            // Corruption 7: processRun.contract.lotId = random different UUID
+            CompoundTag tag7 = originalTag.copy();
+            CompoundTag runTag7 = tag7.getCompound("processRun").orElseThrow();
+            CompoundTag contractTag7 = runTag7.getCompound("contract").orElseThrow();
+            contractTag7.putString("lotId", UUID.randomUUID().toString());
+            runTag7.put("contract", contractTag7);
+            tag7.put("processRun", runTag7);
+            loadAndAssertStopped(h, cell, tag7, originalLotId, originalLayer, originalResist, originalFE, originalUses);
+
+            // Positive control: load valid original tag + tick 1 resumes progress 2 without additional resist charge
+            load(h.getLevel(), cell, originalTag);
+            tick(cell, 1);
+            h.assertValueEqual(2, cell.progressTicks(), "positive control resumes to progress 2");
+            h.assertValueEqual(60, resist(cell), "positive control no additional resist charge");
+            h.assertValueEqual(originalLotId, lot(cell).lotId(), "positive control lot UUID preserved");
+            h.assertTrue(cell.inputsLocked(), "positive control still active");
+            h.assertFalse(cell.aborted(), "positive control not aborted");
+        });
+        h.succeed();
+    }
+
+    private static void loadAndAssertStopped(GameTestHelper h, ProcessCellControllerBlockEntity cell,
+            CompoundTag tag, UUID expectedLotId, int expectedLayer, int expectedResist,
+            long expectedFE, int expectedUses) {
+        load(h.getLevel(), cell, tag);
+        tick(cell, 1);
+        h.assertTrue(cell.processState() != ProcessState.RUNNING, "corrupted load stops running");
+        h.assertFalse(cell.inputsLocked(), "corrupted load unlocks inputs");
+        h.assertTrue(cell.aborted(), "corrupted load latches stopped");
+        tick(cell, 3);
+        h.assertValueEqual(expectedLotId, lot(cell).lotId(), "FOUP UUID preserved after corruption");
+        h.assertValueEqual(expectedLayer, lot(cell).lotLayer(), "applied layer preserved after corruption");
+        h.assertValueEqual(expectedResist, resist(cell), "resist preserved after corruption");
+        h.assertValueEqual(expectedFE, cell.buffer().getAmountAsLong(), "FE preserved after corruption");
+        h.assertValueEqual(expectedUses, uses(cell), "mask uses preserved after corruption");
+    }
+
+    private static void activeInputTamperStops(GameTestHelper h) {
+        settings(() -> {
+            Fixture f = fixture(h, 2, 64, 4, false);
+            var cell = f.cell();
+            tick(cell, 4);
+            CompoundTag saved = save(h.getLevel(), cell);
+            ItemStack originalFoup = cell.slot(0).copy();
+            ItemStack originalMask = cell.slot(1).copy();
+            ItemStack originalPart = cell.slot(3).copy();
+            long expectedFE = 10000L - 4L * f.cost();
+            for (int target : new int[]{0, 1, 3}) {
+                load(h.getLevel(), cell, saved);
+                // Restore the accepted run without paying another tick by loading its real snapshot.
+                ItemStack replacement;
+                if (target == 0) {
+                    replacement = FoupItems.with(ModItems.FOUP_MK1.get(), new FoupContents(
+                        UUID.randomUUID(), 2, List.of(new Wafer(0, 1.0f, 0), new Wafer(0, 1.0f, 0))));
+                } else if (target == 1) {
+                    replacement = new ItemStack(ModItems.MASK.get());
+                    replacement.set(ModDataComponents.MASK_DATA.get(), new MaskData(DieTypes.LOGIC, 1, 2));
+                } else replacement = new ItemStack(ModItems.MERCURY_LAMP.get());
+                cell.setSlot(target, replacement.copy());
+                tick(cell, 1);
+                h.assertTrue(cell.aborted() && !cell.inputsLocked(), "tampering stops and unlocks: " + target);
+                h.assertTrue(ItemStack.matches(replacement, cell.slot(target)), "replacement untouched: " + target);
+                h.assertValueEqual(60, resist(cell), "tampering spends no resist");
+                h.assertValueEqual(expectedFE, cell.buffer().getAmountAsLong(), "tampering spends no energy");
+                if (target != 0) h.assertTrue(ItemStack.matches(originalFoup, cell.slot(0)), "accepted FOUP unchanged");
+                if (target != 1) h.assertTrue(ItemStack.matches(originalMask, cell.slot(1)), "accepted mask unchanged");
+                if (target != 3) h.assertTrue(ItemStack.matches(originalPart, cell.slot(3)), "accepted component unchanged");
+                tick(cell, 3);
+                h.assertValueEqual(60, resist(cell), "tampered run stays stopped");
+                h.assertValueEqual(expectedFE, cell.buffer().getAmountAsLong(), "no automatic restart after tampering");
+            }
+        });
+        h.succeed();
+    }
+
+    private static void partialBreakConservesInventory(GameTestHelper h) {
+        settings(() -> {
+            Fixture f = fixture(h, 2, 64, 4, false);
+            var cell = f.cell();
+            tick(cell, 4); // layer 1 complete, partial layer 2 paid (1 tick of 3)
+            h.assertValueEqual(1, lot(cell).lotLayer(), "layer 1 applied");
+            h.assertValueEqual(1, cell.progressTicks(), "partial layer 2 progress 1");
+            h.assertValueEqual(60, resist(cell), "resist 60 after first layer payment");
+            UUID originalLotId = f.lotId();
+            ItemStack originalFoup = cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP).copy();
+            ItemStack originalMask = cell.slot(ProcessCellControllerBlockEntity.SLOT_MASK).copy();
+            ItemStack originalResist = cell.slot(ProcessCellControllerBlockEntity.SLOT_RESIST).copy();
+            ItemStack[] originalComponents = new ItemStack[5];
+            for (int i = 0; i < 5; i++) {
+                originalComponents[i] = cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE + i).copy();
+            }
+
+            // Collect drops by destroying the controller block
+            ServerLevel level = h.getLevel();
+            BlockPos absController = h.absolutePos(new BlockPos(1, 1, 1));
+            AABB area = new AABB(absController).inflate(2.0);
+            List<net.minecraft.world.entity.item.ItemEntity> entitiesBefore = level.getEntities(EntityTypes.ITEM, area, Entity::isAlive);
+
+            // Destroy the controller block (drops items)
+            level.destroyBlock(absController, true, null);
+
+            // Collect all item entities in the area after destruction
+            List<net.minecraft.world.entity.item.ItemEntity> entitiesAfter = level.getEntities(EntityTypes.ITEM, area, Entity::isAlive);
+            Map<Item, Integer> dropCounts = new LinkedHashMap<>();
+            for (Entity e : entitiesAfter) {
+                if (e.getType() == EntityTypes.ITEM) {
+                    net.minecraft.world.entity.item.ItemEntity itemEnt = (net.minecraft.world.entity.item.ItemEntity) e;
+                    boolean isNew = true;
+                    for (Entity before : entitiesBefore) {
+                        if (before.getUUID().equals(e.getUUID())) {
+                            isNew = false;
+                            break;
+                        }
+                    }
+                    if (isNew) {
+                        ItemStack stack = itemEnt.getItem();
+                        dropCounts.merge(stack.getItem(), stack.getCount(), Integer::sum);
+                        if (stack.is(ModItems.FOUP_MK1.get())) h.assertTrue(ItemStack.matches(originalFoup, stack), "FOUP metadata survives break");
+                        if (stack.is(ModItems.MASK.get())) h.assertTrue(ItemStack.matches(originalMask, stack), "mask metadata survives break");
+                    }
+                }
+            }
+
+            // Assert expected inventory drops
+            h.assertValueEqual(1, dropCounts.getOrDefault(ModItems.FOUP_MK1.get(), 0), "one FOUP MK1 dropped");
+            h.assertTrue(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP).isEmpty(), "FOUP slot emptied after break");
+
+            h.assertValueEqual(1, dropCounts.getOrDefault(ModItems.MASK.get(), 0), "one MASK dropped");
+            h.assertValueEqual(60, dropCounts.getOrDefault(ModItems.RESIST_T2.get(), 0), "sixty RESIST_T2 dropped (may be multiple entities)");
+
+            // Each of the five T2 components count 1
+            h.assertValueEqual(1, dropCounts.getOrDefault(ModItems.I_LINE_LAMP.get(), 0), "I_LINE_LAMP count 1");
+            h.assertValueEqual(1, dropCounts.getOrDefault(ModItems.REDUCTION_LENS.get(), 0), "REDUCTION_LENS count 1");
+            h.assertValueEqual(1, dropCounts.getOrDefault(ModItems.STEPPER_STAGE.get(), 0), "STEPPER_STAGE count 1");
+            h.assertValueEqual(1, dropCounts.getOrDefault(ModItems.FINE_AIR_FILTER.get(), 0), "FINE_AIR_FILTER count 1");
+            h.assertValueEqual(1, dropCounts.getOrDefault(ModItems.OVERLAY_SCOPE.get(), 0), "OVERLAY_SCOPE count 1");
+
+            // Controller block loot may also drop one block item
+            int controllerBlockDrops = dropCounts.getOrDefault(ModMultiblocks.PROCESS_CELL_CONTROLLER.get().asItem(), 0);
+            h.assertTrue(controllerBlockDrops <= 1, "controller block drops at most one block item");
+
+            // Assert no other FOUP/chip/scrap outputs
+            for (Map.Entry<Item, Integer> entry : dropCounts.entrySet()) {
+                Item item = entry.getKey();
+                if (item != ModItems.FOUP_MK1.get() && item != ModItems.MASK.get()
+                        && item != ModItems.RESIST_T2.get() && item != ModItems.I_LINE_LAMP.get()
+                        && item != ModItems.REDUCTION_LENS.get() && item != ModItems.STEPPER_STAGE.get()
+                        && item != ModItems.FINE_AIR_FILTER.get() && item != ModItems.OVERLAY_SCOPE.get()
+                        && item != ModMultiblocks.PROCESS_CELL_CONTROLLER.get().asItem()) {
+                    h.assertTrue(false, "unexpected drop: " + item + " count " + entry.getValue());
+                }
+            }
+        });
+        h.succeed();
+    }
+
+    private static void handFedCapabilities(GameTestHelper h) {
+        settings(() -> {
+            Fixture f = fixture(h, 2, 64, 4, false);
+            var cell = f.cell();
+            ServerLevel level = h.getLevel();
+            List<Direction> sides = new ArrayList<>(List.of(Direction.values()));
+            sides.add(null);
+            for (int x = 1; x <= 2; x++) for (int y = 1; y <= 2; y++) for (int z = 1; z <= 3; z++) {
+                BlockPos pos = h.absolutePos(new BlockPos(x, y, z));
+                boolean port = z == 3 && (x == 1 && y == 1 || x == 2 && y == 2);
+                for (Direction side : sides) {
+                    h.assertTrue(level.getCapability(Capabilities.Item.BLOCK, pos, side) == null, "no item automation");
+                    h.assertTrue(level.getCapability(Capabilities.Fluid.BLOCK, pos, side) == null, "no fluid automation");
+                    var energy = level.getCapability(Capabilities.Energy.BLOCK, pos, side);
+                    h.assertTrue((energy != null) == port, "only formed ports expose energy");
+                    if (energy != null) {
+                        long before = cell.buffer().getAmountAsLong();
+                        try (Transaction tx = Transaction.openRoot()) {
+                            h.assertValueEqual(100, energy.insert(100, tx), "port insertion works");
+                            tx.commit();
+                        }
+                        try (Transaction tx = Transaction.openRoot()) {
+                            h.assertValueEqual(0, energy.extract(100, tx), "external extraction refused");
+                            tx.commit();
+                        }
+                        h.assertValueEqual(before + 100, cell.buffer().getAmountAsLong(), "all ports use inherited buffer");
+                    }
+                }
+            }
+            h.setBlock(new BlockPos(2, 1, 1), Blocks.AIR.defaultBlockState());
+            cell.revalidate();
+            h.assertFalse(cell.isFormed(), "broken cell unformed");
+            for (BlockPos port : List.of(new BlockPos(1, 1, 3), new BlockPos(2, 2, 3))) {
+                for (Direction side : sides) h.assertTrue(
+                    level.getCapability(Capabilities.Energy.BLOCK, h.absolutePos(port), side) == null,
+                    "unformed port no longer exposes energy");
+            }
+        });
+        h.succeed();
+    }
+
+    // Helper: swap definitions using the actual helper from PackagingGameTests
+    private static void swapDefinitions(UnaryOperator<List<MachineDefinition>> swap, Runnable body) {
+        try {
+            Field live = MachineDefinitionLoader.class.getDeclaredField("CURRENT");
+            live.setAccessible(true);
+            Field loaded = com.euvcraft.lithmod.mc.data.JsonResourceDataLoader.class.getDeclaredField("current");
+            loaded.setAccessible(true);
+            Object loader = live.get(null);
+            if (loader == null) {
+                throw new AssertionError("no MachineDefinitionLoader instance exists, so the "
+                    + "definition fixtures cannot be installed");
+            }
+            MachineDefinitionLoader.Registry previous =
+                (MachineDefinitionLoader.Registry) loaded.get(loader);
+            try {
+                List<MachineDefinition> next = swap.apply(previous.all());
+                loaded.set(loader, MachineDefinitionLoader.build(next, "M1-09 game test"));
+                body.run();
+            } finally {
+                loaded.set(loader, previous);
+            }
+        } catch (ReflectiveOperationException | ClassCastException failure) {
+            throw new AssertionError("the machine definition registry could not be swapped", failure);
+        }
+    }
+
+    private static List<MachineDefinition> without(List<MachineDefinition> definitions, String machineId) {
+        return definitions.stream()
+            .filter(definition -> !definition.id().equals(machineId))
+            .toList();
+    }
+
+    private static List<MachineDefinition> replace(List<MachineDefinition> definitions, MachineDefinition replacement) {
+        List<MachineDefinition> swapped = new ArrayList<>(definitions.size());
+        for (MachineDefinition definition : definitions) {
+            swapped.add(definition.id().equals(replacement.id()) ? replacement : definition);
+        }
+        return swapped;
     }
 }
