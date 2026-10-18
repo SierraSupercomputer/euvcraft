@@ -1,7 +1,13 @@
 package com.euvcraft.lithmod.mc.multiblock;
 
+import com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
@@ -16,6 +22,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.phys.BlockHitResult;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -71,7 +78,7 @@ public class ProcessCellControllerBlock extends BaseEntityBlock {
 
     @Override
     public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level level, BlockState state,
-                                                                          BlockEntityType<T> type) {
+                                                                           BlockEntityType<T> type) {
         if (level.isClientSide()) {
             return null;
         }
@@ -80,6 +87,23 @@ public class ProcessCellControllerBlock extends BaseEntityBlock {
                 controller.serverTick();
             }
         };
+    }
+
+    /**
+     * Opens the controller menu on right-click. Matches {@link SiliconMachineBlock#useItemOn}
+     * signature exactly: server opens menu and returns SUCCESS, client returns PASS.
+     */
+    @Override
+    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
+                                          Player player, InteractionHand hand, BlockHitResult hit) {
+        if (level.isClientSide()) {
+            return InteractionResult.PASS;
+        }
+        if (level.getBlockEntity(pos) instanceof FabMachineBlockEntity machine) {
+            player.openMenu(machine, pos);
+            return InteractionResult.SUCCESS;
+        }
+        return InteractionResult.PASS;
     }
 
     /**
