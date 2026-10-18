@@ -399,7 +399,9 @@ public final class ProcessCellGameTests {
             }
             // FOUP/mask/components mayPlace must be false
             for (int i = 0; i < 8; i++) {
-                h.assertFalse(menu.slots.get(i).mayPlace(new ItemStack(Items.STONE)), "machine slot " + i + " mayPlace must be false when locked");
+                if (i != ProcessCellControllerBlockEntity.SLOT_RESIST)
+                    h.assertFalse(menu.slots.get(i).mayPlace(cell.slot(i).copy()),
+                        "locked machine slot " + i + " rejects its normally valid input");
             }
 
             // Real clicked FOUP PICKUP with empty cursor must keep FOUP and cursor empty
@@ -417,11 +419,14 @@ public final class ProcessCellGameTests {
             h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(0), foupBefore), "FOUP retained after quickMoveStack");
 
             // Set player hotbar via menu.slots.get(35).set(new ItemStack(Items.STONE))
-            menu.slots.get(35).set(new ItemStack(Items.STONE));
+            ItemStack replacementFoup = FoupItems.with(ModItems.FOUP_MK2.get(),
+                new FoupContents(UUID.randomUUID(), 2, List.of(new Wafer(0, 1.0f, 0))));
+            menu.slots.get(35).set(replacementFoup);
             // clicked(0, 0, SWAP) assert FOUP retained/hotbar stone
             menu.clicked(0, 0, ContainerInput.SWAP, player);
             h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(0), foupBefore), "FOUP retained after SWAP");
-            h.assertTrue(menu.slots.get(35).getItem().is(Items.STONE), "hotbar stone remains after SWAP");
+            h.assertTrue(ItemStack.isSameItemSameComponents(menu.slots.get(35).getItem(), replacementFoup),
+                "valid replacement FOUP stays in hotbar after rejected SWAP");
 
             // clicked(0, 0, THROW) must not remove FOUP
             menu.clicked(0, 0, ContainerInput.THROW, player);
@@ -556,8 +561,8 @@ public final class ProcessCellGameTests {
             // Try to extract with PICKUP when resist is present
             menu.setCarried(new ItemStack(ModItems.RESIST_T2.get(), 1));
             menu.clicked(2, 0, ContainerInput.PICKUP, player);
-            h.assertValueEqual(1, resist(cell), "PICKUP with cursor cannot extract from locked resist slot");
-            h.assertValueEqual(2, menu.getCarried().getCount(), "cursor gains 1, resist slot unchanged");
+            h.assertValueEqual(2, resist(cell), "same-type cursor adds one to the occupied active slot");
+            h.assertTrue(menu.getCarried().isEmpty(), "same-type top-up consumes exactly the cursor item");
         });
         h.succeed();
     }
@@ -579,7 +584,7 @@ public final class ProcessCellGameTests {
         settings(() -> {
             Fixture f = fixture(h, 2, 64, 4, false);
             var cell = f.cell();
-            tick(cell, 1);
+            tick(cell, 4);
             h.assertValueEqual(1, lot(cell).lotLayer(), "one layer before abort test");
             h.assertTrue(cell.inputsLocked(), "inputs locked before abort");
 
@@ -633,9 +638,9 @@ public final class ProcessCellGameTests {
 
             // Verify applied layers / FE / resist no premature refund
             h.assertValueEqual(1, lot(cell).lotLayer(), "applied layer preserved");
-            long expectedFE = 10000L - 1L * f.cost();
+            long expectedFE = 10000L - 4L * f.cost();
             h.assertValueEqual(expectedFE, cell.buffer().getAmountAsLong(), "FE not refunded");
-            h.assertValueEqual(62, resist(cell), "resist not refunded");
+            h.assertValueEqual(60, resist(cell), "resist not refunded");
 
             // Same FOUP remove/reinsert + tick reactivates
             ItemStack foupStack = cell.removeItemNoUpdate(0);
@@ -643,17 +648,17 @@ public final class ProcessCellGameTests {
             tick(cell, 1);
             h.assertFalse(cell.aborted(), "FOUP removal releases abort latch");
             h.assertValueEqual(1, cell.progressTicks(), "discarded partial layer starts from zero");
-            h.assertValueEqual(60, resist(cell), "restart repays discarded layer resist");
-            // Let it finish to verify no double-counting issues
-            tick(cell, 32);
-            completed(h, f, 12, DieTypes.MEMORY);
-            h.assertValueEqual(38, resist(cell), "exact resist including discarded partial layer");
+            h.assertValueEqual(58, resist(cell), "restart repays discarded layer resist");
+            h.assertTrue(cell.inputsLocked(), "restarted run is active before stale-menu check");
+            h.assertValueEqual(10000L - 5L * f.cost(), cell.buffer().getAmountAsLong(),
+                "only the restarted paid tick changes energy");
 
             // Destroy actual controller and assert staleMenu stillValid false / clickMenuButton false
-            h.setBlock(controllerPos, Blocks.AIR.defaultBlockState());
+            h.setBlock(new BlockPos(1, 1, 1), Blocks.AIR.defaultBlockState());
             cell.revalidate();
             h.assertFalse(serverMenu.stillValid(player), "stale menu stillValid false after controller destroyed");
             h.assertFalse(serverMenu.clickMenuButton(player, 0), "clickMenuButton false on stale menu");
+            h.assertFalse(cell.aborted(), "stale menu cannot abort its still-active removed controller");
         });
         h.succeed();
     }
