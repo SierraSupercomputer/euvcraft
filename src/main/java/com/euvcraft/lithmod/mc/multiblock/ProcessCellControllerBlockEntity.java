@@ -1,5 +1,6 @@
 package com.euvcraft.lithmod.mc.multiblock;
 
+import com.mojang.serialization.Codec;
 import com.euvcraft.lithmod.core.multiblock.BlockKind;
 import com.euvcraft.lithmod.core.multiblock.MatchResult;
 import com.euvcraft.lithmod.core.multiblock.MultiblockDirection;
@@ -501,14 +502,25 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         this.formed = input.getInt("formed").orElse(0) != 0;
         this.failureReason = input.getString("failureReason").orElse("");
         run = null; contract = null; pendingRun = null; lastRefusal = null;
-        abortLatched = input.getBooleanOr("processAbortLatched", false);
+        abortLatched = false;
         needsValidation = true;
-        if (input.getBooleanOr("processHasRun", false)) {
-            try {
+        try {
+            boolean hasRunField = input.read("processHasRun", Codec.PASSTHROUGH).isPresent();
+            boolean abortField = input.read("processAbortLatched", Codec.PASSTHROUGH).isPresent();
+            boolean payloadField = input.read("processRun", Codec.PASSTHROUGH).isPresent();
+            var hasRun = input.read("processHasRun", Codec.BOOL);
+            var stopped = input.read("processAbortLatched", Codec.BOOL);
+            abortLatched = stopped.orElse(false);
+            // Legacy idle saves have no run keys. Present but malformed or inconsistent
+            // keys must never turn accepted partial work into a new automatic admission.
+            if ((hasRunField && hasRun.isEmpty()) || (abortField && stopped.isEmpty())
+                    || (payloadField && !hasRun.orElse(false))) {
+                stopInvalidRun();
+            } else if (hasRun.orElse(false)) {
                 pendingRun = input.read("processRun", ProcessCellRunPersistence.CODEC).orElse(null);
                 if (pendingRun == null || abortLatched) stopInvalidRun();
-            } catch (RuntimeException malformed) { stopInvalidRun(); }
-        }
+            }
+        } catch (RuntimeException malformed) { stopInvalidRun(); }
         publishProgress();
         // Formation member list remains world-derived (not persisted)
     }
