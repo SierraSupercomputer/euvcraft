@@ -30,14 +30,11 @@ import java.util.List;
  */
 public abstract class FabMachineScreen<M extends FabMachineMenu> extends AbstractContainerScreen<M> {
 
-    /** Sprite for the energy bar, drawn from the bottom up. */
-    public static final Identifier ENERGY_BAR =
-        Identifier.fromNamespaceAndPath("lithmod", "widget/energy_bar");
-    /** Sprite for the progress bar, drawn from the left. */
-    public static final Identifier PROGRESS_BAR =
-        Identifier.fromNamespaceAndPath("lithmod", "widget/progress_bar");
+    /** Sprite for slot backgrounds. */
+    public static final Identifier SLOT_BACKGROUND =
+        Identifier.fromNamespaceAndPath("lithmod", "widget/slot_background");
 
-    /** Sprite sheet size; both bars are drawn as sub-rectangles of one image. */
+    /** Sprite sheet size; slot background is drawn as a sub-rectangle of one image. */
     public static final int SPRITE_SIZE = 64;
 
     /** Height of the energy bar in pixels. */
@@ -49,6 +46,10 @@ public abstract class FabMachineScreen<M extends FabMachineMenu> extends Abstrac
     /** Height of the progress bar in pixels. */
     public static final int PROGRESS_BAR_HEIGHT = 16;
 
+    private static final int ENERGY_BAR_EMPTY_COLOR = 0xFF1A1A2E;
+    private static final int ENERGY_BAR_FILL_COLOR = 0xFF00FF88;
+    private static final int PROGRESS_BAR_EMPTY_COLOR = 0xFF1A1A2E;
+    private static final int PROGRESS_BAR_FILL_COLOR = 0xFFFFD700;
     private static final int ENERGY_TEXT_COLOR = 0x404040;
     private static final int TOOLTIP_COLOR = 0xF0F0F0;
 
@@ -98,15 +99,20 @@ public abstract class FabMachineScreen<M extends FabMachineMenu> extends Abstrac
         int x = leftPos + energyBarX();
         int y = topPos + energyBarY();
 
-        // The empty socket.
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, ENERGY_BAR,
-            SPRITE_SIZE, SPRITE_SIZE, 0, 0, x, y, ENERGY_BAR_WIDTH, ENERGY_BAR_HEIGHT);
+        // Dark empty background
+        graphics.fill(RenderPipelines.GUI_TEXTURED, x, y, x + ENERGY_BAR_WIDTH, y + ENERGY_BAR_HEIGHT, ENERGY_BAR_EMPTY_COLOR);
 
-        int fill = Math.round(ENERGY_BAR_HEIGHT * menu.energyFraction());
-        if (fill > 0) {
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, ENERGY_BAR,
-                SPRITE_SIZE, SPRITE_SIZE, 0, 0,
-                x, y + ENERGY_BAR_HEIGHT - fill, ENERGY_BAR_WIDTH, fill);
+        // Energy fill rising bottom-up
+        float fraction = menu.energyFraction();
+        if (fraction > 0.0f) {
+            fraction = Math.min(1.0f, Math.max(0.0f, fraction));
+            int fill = Math.round(ENERGY_BAR_HEIGHT * fraction);
+            if (fill > 0) {
+                graphics.fill(RenderPipelines.GUI_TEXTURED,
+                    x, y + ENERGY_BAR_HEIGHT - fill,
+                    x + ENERGY_BAR_WIDTH, y + ENERGY_BAR_HEIGHT,
+                    ENERGY_BAR_FILL_COLOR);
+            }
         }
     }
 
@@ -114,13 +120,20 @@ public abstract class FabMachineScreen<M extends FabMachineMenu> extends Abstrac
         int x = leftPos + progressBarX();
         int y = topPos + progressBarY();
 
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PROGRESS_BAR,
-            SPRITE_SIZE, SPRITE_SIZE, 0, 0, x, y, PROGRESS_BAR_WIDTH, PROGRESS_BAR_HEIGHT);
+        // Dark empty background
+        graphics.fill(RenderPipelines.GUI_TEXTURED, x, y, x + PROGRESS_BAR_WIDTH, y + PROGRESS_BAR_HEIGHT, PROGRESS_BAR_EMPTY_COLOR);
 
-        int fill = Math.round(PROGRESS_BAR_WIDTH * menu.progressFraction());
-        if (fill > 0) {
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PROGRESS_BAR,
-                SPRITE_SIZE, SPRITE_SIZE, 0, 0, x, y, fill, PROGRESS_BAR_HEIGHT);
+        // Progress fill left-to-right
+        float fraction = menu.progressFraction();
+        if (fraction > 0.0f) {
+            fraction = Math.min(1.0f, Math.max(0.0f, fraction));
+            int fill = Math.round(PROGRESS_BAR_WIDTH * fraction);
+            if (fill > 0) {
+                graphics.fill(RenderPipelines.GUI_TEXTURED,
+                    x, y,
+                    x + fill, y + PROGRESS_BAR_HEIGHT,
+                    PROGRESS_BAR_FILL_COLOR);
+            }
         }
     }
 
@@ -143,14 +156,14 @@ public abstract class FabMachineScreen<M extends FabMachineMenu> extends Abstrac
 
         if (hasEnergyBar() && inside(localX, localY, energyBarX(), energyBarY(),
                 ENERGY_BAR_WIDTH, ENERGY_BAR_HEIGHT)) {
-            showTooltip(graphics, mouseX, mouseY, List.of(Component.literal(
-                "FE " + menu.energy() + " / " + menu.energyCapacity())));
+            showTooltip(graphics, mouseX, mouseY, List.of(Component.translatable(
+                "screen.lithmod.energy", menu.energy(), menu.energyCapacity())));
             return;
         }
         if (hasProgressBar() && inside(localX, localY, progressBarX(), progressBarY(),
                 PROGRESS_BAR_WIDTH, PROGRESS_BAR_HEIGHT)) {
-            showTooltip(graphics, mouseX, mouseY, List.of(Component.literal(
-                "Progress " + menu.progress() + " / " + menu.ticks())));
+            showTooltip(graphics, mouseX, mouseY, List.of(Component.translatable(
+                "screen.lithmod.progress", menu.progress(), menu.ticks())));
         }
     }
 

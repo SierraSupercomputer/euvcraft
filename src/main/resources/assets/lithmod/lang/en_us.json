@@ -98,5 +98,7 @@
   "label.lithmod.process_cell.layer_none": "Layer: -",
   "label.lithmod.process_cell.design": "Design: %s, %s",
   "label.lithmod.process_cell.design_none": "Design: -",
-  "button.lithmod.process_cell.abort": "Abort"
+  "button.lithmod.process_cell.abort": "Abort",
+  "screen.lithmod.energy": "Energy: %s / %s FE",
+  "screen.lithmod.progress": "Progress: %s / %s"
 }

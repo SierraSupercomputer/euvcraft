@@ -1,6 +1,7 @@
 package com.euvcraft.lithmod.mc.registry;
 
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
+import com.euvcraft.lithmod.mc.FoupItem;
 import com.euvcraft.lithmod.mc.machine.test.ModMachines;
 import com.euvcraft.lithmod.mc.LineComponentItem;
 import com.euvcraft.lithmod.mc.multiblock.ModMultiblocks;
@@ -42,10 +43,10 @@ public final class ModItems {
     public static final Items ITEMS = DeferredRegister.createItems(EUVCRAFTMod.MODID);
 
     /** FOUP Mk1: the basic sealed lot carrier. */
-    public static final DeferredItem<Item> FOUP_MK1 = ITEMS.registerSimpleItem("foup_mk1", properties -> properties.stacksTo(1));
+    public static final DeferredItem<Item> FOUP_MK1 = ITEMS.registerItem("foup_mk1", FoupItem::new, properties -> properties.stacksTo(1));
 
     /** FOUP Mk2: reserved for Encoded Logistics transit support. */
-    public static final DeferredItem<Item> FOUP_MK2 = ITEMS.registerSimpleItem("foup_mk2", properties -> properties.stacksTo(1));
+    public static final DeferredItem<Item> FOUP_MK2 = ITEMS.registerItem("foup_mk2", FoupItem::new, properties -> properties.stacksTo(1));
 
     /** A logic die cut at node tier 1. */
     public static final DeferredItem<Item> LOGIC_CHIP_T1 = ITEMS.registerSimpleItem("logic_chip_t1");
