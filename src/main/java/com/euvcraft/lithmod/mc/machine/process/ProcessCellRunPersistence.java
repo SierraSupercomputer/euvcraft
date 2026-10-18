@@ -1,455 +1,508 @@
 package com.euvcraft.lithmod.mc.machine.process;
 
+import com.euvcraft.lithmod.core.DefaultStatRules;
+import com.euvcraft.lithmod.core.DieTypes;
 import com.euvcraft.lithmod.core.FabSettings;
 import com.euvcraft.lithmod.core.GenerationMatrix;
+import com.euvcraft.lithmod.core.LineComponents;
+import com.euvcraft.lithmod.core.LineLoadout;
 import com.euvcraft.lithmod.core.LineStats;
 import com.euvcraft.lithmod.core.MaskData;
 import com.euvcraft.lithmod.core.ProcessRun;
 import com.euvcraft.lithmod.core.ProcessRunRequest;
 import com.euvcraft.lithmod.core.ProcessState;
-import com.euvcraft.lithmod.core.RefusalReason;
-import com.euvcraft.lithmod.core.RunSpec;
+import com.euvcraft.lithmod.core.StatRules;
 import com.euvcraft.lithmod.core.SupportLines;
 import com.euvcraft.lithmod.core.Tier;
 import com.euvcraft.lithmod.core.TierRegistry;
-import com.euvcraft.lithmod.mc.EUVCRAFTMod;
-import com.euvcraft.lithmod.mc.FabYieldService;
+import com.euvcraft.lithmod.mc.ComponentCatalog;
 import com.euvcraft.lithmod.mc.FoupItems;
 import com.euvcraft.lithmod.mc.LineLoadoutReader;
+import com.euvcraft.lithmod.mc.ModDataComponents;
+import com.euvcraft.lithmod.mc.ModItems;
 import com.euvcraft.lithmod.mc.ResistCatalog;
-import com.euvcraft.lithmod.mc.TierDataLoader;
-import com.euvcraft.lithmod.mc.SupportLineDataLoader;
-import com.euvcraft.lithmod.mc.multiblock.ProcessCellControllerBlockEntity;
-import com.euvcraft.lithmod.mc.registry.ModDataComponents;
-import com.euvcraft.lithmod.mc.registry.ModItems;
+import com.euvcraft.lithmod.mc.data.TierCodec;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.storage.ValueInput;
-import net.minecraft.world.level.storage.ValueOutput;
 import org.jspecify.annotations.Nullable;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
- * Private persistence for the Process Cell controller's run state.
+ * Private persistence helper for the Process Cell controller's run state.
  * <p>
- * Saves and restores the {@link ProcessRun} snapshot using the CURRENT persisted lot,
- * not the initial lot. Validates malformed values BEFORE FabSettings clamping.
- * Rejects inconsistent snapshot safely without resetting into a free new run.
- * Restore must survive definitions missing/changed and resume under original
- * accepted cost/schedule when definition returns.
+ * Provides a self-contained immutable data API for saving and restoring
+ * {@link ProcessRun} snapshots with a validated frozen admission contract.
+ * No controller imports, no ValueInput/ValueOutput, no CompoundTag, no reflection.
  */
 public final class ProcessCellRunPersistence {
-
-    private static final String TAG_RUN = "processRun";
-    private static final String TAG_ABORT_LATCHED = "abortLatched";
-    private static final String TAG_LAST_LOT_ID = "lastLotId";
-    private static final String TAG_LAST_REFUSAL = "lastRefusal";
-    private static final String TAG_INSTALLED_GENERATIONS = "installedGenerations";
-
-    // Snapshot fields
-    private static final String TAG_STATE = "state";
-    private static final String TAG_CURRENT_LAYER = "currentLayer";
-    private static final String TAG_PROGRESS_TICKS = "progressTicks";
-    private static final String TAG_RESIST_PAID = "resistPaid";
-    private static final String TAG_MASK_USE_CONSUMED = "maskUseConsumed";
-    private static final String TAG_FINISH_EVENTS_EMITTED = "finishEventsEmitted";
-
-    // Frozen admission contract fields
-    private static final String TAG_DIE_TYPE = "dieType";
-    private static final String TAG_TIER_INDEX = "tierIndex";
-    private static final String TAG_USES_REMAINING = "usesRemaining";
-    private static final String TAG_LINE_STATS = "lineStats";
-    private static final String TAG_LINE_CAN_RUN_TIER = "lineCanRunTier";
-    private static final String TAG_DIE_MAKEABLE = "dieMakeable";
-    private static final String TAG_ENERGY_PER_TICK = "energyPerTick";
-    private static final String TAG_RESIST_TEMPLATE_TIER = "resistTemplateTier";
-    private static final String TAG_RESIST_TEMPLATE_COUNT = "resistTemplateCount";
 
     private ProcessCellRunPersistence() {
     }
 
     /**
-     * Saves the run state to NBT.
+     * Frozen admission contract containing all data needed to reconstruct a
+     * {@link ProcessRunRequest} without any global loaders or live definitions.
      */
-    public static void save(ProcessCellControllerBlockEntity controller, ValueOutput output) {
-        ValueOutput runOutput = output.child(TAG_RUN);
+    public record Contract(
+            Tier tier,
+            String dieType,
+            int usesRemaining,
+            int layerTicks,
+            int resistPerLayer,
+            int energyPerTick,
+            LineStats lineStats,
+            List<Tier> tiers,
+            Map<String, List<Integer>> requiredGenerations,
+            ItemStack mask,
+            List<ItemStack> components,
+            ItemStack resistTemplate,
+            UUID lotId,
+            ItemStack foupTemplate
+    ) {
 
-        runOutput.putBoolean(TAG_ABORT_LATCHED, controller.abortLatched);
+        private static final List<String> COMPONENT_KINDS = List.of(
+                "light_source", "optics", "stage", "cleanroom", "metrology"
+        );
 
-        if (controller.lastLotId != null) {
-            runOutput.putUUID(TAG_LAST_LOT_ID, controller.lastLotId);
-        }
+        /**
+         * Validated constructor with defensive copies and strict validation.
+         */
+        public Contract {
+            Objects.requireNonNull(tier, "tier must not be null");
+            Objects.requireNonNull(dieType, "dieType must not be null");
+            Objects.requireNonNull(lineStats, "lineStats must not be null");
+            Objects.requireNonNull(tiers, "tiers must not be null");
+            Objects.requireNonNull(requiredGenerations, "requiredGenerations must not be null");
+            Objects.requireNonNull(mask, "mask must not be null");
+            Objects.requireNonNull(components, "components must not be null");
+            Objects.requireNonNull(resistTemplate, "resistTemplate must not be null");
+            Objects.requireNonNull(lotId, "lotId must not be null");
+            Objects.requireNonNull(foupTemplate, "foupTemplate must not be null");
 
-        if (controller.lastRefusal != null) {
-            ValueOutput refusalOutput = runOutput.child(TAG_LAST_REFUSAL);
-            refusalOutput.putString("code", controller.lastRefusal.code().name());
-            ListTag unmetLinesTag = new ListTag();
-            for (String line : controller.lastRefusal.unmetLines()) {
-                unmetLinesTag.add(line);
+            // Validate tier index (M1 playable: 1 or 2)
+            if (tier.index() < 1 || tier.index() > 2) {
+                throw new IllegalArgumentException("tier index must be 1 or 2, got " + tier.index());
             }
-            refusalOutput.put("unmetLines", unmetLinesTag);
-        }
 
-        if (controller.installedGenerationsSnapshot != null) {
-            ListTag gensTag = new ListTag();
-            for (Map.Entry<String, Integer> e : controller.installedGenerationsSnapshot.entrySet()) {
-                CompoundTag entry = new CompoundTag();
-                entry.putString("line", e.getKey());
-                entry.putInt("gen", e.getValue());
-                gensTag.add(entry);
+            // Validate die type
+            if (!DieTypes.ALL.contains(dieType)) {
+                throw new IllegalArgumentException("dieType must be canonical, got " + dieType);
             }
-            runOutput.put(TAG_INSTALLED_GENERATIONS, gensTag);
-        }
 
-        if (controller.run != null) {
-            ProcessRun.Snapshot snapshot = controller.run.snapshot();
-            ValueOutput runDataOutput = runOutput.child("runData");
-            runDataOutput.putString(TAG_STATE, snapshot.state().name());
-            runDataOutput.putInt(TAG_CURRENT_LAYER, snapshot.currentLayer());
-            runDataOutput.putInt(TAG_PROGRESS_TICKS, snapshot.progressTicks());
-            runDataOutput.putBoolean(TAG_RESIST_PAID, snapshot.resistPaid());
-            runDataOutput.putBoolean(TAG_MASK_USE_CONSUMED, snapshot.maskUseConsumed());
-            runDataOutput.putBoolean(TAG_FINISH_EVENTS_EMITTED, snapshot.finishEventsEmitted());
+            // Validate uses remaining
+            if (usesRemaining <= 0) {
+                throw new IllegalArgumentException("usesRemaining must be positive, got " + usesRemaining);
+            }
 
-            // Frozen admission contract
-            ProcessRunRequest request = controller.run.request();
-            runDataOutput.putString(TAG_DIE_TYPE, request.dieType());
-            runDataOutput.putInt(TAG_TIER_INDEX, request.tier().index());
-            runDataOutput.putInt(TAG_USES_REMAINING, request.usesRemaining());
-            runDataOutput.putBoolean(TAG_LINE_CAN_RUN_TIER, request.lineCanRunTier());
-            runDataOutput.putBoolean(TAG_DIE_MAKEABLE, request.dieMakeable());
-            runDataOutput.putInt(TAG_ENERGY_PER_TICK, request.energyPerTick());
+            // Validate layerTicks range
+            if (layerTicks < 1 || layerTicks > 72000) {
+                throw new IllegalArgumentException("layerTicks must be in [1, 72000], got " + layerTicks);
+            }
 
-            // Resist template (including when slot runs empty)
-            ItemStack resistStack = controller.slot(ProcessCellControllerBlockEntity.SLOT_RESIST);
-            runDataOutput.putInt(TAG_RESIST_TEMPLATE_TIER, ResistCatalog.tierOf(resistStack));
-            runDataOutput.putInt(TAG_RESIST_TEMPLATE_COUNT, resistStack.getCount());
+            // Validate resistPerLayer range
+            if (resistPerLayer < 0 || resistPerLayer > 64) {
+                throw new IllegalArgumentException("resistPerLayer must be in [0, 64], got " + resistPerLayer);
+            }
 
-            // LineStats
-            LineStats ls = request.lineStats();
-            ValueOutput lsOutput = runDataOutput.child(TAG_LINE_STATS);
-            lsOutput.putInt("resolutionNm", ls.resolutionNm());
-            lsOutput.putInt("overlayNm", ls.overlayNm());
-            lsOutput.putInt("throughputWph", ls.throughputWph());
-            lsOutput.putDouble("defectFactor", ls.defectFactor());
-            lsOutput.putInt("resolutionTier", ls.resolutionTier());
-            lsOutput.putInt("overlayTier", ls.overlayTier());
-            lsOutput.putInt("throughputTier", ls.throughputTier());
-        }
-    }
+            // Validate energyPerTick
+            if (energyPerTick < 0) {
+                throw new IllegalArgumentException("energyPerTick must be >= 0, got " + energyPerTick);
+            }
 
-    /**
-     * Loads the run state from NBT.
-     * Validates malformed values BEFORE FabSettings clamping.
-     * Rejects inconsistent snapshot safely without resetting into a free new run.
-     * Defers restoring a pending serialized contract until first server tick if required.
-     */
-    public static void load(ProcessCellControllerBlockEntity controller, ValueInput input) {
-        ValueInput runInput = input.childOrEmpty(TAG_RUN);
-        if (runInput == null) {
-            return;
-        }
+            // Validate defect factor
+            if (!Double.isFinite(lineStats.defectFactor()) || lineStats.defectFactor() < 0.0 || lineStats.defectFactor() > 1.0) {
+                throw new IllegalArgumentException("defectFactor must be finite in [0.0, 1.0], got " + lineStats.defectFactor());
+            }
 
-        // Load abort latch
-        controller.abortLatched = runInput.getBoolean(TAG_ABORT_LATCHED).orElse(false);
-
-        // Load last lot ID
-        if (runInput.hasUUID(TAG_LAST_LOT_ID)) {
-            controller.lastLotId = runInput.getUUID(TAG_LAST_LOT_ID);
-        }
-
-        // Load last refusal
-        ValueInput refusalInput = runInput.childOrEmpty(TAG_LAST_REFUSAL);
-        if (refusalInput != null) {
-            String codeStr = refusalInput.getString("code").orElse("");
-            // Reading list from ValueInput is limited - we'll rely on M1_STUB_GENERATIONS being constant
-            List<String> unmetLines = List.of();
+            // Defensive copy and validate tiers list (must be exactly 8 tiers T1-T8)
+            tiers = List.copyOf(tiers);
+            TierRegistry tierRegistry;
             try {
-                RefusalReason.Code code = RefusalReason.Code.valueOf(codeStr);
-                controller.lastRefusal = new RefusalReason(code, unmetLines);
+                tierRegistry = TierRegistry.build(tiers, "Contract.tiers");
             } catch (IllegalArgumentException e) {
-                // Malformed refusal - ignore
-                controller.lastRefusal = null;
+                throw new IllegalArgumentException("tiers must form a valid 8-tier registry T1-T8: " + e.getMessage());
             }
-        }
 
-        // Load installed generations snapshot
-        // Reading list from ValueInput is limited - we'll rely on M1_STUB_GENERATIONS being constant
-        controller.installedGenerationsSnapshot = Map.copyOf(M1_STUB_GENERATIONS);
+            // Validate selected tier equals corresponding saved tier
+            Optional<Tier> savedTierOpt = tierRegistry.byIndex(tier.index());
+            if (savedTierOpt.isEmpty() || !savedTierOpt.get().id().equals(tier.id())) {
+                throw new IllegalArgumentException("selected tier does not match saved tier at index " + tier.index());
+            }
 
-        // Load run snapshot - we defer actual reconstruction to first server tick
-        // because we need the current FOUP lot, mask, and definition to validate
-        if (runInput.childOrEmpty("runData") != null) {
-            // We need to preserve the run data for deferred restoration.
-            // Since ValueInput doesn't easily give us nested CompoundTag access,
-            // we'll re-read from the raw NBT in tryRestoreRun by storing the full input.
-            // For now, we'll mark that we have deferred data and re-read from the
-            // original CompoundTag in tryRestoreRun.
-            controller.deferredRunTag = new CompoundTag(); // marker - will be replaced by actual data
-            // Actually, we need to get the raw CompoundTag. Let's store the whole runInput's
-            // backing data. Since ValueInput is a wrapper, we can't easily get the CompoundTag.
-            // We'll use a workaround: store the CompoundTag from the original input in a
-            // transient field on the controller during load.
-            // But we don't have access to the original CompoundTag here.
-            // The solution: tryRestoreRun will be called on first tick and can re-read
-            // from the block entity's NBT if needed. But the NBT is already consumed.
-            // Better approach: read all the values we need NOW and store them in a
-            // temporary structure on the controller.
-            // Let's read the runData values directly from ValueInput.
-            ValueInput runDataInput = runInput.childOrEmpty("runData");
-            if (runDataInput != null) {
-                CompoundTag deferredTag = new CompoundTag();
-                // Read all fields we need
-                runDataInput.getString(TAG_STATE).ifPresent(s -> deferredTag.putString(TAG_STATE, s));
-                runDataInput.getInt(TAG_CURRENT_LAYER).ifPresent(i -> deferredTag.putInt(TAG_CURRENT_LAYER, i));
-                runDataInput.getInt(TAG_PROGRESS_TICKS).ifPresent(i -> deferredTag.putInt(TAG_PROGRESS_TICKS, i));
-                runDataInput.getBoolean(TAG_RESIST_PAID).ifPresent(b -> deferredTag.putBoolean(TAG_RESIST_PAID, b));
-                runDataInput.getBoolean(TAG_MASK_USE_CONSUMED).ifPresent(b -> deferredTag.putBoolean(TAG_MASK_USE_CONSUMED, b));
-                runDataInput.getBoolean(TAG_FINISH_EVENTS_EMITTED).ifPresent(b -> deferredTag.putBoolean(TAG_FINISH_EVENTS_EMITTED, b));
-                runDataInput.getString(TAG_DIE_TYPE).ifPresent(s -> deferredTag.putString(TAG_DIE_TYPE, s));
-                runDataInput.getInt(TAG_TIER_INDEX).ifPresent(i -> deferredTag.putInt(TAG_TIER_INDEX, i));
-                runDataInput.getInt(TAG_USES_REMAINING).ifPresent(i -> deferredTag.putInt(TAG_USES_REMAINING, i));
-                runDataInput.getBoolean(TAG_LINE_CAN_RUN_TIER).ifPresent(b -> deferredTag.putBoolean(TAG_LINE_CAN_RUN_TIER, b));
-                runDataInput.getBoolean(TAG_DIE_MAKEABLE).ifPresent(b -> deferredTag.putBoolean(TAG_DIE_MAKEABLE, b));
-                runDataInput.getInt(TAG_ENERGY_PER_TICK).ifPresent(i -> deferredTag.putInt(TAG_ENERGY_PER_TICK, i));
-                runDataInput.getInt(TAG_RESIST_TEMPLATE_TIER).ifPresent(i -> deferredTag.putInt(TAG_RESIST_TEMPLATE_TIER, i));
-                runDataInput.getInt(TAG_RESIST_TEMPLATE_COUNT).ifPresent(i -> deferredTag.putInt(TAG_RESIST_TEMPLATE_COUNT, i));
-                // Read LineStats
-                ValueInput lsInput = runDataInput.childOrEmpty(TAG_LINE_STATS);
-                if (lsInput != null) {
-                    CompoundTag lsTag = new CompoundTag();
-                    lsInput.getInt("resolutionNm").ifPresent(i -> lsTag.putInt("resolutionNm", i));
-                    lsInput.getInt("overlayNm").ifPresent(i -> lsTag.putInt("overlayNm", i));
-                    lsInput.getInt("throughputWph").ifPresent(i -> lsTag.putInt("throughputWph", i));
-                    lsInput.getDouble("defectFactor").ifPresent(d -> lsTag.putDouble("defectFactor", d));
-                    lsInput.getInt("resolutionTier").ifPresent(i -> lsTag.putInt("resolutionTier", i));
-                    lsInput.getInt("overlayTier").ifPresent(i -> lsTag.putInt("overlayTier", i));
-                    lsInput.getInt("throughputTier").ifPresent(i -> lsTag.putInt("throughputTier", i));
-                    deferredTag.put(TAG_LINE_STATS, lsTag);
+            // Defensive copy and validate requiredGenerations
+            Map<String, List<Integer>> reqGenCopy = new LinkedHashMap<>();
+            for (Map.Entry<String, List<Integer>> e : requiredGenerations.entrySet()) {
+                String line = Objects.requireNonNull(e.getKey(), "line key must not be null");
+                List<Integer> gens = e.getValue();
+                if (gens == null) {
+                    throw new IllegalArgumentException("generations for line '" + line + "' must not be null");
                 }
-                setDeferredRunTag(controller, deferredTag);
+                reqGenCopy.put(line, List.copyOf(gens));
+            }
+            requiredGenerations = Map.copyOf(reqGenCopy);
+
+            // Validate all 5 lines present
+            for (String line : SupportLines.ALL) {
+                if (!requiredGenerations.containsKey(line)) {
+                    throw new IllegalArgumentException("requiredGenerations missing line: " + line);
+                }
+                List<Integer> gens = requiredGenerations.get(line);
+                if (gens.size() != 8) {
+                    throw new IllegalArgumentException("requiredGenerations for line '" + line + "' must have 8 entries, got " + gens.size());
+                }
+                for (int i = 0; i < gens.size(); i++) {
+                    Integer gen = gens.get(i);
+                    if (gen == null || gen < 1 || gen > 3) {
+                        throw new IllegalArgumentException("generation at tier " + (i + 1) + " for line '" + line + "' must be in [1, 3], got " + gen);
+                    }
+                }
+            }
+
+            // Validate mask: exact MASK item, has MASK_DATA with matching dieType/tier, positive uses
+            if (!mask.is(ModItems.MASK.get())) {
+                throw new IllegalArgumentException("mask must be a MASK item");
+            }
+            MaskData maskData = mask.get(ModDataComponents.MASK_DATA.get());
+            if (maskData == null) {
+                throw new IllegalArgumentException("mask must have MASK_DATA");
+            }
+            if (!maskData.dieType().equals(dieType)) {
+                throw new IllegalArgumentException("mask dieType mismatch: contract=" + dieType + ", mask=" + maskData.dieType());
+            }
+            if (maskData.tierIndex() != tier.index()) {
+                throw new IllegalArgumentException("mask tierIndex mismatch: contract=" + tier.index() + ", mask=" + maskData.tierIndex());
+            }
+            if (maskData.usesRemaining() <= 0) {
+                throw new IllegalArgumentException("mask usesRemaining must be positive, got " + maskData.usesRemaining());
+            }
+            mask = mask.copy(); // defensive copy singleton
+
+            // Validate components: exactly 5 in canonical order
+            if (components.size() != 5) {
+                throw new IllegalArgumentException("components must have exactly 5 stacks, got " + components.size());
+            }
+            List<ItemStack> compCopy = new java.util.ArrayList<>(5);
+            for (int i = 0; i < 5; i++) {
+                ItemStack stack = components.get(i);
+                if (stack == null || stack.isEmpty()) {
+                    throw new IllegalArgumentException("component " + i + " (" + COMPONENT_KINDS.get(i) + ") must not be empty");
+                }
+                Optional<String> kind = ComponentCatalog.kindOf(stack);
+                if (kind.isEmpty() || !kind.get().equals(COMPONENT_KINDS.get(i))) {
+                    throw new IllegalArgumentException("component " + i + " must be " + COMPONENT_KINDS.get(i) + ", got " + kind.orElse("none"));
+                }
+                if (ComponentCatalog.tierOf(stack) < 1 || ComponentCatalog.tierOf(stack) > 8) {
+                    throw new IllegalArgumentException("component " + i + " tier must be in [1, 8], got " + ComponentCatalog.tierOf(stack));
+                }
+                compCopy.add(stack.copy()); // defensive copy singletons
+            }
+            components = List.copyOf(compCopy);
+
+            // Validate resistTemplate: actual resist item, tier >= contract tier (matching or better)
+            int resistTier = ResistCatalog.tierOf(resistTemplate);
+            if (resistTier < 1 || resistTier > 8) {
+                throw new IllegalArgumentException("resistTemplate must be a valid resist item with tier in [1, 8], got " + resistTier);
+            }
+            if (resistTier < tier.index()) {
+                throw new IllegalArgumentException("resistTemplate tier " + resistTier + " is below contract tier " + tier.index());
+            }
+            resistTemplate = resistTemplate.copy(); // defensive copy singleton
+
+            // Validate foupTemplate: actual FOUP item, FOUP_CONTENTS removed by caller
+            if (!FoupItems.isFoup(foupTemplate)) {
+                throw new IllegalArgumentException("foupTemplate must be a FOUP item");
+            }
+            if (FoupItems.contentsOf(foupTemplate) != null) {
+                throw new IllegalArgumentException("foupTemplate must not carry FOUP_CONTENTS (caller must strip it)");
+            }
+            foupTemplate = foupTemplate.copy(); // defensive copy singleton
+
+            // Validate GenerationMatrix builds and unmetLines is empty for M1 G1 map
+            GenerationMatrix matrix;
+            try {
+                matrix = GenerationMatrix.build(tierRegistry, requiredGenerations, "Contract.requiredGenerations");
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("requiredGenerations invalid: " + e.getMessage());
+            }
+            Map<String, Integer> m1G1Map = Map.of(
+                    SupportLines.SUBSTRATE, 1,
+                    SupportLines.MASK_SHOP, 1,
+                    SupportLines.DEPOSITION_ETCH, 1,
+                    SupportLines.UTILITIES, 1,
+                    SupportLines.TEST_PACKAGING, 1
+            );
+            if (!matrix.unmetLines(m1G1Map, tier).isEmpty()) {
+                throw new IllegalArgumentException("M1 G1 map does not satisfy requiredGenerations for tier " + tier.id());
+            }
+
+            // Validate five components via LineLoadoutReader and DefaultStatRules against stored lineStats
+            LineLoadout loadout = LineLoadoutReader.read(
+                    components.get(0), // light_source
+                    components.get(1), // optics
+                    components.get(2), // stage
+                    components.get(3), // cleanroom
+                    components.get(4), // metrology
+                    resistTemplate,
+                    maskData.tierIndex()
+            );
+            LineComponents lineComponents = loadout.toLineComponents();
+            StatRules statRules = new DefaultStatRules(tierRegistry);
+            LineStats computedStats = statRules.stats(lineComponents, tier.index());
+            boolean lineCanRunTier = statRules.canRunTier(lineComponents, tier.index());
+
+            // Validate stored lineStats matches computed (defectFactor exact match, tiers match)
+            if (computedStats.resolutionNm() != lineStats.resolutionNm()
+                    || computedStats.overlayNm() != lineStats.overlayNm()
+                    || computedStats.throughputWph() != lineStats.throughputWph()
+                    || Math.abs(computedStats.defectFactor() - lineStats.defectFactor()) > 1e-9
+                    || computedStats.resolutionTier() != lineStats.resolutionTier()
+                    || computedStats.overlayTier() != lineStats.overlayTier()
+                    || computedStats.throughputTier() != lineStats.throughputTier()) {
+                throw new IllegalArgumentException("stored lineStats does not match components + saved registry");
+            }
+            if (!lineCanRunTier) {
+                throw new IllegalArgumentException("components cannot run tier " + tier.index());
             }
         }
-    }
 
-    /**
-     * Attempts to restore the run on first server tick after load.
-     * Called from serverTick when run is null but deferredRunTag exists.
-     * Rebuilds admitted gates from a validated frozen contract, never treating
-     * this as admission of a new run.
-     */
-    public static void tryRestoreRun(ProcessCellControllerBlockEntity controller) {
-        CompoundTag runTag = getDeferredRunTag(controller);
-        if (runTag == null) {
-            return;
-        }
-        if (controller.level == null || controller.level.isClientSide()) {
-            return;
-        }
-        if (controller.run != null || controller.abortLatched) {
-            return;
-        }
-        if (!controller.formed) {
-            return;
-        }
+        /**
+         * Reconstructs a {@link ProcessRunRequest} for the given lot using only
+         * frozen contract data (no global loaders, no live definitions).
+         *
+         * @param lot the current persisted lot (must match lotId and be non-empty)
+         * @return a validated ProcessRunRequest ready for {@link ProcessRun#restore}
+         * @throws IllegalArgumentException if lot does not match contract
+         */
+        public ProcessRunRequest request(FoupContents lot) {
+            Objects.requireNonNull(lot, "lot must not be null");
+            if (lot.isEmpty()) {
+                throw new IllegalArgumentException("lot must not be empty");
+            }
+            if (!lot.lotId().equals(this.lotId)) {
+                throw new IllegalArgumentException("lot UUID mismatch: contract=" + this.lotId + ", lot=" + lot.lotId());
+            }
 
-        Optional<MachineDefinition> defOpt = controller.definition();
-        if (defOpt.isEmpty()) {
-            // Definition not loaded yet - keep deferred tag for next tick
-            return;
-        }
+            // Reconstruct TierRegistry from saved tiers
+            TierRegistry tierRegistry = TierRegistry.build(this.tiers, "Contract.request.tiers");
 
-        setDeferredRunTag(controller, null); // Consume it
+            // Reconstruct GenerationMatrix from saved requiredGenerations
+            GenerationMatrix generationMatrix = GenerationMatrix.build(tierRegistry, this.requiredGenerations, "Contract.request.requiredGenerations");
 
-        // Read frozen contract
-        String dieType = runTag.getString(TAG_DIE_TYPE).orElse("");
-        int tierIndex = runTag.getInt(TAG_TIER_INDEX).orElse(0);
-        int usesRemaining = runTag.getInt(TAG_USES_REMAINING).orElse(0);
-        boolean lineCanRunTier = runTag.getBoolean(TAG_LINE_CAN_RUN_TIER).orElse(false);
-        boolean dieMakeable = runTag.getBoolean(TAG_DIE_MAKEABLE).orElse(false);
-        int energyPerTick = runTag.getInt(TAG_ENERGY_PER_TICK).orElse(0);
-        int resistTemplateTier = runTag.getInt(TAG_RESIST_TEMPLATE_TIER).orElse(0);
-        int resistTemplateCount = runTag.getInt(TAG_RESIST_TEMPLATE_COUNT).orElse(0);
+            // Reconstruct settings: only timing/resist reconstructed; yield settings read by live FabYieldService
+            FabSettings settings = FabSettings.defaults().toBuilder()
+                    .resistPerLayer(this.resistPerLayer)
+                    .layerTicksOverrides(Map.of(this.tier.id(), this.layerTicks))
+                    .build();
 
-        // Read LineStats
-        LineStats lineStats = null;
-        if (runTag.contains(TAG_LINE_STATS, Tag.TAG_COMPOUND)) {
-            CompoundTag lsTag = runTag.getCompound(TAG_LINE_STATS);
-            lineStats = new LineStats(
-                    lsTag.getInt("resolutionNm").orElse(0),
-                    lsTag.getInt("overlayNm").orElse(0),
-                    lsTag.getInt("throughputWph").orElse(0),
-                    lsTag.getDouble("defectFactor").orElse(0.0),
-                    lsTag.getInt("resolutionTier").orElse(0),
-                    lsTag.getInt("overlayTier").orElse(0),
-                    lsTag.getInt("throughputTier").orElse(0)
+            // Build installed generations map (all 5 lines at G1 for M1)
+            Map<String, Integer> installedGenerations = Map.of(
+                    SupportLines.SUBSTRATE, 1,
+                    SupportLines.MASK_SHOP, 1,
+                    SupportLines.DEPOSITION_ETCH, 1,
+                    SupportLines.UTILITIES, 1,
+                    SupportLines.TEST_PACKAGING, 1
+            );
+
+            // Reconstruct mask data from frozen mask stack
+            MaskData maskData = this.mask.get(ModDataComponents.MASK_DATA.get());
+            if (maskData == null) {
+                throw new IllegalArgumentException("frozen mask missing MASK_DATA");
+            }
+
+            return new ProcessRunRequest(
+                    lot,
+                    this.dieType,
+                    this.tier,
+                    null, // cores: null for M1
+                    maskData.usesRemaining(), // positive accepted uses
+                    this.lineStats, // saved LineStats
+                    true, // lineCanRunTier (already validated in constructor)
+                    true, // dieMakeable (already validated frozen contract)
+                    installedGenerations,
+                    generationMatrix,
+                    settings,
+                    this.energyPerTick
             );
         }
 
-        // Read snapshot
-        ProcessState state = ProcessState.IDLE;
-        int currentLayer = 1;
-        int progressTicks = 0;
-        boolean resistPaid = false;
-        boolean maskUseConsumed = false;
-        boolean finishEventsEmitted = false;
-
-        if (runTag.contains(TAG_STATE, Tag.TAG_STRING)) {
-            try {
-                state = ProcessState.valueOf(runTag.getString(TAG_STATE).orElse("IDLE"));
-            } catch (IllegalArgumentException ignored) {
-            }
-        }
-        currentLayer = runTag.getInt(TAG_CURRENT_LAYER).orElse(1);
-        progressTicks = runTag.getInt(TAG_PROGRESS_TICKS).orElse(0);
-        resistPaid = runTag.getBoolean(TAG_RESIST_PAID).orElse(false);
-        maskUseConsumed = runTag.getBoolean(TAG_MASK_USE_CONSUMED).orElse(false);
-        finishEventsEmitted = runTag.getBoolean(TAG_FINISH_EVENTS_EMITTED).orElse(false);
-
-        // Validate snapshot consistency (ProcessRun.Snapshot does this in constructor)
-        // But we need to validate against the current lot first
-
-        // Get current lot
-        ItemStack foupStack = controller.slot(ProcessCellControllerBlockEntity.SLOT_FOUP);
-        FoupContents lot = FoupItems.trustedContentsOf(foupStack);
-        if (lot == null || lot.isEmpty()) {
-            // Lot gone - cannot restore
-            return;
+        /**
+         * Raw unvalidated fields record for codec decoding.
+         */
+        private record RawContract(
+                Tier tier,
+                String dieType,
+                int usesRemaining,
+                int layerTicks,
+                int resistPerLayer,
+                int energyPerTick,
+                LineStats lineStats,
+                List<Tier> tiers,
+                Map<String, List<Integer>> requiredGenerations,
+                ItemStack mask,
+                List<ItemStack> components,
+                ItemStack resistTemplate,
+                UUID lotId,
+                ItemStack foupTemplate
+        ) {
         }
 
-        // Validate lot UUID matches
-        if (controller.lastLotId != null && !lot.lotId().equals(controller.lastLotId)) {
-            // Different lot - cannot restore
-            return;
-        }
+        /**
+         * Codec for Contract, wrapping validated constructor in flatXmap.
+         */
+        public static final Codec<Contract> CODEC = Codec.of(
+                RecordCodecBuilder.create(instance -> instance.group(
+                        TierCodec.CODEC.fieldOf("tier").forGetter(RawContract::tier),
+                        Codec.STRING.fieldOf("dieType").forGetter(RawContract::dieType),
+                        Codec.INT.fieldOf("usesRemaining").forGetter(RawContract::usesRemaining),
+                        Codec.INT.fieldOf("layerTicks").forGetter(RawContract::layerTicks),
+                        Codec.INT.fieldOf("resistPerLayer").forGetter(RawContract::resistPerLayer),
+                        Codec.INT.fieldOf("energyPerTick").forGetter(RawContract::energyPerTick),
+                        LineStats.CODEC.fieldOf("lineStats").forGetter(RawContract::lineStats),
+                        TierCodec.LIST_CODEC.fieldOf("tiers").forGetter(RawContract::tiers),
+                        Codec.unboundedMap(Codec.STRING, Codec.INT.listOf()).fieldOf("requiredGenerations").forGetter(RawContract::requiredGenerations),
+                        ItemStack.CODEC.fieldOf("mask").forGetter(RawContract::mask),
+                        ItemStack.CODEC.listOf().fieldOf("components").forGetter(RawContract::components),
+                        ItemStack.CODEC.fieldOf("resistTemplate").forGetter(RawContract::resistTemplate),
+                        Codec.STRING.comapFlatMap(
+                                s -> {
+                                    try {
+                                        return DataResult.success(UUID.fromString(s));
+                                    } catch (IllegalArgumentException e) {
+                                        return DataResult.error(() -> "Invalid UUID: " + s);
+                                    }
+                                },
+                                UUID::toString
+                        ).fieldOf("lotId").forGetter(RawContract::lotId),
+                        ItemStack.CODEC.fieldOf("foupTemplate").forGetter(RawContract::foupTemplate)
+                ).apply(instance, RawContract::new)),
+                raw -> {
+                    try {
+                        return DataResult.success(new Contract(
+                                raw.tier(), raw.dieType(), raw.usesRemaining(), raw.layerTicks(),
+                                raw.resistPerLayer(), raw.energyPerTick(), raw.lineStats(),
+                                raw.tiers(), raw.requiredGenerations(), raw.mask(),
+                                raw.components(), raw.resistTemplate(), raw.lotId(), raw.foupTemplate()
+                        ));
+                    } catch (RuntimeException e) {
+                        return DataResult.error(() -> "Contract validation failed: " + e.getMessage());
+                    }
+                },
+                contract -> DataResult.success(new RawContract(
+                        contract.tier(), contract.dieType(), contract.usesRemaining(), contract.layerTicks(),
+                        contract.resistPerLayer(), contract.energyPerTick(), contract.lineStats(),
+                        contract.tiers(), contract.requiredGenerations(), contract.mask(),
+                        contract.components(), contract.resistTemplate(), contract.lotId(), contract.foupTemplate()
+                ))
+        );
+    }
 
-        // Get tier
-        TierRegistry tierRegistry = TierDataLoader.getRegistry();
-        if (tierRegistry == null) {
-            return;
-        }
-        Optional<Tier> tierOpt = tierRegistry.byIndex(tierIndex);
-        if (tierOpt.isEmpty()) {
-            return;
-        }
-        Tier tier = tierOpt.get();
+    /**
+     * Saved state combining a validated Contract with a ProcessRun.Snapshot.
+     */
+    public record Saved(Contract contract, ProcessRun.Snapshot snapshot) {
 
-        // Validate mask still present and matches
-        ItemStack maskStack = controller.slot(ProcessCellControllerBlockEntity.SLOT_MASK);
-        if (maskStack.isEmpty()) {
-            return;
-        }
-        MaskData maskData = maskStack.get(ModDataComponents.MASK_DATA.get());
-        if (maskData == null || maskData.tierIndex() != tierIndex || !maskData.dieType().equals(dieType)) {
-            return;
-        }
-
-        // Validate resist template matches (same tier, can be empty)
-        ItemStack resistStack = controller.slot(ProcessCellControllerBlockEntity.SLOT_RESIST);
-        int currentResistTier = ResistCatalog.tierOf(resistStack);
-        if (resistTemplateTier > 0 && currentResistTier != resistTemplateTier) {
-            // Resist tier changed - cannot restore
-            return;
-        }
-
-        // Validate generation matrix
-        GenerationMatrix generationMatrix = SupportLineDataLoader.getMatrix();
-        if (generationMatrix == null) {
-            return;
-        }
-
-        // Validate installed generations match snapshot
-        if (controller.installedGenerationsSnapshot == null) {
-            return;
-        }
-
-        // Validate snapshot against current lot layer
-        if (currentLayer != lot.lotLayer() + 1) {
-            // Layer mismatch - cannot restore
-            return;
-        }
-
-        // Validate progressTicks within bounds
-        FabSettings settings = EUVCRAFTMod.settings();
-        int layerTicks = FabSettings.layerTicks(tier, settings);
-        if (progressTicks >= layerTicks) {
-            return;
-        }
-
-        // Validate resistPaid state consistency
-        if (state == ProcessState.FINISHED) {
-            if (lot.lotLayer() != tier.layers() || lot.run() == null
-                    || !lot.run().matches(tier, dieType, null)) {
-                return;
-            }
-            if (progressTicks != 0 || resistPaid) {
-                return;
-            }
-        } else if (state == ProcessState.IDLE && (progressTicks != 0 || resistPaid)) {
-            return;
-        } else if (state == ProcessState.PAUSED_NO_RESIST && (progressTicks != 0 || resistPaid)) {
-            return;
-        } else if (state == ProcessState.RUNNING && progressTicks == 0 && resistPaid) {
-            return;
-        } else if (state == ProcessState.PAUSED_NO_POWER && !resistPaid) {
-            return;
-        }
-
-        // Validate start conditions still satisfied (except we allow paused states)
-        // Build request from frozen contract
-        ProcessRunRequest request = new ProcessRunRequest(
-                lot,
-                dieType,
-                tier,
-                null, // cores
-                usesRemaining,
-                lineStats,
-                lineCanRunTier,
-                dieMakeable,
-                controller.installedGenerationsSnapshot,
-                generationMatrix,
-                settings,
-                energyPerTick
+        private static final List<String> COMPONENT_KINDS = List.of(
+                "light_source", "optics", "stage", "cleanroom", "metrology"
         );
 
-        // If not finished, refusal must be null
-        if (state != ProcessState.FINISHED) {
-            if (ProcessRun.refusal(request) != null) {
-                return;
-            }
+        /**
+         * Validated constructor.
+         */
+        public Saved {
+            Objects.requireNonNull(contract, "contract must not be null");
+            Objects.requireNonNull(snapshot, "snapshot must not be null");
         }
 
-        // All validations passed - restore the run
-        try {
-            ProcessRun restored = ProcessRun.restore(request, new ProcessRun.Snapshot(
-                    state, currentLayer, progressTicks, resistPaid, maskUseConsumed, finishEventsEmitted
-            ));
-            controller.run = restored;
-            controller.lastRefusal = null;
-            // Keep abortLatched if it was set, lastLotId, installedGenerationsSnapshot
-            controller.setChanged();
-        } catch (IllegalArgumentException e) {
-            // Restore failed - leave run as null, keep deferred data discarded
+        /**
+         * Restores a {@link ProcessRun} using the current persisted lot.
+         *
+         * @param lot the current lot from the FOUP slot (inventory is authoritative)
+         * @return restored ProcessRun, or throws if snapshot bounds mismatch
+         */
+        public ProcessRun restore(FoupContents lot) {
+            ProcessRunRequest request = contract.request(lot);
+            return ProcessRun.restore(request, snapshot);
         }
+
+        /**
+         * Raw unvalidated fields record for codec decoding.
+         */
+        private record RawSaved(Contract contract, ProcessRun.Snapshot snapshot) {
+        }
+
+        /**
+         * Codec for Saved, for private disk storage only (no network codec).
+         */
+        public static final Codec<Saved> CODEC = Codec.of(
+                RecordCodecBuilder.create(instance -> instance.group(
+                        Contract.CODEC.fieldOf("contract").forGetter(RawSaved::contract),
+                        ProcessRun.Snapshot.CODEC.fieldOf("snapshot").forGetter(RawSaved::snapshot)
+                ).apply(instance, RawSaved::new)),
+                raw -> {
+                    try {
+                        return DataResult.success(new Saved(raw.contract(), raw.snapshot()));
+                    } catch (RuntimeException e) {
+                        return DataResult.error(() -> "Saved validation failed: " + e.getMessage());
+                    }
+                },
+                saved -> DataResult.success(new RawSaved(saved.contract(), saved.snapshot()))
+        );
     }
 
-    @Nullable
-    static CompoundTag getDeferredRunTag(ProcessCellControllerBlockEntity controller) {
-        return controller.deferredRunTag;
-    }
+    /**
+     * Seven-field codec for LineStats with validation via flatXmap.
+     */
+    public static final Codec<LineStats> LINE_STATS_CODEC = Codec.of(
+            RecordCodecBuilder.create(instance -> instance.group(
+                    Codec.INT.fieldOf("resolutionNm").forGetter(LineStats::resolutionNm),
+                    Codec.INT.fieldOf("overlayNm").forGetter(LineStats::overlayNm),
+                    Codec.INT.fieldOf("throughputWph").forGetter(LineStats::throughputWph),
+                    Codec.DOUBLE.fieldOf("defectFactor").forGetter(LineStats::defectFactor),
+                    Codec.INT.fieldOf("resolutionTier").forGetter(LineStats::resolutionTier),
+                    Codec.INT.fieldOf("overlayTier").forGetter(LineStats::overlayTier),
+                    Codec.INT.fieldOf("throughputTier").forGetter(LineStats::throughputTier)
+            ).apply(instance, LineStats::new)),
+            ls -> DataResult.success(ls), // validation already in LineStats constructor
+            ls -> DataResult.success(ls)
+    );
 
-    static void setDeferredRunTag(ProcessCellControllerBlockEntity controller, @Nullable CompoundTag tag) {
-        controller.deferredRunTag = tag;
-    }
+    /**
+     * Six-field codec for ProcessRun.Snapshot with enum string validation via flatXmap.
+     */
+    public static final Codec<ProcessRun.Snapshot> SNAPSHOT_CODEC = Codec.of(
+            RecordCodecBuilder.create(instance -> instance.group(
+                    Codec.STRING.fieldOf("state").forGetter(s -> s.state().name()),
+                    Codec.INT.fieldOf("currentLayer").forGetter(ProcessRun.Snapshot::currentLayer),
+                    Codec.INT.fieldOf("progressTicks").forGetter(ProcessRun.Snapshot::progressTicks),
+                    Codec.BOOL.fieldOf("resistPaid").forGetter(ProcessRun.Snapshot::resistPaid),
+                    Codec.BOOL.fieldOf("maskUseConsumed").forGetter(ProcessRun.Snapshot::maskUseConsumed),
+                    Codec.BOOL.fieldOf("finishEventsEmitted").forGetter(ProcessRun.Snapshot::finishEventsEmitted)
+            ).apply(instance, (stateStr, currentLayer, progressTicks, resistPaid, maskUseConsumed, finishEventsEmitted) -> {
+                ProcessState state;
+                try {
+                    state = ProcessState.valueOf(stateStr);
+                } catch (IllegalArgumentException e) {
+                    throw new IllegalArgumentException("Invalid ProcessState: " + stateStr);
+                }
+                return new ProcessRun.Snapshot(state, currentLayer, progressTicks, resistPaid, maskUseConsumed, finishEventsEmitted);
+            })),
+            snapshot -> {
+                try {
+                    return DataResult.success(snapshot);
+                } catch (RuntimeException e) {
+                    return DataResult.error(() -> "Snapshot validation failed: " + e.getMessage());
+                }
+            },
+            snapshot -> DataResult.success(snapshot)
+    );
 }
-
-// Add a package-private field to ProcessCellControllerBlockEntity for deferred run tag
-// This needs to be added to the controller class
