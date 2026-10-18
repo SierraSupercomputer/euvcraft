@@ -316,4 +316,4 @@ Expected: 509 unit tests in 74 classes; 791 distinct server cases including all 
 
 **Current 632d867**: 17 `ProcessCell` prefix cases (16 new + 1 old block drop) — purpose: stronger test assertions only.
 
-See `reports/M1-09_process-cell-controller.md` for actual registered IDs, class rows and executed fault controls. Final reviews and a separate merge candidate remain pending. Source pins are not merge approval.
+See `reports/M1-09_process-cell-controller.md` for actual registered IDs, class rows and executed fault controls. M1-09 is accepted; see `reports/M1-09_acceptance.md` for final reviews, the tested merge candidate and its disclosed optional Arcforge result. Source pins alone are not merge approval.

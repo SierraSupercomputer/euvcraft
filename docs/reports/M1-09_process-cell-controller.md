@@ -1,5 +1,7 @@
 # M1-09 Process Cell Controller — Task Report
 
+Accepted after two independent final reviews and a separate full merge-candidate check. See [final acceptance](M1-09_acceptance.md) for exact results and the optional Arcforge result.
+
 ## Summary
 M1-09 delivers the Process Cell multiblock controller: a 2×2×3 structure (12 members, four horizontal facings) with a single inherited energy buffer, inventory, drop handling, and menu helpers. The controller block entity extends `FabMachineBlockEntity` and implements `EnergyBufferProvider` and `ProcessEnvironment`. The menu (`ProcessCellMenu.java`/`ProcessCellScreen.java`) exposes 44 slots (8 machine + 36 player) and 12 public integer fields for energy, capacity, progress, status, refusal, layer, tier, die, and lock state. Server-side logic uses the existing mutable `ProcessRun` state machine and `FabYieldService` for layer application; `ProcessCellRunPersistence` provides a disk-only validated `Contract`/`Saved` codec. Game tests live in `ProcessCellGameTests.java`.
 
@@ -37,9 +39,9 @@ M1-09 delivers the Process Cell multiblock controller: a 2×2×3 structure (12 m
 | Five backend fault groups (`fe1da41f126b221304929c4227115dd0604889f1`) — 6 cases, 9 expected failures, exact restore | Verified |
 | Six menu fault groups (86307) — 12 prefix cases each, expected failures, exact restore | Verified |
 | Five new-safety faults combined mutant run — 5 cases failed assertions, 17 cases executed, exact restore | Verified |
-| Post-restoration positive check & candidate checks | Pending |
-| Two final independent whole-task Beam reviews | Pending |
-| Candidate checks & master merge | Pending |
+| Post-restoration positive check & candidate checks | Passed: 509 units / 74 classes; all 121 project IDs; 790 server passes plus one optional Arcforge result |
+| Two final independent whole-task reviews | Approved: distinct free Nemotron sessions; final Beam attempts were quota-limited |
+| Candidate checks & master merge | Verified and integrated; see final acceptance |
 | mk4 untouched; no background daemon/push | Verified |
 | Verified backup bundles/state at checkpoints | Verified |
 
@@ -200,5 +202,5 @@ Measured at `12c3ebf4c141bd50388fa8063038be6439f3bd59`. Each row counts actual J
 - `src/main/java/com/euvcraft/lithmod/mc/machine/process/ProcessCellClientEvents.java`
 - `src/main/java/com/euvcraft/lithmod/mc/gametest/ProcessCellGameTests.java`
 
-The persistence helper's `Contract` records validated admission inputs; `Saved` carries that contract and the pure `ProcessRun.Snapshot`. Its codec is for server disk persistence. The controller owns the only server tick path; it does not tick the inherited generic recipe runner. `ProcessCellMenu` owns input protection and public synchronization; the screen uses those public values. Final review records and integration acceptance will be committed before acceptance is claimed.
+The persistence helper's `Contract` records validated admission inputs; `Saved` carries that contract and the pure `ProcessRun.Snapshot`. Its codec is for server disk persistence. The controller owns the only server tick path; it does not tick the inherited generic recipe runner. `ProcessCellMenu` owns input protection and public synchronization; the screen uses those public values. Final review records and integration acceptance are committed beside this report.
 
