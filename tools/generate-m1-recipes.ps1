@@ -32,7 +32,7 @@ function Result-Text($Result) {
     $text = (Scalar-Text (Value-OrDefault $Result 'count' 1)) + ' x ' + $id
     if ($Result.Contains('components')) {
         $parts = foreach ($entry in ($Result.components.GetEnumerator() | Sort-Object Key)) {
-            # Machine components hold encoded JSON; vanilla components can be objects.
+            # Component values may be structured JSON or scalar text.
             $value = if ($entry.Value -is [string]) { $entry.Value } else {
                 ConvertTo-Json -InputObject $entry.Value -Depth 100 -Compress
             }
@@ -145,3 +145,4 @@ if ($Check) {
     [System.IO.File]::WriteAllBytes($outputPath, $bytes)
     Write-Host "Generated docs/recipes.md from $($rows.Count) JSON recipes ($fixtureCount test-only fixtures)."
 }
+

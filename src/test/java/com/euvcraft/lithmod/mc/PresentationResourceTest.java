@@ -170,7 +170,7 @@ class PresentationResourceTest {
                 assertEquals("lithmod:mask", spec.result().itemId(), "Result must be mask in " + fileName);
                 assertEquals(1, spec.result().count(), "Result count must be 1 in " + fileName);
 
-                // Validate mask_data component: STRING ENCODED JSON
+                // The resource stores structured JSON; the codec retains its compact JSON text.
                 Map<String, String> components = spec.result().components();
                 assertTrue(components.containsKey("lithmod:mask_data"), "Missing mask_data component in " + fileName);
                 String maskDataJson = components.get("lithmod:mask_data");
@@ -275,3 +275,4 @@ class PresentationResourceTest {
         assertTrue(content.contains("uses_remaining"), "Missing uses_remaining documentation");
     }
 }
+
