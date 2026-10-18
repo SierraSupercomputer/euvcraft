@@ -33,24 +33,34 @@ import net.minecraft.gametest.framework.*;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.metadata.pack.PackMetadataSection;
 import net.minecraft.tags.TagKey;
+import net.minecraft.util.InclusiveRange;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.UUID;
+import net.minecraft.SharedConstants;
 
 /** Data-derived checks against the live server registries and normal recipe lookup. */
 public final class PresentationGameTests {
     private static final List<String> CASES = List.of("presentation_recipe_registry",
         "presentation_crafting_lookup", "presentation_pattern_production", "presentation_obtainability",
-        "presentation_foup_crafting", "presentation_foup_initialization", "presentation_creative_order");
+        "presentation_foup_crafting", "presentation_foup_initialization", "presentation_creative_order",
+        "presentation_datapack_override");
     private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS =
         DeferredRegister.create(Registries.TEST_FUNCTION, "lithmod");
     static {
@@ -61,6 +71,7 @@ public final class PresentationGameTests {
         FUNCTIONS.register(CASES.get(4), () -> PresentationGameTests::foupCrafting);
         FUNCTIONS.register(CASES.get(5), () -> PresentationGameTests::foupInitialization);
         FUNCTIONS.register(CASES.get(6), () -> PresentationGameTests::creativeOrder);
+        FUNCTIONS.register(CASES.get(7), () -> PresentationGameTests::datapackOverride);
     }
     private PresentationGameTests() {}
     public static void register(IEventBus bus) {
@@ -395,6 +406,94 @@ public final class PresentationGameTests {
             .filter(key -> EUVCRAFTMod.MODID.equals(key.getNamespace())).count();
         h.assertValueEqual(1L, lithmodTabCount, "Exactly one lithmod creative tab");
         h.succeed();
+    }
+
+    private static void datapackOverride(GameTestHelper h) {
+        var server = h.getLevel().getServer();
+        var repo = server.getPackRepository();
+        var manager = server.getRecipeManager();
+
+        Identifier baseResourceId = Identifier.fromNamespaceAndPath("lithmod", "recipe/crafting/blank_mask.json");
+        Resource baseResource = manager.getResourceManager().getResource(baseResourceId).orElseThrow(
+                () -> new IllegalStateException("Base recipe resource not found: " + baseResourceId));
+        JsonObject baseJson = json(baseResource);
+        CraftingInput baseInput = craftingInput(baseJson);
+
+        var baselineHolder = manager.byKey(ResourceKey.create(Registries.RECIPE,
+                Identifier.fromNamespaceAndPath("lithmod", "crafting/blank_mask"))).orElseThrow();
+        int baselineCount = baselineHolder.value().assemble(baseInput).getCount();
+        h.assertTrue(baselineCount >= 1 && baselineCount <= 64, "Baseline count out of range: " + baselineCount);
+
+        int modifiedCount = (baselineCount == 1) ? 2 : 1;
+
+        List<String> originalSelected = new ArrayList<>(repo.getSelectedIds());
+        String packName = "euvcraft_m1_probe_" + UUID.randomUUID();
+        Path worldDataDir = server.getWorldPath(LevelResource.DATAPACK_DIR).toAbsolutePath().normalize();
+        Path packRoot = worldDataDir.resolve(packName).normalize();
+        if (!packRoot.startsWith(worldDataDir) || packRoot.equals(worldDataDir)) {
+            throw new IllegalStateException("Pack root escapes datapack directory");
+        }
+
+        try {
+            Files.createDirectories(packRoot.resolve("data/lithmod/recipe/crafting"));
+
+            int format = SharedConstants.getCurrentVersion().packVersion(PackType.SERVER_DATA);
+            PackMetadataSection metadata = new PackMetadataSection(
+                    Component.literal("EUVCRAFT M1 recipe override test"),
+                    new InclusiveRange<>(format));
+            JsonObject root = new JsonObject();
+            root.add("pack", PackMetadataSection.SERVER_TYPE.codec().encodeStart(JsonOps.INSTANCE, metadata).getOrThrow());
+            Files.writeString(packRoot.resolve("pack.mcmeta"), root.toString(), StandardCharsets.UTF_8);
+
+            JsonObject modifiedJson = baseJson.deepCopy();
+            JsonObject result = modifiedJson.getAsJsonObject("result");
+            result.addProperty("count", modifiedCount);
+            Files.writeString(
+                    packRoot.resolve("data/lithmod/recipe/crafting/blank_mask.json"),
+                    modifiedJson.toString(),
+                    StandardCharsets.UTF_8);
+
+            repo.reload();
+            String newPackId = "file/" + packName;
+            h.assertTrue(repo.isAvailable(newPackId), "Probe pack not discoverable: " + newPackId);
+
+            List<String> enabled = new ArrayList<>(originalSelected);
+            enabled.add(newPackId);
+            server.reloadResources(enabled).join();
+
+            Resource overriddenResource = manager.getResourceManager().getResource(baseResourceId).orElseThrow();
+            h.assertTrue(overriddenResource.sourcePackId().equals(newPackId),
+                    "Override pack did not win priority for " + baseResourceId);
+
+            var overriddenHolder = manager.byKey(ResourceKey.create(Registries.RECIPE,
+                    Identifier.fromNamespaceAndPath("lithmod", "crafting/blank_mask"))).orElseThrow();
+            ItemStack overriddenOutput = overriddenHolder.value().assemble(baseInput);
+            h.assertTrue(overriddenOutput.getCount() == modifiedCount,
+                    "Assembled count did not reflect override: expected " + modifiedCount + " got " + overriddenOutput.getCount());
+            h.assertTrue(overriddenOutput.is(baselineHolder.value().assemble(baseInput).getItem()),
+                    "Override changed result item type");
+            h.succeed();
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException("Datapack probe I/O failed", e);
+        } finally {
+            try {
+                server.reloadResources(originalSelected).join();
+            } catch (Exception restoreEx) {
+                throw new IllegalStateException("Failed to restore original datapack selection", restoreEx);
+            }
+            List<String> afterSelected = new ArrayList<>(repo.getSelectedIds());
+            h.assertTrue(afterSelected.equals(originalSelected),
+                    "Datapack selection not restored. Original: " + originalSelected + " After: " + afterSelected);
+
+            var restoredHolder = manager.byKey(ResourceKey.create(Registries.RECIPE,
+                    Identifier.fromNamespaceAndPath("lithmod", "crafting/blank_mask"))).orElseThrow();
+            ItemStack restoredOutput = restoredHolder.value().assemble(baseInput);
+            h.assertTrue(restoredOutput.getCount() == baselineCount,
+                    "Restored recipe count mismatch: expected " + baselineCount + " got " + restoredOutput.getCount());
+            Resource restoredResource = manager.getResourceManager().getResource(baseResourceId).orElseThrow();
+            h.assertTrue(!restoredResource.sourcePackId().equals("file/" + packName),
+                    "Probe pack still providing recipe after restore");
+        }
     }
 }
 
