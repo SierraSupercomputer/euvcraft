@@ -414,13 +414,13 @@ public final class PresentationGameTests {
         var manager = server.getRecipeManager();
 
         Identifier baseResourceId = Identifier.fromNamespaceAndPath("lithmod", "recipe/crafting/blank_mask.json");
-        Resource baseResource = manager.getResourceManager().getResource(baseResourceId).orElseThrow(
+        Resource baseResource = server.getResourceManager().getResource(baseResourceId).orElseThrow(
                 () -> new IllegalStateException("Base recipe resource not found: " + baseResourceId));
         JsonObject baseJson = json(baseResource);
         CraftingInput baseInput = craftingInput(baseJson);
 
-        var baselineHolder = manager.byKey(ResourceKey.create(Registries.RECIPE,
-                Identifier.fromNamespaceAndPath("lithmod", "crafting/blank_mask"))).orElseThrow();
+        var baselineHolder = server.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, baseInput, h.getLevel()).orElseThrow();
+            h.assertTrue(baselineHolder.id().identifier().equals(Identifier.parse("lithmod:crafting/blank_mask")), "Actual blank-mask lookup selected another recipe");
         int baselineCount = baselineHolder.value().assemble(baseInput).getCount();
         h.assertTrue(baselineCount >= 1 && baselineCount <= 64, "Baseline count out of range: " + baselineCount);
 
@@ -437,7 +437,7 @@ public final class PresentationGameTests {
         try {
             Files.createDirectories(packRoot.resolve("data/lithmod/recipe/crafting"));
 
-            int format = SharedConstants.getCurrentVersion().packVersion(PackType.SERVER_DATA);
+            var format = SharedConstants.getCurrentVersion().packVersion(PackType.SERVER_DATA);
             PackMetadataSection metadata = new PackMetadataSection(
                     Component.literal("EUVCRAFT M1 recipe override test"),
                     new InclusiveRange<>(format));
@@ -461,18 +461,18 @@ public final class PresentationGameTests {
             enabled.add(newPackId);
             server.reloadResources(enabled).join();
 
-            Resource overriddenResource = manager.getResourceManager().getResource(baseResourceId).orElseThrow();
+            Resource overriddenResource = server.getResourceManager().getResource(baseResourceId).orElseThrow();
             h.assertTrue(overriddenResource.sourcePackId().equals(newPackId),
                     "Override pack did not win priority for " + baseResourceId);
 
-            var overriddenHolder = manager.byKey(ResourceKey.create(Registries.RECIPE,
-                    Identifier.fromNamespaceAndPath("lithmod", "crafting/blank_mask"))).orElseThrow();
+            var overriddenHolder = server.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, baseInput, h.getLevel()).orElseThrow();
+            h.assertTrue(overriddenHolder.id().identifier().equals(Identifier.parse("lithmod:crafting/blank_mask")), "Actual blank-mask lookup selected another recipe");
             ItemStack overriddenOutput = overriddenHolder.value().assemble(baseInput);
             h.assertTrue(overriddenOutput.getCount() == modifiedCount,
                     "Assembled count did not reflect override: expected " + modifiedCount + " got " + overriddenOutput.getCount());
             h.assertTrue(overriddenOutput.is(baselineHolder.value().assemble(baseInput).getItem()),
                     "Override changed result item type");
-            h.succeed();
+
         } catch (java.io.IOException e) {
             throw new IllegalStateException("Datapack probe I/O failed", e);
         } finally {
@@ -485,15 +485,16 @@ public final class PresentationGameTests {
             h.assertTrue(afterSelected.equals(originalSelected),
                     "Datapack selection not restored. Original: " + originalSelected + " After: " + afterSelected);
 
-            var restoredHolder = manager.byKey(ResourceKey.create(Registries.RECIPE,
-                    Identifier.fromNamespaceAndPath("lithmod", "crafting/blank_mask"))).orElseThrow();
+            var restoredHolder = server.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, baseInput, h.getLevel()).orElseThrow();
+            h.assertTrue(restoredHolder.id().identifier().equals(Identifier.parse("lithmod:crafting/blank_mask")), "Actual blank-mask lookup selected another recipe");
             ItemStack restoredOutput = restoredHolder.value().assemble(baseInput);
             h.assertTrue(restoredOutput.getCount() == baselineCount,
                     "Restored recipe count mismatch: expected " + baselineCount + " got " + restoredOutput.getCount());
-            Resource restoredResource = manager.getResourceManager().getResource(baseResourceId).orElseThrow();
+            Resource restoredResource = server.getResourceManager().getResource(baseResourceId).orElseThrow();
             h.assertTrue(!restoredResource.sourcePackId().equals("file/" + packName),
                     "Probe pack still providing recipe after restore");
         }
+        h.succeed();
     }
 }
 
