@@ -272,12 +272,11 @@ public final class PackagingRun {
         /**
          * Prints the event without its result flag.
          *
-         * @return a description with the index, amount and packages only
+         * @return a description with the index and output amount only
          */
         @Override
         public String toString() {
-            return "Completion[wafer=" + this.waferIndex + ", amount=" + this.amount
-                + ", packages=" + this.packagesUsed + "]";
+            return "Completion[wafer=" + this.waferIndex + ", amount=" + this.amount + "]";
         }
     }
 
