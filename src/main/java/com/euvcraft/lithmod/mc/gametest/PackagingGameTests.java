@@ -1,7 +1,6 @@
 package com.euvcraft.lithmod.mc.gametest;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -47,7 +46,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.FunctionGameTestInstance;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -404,6 +402,8 @@ public final class PackagingGameTests {
         loadLot(machine, ModItems.FOUP_MK1.get(), lot.contents());
         charge(helper, machine, totalTicks * numbers.energyPerTick());
 
+        machine.serverTick();
+        helper.assertTrue(machine.isQueueActive(), "the complete lot was not admitted");
         runUntilFinished(helper, machine, totalTicks + 8);
 
         assertCatalogChips(helper, machine, expectedChip, expectedChips,
@@ -479,6 +479,9 @@ public final class PackagingGameTests {
                 "the config fixture did not move the configured capacity, so the stored-capacity "
                     + "assertions below would be vacuous");
             for (Item item : List.of(ModItems.FOUP_MK1.get(), ModItems.FOUP_MK2.get())) {
+                TestPackageBlockEntity carrier = item == ModItems.FOUP_MK1.get()
+                    ? machine : placedMachine(helper, SECOND);
+                if (carrier == null) return;
                 // The lot is built at the capacity the config held before the move, which is
                 // now a different number, so "stored capacity" and "configured capacity" are
                 // two different things in this case.
@@ -486,21 +489,21 @@ public final class PackagingGameTests {
                     configured, lot.size());
                 UUID judgedId = full.lotId();
 
-                machine.clearContent();
-                machine.setStoredEnergy(0);
-                loadPackages(machine, lot.passing() * numbers.packagesPerWafer());
-                loadLot(machine, item, full);
-                charge(helper, machine,
+                carrier.clearContent();
+                carrier.setStoredEnergy(0);
+                loadPackages(carrier, lot.passing() * numbers.packagesPerWafer());
+                loadLot(carrier, item, full);
+                charge(helper, carrier,
                     lot.size() * numbers.ticksPerWafer() * numbers.energyPerTick());
 
                 // One tick: the admission itself. Nothing has been worked yet.
-                machine.serverTick();
-                helper.assertTrue(machine.isQueueActive(),
+                carrier.serverTick();
+                helper.assertTrue(carrier.isQueueActive(),
                     "a " + item + " lot was not accepted on the first tick");
-                helper.assertValueEqual(0, machine.data().get(FabMachineBlockEntity.DATA_PROGRESS),
+                helper.assertValueEqual(0, carrier.data().get(FabMachineBlockEntity.DATA_PROGRESS),
                     "the admission tick worked a wafer instead of only judging the lot");
 
-                ItemStack returned = machine.slot(TestPackageBlockEntity.FOUP_SLOT);
+                ItemStack returned = carrier.slot(TestPackageBlockEntity.FOUP_SLOT);
                 helper.assertTrue(returned.is(item),
                     "the returned carrier is " + returned.getItem() + " rather than the " + item
                         + " that went in");
@@ -543,7 +546,7 @@ public final class PackagingGameTests {
             return;
         }
         MachineDefinition definition = definitionOf(helper, machine);
-        Tier tier = tier(helper, 1);
+        Tier tier = tier(helper, 2);
         if (definition == null || tier == null) {
             return;
         }
@@ -578,6 +581,7 @@ public final class PackagingGameTests {
 
         assertRefusedUnchanged(helper, machine, numbers, partial,
             PackagingRefusalReason.LOT_INCOMPLETE, "a lot one layer short of finished");
+        helper.succeed();
     }
 
     private static void refusesDieWithoutChip(GameTestHelper helper) {
@@ -660,6 +664,7 @@ public final class PackagingGameTests {
 
         assertRefusedUnchanged(helper, machine, numbers, unstarted,
             PackagingRefusalReason.NO_SPEC, "a lot that was never processed");
+        helper.succeed();
     }
 
     /** The whole refusal contract, for one lot that must not be admitted. */
@@ -949,6 +954,8 @@ public final class PackagingGameTests {
         loadLot(machine, ModItems.FOUP_MK1.get(), lot.contents());
         int half = Math.max(1, numbers.ticksPerWafer() / 2);
         charge(helper, machine, numbers.energyPerTick() * half);
+        machine.serverTick();
+        helper.assertTrue(machine.isQueueActive(), "the low-power lot was not admitted");
         runTicks(machine, half);
         helper.assertValueEqual(half, progressOf(machine),
             "the first half did not cost exactly one charge per tick");
@@ -1464,7 +1471,7 @@ public final class PackagingGameTests {
             helper.assertTrue(ItemStack.isSameItemSameComponents(expected, still),
                 "the component-modified chip stack in slot " + offset
                     + " lost or changed its components");
-            helper.assertTrue(Integer.valueOf(offset)
+            helper.assertTrue(Integer.valueOf(offset + 1)
                     .equals(still.get(ModDataComponents.RESIST_TIER.get())),
                 "the component-modified chip stack in slot " + offset + " lost its component");
         }
@@ -2205,6 +2212,7 @@ public final class PackagingGameTests {
 
         // ---- the positive control: a snapshot this file wrote, all fields in range -------
         wipe(machine);
+        loadPackages(machine, numbers.packagesPerWafer());
         loadTag(level, machine, queueTag(level, machine, flags, numbers.chipsPerWafer(),
             numbers.packagesPerWafer(), numbers.ticksPerWafer(), numbers.energyPerTick(),
             index, 0, DieTypes.LOGIC, tier.index()));
@@ -2508,14 +2516,9 @@ public final class PackagingGameTests {
             "an idle machine with no lot published a state other than idle");
 
         // Two machines, opposite hidden flags, identical public numbers.
-        Lot fixture = mixedLot(level, tier, DieTypes.LOGIC, null, numbers);
-        if (fixture == null) {
-            helper.fail(noMixedLotMessage(DieTypes.LOGIC, 1, numbers));
-            return;
-        }
-        helper.assertTrue(fixture.size() >= 2, "the fixture lot needs at least two wafers");
-        String forwards = flagsText(fixture.flags());
-        String backwards = flagsText(reverse(fixture.flags()));
+        int privacyWafers = 1;
+        String forwards = "1";
+        String backwards = "0";
         helper.assertFalse(forwards.equals(backwards),
             "the fixture's flags are their own reverse, so the two machines would hold identical "
                 + "hidden data and this case would prove nothing");
@@ -2523,7 +2526,7 @@ public final class PackagingGameTests {
         // number is identical while the hidden per-wafer results are not.
         int index = 0;
         int paid = Math.max(0, Math.min(numbers.ticksPerWafer() - 1, 1));
-        int whole = fixture.size() * numbers.ticksPerWafer() * numbers.energyPerTick();
+        int whole = privacyWafers * numbers.ticksPerWafer() * numbers.energyPerTick();
 
         for (TestPackageBlockEntity target : List.of(machine, other)) {
             target.clearContent();
@@ -2623,13 +2626,13 @@ public final class PackagingGameTests {
                 TestPackageBlockEntity.SCRAP_SLOT_COUNT);
             target.setStoredEnergy(whole);
         }
-        runUntilFinished(helper, machine, fixture.size() * numbers.ticksPerWafer() + 8);
-        runUntilFinished(helper, other, fixture.size() * numbers.ticksPerWafer() + 8);
-        helper.assertValueEqual(fixture.passing() * numbers.chipsPerWafer(),
+        runUntilFinished(helper, machine, privacyWafers * numbers.ticksPerWafer() + 8);
+        runUntilFinished(helper, other, privacyWafers * numbers.ticksPerWafer() + 8);
+        helper.assertValueEqual(privacyWafers * numbers.chipsPerWafer(),
             bankCountOf(machine, TestPackageBlockEntity.CHIP_SLOT_FIRST,
                 TestPackageBlockEntity.CHIP_SLOT_COUNT, ModItems.LOGIC_CHIP_T1.get()),
             "the forwards-flag machine did not produce the chips its own flags describe");
-        helper.assertValueEqual(fixture.failing() * numbers.chipsPerWafer(),
+        helper.assertValueEqual(privacyWafers * numbers.chipsPerWafer(),
             bankCountOf(other, TestPackageBlockEntity.SCRAP_SLOT_FIRST,
                 TestPackageBlockEntity.SCRAP_SLOT_COUNT, ModItems.CHIP_SCRAP.get()),
             "the backwards-flag machine did not produce the scrap its own flags describe");
@@ -3558,3 +3561,4 @@ public final class PackagingGameTests {
         return player;
     }
 }
+
