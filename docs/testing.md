@@ -268,7 +268,7 @@ Run with the installed JDK25:
 
 
 
-Measured source 149063bf:509 unit tests/74classes and775 distinct server cases passed with no failures/errors/skips, including every105registered project ID. All59 new core methods and24 new packaging server cases have executed failed production controls and exact restoration. Full acceptance still requires final reviews and candidate verification; M1-11 presentation and M1-12 end-to-end/client gates remain separate.
+Measured source 149063bf:509 unit tests/74classes and775 distinct server cases passed with no failures/errors/skips, including every105registered project ID. All59 new core methods and24 new packaging server cases have executed failed production controls and exact restoration. M1-10 is accepted; see [the acceptance record](reports/M1-10_acceptance.md). M1-11 presentation and M1-12 end-to-end/client gates remain separate.
 
 Actual registered packaging cases:
 

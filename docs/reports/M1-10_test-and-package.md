@@ -1,9 +1,9 @@
 # M1-10: Test and Package machine
 
-Date:2026-10-18. Branch:`orchestrator/euvcraft-m1-10`. Verified code/tests:`149063bf7cedcbef88bce2b0f6e35d28f64c7b66`. Report status: verification complete; final independent reviews and integration pending. Nemotron authored documentation drafts; coordinator reconciled identifiers, signatures, tables and claims against source and saved evidence.
+Date:2026-10-18. Branch:`orchestrator/euvcraft-m1-10`. Verified code/tests:`149063bf7cedcbef88bce2b0f6e35d28f64c7b66`. Report status: accepted. See [final acceptance](M1-10_acceptance.md) for both reviews, the tested merge candidate and integration. Nemotron authored documentation drafts; coordinator reconciled identifiers, signatures, tables and claims against source and saved evidence.
 ## 1. Summary
 
-The Test and Package machine judges a complete logic or memory lot once, consumes it immediately, and returns an empty carrier with a fresh identity. It processes frozen pass flags one wafer at a time, producing catalog chips or scrap and consuming packages only on passing completions. Energy, package and output shortages preserve paid progress. Breaking the machine permanently loses unfinished queued wafers and cannot recover the original lot. The measured build passed 509 unit tests and 775 server cases; all 59 new core method and 24 new server case has valid deliberate-fault evidence. Final independent reviews and a separate merge-candidate check still precede master integration.
+The Test and Package machine judges a complete logic or memory lot once, consumes it immediately, and returns an empty carrier with a fresh identity. It processes frozen pass flags one wafer at a time, producing catalog chips or scrap and consuming packages only on passing completions. Energy, package and output shortages preserve paid progress. Breaking the machine permanently loses unfinished queued wafers and cannot recover the original lot. The measured build passed 509 unit tests and 775 server cases; all 59 new core method and 24 new server case has valid deliberate-fault evidence. Two independent Beam approvals and a separate full merge-candidate check preceded integration; see the final acceptance record.
 ## 2. Files changed
 
 | Path | Change | Purpose |
@@ -231,8 +231,8 @@ Server negative controls:11 completed runs with 17 mutation entries cover all 24
 | `lithmod:test_package_keeps_frozen_parameters_for_an_accepted_run` | reload | Expected the machine did not report every wafer of the lot as finished to be 0: was 25 on tick 0 |
 | `lithmod:test_package_resumes_when_its_definition_returns` | reload | a missing definition dropped the accepted queue on tick 0 |
 
-Fixes discovered during verification: Completion descriptions leaked package use; accepted queues incorrectly depended on current invalid admission settings; output preflight/insertion needed component equality; saved quantities required bounds. Test repairs separately corrected current Minecraft APIs, admission-tick accounting, missing success signals and a pre-break total that omitted scrap. The first full combined preview passed774/775 because of that fixture arithmetic; corrected code/test149063bf passed775/775. The final restored source is checked clean; the subsequent merge candidate must receive a fresh full positive run.
-## 4. Spec conformance
+Fixes discovered during verification: Completion descriptions leaked package use; accepted queues incorrectly depended on current invalid admission settings; output preflight/insertion needed component equality; saved quantities required bounds. Test repairs separately corrected current Minecraft APIs, admission-tick accounting, missing success signals and a pre-break total that omitted scrap. The first full combined preview passed774/775 because of that fixture arithmetic; corrected code/test149063bf passed775/775. The final restored source is checked clean; the separate merge candidate subsequently passed a fresh full positive run; see the final acceptance record.
+The final candidate contains 775 distinct server cases: 774 passed, no required failures, and one optional Arcforge failure (rcforge:creosote_moves) recorded as skipped. All 105 project IDs passed. See the acceptance record for this result; the earlier measured source run above had all775passing.\n\n## 4. Spec conformance
 
 | Requirement | Status | Evidence |
 | --- | --- | --- |
@@ -251,7 +251,7 @@ Fixes discovered during verification: Completion descriptions leaked package use
 | Incomplete and uncatalogued-die lots refused | met | `test_package_refuses_an_incomplete_lot`, `test_package_refuses_a_die_with_no_catalog_chip`. |
 | Break, NBT resume, full outputs, no item handler and private menu data | met | Corresponding break/roundtrip/output/capability/menu cases, each with an executed failed production fault. |
 | Hand-fed/server authority/core isolation/placeholder art/no dependency edits | met | Energy-only and hopper tests; server ticker/detached guard; checkCoreImports; only project source/resources changed. |
-| Build/tests pass with reconciled counts and this report exists | met | 509 unit/74classes and 775 distinct server cases; all 105project IDs present/pass. Final review/integration pending. |
+| Build/tests pass with reconciled counts and this report exists | met | 509 unit/74classes and 775 distinct server cases; all 105project IDs present/pass. Final acceptance is recorded in the linked acceptance report. |
 | Every new test has an executed negative control | met | 59 core methods and 24 server IDs mapped below; exact restoration verified; crashing/preflight attempts excluded. |
 ## 5. Not verified
 
