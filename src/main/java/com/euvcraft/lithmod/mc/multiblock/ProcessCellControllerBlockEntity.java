@@ -1,15 +1,27 @@
 package com.euvcraft.lithmod.mc.multiblock;
 
+import com.euvcraft.lithmod.core.MachineDefinition;
 import com.euvcraft.lithmod.core.multiblock.BlockKind;
 import com.euvcraft.lithmod.core.multiblock.MatchResult;
 import com.euvcraft.lithmod.core.multiblock.MultiblockDirection;
 import com.euvcraft.lithmod.core.multiblock.MultiblockPos;
 import com.euvcraft.lithmod.core.multiblock.StructureMatcher;
 import com.euvcraft.lithmod.core.multiblock.StructureShape;
+import com.euvcraft.lithmod.mc.data.MachineDefinitionLoader;
+import com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity;
+import com.euvcraft.lithmod.mc.machine.FoupItems;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.world.Container;
+import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -17,12 +29,12 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.transfer.energy.EnergyHandler;
-import net.neoforged.neoforge.transfer.energy.SimpleEnergyHandler;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -40,16 +52,21 @@ import java.util.Set;
  * formed flags. {@link #members()} is that list; it is cleared on failure only after the previous
  * members have been updated.</p>
  */
-public class ProcessCellControllerBlockEntity extends BlockEntity implements EnergyBufferProvider {
+public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity implements EnergyBufferProvider, MenuProvider, Container {
 
-    /** Buffer size in FE. */
-    public static final int ENERGY_CAPACITY = 100_000;
-    /** Largest single insert accepted, in FE. */
-    public static final int ENERGY_MAX_INSERT = 10_000;
-    /** Ticks between periodic re-validations, as a backstop for edits nothing else noticed. */
-    public static final int REVALIDATE_INTERVAL = 20;
+    // Slot indices matching the 8-slot layout: 0 FOUP, 1 MASK, 2 RESIST, 3 LIGHT_SOURCE, 4 OPTICS, 5 STAGE, 6 CLEANROOM, 7 METROLOGY
+    public static final int SLOT_FOUP = 0;
+    public static final int SLOT_MASK = 1;
+    public static final int SLOT_RESIST = 2;
+    public static final int SLOT_LIGHT_SOURCE = 3;
+    public static final int SLOT_OPTICS = 4;
+    public static final int SLOT_STAGE = 5;
+    public static final int SLOT_CLEANROOM = 6;
+    public static final int SLOT_METROLOGY = 7;
+    public static final int INPUT_SLOTS = 8;
+    public static final int OUTPUT_SLOTS = 0;
+    public static final int SLOT_COUNT = 8;
 
-    private final ControllerEnergy energy;
     /** The twelve positions of the current, or last, formation. */
     private final Set<BlockPos> members = new LinkedHashSet<>();
     private boolean formed;
@@ -57,9 +74,16 @@ public class ProcessCellControllerBlockEntity extends BlockEntity implements Ene
     private String failureReason = "";
     private int ticksSinceValidation;
 
+    private static final int REVALIDATE_INTERVAL = 20;
+
     public ProcessCellControllerBlockEntity(BlockPos pos, BlockState state) {
-        super(ModMultiblocks.PROCESS_CELL_CONTROLLER_BE.get(), pos, state);
-        this.energy = new ControllerEnergy(this);
+        super(ModMultiblocks.PROCESS_CELL_CONTROLLER_BE.get(), pos, state, INPUT_SLOTS, OUTPUT_SLOTS);
+        // machineId() is "process_cell", base constructor calls refreshDefinition() which loads energy numbers from data
+    }
+
+    @Override
+    protected String machineId() {
+        return "process_cell";
     }
 
     // ---------------------------------------------------------------- energy
@@ -71,24 +95,7 @@ public class ProcessCellControllerBlockEntity extends BlockEntity implements Ene
      */
     @Override
     public EnergyHandler energy() {
-        return this.energy;
-    }
-
-    /**
-     * Puts the buffer into a known state, clamped to capacity. Used by tests.
-     *
-     * @param amount the FE to store
-     */
-    public void setStoredEnergy(int amount) {
-        this.energy.set(Math.max(0, Math.min(amount, this.energy.getCapacityAsInt())));
-    }
-
-    /**
-     * The buffer, exposed as its concrete type so a test can {@code set} it. The capability path
-     * only ever offers {@link #energy()}.
-     */
-    public ControllerEnergy buffer() {
-        return this.energy;
+        return this.exposed; // WithdrawNothing wrapper around the real buffer
     }
 
     // ---------------------------------------------------------------- formation state
@@ -125,6 +132,7 @@ public class ProcessCellControllerBlockEntity extends BlockEntity implements Ene
      * an overridable-but-not-internal hook is the whole point of the method. It is not on
      * {@link EnergyBufferProvider}, because Java forbids narrowing an interface method to protected.</p>
      */
+    @Override
     protected void onFormed() {
     }
 
@@ -133,20 +141,28 @@ public class ProcessCellControllerBlockEntity extends BlockEntity implements Ene
      *
      * @see #onFormed()
      */
+    @Override
     protected void onUnformed() {
     }
 
     // ---------------------------------------------------------------- ticking
 
     /** One server tick: re-validate now and then, so a missed edit still heals. */
+    @Override
     public void serverTick() {
         if (level == null || level.isClientSide()) {
             return;
         }
+        // Formation backstop: periodic re-validation regardless of base tick
         if (++this.ticksSinceValidation >= REVALIDATE_INTERVAL) {
             this.ticksSinceValidation = 0;
             revalidate();
         }
+        // Refresh definition so data sizes/closures update (capacity, per-tick cost)
+        refreshDefinition();
+        // Do NOT call super.serverTick() — that would drive irrelevant generic recipes; no process logic yet
+        syncData(); // push energy/progress to menu
+        setChanged();
     }
 
     /**
@@ -173,10 +189,10 @@ public class ProcessCellControllerBlockEntity extends BlockEntity implements Ene
 
         Direction facing = getBlockState().getValue(ProcessCellControllerBlock.FACING);
         MatchResult result = StructureMatcher.match(
-            toCore(worldPosition),
-            toCore(facing),
-            StructureShape.PROCESS_CELL,
-            this::blockKindAt);
+                toCore(worldPosition),
+                toCore(facing),
+                StructureShape.PROCESS_CELL,
+                this::blockKindAt);
 
         boolean nowFormed = result.success();
         List<BlockPos> nextMembers = nowFormed ? toMinecraft(result.memberPositions()) : List.of();
@@ -269,8 +285,8 @@ public class ProcessCellControllerBlockEntity extends BlockEntity implements Ene
                 return BlockKind.OTHER;
             }
             return state.getBlock() instanceof ProcessCellPowerPortBlock
-                ? BlockKind.POWER_PORT
-                : BlockKind.CASING;
+                    ? BlockKind.POWER_PORT
+                    : BlockKind.CASING;
         }
         if (state.getBlock() instanceof ProcessCellPowerPortBlock) {
             return BlockKind.POWER_PORT;
@@ -285,24 +301,118 @@ public class ProcessCellControllerBlockEntity extends BlockEntity implements Ene
 
     @Override
     protected void loadAdditional(ValueInput input) {
-        super.loadAdditional(input);
-        this.energy.deserialize(input);
+        super.loadAdditional(input); // loads inventory and energy via base
         this.formed = input.getInt("formed").orElse(0) != 0;
         this.failureReason = input.getString("failureReason").orElse("");
+        // Formation member list remains world-derived (not persisted)
     }
 
     @Override
     protected void saveAdditional(ValueOutput output) {
-        super.saveAdditional(output);
-        this.energy.serialize(output);
+        super.saveAdditional(output); // saves inventory and energy via base
         output.putInt("formed", this.formed ? 1 : 0);
         output.putString("failureReason", this.failureReason);
+        // Formation member list not persisted on purpose
     }
 
-    /**
-     * Members are not persisted on purpose: they are derived from the world, and re-deriving them
-     * on load is what keeps a saved cell honest if the blocks around it moved.
-     */
+    // ---------------------------------------------------------------- Container (for item drop on break)
+
+    @Override
+    public int getContainerSize() {
+        return SLOT_COUNT;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        for (int i = 0; i < SLOT_COUNT; i++) {
+            if (!getItem(i).isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public ItemStack getItem(int index) {
+        return slot(index);
+    }
+
+    @Override
+    public ItemStack removeItem(int index, int count) {
+        ItemStack stack = slot(index);
+        if (stack.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        ItemStack removed = stack.split(Math.min(count, stack.getCount()));
+        if (stack.isEmpty()) {
+            clearSlot(index);
+        }
+        setChanged();
+        return removed;
+    }
+
+    @Override
+    public ItemStack removeItemNoUpdate(int index) {
+        ItemStack stack = slot(index);
+        clearSlot(index);
+        return stack;
+    }
+
+    @Override
+    public void setItem(int index, ItemStack stack) {
+        setSlot(index, stack);
+    }
+
+    @Override
+    public void clearContent() {
+        for (int i = 0; i < SLOT_COUNT; i++) {
+            clearSlot(i);
+        }
+    }
+
+    @Override
+    public boolean canPlaceItem(int index, ItemStack stack) {
+        // Hand-fed only; no automation
+        return false;
+    }
+
+    @Override
+    public boolean canTakeItem(Container into, int index, ItemStack stack) {
+        // Hand-fed only; no automation
+        return false;
+    }
+
+    @Override
+    public int getMaxStackSize() {
+        return 64;
+    }
+
+    @Override
+    public boolean stillValid(Player player) {
+        return super.stillValid(player);
+    }
+
+    // ---------------------------------------------------------------- MenuProvider
+
+    @Override
+    public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
+        return createMachineMenu(containerId, playerInventory, this);
+    }
+
+    @Override
+    protected AbstractContainerMenu createMachineMenu(int containerId, Inventory playerInventory, FabMachineBlockEntity machine) {
+        return new ProcessCellMenu(ModMultiblocks.PROCESS_CELL_MENU_TYPE.get(), containerId, playerInventory, this);
+    }
+
+    // ---------------------------------------------------------------- extra contents drop
+
+    @Override
+    protected void dropExtraContents(@Nullable Level level, BlockPos pos) {
+        // Drop our 8-slot inventory when the controller is broken
+        if (level != null && !level.isClientSide()) {
+            dropContainer(level, pos, this);
+        }
+    }
 
     // ---------------------------------------------------------------- conversions
 
@@ -329,26 +439,11 @@ public class ProcessCellControllerBlockEntity extends BlockEntity implements Ene
     }
 
     /**
-     * The cell's real energy storage.
-     *
-     * <p>{@code maxExtract} is zero, which is the whole of "a power port never gives energy back"
-     * and needs no wrapper class. The controller itself does not spend energy yet; M1-09 will, and
-     * when it does it will need the two-object split
-     * {@code FabMachineBlockEntity.MachineEnergy}/{@code WithdrawNothing} uses, because a buffer
-     * that refuses extraction is a buffer that cannot pay for its own work.</p>
+     * Access to the definition for this machine, for tests and menu energy capacity display.
+     * Reads the loaded data-driven definition.
      */
-    public static final class ControllerEnergy extends SimpleEnergyHandler {
-
-        private final BlockEntity owner;
-
-        ControllerEnergy(BlockEntity owner) {
-            super(ENERGY_CAPACITY, ENERGY_MAX_INSERT, 0);
-            this.owner = owner;
-        }
-
-        @Override
-        protected void onEnergyChanged(int previousAmount) {
-            this.owner.setChanged();
-        }
+    public Optional<MachineDefinition> definition() {
+        MachineDefinitionLoader.Registry registry = MachineDefinitionLoader.getRegistry();
+        return registry == null ? Optional.empty() : registry.byId(machineId());
     }
 }
