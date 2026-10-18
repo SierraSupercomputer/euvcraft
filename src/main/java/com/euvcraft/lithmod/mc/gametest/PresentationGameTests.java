@@ -301,108 +301,106 @@ public final class PresentationGameTests {
     }
 
     /**
-     * Validates the entry order of all EUVCRAFT creative tabs.
+     * Validates the entry order of the unified EUVCRAFT creative tab.
      *
-     * <p>This test ensures that the creative tab entry order is stable and matches the
-     * intended presentation order. Each tab's entries are validated against their
-     * expected item sequence.</p>
+     * <p>This test ensures that the MAIN creative tab entry order is stable and matches the
+     * intended presentation order. The 32 entries are validated against their
+     * expected item sequence. Also verifies that all lithmod items (except test_machine)
+     * appear exactly once in the tab, and that only one lithmod CreativeModeTab is registered.
+     * </p>
      */
     private static void creativeOrder(GameTestHelper h) {
         ServerLevel level = h.getLevel();
         var params = new CreativeModeTab.ItemDisplayParameters(
             level.enabledFeatures(), true, level.registryAccess());
 
-        // Tab 0: MAIN - FOUP variants
         CreativeModeTab mainTab = ModCreativeTabs.MAIN.get();
         mainTab.buildContents(params);
-        List<ItemStack> mainEntries = new ArrayList<>(mainTab.getDisplayItems());
-        h.assertValueEqual(2, mainEntries.size(), "MAIN tab entry count changed");
-        h.assertTrue(mainEntries.get(0).is(ModItems.FOUP_MK1.get()),
-            "MAIN tab entry 0 is not FOUP Mk1: " + mainEntries.get(0).getItem());
-        h.assertTrue(mainEntries.get(1).is(ModItems.FOUP_MK2.get()),
-            "MAIN tab entry 1 is not FOUP Mk2: " + mainEntries.get(1).getItem());
+        List<ItemStack> actualEntries = new ArrayList<>(mainTab.getDisplayItems());
 
-        // Tab 1: CHIPS - chips and consumables
-        CreativeModeTab chipsTab = ModCreativeTabs.CHIPS.get();
-        chipsTab.buildContents(params);
-        List<ItemStack> chipsEntries = new ArrayList<>(chipsTab.getDisplayItems());
-        h.assertValueEqual(7, chipsEntries.size(), "CHIPS tab entry count changed");
-        h.assertTrue(chipsEntries.get(0).is(ModItems.LOGIC_CHIP_T1.get()), "CHIPS entry 0");
-        h.assertTrue(chipsEntries.get(1).is(ModItems.LOGIC_CHIP_T2.get()), "CHIPS entry 1");
-        h.assertTrue(chipsEntries.get(2).is(ModItems.MEMORY_CHIP_T2.get()), "CHIPS entry 2");
-        h.assertTrue(chipsEntries.get(3).is(ModItems.CHIP_SCRAP.get()), "CHIPS entry 3");
-        h.assertTrue(chipsEntries.get(4).is(ModItems.RESIST_T1.get()), "CHIPS entry 4");
-        h.assertTrue(chipsEntries.get(5).is(ModItems.RESIST_T2.get()), "CHIPS entry 5");
-        h.assertTrue(chipsEntries.get(6).is(ModItems.CHIP_PACKAGE.get()), "CHIPS entry 6");
+        // Expected 32 stacks in exact order
+        List<Item> expectedItems = List.of(
+            ModItems.CRYSTAL_PULLER.get(),
+            ModItems.WAFER_SLICER.get(),
+            ModItems.PATTERN_GENERATOR.get(),
+            ModItems.TEST_PACKAGE.get(),
+            ModItems.PROCESS_CELL_CONTROLLER.get(),
+            ModItems.PROCESS_CELL_CASING.get(),
+            ModItems.PROCESS_CELL_POWER_PORT.get(),
+            ModItems.FOUP_MK1.get(),
+            ModItems.FOUP_MK2.get(),
+            ModItems.SILICON.get(),
+            ModItems.SILICON_BOULE.get(),
+            ModItems.BLANK_MASK.get(),
+            ModItems.MASK.get(), // sampleMask(LOGIC, 1)
+            ModItems.MASK.get(), // sampleMask(LOGIC, 2)
+            ModItems.MASK.get(), // sampleMask(MEMORY, 2)
+            ModItems.MERCURY_LAMP.get(),
+            ModItems.I_LINE_LAMP.get(),
+            ModItems.CONTACT_PLATE.get(),
+            ModItems.REDUCTION_LENS.get(),
+            ModItems.MANUAL_ALIGNER.get(),
+            ModItems.STEPPER_STAGE.get(),
+            ModItems.BASIC_AIR_FILTER.get(),
+            ModItems.FINE_AIR_FILTER.get(),
+            ModItems.OPTICAL_MICROSCOPE.get(),
+            ModItems.OVERLAY_SCOPE.get(),
+            ModItems.RESIST_T1.get(),
+            ModItems.RESIST_T2.get(),
+            ModItems.CHIP_PACKAGE.get(),
+            ModItems.LOGIC_CHIP_T1.get(),
+            ModItems.LOGIC_CHIP_T2.get(),
+            ModItems.MEMORY_CHIP_T2.get(),
+            ModItems.CHIP_SCRAP.get()
+        );
 
-        // Tab 2: PROCESS_CELL - process cell blocks
-        CreativeModeTab processCellTab = ModCreativeTabs.PROCESS_CELL.get();
-        processCellTab.buildContents(params);
-        List<ItemStack> pcEntries = new ArrayList<>(processCellTab.getDisplayItems());
-        h.assertValueEqual(3, pcEntries.size(), "PROCESS_CELL tab entry count changed");
-        h.assertTrue(pcEntries.get(0).is(ModItems.PROCESS_CELL_CONTROLLER.get()), "PROCESS_CELL entry 0");
-        h.assertTrue(pcEntries.get(1).is(ModItems.PROCESS_CELL_CASING.get()), "PROCESS_CELL entry 1");
-        h.assertTrue(pcEntries.get(2).is(ModItems.PROCESS_CELL_POWER_PORT.get()), "PROCESS_CELL entry 2");
+        // Verify exact 32 stacks in order
+        h.assertValueEqual(32, actualEntries.size(), "MAIN tab entry count is not 32");
+        for (int i = 0; i < 32; i++) {
+            Item expected = expectedItems.get(i);
+            Item actual = actualEntries.get(i).getItem();
+            h.assertTrue(actual == expected,
+                "MAIN tab entry " + i + " is " + actual + " expected " + expected);
+        }
 
-        // Tab 3: COMPONENTS - line components
-        CreativeModeTab componentsTab = ModCreativeTabs.COMPONENTS.get();
-        componentsTab.buildContents(params);
-        List<ItemStack> compEntries = new ArrayList<>(componentsTab.getDisplayItems());
-        h.assertValueEqual(10, compEntries.size(), "COMPONENTS tab entry count changed");
-        h.assertTrue(compEntries.get(0).is(ModItems.MERCURY_LAMP.get()), "COMPONENTS entry 0");
-        h.assertTrue(compEntries.get(1).is(ModItems.I_LINE_LAMP.get()), "COMPONENTS entry 1");
-        h.assertTrue(compEntries.get(2).is(ModItems.CONTACT_PLATE.get()), "COMPONENTS entry 2");
-        h.assertTrue(compEntries.get(3).is(ModItems.REDUCTION_LENS.get()), "COMPONENTS entry 3");
-        h.assertTrue(compEntries.get(4).is(ModItems.MANUAL_ALIGNER.get()), "COMPONENTS entry 4");
-        h.assertTrue(compEntries.get(5).is(ModItems.STEPPER_STAGE.get()), "COMPONENTS entry 5");
-        h.assertTrue(compEntries.get(6).is(ModItems.BASIC_AIR_FILTER.get()), "COMPONENTS entry 6");
-        h.assertTrue(compEntries.get(7).is(ModItems.FINE_AIR_FILTER.get()), "COMPONENTS entry 7");
-        h.assertTrue(compEntries.get(8).is(ModItems.OPTICAL_MICROSCOPE.get()), "COMPONENTS entry 8");
-        h.assertTrue(compEntries.get(9).is(ModItems.OVERLAY_SCOPE.get()), "COMPONENTS entry 9");
-
-        // Tab 4: SILICON_CHAIN - silicon chain items
-        CreativeModeTab siliconTab = ModCreativeTabs.SILICON_CHAIN.get();
-        siliconTab.buildContents(params);
-        List<ItemStack> siEntries = new ArrayList<>(siliconTab.getDisplayItems());
-        h.assertValueEqual(4, siEntries.size(), "SILICON_CHAIN tab entry count changed");
-        h.assertTrue(siEntries.get(0).is(ModItems.SILICON.get()), "SILICON_CHAIN entry 0");
-        h.assertTrue(siEntries.get(1).is(ModItems.SILICON_BOULE.get()), "SILICON_CHAIN entry 1");
-        h.assertTrue(siEntries.get(2).is(ModItems.CRYSTAL_PULLER.get()), "SILICON_CHAIN entry 2");
-        h.assertTrue(siEntries.get(3).is(ModItems.WAFER_SLICER.get()), "SILICON_CHAIN entry 3");
-
-        // Tab 5: MASKS - photomask group
-        CreativeModeTab masksTab = ModCreativeTabs.MASKS.get();
-        masksTab.buildContents(params);
-        List<ItemStack> maskEntries = new ArrayList<>(masksTab.getDisplayItems());
-        h.assertValueEqual(5, maskEntries.size(), "MASKS tab entry count changed");
-        h.assertTrue(maskEntries.get(0).is(ModItems.BLANK_MASK.get()), "MASKS entry 0 not blank mask");
-        h.assertTrue(maskEntries.get(0).get(ModDataComponents.MASK_DATA.get()) == null,
-            "MASKS entry 0 blank mask carries a design");
-        // Entry 1: logic T1 mask
-        h.assertTrue(maskEntries.get(1).is(ModItems.MASK.get()), "MASKS entry 1 not a mask");
-        MaskData d1 = maskEntries.get(1).get(ModDataComponents.MASK_DATA.get());
+        // Verify the three mask entries have correct designs
+        MaskData d1 = actualEntries.get(12).get(ModDataComponents.MASK_DATA.get());
         h.assertTrue(d1 != null && DieTypes.LOGIC.equals(d1.dieType()) && d1.tierIndex() == 1,
-            "MASKS entry 1 not logic T1: " + d1);
-        // Entry 2: logic T2 mask
-        h.assertTrue(maskEntries.get(2).is(ModItems.MASK.get()), "MASKS entry 2 not a mask");
-        MaskData d2 = maskEntries.get(2).get(ModDataComponents.MASK_DATA.get());
+            "Entry 12 (mask 0) not logic T1: " + d1);
+        MaskData d2 = actualEntries.get(13).get(ModDataComponents.MASK_DATA.get());
         h.assertTrue(d2 != null && DieTypes.LOGIC.equals(d2.dieType()) && d2.tierIndex() == 2,
-            "MASKS entry 2 not logic T2: " + d2);
-        // Entry 3: memory T2 mask
-        h.assertTrue(maskEntries.get(3).is(ModItems.MASK.get()), "MASKS entry 3 not a mask");
-        MaskData d3 = maskEntries.get(3).get(ModDataComponents.MASK_DATA.get());
+            "Entry 13 (mask 1) not logic T2: " + d2);
+        MaskData d3 = actualEntries.get(14).get(ModDataComponents.MASK_DATA.get());
         h.assertTrue(d3 != null && DieTypes.MEMORY.equals(d3.dieType()) && d3.tierIndex() == 2,
-            "MASKS entry 3 not memory T2: " + d3);
-        // Entry 4: pattern generator
-        h.assertTrue(maskEntries.get(4).is(ModItems.PATTERN_GENERATOR.get()),
-            "MASKS entry 4 not pattern generator: " + maskEntries.get(4).getItem());
+            "Entry 14 (mask 2) not memory T2: " + d3);
 
-        // Tab 6: TEST_PACKAGE - test package machine
-        CreativeModeTab testPkgTab = ModCreativeTabs.TEST_PACKAGE.get();
-        testPkgTab.buildContents(params);
-        List<ItemStack> tpEntries = new ArrayList<>(testPkgTab.getDisplayItems());
-        h.assertValueEqual(1, tpEntries.size(), "TEST_PACKAGE tab entry count changed");
-        h.assertTrue(tpEntries.get(0).is(ModItems.TEST_PACKAGE.get()), "TEST_PACKAGE entry 0");
+        // Ensure all registered lithmod item IDs except EXACT test_machine fixture present
+        Set<String> expectedItemIds = new HashSet<>();
+        for (Identifier id : BuiltInRegistries.ITEM.keySet()) {
+            if (EUVCRAFTMod.MODID.equals(id.getNamespace()) && !id.getPath().equals("test_machine")) {
+                expectedItemIds.add(id.getPath());
+            }
+        }
+        Set<String> shownItemIds = new HashSet<>();
+        for (ItemStack stack : actualEntries) {
+            shownItemIds.add(BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath());
+        }
+        h.assertTrue(expectedItemIds.equals(shownItemIds),
+            "Actual item registry set != unique shown item IDs. Missing: " +
+            new HashSet<>(expectedItemIds) {{ removeAll(shownItemIds); }} +
+            ", Extra: " + new HashSet<>(shownItemIds) {{ removeAll(expectedItemIds); }});
+
+        // Assert exactly one registered lithmod CreativeModeTab
+        var creativeTabRegistry = BuiltInRegistries.CREATIVE_MODE_TAB;
+        if (creativeTabRegistry != null) {
+            long lithmodTabCount = creativeTabRegistry.keySet().stream()
+                .filter(key -> EUVCRAFTMod.MODID.equals(key.getNamespace()))
+                .count();
+            h.assertValueEqual(1, lithmodTabCount,
+                "Expected exactly one lithmod CreativeModeTab, found " + lithmodTabCount);
+        } else {
+            LOGGER.warn("CreativeModeTab registry not available, skipping tab count check");
+        }
 
         h.succeed();
     }

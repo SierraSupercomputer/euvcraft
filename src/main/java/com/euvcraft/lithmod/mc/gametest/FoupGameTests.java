@@ -312,8 +312,16 @@ public final class FoupGameTests {
         tab.buildContents(new CreativeModeTab.ItemDisplayParameters(
             level.enabledFeatures(), true, level.registryAccess()));
         Collection<ItemStack> displayed = tab.getDisplayItems();
-        helper.assertTrue(displayed.size() == 2,
-            "the EUVCRAFT tab holds " + displayed.size() + " entries, expected 2");
+
+        // Filter to only the two FOUP entries before counting and iterating
+        java.util.List<ItemStack> foupEntries = new java.util.ArrayList<>();
+        for (ItemStack stack : displayed) {
+            if (stack.is(ModItems.FOUP_MK1.get()) || stack.is(ModItems.FOUP_MK2.get())) {
+                foupEntries.add(stack);
+            }
+        }
+        helper.assertTrue(foupEntries.size() == 2,
+            "the EUVCRAFT tab holds " + foupEntries.size() + " FOUP entries, expected 2");
 
         ItemStack mk1 = new ItemStack(ModItems.FOUP_MK1.get());
         ItemStack mk2 = new ItemStack(ModItems.FOUP_MK2.get());
@@ -322,7 +330,7 @@ public final class FoupGameTests {
 
         FoupContents first = null;
         FoupContents second = null;
-        for (ItemStack stack : displayed) {
+        for (ItemStack stack : foupEntries) {
             FoupContents contents = FoupItems.contentsOf(stack);
             if (contents == null) {
                 helper.fail("a tab entry is a " + stack.getItem() + " without a sealed lot in it");

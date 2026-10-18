@@ -155,20 +155,28 @@ public final class ChipGameTests {
         assertDesign(helper, ModItems.LOGIC_CHIP_T2.get(), DieTypes.LOGIC, 2);
         assertDesign(helper, ModItems.MEMORY_CHIP_T2.get(), DieTypes.MEMORY, 2);
 
-        CreativeModeTab tab = ModCreativeTabs.CHIPS.get();
+        CreativeModeTab tab = ModCreativeTabs.MAIN.get();
         tab.buildContents(new CreativeModeTab.ItemDisplayParameters(
             helper.getLevel().enabledFeatures(), true, helper.getLevel().registryAccess()));
         Collection<ItemStack> displayed = tab.getDisplayItems();
-        List<Item> shown = new ArrayList<>();
+
+        // Filter to only the seven chip/consumable items
+        java.util.Set<Item> chipItems = new java.util.HashSet<>();
         for (ItemStack stack : displayed) {
-            shown.add(stack.getItem());
+            Item item = stack.getItem();
+            if (item == ModItems.LOGIC_CHIP_T1.get() || item == ModItems.LOGIC_CHIP_T2.get()
+                    || item == ModItems.MEMORY_CHIP_T2.get() || item == ModItems.CHIP_SCRAP.get()
+                    || item == ModItems.RESIST_T1.get() || item == ModItems.RESIST_T2.get()
+                    || item == ModItems.CHIP_PACKAGE.get()) {
+                chipItems.add(item);
+            }
         }
         for (Item expected : List.of(ModItems.LOGIC_CHIP_T1.get(), ModItems.LOGIC_CHIP_T2.get(),
             ModItems.MEMORY_CHIP_T2.get(), ModItems.CHIP_SCRAP.get(), ModItems.RESIST_T1.get(),
             ModItems.RESIST_T2.get(), ModItems.CHIP_PACKAGE.get())) {
-            helper.assertTrue(shown.contains(expected), expected + " is missing from the chips tab");
+            helper.assertTrue(chipItems.contains(expected), expected + " is missing from the main tab");
         }
-        assertEqual(helper, 7, displayed.size(), "the chips tab holds entries that are not registered in it");
+        assertEqual(helper, 7, chipItems.size(), "the main tab does not contain exactly the seven chip/consumable items");
 
         helper.succeed();
     }
