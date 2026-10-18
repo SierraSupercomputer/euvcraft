@@ -26,6 +26,7 @@ import com.euvcraft.lithmod.mc.machine.mask.MaskMachines;
 import com.euvcraft.lithmod.mc.machine.mask.PatternGeneratorBlockEntity;
 import com.euvcraft.lithmod.mc.machine.mask.PatternGeneratorMenu;
 import com.euvcraft.lithmod.mc.recipe.MachineRecipe;
+import com.euvcraft.lithmod.mc.recipe.MachineRecipeRunner;
 import com.euvcraft.lithmod.mc.registry.ModCreativeTabs;
 import com.euvcraft.lithmod.mc.registry.ModDataComponents;
 import com.euvcraft.lithmod.mc.registry.ModItems;
@@ -1054,10 +1055,15 @@ public final class MaskGameTests {
                 helper.assertValueEqual(0, r.progress(), "corrupt spec_text '" + badText + "' retained progress");
             }
 
-            // Compound tag as spec_text (wrong type)
-            {
+            // Both a numeric NBT tag and a compound tag are present values of the wrong type.
+            for (boolean numericTag : List.of(true, false)) {
                 CompoundTag corrupt = legacyRunnerTag.copy();
-                corrupt.put("spec_text", new CompoundTag());
+                if (numericTag) {
+                    corrupt.putInt("spec_text", 42);
+                } else {
+                    corrupt.put("spec_text", new CompoundTag());
+                }
+                String wrongType = numericTag ? "numeric" : "compound";
 
                 MachineRecipeRunner r = new MachineRecipeRunner(
                         PatternGeneratorBlockEntity.MACHINE_ID, 99);
@@ -1065,18 +1071,18 @@ public final class MaskGameTests {
                         ProblemReporter.DISCARDING, level.registryAccess(), corrupt));
 
                 helper.assertFalse(r.adoptRestored(resolvedLegacy),
-                        "compound spec_text must not adopt");
+                        wrongType + " spec_text must not adopt");
 
                 drawCount[0] = 0;
                 writeCount[0] = 0;
                 boolean completed = r.tick(List.of(resolvedLegacy), matchingInputs, emptyOutput,
                         countingWriter, countingEnergy);
 
-                helper.assertFalse(completed, "compound spec_text produced output");
-                helper.assertValueEqual(0, drawCount[0], "compound spec_text drew energy");
-                helper.assertValueEqual(0, writeCount[0], "compound spec_text wrote output");
-                helper.assertFalse(r.isRunning(), "compound spec_text started a run");
-                helper.assertValueEqual(0, r.progress(), "compound spec_text retained progress");
+                helper.assertFalse(completed, wrongType + " spec_text produced output");
+                helper.assertValueEqual(0, drawCount[0], wrongType + " spec_text drew energy");
+                helper.assertValueEqual(0, writeCount[0], wrongType + " spec_text wrote output");
+                helper.assertFalse(r.isRunning(), wrongType + " spec_text started a run");
+                helper.assertValueEqual(0, r.progress(), wrongType + " spec_text retained progress");
             }
 
             LOGGER.info("[M1-06] {}: legacy compound spec restores at frozen cost; "
