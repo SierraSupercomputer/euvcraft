@@ -518,6 +518,7 @@ public final class ProcessCellGameTests {
             menu.setCarried(new ItemStack(ModItems.RESIST_T2.get(), 4));
             menu.clicked(-999, AbstractContainerMenu.getQuickcraftMask(0, 2), ContainerInput.QUICK_CRAFT, player);
             menu.clicked(2, AbstractContainerMenu.getQuickcraftMask(1, 2), ContainerInput.QUICK_CRAFT, player);
+            menu.clicked(8, AbstractContainerMenu.getQuickcraftMask(1, 2), ContainerInput.QUICK_CRAFT, player);
             menu.clicked(-999, AbstractContainerMenu.getQuickcraftMask(2, 2), ContainerInput.QUICK_CRAFT, player);
             h.assertValueEqual(16, resist(cell), "creative drag cannot clone resist into the active slot");
             h.assertValueEqual(4, menu.getCarried().getCount(), "rejected creative drag keeps the cursor unchanged");
