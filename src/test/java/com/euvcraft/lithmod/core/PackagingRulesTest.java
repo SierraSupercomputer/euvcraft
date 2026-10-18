@@ -35,7 +35,7 @@ class PackagingRulesTest {
             byLine.put(line, List.of(1, 1, 1, 1, 1, 1, 1, 1));
         }
         // Data-driven gate: test_packaging needs G1 at T1-T3, G2 at T4-T7, G3 at T8.
-        byLine.put(PackagingRules.LINE_ID, List.of(1, 1, 1, 2, 2, 2, 2, 3));
+        byLine.put("test_packaging", List.of(1, 1, 1, 2, 2, 2, 2, 3));
         matrix = GenerationMatrix.build(tiers, byLine, "packaging-rules-test");
     }
 
@@ -208,4 +208,17 @@ class PackagingRulesTest {
         assertThrows(IllegalArgumentException.class,
             () -> PackagingRules.validate(good, tiers.getByIndex(1), true, null, 1));
     }
+
+    @Test
+    void earlierRefusalsRemainAuthoritativeWhenTheMatrixIsAbsent() {
+        assertEquals(PackagingRefusalReason.NO_LOT,
+            PackagingRules.validate(null, null, true, null, 1));
+        assertEquals(PackagingRefusalReason.NO_SPEC,
+            PackagingRules.validate(lotWithoutSpec(1), null, true, null, 1));
+        assertEquals(PackagingRefusalReason.LOT_INCOMPLETE,
+            PackagingRules.validate(lotWithOneWaferAt(1, 0), tiers.getByIndex(1), true, null, 1));
+        assertEquals(PackagingRefusalReason.NO_CHIP_FOR_DIE,
+            PackagingRules.validate(lot(1, DieTypes.LOGIC, WAFERS), tiers.getByIndex(1), false, null, 1));
+    }
+
 }

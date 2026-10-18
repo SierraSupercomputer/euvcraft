@@ -592,4 +592,53 @@ class PackagingRunTest {
         // breaks, because it prints per-wafer packages (2 vs 0).
         assertEquals(failEvent.toString(), passEvent.toString());
     }
+
+    @Test
+    void missingPackagesMidWaferPreservePaidProgressAndResumeWithoutExtraCost() {
+        PackagingRun run = new PackagingRun(new PackagingPlan(List.of(true), 4, 2), 3, 10);
+        Gate packages = alwaysOpen();
+        Gate room = alwaysOpen();
+        EnergyBook energy = alwaysPaying();
+        assertNull(run.tick(packages, room, energy));
+        assertEquals(1, run.ticksPaidOnCurrentWafer());
+        packages.with(false);
+        assertNull(run.tick(packages, room, energy));
+        assertNull(run.tick(packages, room, energy));
+        assertEquals(1, run.ticksPaidOnCurrentWafer());
+        assertEquals(0, run.wafersDone());
+        assertEquals(10, energy.feDrawn());
+        assertEquals(1, energy.calls());
+        packages.with(true);
+        assertNull(run.tick(packages, room, energy));
+        assertEquals(new PackagingRun.Completion(0, true, 4, 2), run.tick(packages, room, energy));
+        assertTrue(run.isFinished());
+        assertEquals(30, energy.feDrawn());
+        assertNull(run.tick(packages, room, energy));
+        assertEquals(30, energy.feDrawn());
+    }
+
+    @Test
+    void fullOutputMidWaferPreservesPaidProgressAndResumesWithoutExtraCost() {
+        PackagingRun run = new PackagingRun(new PackagingPlan(List.of(true), 4, 2), 3, 10);
+        Gate packages = alwaysOpen();
+        Gate room = alwaysOpen();
+        EnergyBook energy = alwaysPaying();
+        assertNull(run.tick(packages, room, energy));
+        assertEquals(1, run.ticksPaidOnCurrentWafer());
+        room.with(false);
+        assertNull(run.tick(packages, room, energy));
+        assertNull(run.tick(packages, room, energy));
+        assertEquals(1, run.ticksPaidOnCurrentWafer());
+        assertEquals(0, run.wafersDone());
+        assertEquals(10, energy.feDrawn());
+        assertEquals(1, energy.calls());
+        room.with(true);
+        assertNull(run.tick(packages, room, energy));
+        assertEquals(new PackagingRun.Completion(0, true, 4, 2), run.tick(packages, room, energy));
+        assertTrue(run.isFinished());
+        assertEquals(30, energy.feDrawn());
+        assertNull(run.tick(packages, room, energy));
+        assertEquals(30, energy.feDrawn());
+    }
+
 }
