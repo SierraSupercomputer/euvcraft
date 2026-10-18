@@ -1,5 +1,7 @@
 # M1-06: Mask and Pattern Generator
 
+Independent final reviews approved `8a6c5a2430c4c9e6f0db29854c37ebcdf0427bf9`; both records are listed below. The coordinator attached review documentation without changing code verified at `433a8f59533137787b51fcf7cce037f3e34bfa5b`.
+
 - Date: October 17, 2026 (client date). Branch: `orchestrator/euvcraft-m1-06`. Verified code revision `433a8f5` (`433a8f59533137787b51fcf7cce037f3e34bfa5b`), base `5002607` (`50026071e1df5f8e92af0be24bf779d428ef639f`). `433a8f5` is the verified code revision this report documents, not the current documentation branch tip.
 - Toolchain: Java 25, Minecraft 26.3, NeoForge 26.3.0.69-beta, Gradle 9.2.1.
 - Start and end state: the base and branch values are retained in the coordinator's task metadata, and the literal start worktree-list/status transcript was **not retained**, so no earlier command or git output is reconstructed here. The end verification state was clean at the verified revision `433a8f5`; the worktree listing recorded in the evidence is the actual end listing with the home directory redacted. No fresh command output is reconstructed.
@@ -52,8 +54,10 @@
 | `src/test/java/com/euvcraft/lithmod/mc/machine/mask/MaskDataCodecTest.java` | A | Unit tests for the mask codec round trips. |
 | `docs/reports/M1-06_mask-and-pattern-generator.md` | A | This report. |
 | `docs/testing.md` | M | Appended M1-06 testing section. |
+| docs/reports/M1-06_mask-and-pattern-generator-conservation_review.md | new | Independent conservation review record. |
+| docs/reports/M1-06_mask-and-pattern-generator-conformance_review.md | new | Independent conformance review record. |
 
-37 changed paths: 35 files under `src/` (main Java, resources, and the three new unit-test classes under `src/test/`) plus this report and the appended `docs/testing.md`. No deletions; every entry is an addition (`A`) or a modification (`M`).
+39 changed paths: 35 files under `src/` (main Java, resources, and the three new unit-test classes under `src/test/`) plus this report and the appended `docs/testing.md`. No deletions; every entry is an addition (`A`) or a modification (`M`).
 
 ## 3. Verification
 
