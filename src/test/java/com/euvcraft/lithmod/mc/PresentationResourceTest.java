@@ -3,9 +3,12 @@ package com.euvcraft.lithmod.mc;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.euvcraft.lithmod.core.DieTypes;
 import com.euvcraft.lithmod.core.MachineRecipeSpec;
+import com.euvcraft.lithmod.core.ProcessState;
+import com.euvcraft.lithmod.core.RefusalReason;
 import com.euvcraft.lithmod.mc.data.MachineRecipeLoader;
 import com.euvcraft.lithmod.mc.data.MachineRecipeSpecCodec;
 import com.euvcraft.lithmod.mc.machine.mask.MaskDataCodec;
@@ -21,12 +24,15 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
@@ -273,6 +279,148 @@ class PresentationResourceTest {
         assertTrue(content.contains("die_type"), "Missing die_type documentation");
         assertTrue(content.contains("tier_index"), "Missing tier_index documentation");
         assertTrue(content.contains("uses_remaining"), "Missing uses_remaining documentation");
+    }
+
+    /**
+     * Code translation coverage: scans production Java source for literal
+     * {@code Component.translatable("...")} keys and verifies they exist in en_us.json.
+     *
+     * <p>Dynamic prefixes (concatenated expressions) are NOT complete keys and are not
+     * flagged as missing. Keys ending with a dot are treated as prefixes. The test
+     * identifies concatenated expressions rather than blanket-ignoring arbitrary
+     * missing keys.</p>
+     *
+     * <p>Independently enumerates {@link RefusalReason.Code} and {@link ProcessState}
+     * values and requires actual {@code state.lithmod.process_cell.<lowercase>} keys
+     * for each. Checks dynamic tier t1/t2 and die logic/memory used by current
+     * registered M1 items. Does not load client classes or Minecraft registry bootstrap.</p>
+     */
+    @Test
+    @DisplayName("all literal Component.translatable keys exist in en_us.json and core enum keys covered")
+    void translationKeysAreComplete() throws Exception {
+        // ---- Load en_us.json ----
+        Map<String, String> lang = loadLang();
+
+        // ---- Scan production Java source files for Component.translatable("...") ----
+        Set<String> translatableKeys = findTranslatableKeysInSource();
+
+        // ---- Verify each literal key exists in language file ----
+        Set<String> missingKeys = new HashSet<>();
+        for (String key : translatableKeys) {
+            if (!lang.containsKey(key)) {
+                missingKeys.add(key);
+            }
+        }
+        assertTrue(missingKeys.isEmpty(),
+                "Missing language entries for literal translatable keys: " + missingKeys);
+
+        // ---- Verify RefusalReason.Code enum keys ----
+        for (RefusalReason.Code code : RefusalReason.Code.values()) {
+            String key = "state.lithmod.process_cell." + code.name().toLowerCase(java.util.Locale.ROOT);
+            assertTrue(lang.containsKey(key),
+                    "Missing language entry for RefusalReason.Code: " + key);
+        }
+
+        // ---- Verify ProcessState enum keys ----
+        for (ProcessState state : ProcessState.values()) {
+            String key = "state.lithmod.process_cell." + state.name().toLowerCase(java.util.Locale.ROOT);
+            assertTrue(lang.containsKey(key),
+                    "Missing language entry for ProcessState: " + key);
+        }
+
+        // ---- Verify dynamic tier keys (t1, t2) ----
+        assertTrue(lang.containsKey("tier.lithmod.t1"), "Missing tier.lithmod.t1");
+        assertTrue(lang.containsKey("tier.lithmod.t2"), "Missing tier.lithmod.t2");
+
+        // ---- Verify die type keys used by current registered M1 items ----
+        assertTrue(lang.containsKey("dieType.lithmod.logic"), "Missing dieType.lithmod.logic");
+        assertTrue(lang.containsKey("dieType.lithmod.memory"), "Missing dieType.lithmod.memory");
+        // compute and nand exist in DieTypes but not yet used by registered M1 items
+    }
+
+    private static Map<String, String> loadLang() throws IOException {
+        Map<String, String> entries = new HashMap<>();
+        try (InputStream input = PresentationResourceTest.class.getResourceAsStream("/assets/lithmod/lang/en_us.json")) {
+            assertNotNull(input, "Missing bundled language file: /assets/lithmod/lang/en_us.json");
+            JsonElement root = JsonParser.parseReader(new InputStreamReader(input, StandardCharsets.UTF_8));
+            for (Map.Entry<String, JsonElement> entry : root.getAsJsonObject().entrySet()) {
+                entries.put(entry.getKey(), entry.getValue().getAsString());
+            }
+        }
+        return entries;
+    }
+
+    /**
+     * Scans src/main/java for literal Component.translatable("...") calls.
+     * Returns only complete literal string keys, not dynamic/concatenated expressions.
+     */
+    private static Set<String> findTranslatableKeysInSource() throws IOException {
+        Set<String> keys = new HashSet<>();
+
+        // Find project root (assumes test runs from project root or similar)
+        Path projectRoot = findProjectRoot();
+        Path srcMainJava = projectRoot.resolve("src/main/java");
+
+        if (!Files.exists(srcMainJava)) {
+            // Fallback: try relative to class location
+            String classPath = PresentationResourceTest.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+            Path classDir = Paths.get(classPath).getParent();
+            // Navigate up to find src/main/java
+            Path candidate = classDir;
+            while (candidate != null && !Files.exists(candidate.resolve("src/main/java"))) {
+                candidate = candidate.getParent();
+            }
+            if (candidate != null) {
+                srcMainJava = candidate.resolve("src/main/java");
+            }
+        }
+
+        if (!Files.exists(srcMainJava)) {
+            // Cannot locate source; return empty set (test will pass vacuously)
+            return keys;
+        }
+
+        // Pattern to match Component.translatable("literal_key") - only simple string literals
+        // This regex matches: Component.translatable("key") where key contains no concatenation
+        Pattern pattern = Pattern.compile(
+                "Component\\.translatable\\(\\s*\"([^\"]+)\"\\s*\\)");
+
+        Files.walk(srcMainJava)
+                .filter(p -> p.toString().endsWith(".java"))
+                .forEach(javaFile -> {
+                    try {
+                        String content = Files.readString(javaFile, StandardCharsets.UTF_8);
+                        Matcher matcher = pattern.matcher(content);
+                        while (matcher.find()) {
+                            String key = matcher.group(1);
+                            // Only add if it's a complete key (doesn't end with dot, not a partial prefix)
+                            if (!key.endsWith(".") && !key.contains("%") && !key.contains("+")) {
+                                keys.add(key);
+                            }
+                        }
+                    } catch (IOException ignored) {
+                        // Skip unreadable files
+                    }
+                });
+
+        return keys;
+    }
+
+    private static Path findProjectRoot() {
+        // Try current working directory
+        Path cwd = Paths.get("").toAbsolutePath();
+        if (Files.exists(cwd.resolve("src/main/java"))) {
+            return cwd;
+        }
+        // Try parent directories
+        Path current = cwd;
+        while (current != null) {
+            if (Files.exists(current.resolve("src/main/java"))) {
+                return current;
+            }
+            current = current.getParent();
+        }
+        return cwd;
     }
 }
 

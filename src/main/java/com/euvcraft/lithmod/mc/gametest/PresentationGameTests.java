@@ -42,25 +42,45 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.mojang.serialization.JsonOps;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.UUID;
 import net.minecraft.SharedConstants;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.PacketFlow;
+import io.netty.channel.embedded.EmbeddedChannel;
+import com.mojang.authlib.GameProfile;
+import net.minecraft.server.level.ClientInformation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.CommonListenerCookie;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.item.ItemEntity;
 
 /** Data-derived checks against the live server registries and normal recipe lookup. */
 public final class PresentationGameTests {
     private static final List<String> CASES = List.of("presentation_recipe_registry",
         "presentation_crafting_lookup", "presentation_pattern_production", "presentation_obtainability",
         "presentation_foup_crafting", "presentation_foup_initialization", "presentation_creative_order",
-        "presentation_datapack_override");
+        "presentation_datapack_override", "presentation_assets_and_harvest", "presentation_survival_drops");
     private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS =
         DeferredRegister.create(Registries.TEST_FUNCTION, "lithmod");
     static {
@@ -72,6 +92,8 @@ public final class PresentationGameTests {
         FUNCTIONS.register(CASES.get(5), () -> PresentationGameTests::foupInitialization);
         FUNCTIONS.register(CASES.get(6), () -> PresentationGameTests::creativeOrder);
         FUNCTIONS.register(CASES.get(7), () -> PresentationGameTests::datapackOverride);
+        FUNCTIONS.register(CASES.get(8), () -> PresentationGameTests::assetsAndHarvest);
+        FUNCTIONS.register(CASES.get(9), () -> PresentationGameTests::survivalDrops);
     }
     private PresentationGameTests() {}
     public static void register(IEventBus bus) {
@@ -495,6 +517,306 @@ public final class PresentationGameTests {
                     "Probe pack still providing recipe after restore");
         }
         h.succeed();
+    }
+
+    // ------------------------------------------------------------------
+    // 9. Assets and harvesting verification
+    // ------------------------------------------------------------------
+
+    /**
+     * Enumerates actual BuiltInRegistries.ITEM and BLOCK namespace lithmod.
+     * Every registered item needs /assets/lithmod/items/<id>.json and /assets/lithmod/models/item/<id>.json
+     * and language entry for its descriptionId.
+     * For every registered block require blockstate JSON and all its model references including
+     * formed/unformed/facing variants. Recursively inspect JSON objects/arrays for model and parent
+     * references; lithmod:<modelpath> must exist at /assets/lithmod/models/<modelpath>.json; vanilla
+     * parents allowed. Guard visited refs to prevent cycles.
+     * Every block requires its bundled loot table /data/lithmod/loot_table/blocks/<id>.json with
+     * self-drop item entry, actual live state.is(BlockTags.MINEABLE_WITH_PICKAXE), correct tool
+     * harvestable with new ItemStack(Items.IRON_PICKAXE).isCorrectToolForDrops(state).
+     * Assert nonempty registered inventory. All blockstate/model/loot JSONs must parse.
+     */
+    private static void assetsAndHarvest(GameTestHelper h) {
+        ServerLevel level = h.getLevel();
+        Gson gson = new Gson();
+
+        // ---- Load language file ----
+        Map<String, String> lang = loadLang(gson);
+
+        // ---- Collect registered items and blocks ----
+        List<Identifier> itemIds = new ArrayList<>();
+        for (Identifier id : BuiltInRegistries.ITEM.keySet()) {
+            if (EUVCRAFTMod.MODID.equals(id.getNamespace())) {
+                itemIds.add(id);
+            }
+        }
+        h.assertTrue(!itemIds.isEmpty(), "no lithmod item is registered at all");
+
+        List<Identifier> blockIds = new ArrayList<>();
+        for (Identifier id : BuiltInRegistries.BLOCK.keySet()) {
+            if (EUVCRAFTMod.MODID.equals(id.getNamespace())) {
+                blockIds.add(id);
+            }
+        }
+        h.assertTrue(!blockIds.isEmpty(), "no lithmod block is registered at all");
+
+        // ---- Verify item assets ----
+        for (Identifier id : itemIds) {
+            String path = id.getPath();
+            // client item definition
+            h.assertTrue(hasResource("/assets/lithmod/items/" + path + ".json"),
+                    id + " has no client item definition");
+            // item model
+            h.assertTrue(hasResource("/assets/lithmod/models/item/" + path + ".json"),
+                    id + " has no item model");
+            // language entry (descriptionId format: item.lithmod.<id>)
+            String langKey = "item." + EUVCRAFTMod.MODID + "." + path;
+            h.assertTrue(lang.containsKey(langKey), langKey + " has no language entry");
+        }
+
+        // ---- Verify block assets ----
+        Set<String> visitedModels = new HashSet<>();
+        for (Identifier blockId : blockIds) {
+            String path = blockId.getPath();
+
+            // blockstate JSON
+            String blockstatePath = "/assets/lithmod/blockstates/" + path + ".json";
+            h.assertTrue(hasResource(blockstatePath), blockId + " has no blockstate JSON");
+            JsonObject blockstate = readJson(gson, blockstatePath);
+            // Recursively collect model references from blockstate
+            collectModelRefs(blockstate, visitedModels);
+
+            // loot table
+            String lootPath = "/data/lithmod/loot_table/blocks/" + path + ".json";
+            h.assertTrue(hasResource(lootPath), blockId + " has no loot table");
+            JsonObject loot = readJson(gson, lootPath);
+            // Verify self-drop entry exists
+            boolean hasSelfDrop = false;
+            if (loot.has("pools")) {
+                for (var pool : loot.getAsJsonArray("pools")) {
+                    if (pool.isJsonObject()) {
+                        JsonObject poolObj = pool.getAsJsonObject();
+                        if (poolObj.has("entries")) {
+                            for (var entry : poolObj.getAsJsonArray("entries")) {
+                                if (entry.isJsonObject()) {
+                                    JsonObject entryObj = entry.getAsJsonObject();
+                                    if (entryObj.has("type") && entryObj.get("type").getAsString().equals("minecraft:item")
+                                            && entryObj.has("name") && entryObj.get("name").getAsString().equals("lithmod:" + path)) {
+                                        hasSelfDrop = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            h.assertTrue(hasSelfDrop, blockId + " loot table missing self-drop entry for lithmod:" + path);
+
+            // block harvestability: mineable/pickaxe tag
+            Block block = BuiltInRegistries.BLOCK.getValue(blockId);
+            BlockState state = block.defaultBlockState();
+            h.assertTrue(state.is(BlockTags.MINEABLE_WITH_PICKAXE),
+                    blockId + " is not in mineable/pickaxe tag");
+
+            // correct tool for drops with iron pickaxe
+            ItemStack ironPickaxe = new ItemStack(Items.IRON_PICKAXE);
+            h.assertTrue(ironPickaxe.isCorrectToolForDrops(state),
+                    blockId + " is not harvestable with iron pickaxe (isCorrectToolForDrops failed)");
+        }
+
+        // ---- Verify all referenced models exist and parse ----
+        for (String modelRef : visitedModels) {
+            // lithmod:<modelpath> must exist at /assets/lithmod/models/<modelpath>.json
+            if (modelRef.startsWith("lithmod:")) {
+                String modelPath = modelRef.substring("lithmod:".length());
+                String resourcePath = "/assets/lithmod/models/" + modelPath + ".json";
+                h.assertTrue(hasResource(resourcePath), "Referenced model " + modelRef + " missing at " + resourcePath);
+                // Parse to ensure valid JSON
+                readJson(gson, resourcePath);
+            }
+            // vanilla parents allowed (not checked)
+        }
+
+        // Verify nonempty registered inventory (already checked above with !itemIds.isEmpty())
+        h.assertTrue(!itemIds.isEmpty(), "registered item inventory is empty");
+        h.assertTrue(!blockIds.isEmpty(), "registered block inventory is empty");
+
+        h.succeed();
+    }
+
+    private static Map<String, String> loadLang(Gson gson) {
+        Map<String, String> entries = new HashMap<>();
+        try (InputStream input = PresentationGameTests.class.getResourceAsStream("/assets/lithmod/lang/en_us.json")) {
+            if (input == null) {
+                throw new IllegalStateException("Missing bundled language file: /assets/lithmod/lang/en_us.json");
+            }
+            var root = JsonParser.parseReader(new InputStreamReader(input, StandardCharsets.UTF_8)).getAsJsonObject();
+            for (var entry : root.entrySet()) {
+                entries.put(entry.getKey(), entry.getValue().getAsString());
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Could not read the bundled language file", e);
+        }
+        return entries;
+    }
+
+    private static boolean hasResource(String path) {
+        return PresentationGameTests.class.getResource(path) != null;
+    }
+
+    private static JsonObject readJson(Gson gson, String path) {
+        try (InputStream input = PresentationGameTests.class.getResourceAsStream(path)) {
+            if (input == null) {
+                throw new IllegalStateException("Missing resource: " + path);
+            }
+            try (InputStreamReader reader = new InputStreamReader(input, StandardCharsets.UTF_8)) {
+                return JsonParser.parseReader(reader).getAsJsonObject();
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to read/parse JSON: " + path, e);
+        }
+    }
+
+    private static void collectModelRefs(JsonObject obj, Set<String> visited) {
+        if (obj == null) return;
+        for (var entry : obj.entrySet()) {
+            String key = entry.getKey();
+            var value = entry.getValue();
+            if (key.equals("model") || key.equals("parent")) {
+                if (value.isJsonPrimitive()) {
+                    String ref = value.getAsString();
+                    if (!visited.contains(ref)) {
+                        visited.add(ref);
+                    }
+                }
+            }
+            if (value.isJsonObject()) {
+                collectModelRefs(value.getAsJsonObject(), visited);
+            } else if (value.isJsonArray()) {
+                for (var elem : value.getAsJsonArray()) {
+                    if (elem.isJsonObject()) {
+                        collectModelRefs(elem.getAsJsonObject(), visited);
+                    } else if (elem.isJsonPrimitive()) {
+                        String ref = elem.getAsString();
+                        if ((key.equals("model") || key.equals("parent")) && !visited.contains(ref)) {
+                            visited.add(ref);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // 10. Survival drops verification
+    // ------------------------------------------------------------------
+
+    /**
+     * Breaks a real production CRYSTAL_PULLER and a PROCESS_CELL_CASING in survival
+     * with iron pickaxe, finds exactly one own block item for each at distinct positions.
+     * Reuses the exact survival player setup from MachineDropGameTests.
+     */
+    private static void survivalDrops(GameTestHelper h) {
+        ServerLevel level = h.getLevel();
+        clearItems(h);
+
+        // Positions for the two blocks (relative positions 1,1,1 and 4,1,1 as specified)
+        BlockPos pullerPos = new BlockPos(1, 1, 1);
+        BlockPos casingPos = new BlockPos(4, 1, 1);
+
+        // Place CRYSTAL_PULLER
+        Block pullerBlock = com.euvcraft.lithmod.mc.machine.silicon.SiliconMachines.CRYSTAL_PULLER.get();
+        level.setBlock(h.absolutePos(pullerPos), pullerBlock.defaultBlockState(), Block.UPDATE_ALL);
+        h.assertTrue(level.getBlockState(h.absolutePos(pullerPos)).is(pullerBlock),
+                "could not place CRYSTAL_PULLER");
+
+        // Place PROCESS_CELL_CASING
+        Block casingBlock = com.euvcraft.lithmod.mc.multiblock.ModMultiblocks.PROCESS_CELL_CASING.get();
+        level.setBlock(h.absolutePos(casingPos), casingBlock.defaultBlockState(), Block.UPDATE_ALL);
+        h.assertTrue(level.getBlockState(h.absolutePos(casingPos)).is(casingBlock),
+                "could not place PROCESS_CELL_CASING");
+
+        // Create survival player with iron pickaxe (exact setup from MachineDropGameTests)
+        ServerPlayer player = createSurvivalPlayerWithIronPickaxe(level, h.absolutePos(pullerPos));
+
+        // Break CRYSTAL_PULLER
+        Map<Item, Integer> beforePuller = countItems(h, h.absolutePos(pullerPos), 2.0);
+        h.assertValueEqual(0, sumOf(beforePuller), "test area already held item entities before breaking CRYSTAL_PULLER");
+        boolean destroyedPuller = player.gameMode.destroyBlock(h.absolutePos(pullerPos));
+        h.assertTrue(destroyedPuller, "survival break did not remove CRYSTAL_PULLER");
+        h.assertTrue(level.getBlockState(h.absolutePos(pullerPos)).isAir(),
+                "CRYSTAL_PULLER block is still there after survival break");
+        Map<Item, Integer> afterPuller = countItems(h, h.absolutePos(pullerPos), 2.0);
+        h.assertValueEqual(1, countOf(afterPuller, com.euvcraft.lithmod.mc.registry.ModItems.CRYSTAL_PULLER.get()),
+                "CRYSTAL_PULLER did not drop exactly one of its own block item, got " + afterPuller);
+        h.assertValueEqual(1, sumOf(afterPuller),
+                "CRYSTAL_PULLER dropped something other than exactly itself: " + afterPuller);
+
+        // Move player to casing position
+        player.setPos(h.absolutePos(casingPos).getX() + 0.5, h.absolutePos(casingPos).getY(), h.absolutePos(casingPos).getZ() + 0.5);
+
+        // Break PROCESS_CELL_CASING
+        Map<Item, Integer> beforeCasing = countItems(h, h.absolutePos(casingPos), 2.0);
+        h.assertValueEqual(0, sumOf(beforeCasing), "test area already held item entities before breaking PROCESS_CELL_CASING");
+        boolean destroyedCasing = player.gameMode.destroyBlock(h.absolutePos(casingPos));
+        h.assertTrue(destroyedCasing, "survival break did not remove PROCESS_CELL_CASING");
+        h.assertTrue(level.getBlockState(h.absolutePos(casingPos)).isAir(),
+                "PROCESS_CELL_CASING block is still there after survival break");
+        Map<Item, Integer> afterCasing = countItems(h, h.absolutePos(casingPos), 2.0);
+        h.assertValueEqual(1, countOf(afterCasing, com.euvcraft.lithmod.mc.registry.ModItems.PROCESS_CELL_CASING.get()),
+                "PROCESS_CELL_CASING did not drop exactly one of its own block item, got " + afterCasing);
+        h.assertValueEqual(1, sumOf(afterCasing),
+                "PROCESS_CELL_CASING dropped something other than exactly itself: " + afterCasing);
+
+        // Cleanup player connection
+        player.closeContainer();
+        // Note: player connection cleanup follows existing lifecycle; the test framework handles the rest
+
+        h.succeed();
+    }
+
+    private static ServerPlayer createSurvivalPlayerWithIronPickaxe(ServerLevel level, BlockPos pos) {
+        CommonListenerCookie cookie = CommonListenerCookie.createInitial(
+                new GameProfile(UUID.randomUUID(), "survival-drop-tester"), false);
+        ServerPlayer player = new ServerPlayer(level.getServer(), level, cookie.gameProfile(),
+                cookie.clientInformation()) { };
+        Connection connection = new Connection(PacketFlow.SERVERBOUND);
+        new EmbeddedChannel(connection);
+        level.getServer().getPlayerList().placeNewPlayer(connection, player, cookie);
+        player.setGameMode(GameType.SURVIVAL);
+        player.gameMode.setLevel(level);
+        player.setPos(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
+        player.getInventory().clearContent();
+        player.getInventory().setItem(0, new ItemStack(Items.IRON_PICKAXE));
+        return player;
+    }
+
+    private static Map<Item, Integer> countItems(GameTestHelper h, BlockPos centre, double radius) {
+        Map<Item, Integer> counts = new HashMap<>();
+        for (ItemEntity entity : h.getLevel().getEntities(EntityType.ITEM,
+                new net.minecraft.world.phys.AABB(centre).inflate(radius), Entity::isAlive)) {
+            ItemStack stack = entity.getItem();
+            if (!stack.isEmpty()) {
+                counts.merge(stack.getItem(), stack.getCount(), Integer::sum);
+            }
+        }
+        return counts;
+    }
+
+    private static int countOf(Map<Item, Integer> counts, Item item) {
+        return counts.getOrDefault(item, 0);
+    }
+
+    private static int sumOf(Map<Item, Integer> counts) {
+        int total = 0;
+        for (int value : counts.values()) {
+            total += value;
+        }
+        return total;
+    }
+
+    private static void clearItems(GameTestHelper h) {
+        h.killAllEntitiesOfClass(ItemEntity.class);
     }
 }
 
