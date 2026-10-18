@@ -435,6 +435,7 @@ public final class PackagingGameTests {
             dieType + " T" + tierIndex, lot.size(), dieType, tierIndex, passing, lot.failing(),
             expectedChips, expectedScrap, expectedPackages, totalTicks * numbers.energyPerTick(),
             numbers.ticksPerWafer(), numbers.energyPerTick());
+        helper.succeed();
     }
 
     // ------------------------------------------------------------------
