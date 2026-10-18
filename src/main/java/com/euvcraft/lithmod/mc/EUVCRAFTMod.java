@@ -28,6 +28,7 @@ import com.euvcraft.lithmod.mc.gametest.MultiblockGameTests;
 import com.euvcraft.lithmod.mc.gametest.SiliconGameTests;
 import com.euvcraft.lithmod.mc.machine.mask.MaskMachines;
 import com.euvcraft.lithmod.mc.machine.mask.MaskTooltipAppenders;
+import com.euvcraft.lithmod.mc.machine.packaging.PackagingMachines;
 import com.euvcraft.lithmod.mc.machine.silicon.SiliconMachines;
 import com.euvcraft.lithmod.mc.machine.test.ModMachines;
 import com.euvcraft.lithmod.mc.multiblock.ModMultiblocks;
@@ -46,6 +47,7 @@ public class EUVCRAFTMod {
         ModMachines.register(modEventBus);
         SiliconMachines.register(modEventBus);
         MaskMachines.register(modEventBus);
+        PackagingMachines.register(modEventBus);
         ModMultiblocks.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);

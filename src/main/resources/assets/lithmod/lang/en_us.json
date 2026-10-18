@@ -62,5 +62,17 @@
   "componentKind.lithmod.metrology": "Metrology",
   "commands.lithmod.foup.not_holding": "You are not holding a FOUP.",
   "commands.lithmod.foup.inspect_header": "FOUP lot %s, capacity %s, wafers %s, lot layer %s",
-  "commands.lithmod.foup.inspect_row": "wafer %s: layer %s, roll %s"
+  "commands.lithmod.foup.inspect_row": "wafer %s: layer %s, roll %s",
+  "itemGroup.lithmod.test_package": "EUVCRAFT Test and Package",
+  "item.lithmod.test_package": "Test and Package",
+  "block.lithmod.test_package": "Test and Package",
+  "label.lithmod.test_package.wafers": "Wafers: %s / %s",
+  "state.lithmod.test_package.idle": "Idle",
+  "state.lithmod.test_package.running": "Running",
+  "state.lithmod.test_package.paused": "Paused",
+  "state.lithmod.test_package.no_lot": "No lot",
+  "state.lithmod.test_package.lot_incomplete": "Lot incomplete",
+  "state.lithmod.test_package.no_spec": "Not processed",
+  "state.lithmod.test_package.no_chip_for_die": "No chip for die",
+  "state.lithmod.test_package.generation_unmet": "Generation not met"
 }

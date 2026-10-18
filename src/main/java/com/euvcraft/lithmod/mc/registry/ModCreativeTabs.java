@@ -164,6 +164,25 @@ public final class ModCreativeTabs {
     );
 
     /**
+     * The Test and Package machine's own tab.
+     *
+     * <p>A tab of its own rather than an entry in {@link #SILICON_CHAIN} or {@link #MASKS}:
+     * the game tests pin the entry counts of the existing tabs, so appending to one would
+     * break a passing test rather than extend a feature. Presentation consolidation is a
+     * later milestone's change to this file.</p>
+     */
+    public static final Supplier<CreativeModeTab> TEST_PACKAGE = CREATIVE_MODE_TABS.register(
+        "6_test_package",
+        () -> CreativeModeTab.builder()
+            .title(Component.translatable("itemGroup.lithmod.test_package"))
+            .icon(() -> new ItemStack(ModItems.TEST_PACKAGE.get()))
+            .displayItems((parameters, output) -> {
+                output.accept(ModItems.TEST_PACKAGE.get());
+            })
+            .build()
+    );
+
+    /**
      * Builds one usable photomask for the tab.
      *
      * <p>The tab hands out masks that are actually patterned: a design a writer
