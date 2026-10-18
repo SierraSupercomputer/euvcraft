@@ -641,4 +641,38 @@ class PackagingRunTest {
         assertEquals(30, energy.feDrawn());
     }
 
+
+    @Test
+    void failingWaferPausesMidProgressOnFullScrapOutputWithoutPackages() {
+        PackagingRun run = new PackagingRun(new PackagingPlan(List.of(false), 4, 2), 3, 10);
+        Gate packages = new Gate().with(false);
+        Gate room = alwaysOpen();
+        EnergyBook energy = alwaysPaying();
+        assertNull(run.tick(packages, room, energy));
+        room.with(false);
+        assertNull(run.tick(packages, room, energy));
+        assertNull(run.tick(packages, room, energy));
+        assertEquals(1, run.ticksPaidOnCurrentWafer());
+        assertEquals(0, run.wafersDone());
+        assertEquals(10, energy.feDrawn());
+        assertEquals(1, energy.calls());
+        assertEquals(0, packages.calls());
+        room.with(true);
+        assertNull(run.tick(packages, room, energy));
+        assertEquals(new PackagingRun.Completion(0, false, 4, 0), run.tick(packages, room, energy));
+        assertTrue(run.isFinished());
+        assertEquals(30, energy.feDrawn());
+        assertEquals(0, packages.calls());
+    }
+
+    @Test
+    void finishedRunAlsoIgnoresNullPredicates() {
+        PackagingRun run = new PackagingRun(new PackagingPlan(List.of(false), 1, 1), 1, 0);
+        assertNotNull(run.tick(amount -> false, amount -> true, amount -> true));
+        assertTrue(run.isFinished());
+        assertNull(run.tick(null, null, null));
+        assertEquals(1, run.wafersDone());
+        assertEquals(0, run.ticksPaidOnCurrentWafer());
+    }
+
 }

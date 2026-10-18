@@ -221,4 +221,23 @@ class PackagingRulesTest {
             PackagingRules.validate(lot(1, DieTypes.LOGIC, WAFERS), tiers.getByIndex(1), false, null, 1));
     }
 
+
+    @Test
+    void missingSpecWinsForAnIncompleteLot() {
+        FoupContents unfinished = new FoupContents(UUID.randomUUID(), 25, List.of(Wafer.unprocessed()));
+        assertEquals(PackagingRefusalReason.NO_SPEC,
+            PackagingRules.validate(unfinished, tiers.getByIndex(1), true, matrix, 1));
+        assertEquals(PackagingRefusalReason.NO_SPEC,
+            PackagingRules.validate(unfinished, null, false, null, 0));
+    }
+
+    @Test
+    void wrongResolvedTierThrowsEvenWhenTheLotIsIncomplete() {
+        FoupContents unfinished = lotWithOneWaferAt(1, 0);
+        assertThrows(IllegalArgumentException.class,
+            () -> PackagingRules.validate(unfinished, null, true, matrix, 1));
+        assertThrows(IllegalArgumentException.class,
+            () -> PackagingRules.validate(unfinished, tiers.getByIndex(2), true, matrix, 1));
+    }
+
 }

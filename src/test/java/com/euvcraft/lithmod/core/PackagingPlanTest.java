@@ -183,4 +183,16 @@ class PackagingPlanTest {
         assertFalse(passText.contains("true"));
         assertFalse(passText.contains("false"));
     }
+
+    @Test
+    void singleWaferMayReachTheExactIntegerLimit() {
+        PackagingPlan passing = new PackagingPlan(List.of(true), Integer.MAX_VALUE, Integer.MAX_VALUE);
+        assertEquals(Integer.MAX_VALUE, passing.totalChips());
+        assertEquals(Integer.MAX_VALUE, passing.totalPackages());
+        assertEquals(0, passing.totalScrap());
+        PackagingPlan failing = new PackagingPlan(List.of(false), Integer.MAX_VALUE, Integer.MAX_VALUE);
+        assertEquals(Integer.MAX_VALUE, failing.totalScrap());
+        assertEquals(0, failing.totalPackages());
+    }
+
 }
