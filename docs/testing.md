@@ -311,7 +311,7 @@ Unit tests (includes 59 new core methods in `PackagingPlanTest`, `PackagingRules
 .\gradlew.bat checkCoreImports --offline
 ```
 
-Game tests (24 new `lithmod:packaging_*` cases, registered 1 attempt / 1 required):
+Game tests (24 new `lithmod:test_package_*` cases, registered 1 attempt / 1 required):
 ```powershell
 .\gradlew.bat runGameTestServer --offline
 ```
@@ -320,39 +320,38 @@ Game tests (24 new `lithmod:packaging_*` cases, registered 1 attempt / 1 require
 
 | test ID | what it proves |
 |---|---|
-| `lithmod:packaging_admits_complete_lot` | valid complete lot admitted, pass flags frozen, empty FOUP returned |
-| `lithmod:packaging_admits_complete_lot_no_chip_item` | die type with no catalog chip item refused (`NO_CHIP_FOR_DIE`) |
-| `lithmod:packaging_admits_complete_lot_incomplete` | lot not at tier's last layer refused (`LOT_INCOMPLETE`) |
-| `lithmod:packaging_admits_complete_lot_generation_unmet` | gen matrix unsatisfied for `test_packaging` gen 1 refused (`GENERATION_UNMET`) |
-| `lithmod:packaging_admits_complete_lot_no_spec` | lot with no frozen RunSpec refused (`NO_SPEC`) |
-| `lithmod:packaging_admits_complete_lot_no_lot` | FOUP with no lot refused (`NO_LOT`) |
-| `lithmod:packaging_run_all_pass` | all wafers pass → chip count = `chipsPerWafer × passing`, packages = `passing × package_per_wafer`, chips are catalog item |
-| `lithmod:packaging_run_all_fail` | all wafers fail → scrap count = `chipsPerWafer × failing`, zero packages used |
-| `lithmod:packaging_run_mixed` | mixed pass/fail → chips and scrap counts add up correctly |
-| `lithmod:packaging_run_chips_per_wafer_1` | `chipsPerWafer=1` works |
-| `lithmod:packaging_run_chips_per_wafer_4` | `chipsPerWafer=4` works |
-| `lithmod:packaging_run_pauses_no_energy` | pauses when FE < `energy_per_tick`, resumes on recharge |
-| `lithmod:packaging_run_pauses_no_packages` | pauses when package slot empty on passing wafer, resumes on insert |
-| `lithmod:packaging_run_pauses_full_outputs` | pauses when chip/scrap outputs full, resumes when player clears |
-| `lithmod:packaging_run_save_load_mid_run` | NBT round-trip mid-run resumes exactly (same progress, same outputs) |
-| `lithmod:packaging_run_save_load_mid_tick` | NBT round-trip mid-tick resumes exactly |
-| `lithmod:packaging_run_broken_mid_run_loses_remaining` | breaking mid-run drops no chips for remaining wafers, original lot gone |
-| `lithmod:packaging_run_broken_mid_run_drops_only_finished` | only finished outputs + real inventory + returned empty FOUP drop |
-| `lithmod:packaging_run_no_item_handler` | block exposes no item/fluid/hopper capability |
-| `lithmod:packaging_run_menu_no_per_wafer_result` | menu wires show only done/total, never per-wafer pass/fail |
-| `lithmod:packaging_run_foup_consumed_at_admission` | original FOUP consumed at admission tick, empty FOUP with new lotId placed |
-| `lithmod:packaging_run_returned_foup_empty_new_lotid` | returned FOUP is empty, same capacity, new lotId |
-| `lithmod:packaging_run_packages_consumed_on_pass_only` | packages consumed only for passing wafers, at completion |
-| `lithmod:packaging_run_scrap_on_fail_no_packages` | failing wafers produce scrap, use zero packages |
-| `lithmod:packaging_run_reload_retains_frozen_params` | `/reload` with changed definition params does not affect running queue |
+| `lithmod:test_package_judges_a_complete_logic_t1_lot` | valid complete T1 logic lot admitted, pass flags frozen, empty FOUP returned |
+| `lithmod:test_package_judges_a_complete_logic_t2_lot` | valid complete T2 logic lot admitted, pass flags frozen, empty FOUP returned |
+| `lithmod:test_package_judges_a_complete_memory_t2_lot` | valid complete T2 memory lot admitted, pass flags frozen, empty FOUP returned |
+| `lithmod:test_package_returns_a_fresh_foup_of_the_same_item` | returned FOUP is empty, same item, same capacity, new lotId |
+| `lithmod:test_package_refuses_an_incomplete_lot` | lot not at tier's last layer refused (`LOT_INCOMPLETE`) |
+| `lithmod:test_package_refuses_a_die_with_no_catalog_chip` | die type with no catalog chip item refused (`NO_CHIP_FOR_DIE`) |
+| `lithmod:test_package_refuses_a_lot_without_a_run_spec` | lot with no frozen RunSpec refused (`NO_SPEC`) |
+| `lithmod:test_package_never_judges_a_client_view_lot` | FOUP with client view (no trusted contents) refused |
+| `lithmod:test_package_enforces_the_packaging_generation_gate` | gen matrix unsatisfied for `test_packaging` gen 1 refused (`GENERATION_UNMET`) |
+| `lithmod:test_package_pays_nothing_without_energy` | pauses when FE < `energy_per_tick`, resumes on recharge |
+| `lithmod:test_package_spends_packages_only_on_completion` | packages consumed only for passing wafers, at completion |
+| `lithmod:test_package_pauses_when_its_packages_are_taken` | pauses when package slot empty on passing wafer, resumes on insert |
+| `lithmod:test_package_pauses_on_a_full_chip_output` | pauses when chip output slots full, resumes when player clears |
+| `lithmod:test_package_pauses_on_a_full_scrap_output` | pauses when scrap output slots full, resumes when player clears |
+| `lithmod:test_package_refuses_plain_chips_behind_named_chips` | catalog chip selection prefers named chips over plain chips |
+| `lithmod:test_package_keeps_a_second_lot_until_the_first_finishes` | second FOUP not admitted while first run active |
+| `lithmod:test_package_break_drops_no_queued_outputs` | breaking mid-run drops no chips for remaining wafers, original lot gone |
+| `lithmod:test_package_save_load_round_trip_mid_wafer` | NBT round-trip mid-run resumes exactly (same progress, same outputs) |
+| `lithmod:test_package_keeps_frozen_parameters_for_an_accepted_run` | `/reload` with changed definition params does not affect running queue |
+| `lithmod:test_package_resumes_when_its_definition_returns` | missing definition pauses and persists queue; resumes when definition returns |
+| `lithmod:test_package_malformed_queue_nbt_fails_closed` | malformed saved queue NBT fails closed without recovering lot/creating outputs |
+| `lithmod:test_package_menu_layout_and_public_values` | menu wires show only done/total/state, never per-wafer pass/fail |
+| `lithmod:test_package_exposes_energy_only` | block exposes energy capability only, no item/fluid/hopper |
+| `lithmod:test_package_block_use_and_server_ticker` | block use opens menu; server ticker runs queue, client ticker no-op |
 
 ### Verification status (commit `149063bf`)
 
 - Unit: 509 tests / 74 classes (0 failures/errors/skips). 3 new classes, 59 new methods, all with executed negative controls (48 executions, 47 valid, 39 distinct faults, exact restoration).
-- Game: 775 tests complete, all 105 registered `lithmod:*` IDs present and passing. 24 new packaging IDs.
-- Core fault controls: **complete**. Runtime fault controls: **in progress** (9 of 24 new IDs have target-specific failed assertions; 15 PENDING).
+- Game: 775 tests complete, all 105 registered `lithmod:*` IDs present and passing. 24 new `lithmod:test_package_*` IDs.
+- Core fault controls: **complete**. Runtime fault controls: **in progress** (20 of 24 new IDs have target-specific failed assertions; 4 PENDING: break 1, persistence 1, reload 2).
 - Client rendering/ticker not verified (dedicated server only).
-- Final reviews and M1-12 integration pending.
+- Final reviews and M1-12 integration pending. Beam bounded logic review approved; final two complete reviews still pending.
 
 ### Key operational notes for players
 
