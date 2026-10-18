@@ -11,7 +11,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.level.GameType;
-import net.minecraft.world.level.ServerLevel;
+import net.minecraft.server.level.ServerLevel;
 import com.euvcraft.lithmod.core.MaskRules;
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.euvcraft.lithmod.mc.data.DieRulesDataLoader;
@@ -391,17 +391,10 @@ public final class PresentationGameTests {
             ", Extra: " + new HashSet<>(shownItemIds) {{ removeAll(expectedItemIds); }});
 
         // Assert exactly one registered lithmod CreativeModeTab
-        var creativeTabRegistry = BuiltInRegistries.CREATIVE_MODE_TAB;
-        if (creativeTabRegistry != null) {
-            long lithmodTabCount = creativeTabRegistry.keySet().stream()
-                .filter(key -> EUVCRAFTMod.MODID.equals(key.getNamespace()))
-                .count();
-            h.assertValueEqual(1, lithmodTabCount,
-                "Expected exactly one lithmod CreativeModeTab, found " + lithmodTabCount);
-        } else {
-            LOGGER.warn("CreativeModeTab registry not available, skipping tab count check");
-        }
-
+        long lithmodTabCount = BuiltInRegistries.CREATIVE_MODE_TAB.keySet().stream()
+            .filter(key -> EUVCRAFTMod.MODID.equals(key.getNamespace())).count();
+        h.assertValueEqual(1L, lithmodTabCount, "Exactly one lithmod creative tab");
         h.succeed();
     }
 }
+
