@@ -570,6 +570,11 @@ public final class PresentationGameTests {
             // language entry (descriptionId format: item.lithmod.<id>)
             String langKey = "item." + EUVCRAFTMod.MODID + "." + path;
             h.assertTrue(lang.containsKey(langKey), langKey + " has no language entry");
+            Item registered = BuiltInRegistries.ITEM.getValue(id);
+            if (registered instanceof com.euvcraft.lithmod.mc.LineComponentItem component) {
+                h.assertTrue(lang.containsKey("componentKind.lithmod." + component.kind()), id + " has no component-kind translation");
+                h.assertTrue(lang.containsKey("tier.lithmod.t" + component.tier()), id + " has no tier translation");
+            }
             collectModelRefs(readJson(gson, "/assets/lithmod/items/" + path + ".json"), visitedModels);
             collectModelRefs(readJson(gson, "/assets/lithmod/models/item/" + path + ".json"), visitedModels);
         }

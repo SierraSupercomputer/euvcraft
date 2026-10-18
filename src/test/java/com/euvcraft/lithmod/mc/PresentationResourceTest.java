@@ -335,9 +335,6 @@ class PresentationResourceTest {
         // ---- Verify die type keys used by current registered M1 items ----
         assertTrue(lang.containsKey("dieType.lithmod.logic"), "Missing dieType.lithmod.logic");
         assertTrue(lang.containsKey("dieType.lithmod.memory"), "Missing dieType.lithmod.memory");
-        for (String kind : com.euvcraft.lithmod.core.SupportLines.ALL) {
-            assertTrue(lang.containsKey("componentKind.lithmod." + kind), "Missing component kind translation: " + kind);
-        }
         // compute and nand exist in DieTypes but not yet used by registered M1 items
     }
 

@@ -100,5 +100,11 @@
   "label.lithmod.process_cell.design_none": "Design: -",
   "button.lithmod.process_cell.abort": "Abort",
   "screen.lithmod.energy": "Energy: %s / %s FE",
-  "screen.lithmod.progress": "Progress: %s / %s"
+  "screen.lithmod.progress": "Progress: %s / %s",
+  "block.lithmod.crystal_puller": "Crystal Puller",
+  "block.lithmod.process_cell_casing": "Process Cell Casing",
+  "block.lithmod.process_cell_controller": "Process Cell Controller",
+  "block.lithmod.process_cell_power_port": "Process Cell Power Port",
+  "block.lithmod.test_machine": "Test Machine",
+  "block.lithmod.wafer_slicer": "Wafer Slicer"
 }
