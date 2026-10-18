@@ -212,6 +212,18 @@ public final class ModItems {
         ITEMS.registerSimpleBlockItem("pattern_generator",
             () -> com.euvcraft.lithmod.mc.machine.mask.MaskMachines.PATTERN_GENERATOR.get());
 
+    /**
+     * The Test and Package machine's block item.
+     *
+     * <p>Same rule as every machine item above: without a block item the machine cannot drop
+     * itself, so the {@code .get()} call sits inside a lambda and the block comes from
+     * {@link com.euvcraft.lithmod.mc.machine.packaging.PackagingMachines}, which is the
+     * packaging chain's own registry class.</p>
+     */
+    public static final DeferredItem<BlockItem> TEST_PACKAGE =
+        ITEMS.registerSimpleBlockItem("test_package",
+            () -> com.euvcraft.lithmod.mc.machine.packaging.PackagingMachines.TEST_PACKAGE.get());
+
     private ModItems() {
     }
 }

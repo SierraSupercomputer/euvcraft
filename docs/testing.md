@@ -239,3 +239,68 @@ server persistence.
 
 No three-separate-process repeat of the suite was run for M1-06; that remains M1-12
 acceptance work.
+
+## Test and Package machine (M1-10)
+
+
+
+Insert a complete logic T1, logic T2 or memory T2 lot, chip packages and FE. Admission immediately consumes the judged lot and returns an empty FOUP of the same item and stored capacity with a new lot ID; paid work begins on the following tick. You may remove that empty FOUP or load a waiting second lot without canceling the active queue.
+
+**Breaking the machine permanently loses all remaining queued wafers.** Only finished outputs, actual inventory and the returned empty FOUP drop; the original lot cannot be recovered.
+
+A passing wafer produces configured chipsPerWafer catalog chips and uses package_per_wafer packages on completion. A failing wafer produces chipsPerWafer scrap and uses no packages. Blocked output/package/FE ticks pay nothing and preserve progress. Plain products do not merge into renamed or otherwise component-distinct stacks.
+
+The menu has44 slots:FOUP0,packages1,chips2..5,scrap6..7 plus36 player slots; six output slots are extract-only. Seven synced values comprise base energy/capacity/overall paid ticks/total ticks plus coarse state/done/total. No queued outcome or private flag is synced. This task does not establish actual screen rendering.
+
+Accepted parameters remain frozen across definition/config edits; new settings apply to the next lot. A missing definition pauses and preserves the queue, including across saves, but base capacity closing can discard stored energy. Restore the definition and recharge remaining FE to resume. Invalid saved queues fail closed without returning the original judged lot.
+
+Default machine JSON uses energy_capacity20000,max_receive2000,energy_per_tick20,params.ticks_per_wafer10 andparams.package_per_wafer1. The file is `data/lithmod/machines/test_package.json`; chipsPerWafer remains in existing config.
+
+Run with the installed JDK25:
+
+
+
+```powershell
+
+.\gradlew.bat test checkCoreImports jar runGameTestServer --offline --console=plain
+
+```
+
+
+
+Measured source 149063bf:509 unit tests/74classes and775 distinct server cases passed with no failures/errors/skips, including every105registered project ID. All59 new core methods and24 new packaging server cases have executed failed production controls and exact restoration. Full acceptance still requires final reviews and candidate verification; M1-11 presentation and M1-12 end-to-end/client gates remain separate.
+
+Actual registered packaging cases:
+
+
+
+| Actual registered GameTest ID |
+| --- |
+| `lithmod:test_package_judges_a_complete_logic_t1_lot` |
+| `lithmod:test_package_judges_a_complete_logic_t2_lot` |
+| `lithmod:test_package_judges_a_complete_memory_t2_lot` |
+| `lithmod:test_package_returns_a_fresh_foup_of_the_same_item` |
+| `lithmod:test_package_refuses_an_incomplete_lot` |
+| `lithmod:test_package_refuses_a_die_with_no_catalog_chip` |
+| `lithmod:test_package_refuses_a_lot_without_a_run_spec` |
+| `lithmod:test_package_never_judges_a_client_view_lot` |
+| `lithmod:test_package_enforces_the_packaging_generation_gate` |
+| `lithmod:test_package_pays_nothing_without_energy` |
+| `lithmod:test_package_spends_packages_only_on_completion` |
+| `lithmod:test_package_pauses_when_its_packages_are_taken` |
+| `lithmod:test_package_pauses_on_a_full_chip_output` |
+| `lithmod:test_package_pauses_on_a_full_scrap_output` |
+| `lithmod:test_package_refuses_plain_chips_behind_named_chips` |
+| `lithmod:test_package_keeps_a_second_lot_until_the_first_finishes` |
+| `lithmod:test_package_break_drops_no_queued_outputs` |
+| `lithmod:test_package_save_load_round_trip_mid_wafer` |
+| `lithmod:test_package_keeps_frozen_parameters_for_an_accepted_run` |
+| `lithmod:test_package_resumes_when_its_definition_returns` |
+| `lithmod:test_package_malformed_queue_nbt_fails_closed` |
+| `lithmod:test_package_menu_layout_and_public_values` |
+| `lithmod:test_package_exposes_energy_only` |
+| `lithmod:test_package_block_use_and_server_ticker` |
+
+
+
+See `reports/M1-10_test-and-package.md` for per-class arithmetic, actual command output, every new test’s fault evidence and source API handoff.

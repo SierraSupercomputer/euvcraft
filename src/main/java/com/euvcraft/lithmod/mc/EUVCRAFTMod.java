@@ -25,9 +25,11 @@ import com.euvcraft.lithmod.mc.gametest.MachineDropGameTests;
 import com.euvcraft.lithmod.mc.gametest.MachineGameTests;
 import com.euvcraft.lithmod.mc.gametest.MaskGameTests;
 import com.euvcraft.lithmod.mc.gametest.MultiblockGameTests;
+import com.euvcraft.lithmod.mc.gametest.PackagingGameTests;
 import com.euvcraft.lithmod.mc.gametest.SiliconGameTests;
 import com.euvcraft.lithmod.mc.machine.mask.MaskMachines;
 import com.euvcraft.lithmod.mc.machine.mask.MaskTooltipAppenders;
+import com.euvcraft.lithmod.mc.machine.packaging.PackagingMachines;
 import com.euvcraft.lithmod.mc.machine.silicon.SiliconMachines;
 import com.euvcraft.lithmod.mc.machine.test.ModMachines;
 import com.euvcraft.lithmod.mc.multiblock.ModMultiblocks;
@@ -46,6 +48,7 @@ public class EUVCRAFTMod {
         ModMachines.register(modEventBus);
         SiliconMachines.register(modEventBus);
         MaskMachines.register(modEventBus);
+        PackagingMachines.register(modEventBus);
         ModMultiblocks.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
@@ -64,6 +67,7 @@ com.euvcraft.lithmod.mc.gametest.ComponentGameTests.register(modEventBus);
         MultiblockGameTests.register(modEventBus);
         SiliconGameTests.register(modEventBus);
         MaskGameTests.register(modEventBus);
+        PackagingGameTests.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.LOCAL, FabConfig.getSpec());
         config = new FabConfig();
