@@ -569,10 +569,10 @@ class PackagingRunTest {
         // frozen packages, a failing one none) still reveals the result by side
         // channel. Such an otherwise-identical pair must therefore print identically.
         List<PackagingRun.Completion> passing =
-            runToCompletion(new PackagingRun(new PackagingPlan(ALL_PASS, 4, 2), 1, 1),
+            runToCompletion(new PackagingRun(new PackagingPlan(List.of(true), 4, 2), 1, 1),
                 alwaysOpen(), alwaysOpen(), alwaysPaying());
         List<PackagingRun.Completion> failing =
-            runToCompletion(new PackagingRun(new PackagingPlan(ALL_FAIL, 4, 2), 1, 1),
+            runToCompletion(new PackagingRun(new PackagingPlan(List.of(false), 4, 2), 1, 1),
                 alwaysOpen(), alwaysOpen(), alwaysPaying());
 
         assertEquals(1, passing.size());
