@@ -26,6 +26,7 @@ import com.euvcraft.lithmod.mc.gametest.MachineGameTests;
 import com.euvcraft.lithmod.mc.gametest.MaskGameTests;
 import com.euvcraft.lithmod.mc.gametest.MultiblockGameTests;
 import com.euvcraft.lithmod.mc.gametest.PackagingGameTests;
+import com.euvcraft.lithmod.mc.gametest.ProcessCellGameTests;
 import com.euvcraft.lithmod.mc.gametest.SiliconGameTests;
 import com.euvcraft.lithmod.mc.machine.mask.MaskMachines;
 import com.euvcraft.lithmod.mc.machine.mask.MaskTooltipAppenders;
@@ -68,6 +69,7 @@ com.euvcraft.lithmod.mc.gametest.ComponentGameTests.register(modEventBus);
         SiliconGameTests.register(modEventBus);
         MaskGameTests.register(modEventBus);
         PackagingGameTests.register(modEventBus);
+        ProcessCellGameTests.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.LOCAL, FabConfig.getSpec());
         config = new FabConfig();

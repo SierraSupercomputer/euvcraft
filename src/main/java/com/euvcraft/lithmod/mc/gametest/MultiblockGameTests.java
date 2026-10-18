@@ -603,7 +603,7 @@ public final class MultiblockGameTests {
             "the energy did not reach the controller's buffer through the port");
         helper.assertTrue(handler.getAmountAsLong() == 500L,
             "the port's handler does not report the controller's amount");
-        helper.assertValueEqual((long) ProcessCellControllerBlockEntity.ENERGY_CAPACITY, handler.getCapacityAsLong(),
+        helper.assertValueEqual((long) controller.definition().orElseThrow().energyCapacity(), handler.getCapacityAsLong(),
             "the port reports a different capacity from the controller");
 
         // Extraction is refused: the controller's buffer is built with maxExtract 0.

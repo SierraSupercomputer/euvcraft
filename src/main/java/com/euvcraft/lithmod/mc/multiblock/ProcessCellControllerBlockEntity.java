@@ -1,23 +1,41 @@
 package com.euvcraft.lithmod.mc.multiblock;
 
+import com.mojang.serialization.Codec;
 import com.euvcraft.lithmod.core.multiblock.BlockKind;
 import com.euvcraft.lithmod.core.multiblock.MatchResult;
 import com.euvcraft.lithmod.core.multiblock.MultiblockDirection;
 import com.euvcraft.lithmod.core.multiblock.MultiblockPos;
 import com.euvcraft.lithmod.core.multiblock.StructureMatcher;
 import com.euvcraft.lithmod.core.multiblock.StructureShape;
+import com.euvcraft.lithmod.core.*;
+import com.euvcraft.lithmod.mc.EUVCRAFTMod;
+import com.euvcraft.lithmod.mc.FabYieldService;
+import com.euvcraft.lithmod.mc.FoupItems;
+import com.euvcraft.lithmod.mc.LineLoadoutReader;
+import com.euvcraft.lithmod.mc.data.TierDataLoader;
+import com.euvcraft.lithmod.mc.data.DieRulesDataLoader;
+import com.euvcraft.lithmod.mc.data.SupportLineDataLoader;
+import com.euvcraft.lithmod.mc.registry.ModDataComponents;
+import com.euvcraft.lithmod.mc.registry.ModItems;
+import com.euvcraft.lithmod.mc.machine.process.ProcessCellRunPersistence;
+import com.euvcraft.lithmod.mc.machine.process.ProcessCellRunPersistence.Contract;
+import com.euvcraft.lithmod.mc.machine.process.ProcessCellRunPersistence.Saved;
+import com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.Objects;
+import com.euvcraft.lithmod.mc.machine.process.ProcessCellMenu;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.world.level.Level;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
-import net.neoforged.neoforge.transfer.energy.EnergyHandler;
-import net.neoforged.neoforge.transfer.energy.SimpleEnergyHandler;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -40,16 +58,21 @@ import java.util.Set;
  * formed flags. {@link #members()} is that list; it is cleared on failure only after the previous
  * members have been updated.</p>
  */
-public class ProcessCellControllerBlockEntity extends BlockEntity implements EnergyBufferProvider {
+public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity implements EnergyBufferProvider, ProcessEnvironment {
 
-    /** Buffer size in FE. */
-    public static final int ENERGY_CAPACITY = 100_000;
-    /** Largest single insert accepted, in FE. */
-    public static final int ENERGY_MAX_INSERT = 10_000;
-    /** Ticks between periodic re-validations, as a backstop for edits nothing else noticed. */
-    public static final int REVALIDATE_INTERVAL = 20;
+    // Slot indices matching the 8-slot layout: 0 FOUP, 1 MASK, 2 RESIST, 3 LIGHT_SOURCE, 4 OPTICS, 5 STAGE, 6 CLEANROOM, 7 METROLOGY
+    public static final int SLOT_FOUP = 0;
+    public static final int SLOT_MASK = 1;
+    public static final int SLOT_RESIST = 2;
+    public static final int SLOT_LIGHT_SOURCE = 3;
+    public static final int SLOT_OPTICS = 4;
+    public static final int SLOT_STAGE = 5;
+    public static final int SLOT_CLEANROOM = 6;
+    public static final int SLOT_METROLOGY = 7;
+    public static final int INPUT_SLOTS = 8;
+    public static final int OUTPUT_SLOTS = 0;
+    public static final int SLOT_COUNT = 8;
 
-    private final ControllerEnergy energy;
     /** The twelve positions of the current, or last, formation. */
     private final Set<BlockPos> members = new LinkedHashSet<>();
     private boolean formed;
@@ -57,38 +80,26 @@ public class ProcessCellControllerBlockEntity extends BlockEntity implements Ene
     private String failureReason = "";
     private int ticksSinceValidation;
 
+    public static final int REVALIDATE_INTERVAL = 20;
+    /** M1 stub; later milestones discover actual support-line machines. */
+    public static final Map<String, Integer> M1_STUB_GENERATIONS = Map.of(
+        SupportLines.SUBSTRATE, 1, SupportLines.MASK_SHOP, 1,
+        SupportLines.DEPOSITION_ETCH, 1, SupportLines.UTILITIES, 1, SupportLines.TEST_PACKAGING, 1);
+    private @Nullable ProcessRun run;
+    private @Nullable Contract contract;
+    private @Nullable Saved pendingRun;
+    private @Nullable RefusalReason lastRefusal;
+    private boolean abortLatched;
+    private boolean needsValidation = true;
+
     public ProcessCellControllerBlockEntity(BlockPos pos, BlockState state) {
-        super(ModMultiblocks.PROCESS_CELL_CONTROLLER_BE.get(), pos, state);
-        this.energy = new ControllerEnergy(this);
+        super(ModMultiblocks.PROCESS_CELL_CONTROLLER_BE.get(), pos, state, INPUT_SLOTS, OUTPUT_SLOTS);
+        // machineId() is "process_cell", base constructor calls refreshDefinition() which loads energy numbers from data
     }
 
-    // ---------------------------------------------------------------- energy
-
-    /**
-     * The cell's energy buffer: accepts from every side, refuses every extraction.
-     *
-     * @return the handler, never null
-     */
     @Override
-    public EnergyHandler energy() {
-        return this.energy;
-    }
-
-    /**
-     * Puts the buffer into a known state, clamped to capacity. Used by tests.
-     *
-     * @param amount the FE to store
-     */
-    public void setStoredEnergy(int amount) {
-        this.energy.set(Math.max(0, Math.min(amount, this.energy.getCapacityAsInt())));
-    }
-
-    /**
-     * The buffer, exposed as its concrete type so a test can {@code set} it. The capability path
-     * only ever offers {@link #energy()}.
-     */
-    public ControllerEnergy buffer() {
-        return this.energy;
+    protected String machineId() {
+        return "process_cell";
     }
 
     // ---------------------------------------------------------------- formation state
@@ -138,15 +149,217 @@ public class ProcessCellControllerBlockEntity extends BlockEntity implements Ene
 
     // ---------------------------------------------------------------- ticking
 
-    /** One server tick: re-validate now and then, so a missed edit still heals. */
+    /** Geometry and the pure run have one server-side owner. Never tick the generic recipe runner. */
+    @Override
     public void serverTick() {
-        if (level == null || level.isClientSide()) {
-            return;
-        }
-        if (++this.ticksSinceValidation >= REVALIDATE_INTERVAL) {
-            this.ticksSinceValidation = 0;
+        if (!(level instanceof ServerLevel)) return;
+        refreshDefinition();
+        if (needsValidation || ++ticksSinceValidation >= REVALIDATE_INTERVAL) {
+            needsValidation = false;
             revalidate();
         }
+        if (slot(SLOT_FOUP).isEmpty() && abortLatched) releaseStoppedLot();
+        if (pendingRun != null) {
+            try {
+                contract = pendingRun.contract();
+                run = pendingRun.restore(FoupItems.trustedContentsOf(slot(SLOT_FOUP)));
+                pendingRun = null;
+            } catch (RuntimeException malformed) { stopInvalidRun(); }
+        }
+        if (run != null && run.state() == ProcessState.FINISHED) {
+            FoupContents current = trustedLot();
+            if (!Objects.equals(current, run.lot())) { run = null; contract = null; }
+        }
+        if (run == null && !abortLatched && formed && definition().isPresent()) tryStartRun();
+        if (run != null && run.state() != ProcessState.FINISHED) {
+            if (!inputsMatch()) stopInvalidRun();
+            else {
+                ProcessRun.Snapshot before = run.snapshot();
+                try {
+                    ProcessTickResult result = run.tick(this);
+                    for (ProcessRunEvent event : result.events()) {
+                        if (event.type() == ProcessRunEvent.Type.MASK_USE_CONSUMED) {
+                            MaskData mask = slot(SLOT_MASK).get(ModDataComponents.MASK_DATA.get());
+                            MaskData next = mask.consumeUse();
+                            if (next.isSpent()) clearSlot(SLOT_MASK);
+                            else {
+                                ItemStack updated = slot(SLOT_MASK).copy();
+                                updated.set(ModDataComponents.MASK_DATA.get(), next);
+                                setSlot(SLOT_MASK, updated);
+                            }
+                        }
+                    }
+                    if (!before.equals(run.snapshot())) setChanged();
+                } catch (RuntimeException invalid) {
+                    // No refund or retry after a rejected private contract/yield operation.
+                    stopInvalidRun();
+                }
+            }
+        }
+        publishProgress();
+    }
+
+    private @Nullable FoupContents trustedLot() {
+        ItemStack stack = slot(SLOT_FOUP);
+        return stack.getCount() == 1 && FoupItems.isFoup(stack) ? FoupItems.trustedContentsOf(stack) : null;
+    }
+
+    private void tryStartRun() {
+        FoupContents lot = trustedLot();
+        if (lot == null) { lastRefusal = RefusalReason.NO_LOT; return; }
+        if (lot.isEmpty()) { lastRefusal = RefusalReason.EMPTY_LOT; return; }
+        ItemStack maskStack = slot(SLOT_MASK);
+        MaskData mask = maskStack.get(ModDataComponents.MASK_DATA.get());
+        if (maskStack.getCount() != 1 || !maskStack.is(ModItems.MASK.get()) || mask == null) {
+            lastRefusal = RefusalReason.NO_MASK; return;
+        }
+        var registry = TierDataLoader.getRegistry();
+        Tier tier = registry.byIndex(mask.tierIndex()).orElse(null);
+        if (tier == null || tier.index() > 2) { lastRefusal = RefusalReason.NO_MASK; return; }
+        LineLoadout loadout = LineLoadoutReader.read(slot(SLOT_LIGHT_SOURCE), slot(SLOT_OPTICS),
+            slot(SLOT_STAGE), slot(SLOT_CLEANROOM), slot(SLOT_METROLOGY), slot(SLOT_RESIST), mask.tierIndex());
+        DefaultStatRules rules = new DefaultStatRules(registry);
+        FabSettings settings = EUVCRAFTMod.settings();
+        GenerationMatrix matrix = SupportLineDataLoader.getMatrix();
+        ProcessRunRequest request = new ProcessRunRequest(lot, mask.dieType(), tier, null,
+            mask.usesRemaining(), rules.stats(loadout.toLineComponents(), tier.index()),
+            rules.canRunTier(loadout.toLineComponents(), tier.index()),
+            DieRulesDataLoader.getRules().canMake(mask.dieType(), tier), M1_STUB_GENERATIONS,
+            matrix, settings, definition().orElseThrow().energyPerTick(tier, settings));
+        ProcessStartResult result = ProcessRun.start(request);
+        if (result instanceof RefusalReason refusal) { lastRefusal = refusal; return; }
+        Map<String, List<Integer>> required = new LinkedHashMap<>();
+        for (String line : SupportLines.ALL) required.put(line,
+            registry.all().stream().map(t -> matrix.requiredGeneration(line, t)).toList());
+        List<ItemStack> components = new ArrayList<>();
+        for (int index = SLOT_LIGHT_SOURCE; index <= SLOT_METROLOGY; index++) components.add(slot(index).copy());
+        ItemStack carrier = slot(SLOT_FOUP).copy();
+        carrier.remove(ModDataComponents.FOUP_CONTENTS.get());
+        try {
+            contract = new Contract(tier, mask.dieType(), mask.usesRemaining(), tier.layerTicks(settings),
+                settings.resistPerLayer(), request.energyPerTick(), request.lineStats(), registry.all(),
+                required, maskStack.copy(), components, slot(SLOT_RESIST).copyWithCount(1), lot.lotId(), carrier);
+            run = (ProcessRun) result;
+            lastRefusal = null;
+            setChanged();
+        } catch (RuntimeException invalid) { stopInvalidRun(); }
+    }
+
+    private boolean inputsMatch() {
+        if (contract == null || run == null || !Objects.equals(trustedLot(), run.lot())) return false;
+        ItemStack carrier = slot(SLOT_FOUP).copy();
+        carrier.remove(ModDataComponents.FOUP_CONTENTS.get());
+        if (!ItemStack.isSameItemSameComponents(carrier, contract.foupTemplate())
+                || !sameSingleton(slot(SLOT_MASK), contract.mask())) return false;
+        for (int i = 0; i < 5; i++)
+            if (!sameSingleton(slot(SLOT_LIGHT_SOURCE + i), contract.components().get(i))) return false;
+        return slot(SLOT_RESIST).isEmpty() || canTopUpResist(slot(SLOT_RESIST));
+    }
+
+    private static boolean sameSingleton(ItemStack current, ItemStack template) {
+        return current.getCount() == 1 && ItemStack.isSameItemSameComponents(current, template);
+    }
+
+    /** Abort releases input locks, but automatic startup remains latched until FOUP removal. */
+    public void abortRun() {
+        if (!(level instanceof ServerLevel) || !inputsLocked()) return;
+        stopInvalidRun();
+        publishProgress();
+    }
+
+    private void stopInvalidRun() {
+        run = null; contract = null; pendingRun = null;
+        abortLatched = true; lastRefusal = null;
+        setChanged();
+    }
+
+    private void releaseStoppedLot() {
+        abortLatched = false; run = null; contract = null; pendingRun = null; lastRefusal = null;
+        setChanged();
+    }
+
+    private void observeFoupRemoval(int index, ItemStack previous) {
+        if (index == SLOT_FOUP && slot(index).isEmpty()) releaseStoppedLot();
+    }
+
+    @Override
+    public ItemStack removeItem(int index, int count) {
+        ItemStack previous = slot(index).copy();
+        ItemStack removed = super.removeItem(index, count);
+        observeFoupRemoval(index, previous);
+        return removed;
+    }
+
+    @Override
+    public ItemStack removeItemNoUpdate(int index) {
+        ItemStack previous = slot(index).copy();
+        ItemStack removed = super.removeItemNoUpdate(index);
+        observeFoupRemoval(index, previous);
+        return removed;
+    }
+
+    @Override
+    public void setItem(int index, ItemStack stack) {
+        ItemStack previous = slot(index).copy();
+        super.setItem(index, stack);
+        observeFoupRemoval(index, previous);
+    }
+
+    @Override
+    public void clearContent() {
+        super.clearContent();
+        releaseStoppedLot();
+    }
+
+    public boolean inputsLocked() { return pendingRun != null || run != null && run.state() != ProcessState.FINISHED; }
+    public boolean aborted() { return abortLatched; }
+    public boolean canTopUpResist(ItemStack stack) {
+        Contract accepted = contract != null ? contract : pendingRun == null ? null : pendingRun.contract();
+        return accepted != null && !stack.isEmpty()
+            && ItemStack.isSameItemSameComponents(stack, accepted.resistTemplate());
+    }
+    public @Nullable RefusalReason lastRefusal() { return lastRefusal; }
+    public ProcessState processState() { return run == null ? ProcessState.IDLE : run.state(); }
+    public int currentLayer() { return run == null ? 0 : Math.min(run.currentLayer(), totalLayers()); }
+    public int progressTicks() { return run == null ? 0 : run.progressTicks(); }
+    public int totalLayers() { return contract == null ? 0 : contract.tier().layers(); }
+    public int tierIndex() { return contract == null ? 0 : contract.tier().index(); }
+    public @Nullable String dieType() { return contract == null ? null : contract.dieType(); }
+
+    private void publishProgress() {
+        data().set(DATA_ENERGY, buffer().getAmountAsInt());
+        data().set(DATA_CAPACITY, buffer().getCapacityAsInt());
+        data().set(DATA_PROGRESS, progressTicks());
+        data().set(DATA_TICKS, contract == null ? 0 : contract.layerTicks());
+    }
+
+    @Override
+    public boolean structureFormed() { return !needsValidation && formed && definition().isPresent(); }
+    @Override
+    public int extractEnergy(int amount, boolean simulate) {
+        if (amount <= 0) return 0;
+        return simulate ? buffer().getAmountAsLong() >= amount ? amount : 0 : energySource().draw(amount);
+    }
+    @Override
+    public int resistAvailable() { return canTopUpResist(slot(SLOT_RESIST)) ? slot(SLOT_RESIST).getCount() : 0; }
+    @Override
+    public void consumeResist(int amount) {
+        if (amount < 0 || amount > resistAvailable()) throw new IllegalStateException("Invalid resist payment");
+        slot(SLOT_RESIST).shrink(amount);
+        if (slot(SLOT_RESIST).isEmpty()) clearSlot(SLOT_RESIST);
+        setChanged();
+    }
+    @Override
+    public FoupContents applyLayer(FoupContents lot, int layer, double defectFactor) {
+        if (!(level instanceof ServerLevel server) || contract == null || !inputsMatch()
+                || !Objects.equals(lot, trustedLot())) throw new IllegalStateException("Run inputs changed");
+        FoupContents updated = FabYieldService.applyLayerStep(server, lot, contract.tier(),
+            contract.dieType(), null, layer, defectFactor);
+        ItemStack carrier = slot(SLOT_FOUP).copy();
+        ItemStack sealed = FoupItems.with(carrier.getItem(), updated);
+        carrier.set(ModDataComponents.FOUP_CONTENTS.get(), sealed.get(ModDataComponents.FOUP_CONTENTS.get()));
+        setSlot(SLOT_FOUP, carrier);
+        return updated;
     }
 
     /**
@@ -173,10 +386,10 @@ public class ProcessCellControllerBlockEntity extends BlockEntity implements Ene
 
         Direction facing = getBlockState().getValue(ProcessCellControllerBlock.FACING);
         MatchResult result = StructureMatcher.match(
-            toCore(worldPosition),
-            toCore(facing),
-            StructureShape.PROCESS_CELL,
-            this::blockKindAt);
+                toCore(worldPosition),
+                toCore(facing),
+                StructureShape.PROCESS_CELL,
+                this::blockKindAt);
 
         boolean nowFormed = result.success();
         List<BlockPos> nextMembers = nowFormed ? toMinecraft(result.memberPositions()) : List.of();
@@ -269,8 +482,8 @@ public class ProcessCellControllerBlockEntity extends BlockEntity implements Ene
                 return BlockKind.OTHER;
             }
             return state.getBlock() instanceof ProcessCellPowerPortBlock
-                ? BlockKind.POWER_PORT
-                : BlockKind.CASING;
+                    ? BlockKind.POWER_PORT
+                    : BlockKind.CASING;
         }
         if (state.getBlock() instanceof ProcessCellPowerPortBlock) {
             return BlockKind.POWER_PORT;
@@ -285,24 +498,51 @@ public class ProcessCellControllerBlockEntity extends BlockEntity implements Ene
 
     @Override
     protected void loadAdditional(ValueInput input) {
-        super.loadAdditional(input);
-        this.energy.deserialize(input);
+        super.loadAdditional(input); // loads inventory and energy via base
         this.formed = input.getInt("formed").orElse(0) != 0;
         this.failureReason = input.getString("failureReason").orElse("");
+        run = null; contract = null; pendingRun = null; lastRefusal = null;
+        abortLatched = false;
+        needsValidation = true;
+        try {
+            boolean hasRunField = input.read("processHasRun", Codec.PASSTHROUGH).isPresent();
+            boolean abortField = input.read("processAbortLatched", Codec.PASSTHROUGH).isPresent();
+            boolean payloadField = input.read("processRun", Codec.PASSTHROUGH).isPresent();
+            var hasRun = input.read("processHasRun", Codec.BOOL);
+            var stopped = input.read("processAbortLatched", Codec.BOOL);
+            abortLatched = stopped.orElse(false);
+            // Legacy idle saves have no run keys. Present but malformed or inconsistent
+            // keys must never turn accepted partial work into a new automatic admission.
+            if ((hasRunField && hasRun.isEmpty()) || (abortField && stopped.isEmpty())
+                    || (payloadField && !hasRun.orElse(false))) {
+                stopInvalidRun();
+            } else if (hasRun.orElse(false)) {
+                pendingRun = input.read("processRun", ProcessCellRunPersistence.CODEC).orElse(null);
+                if (pendingRun == null || abortLatched) stopInvalidRun();
+            }
+        } catch (RuntimeException malformed) { stopInvalidRun(); }
+        publishProgress();
+        // Formation member list remains world-derived (not persisted)
     }
 
     @Override
     protected void saveAdditional(ValueOutput output) {
-        super.saveAdditional(output);
-        this.energy.serialize(output);
+        super.saveAdditional(output); // saves inventory and energy via base
         output.putInt("formed", this.formed ? 1 : 0);
         output.putString("failureReason", this.failureReason);
+        output.putBoolean("processAbortLatched", abortLatched);
+        Saved saved = pendingRun != null ? pendingRun : run == null ? null : new Saved(contract, run.snapshot());
+        output.putBoolean("processHasRun", saved != null);
+        if (saved != null) output.store("processRun", ProcessCellRunPersistence.CODEC, saved);
+        // Formation member list not persisted on purpose
     }
 
-    /**
-     * Members are not persisted on purpose: they are derived from the world, and re-deriving them
-     * on load is what keeps a saved cell honest if the blocks around it moved.
-     */
+    // ---------------------------------------------------------------- MenuProvider
+
+    @Override
+    protected AbstractContainerMenu createMachineMenu(int containerId, Inventory playerInventory, FabMachineBlockEntity machine) {
+        return new ProcessCellMenu(containerId, playerInventory, this);
+    }
 
     // ---------------------------------------------------------------- conversions
 
@@ -328,27 +568,4 @@ public class ProcessCellControllerBlockEntity extends BlockEntity implements Ene
         return converted;
     }
 
-    /**
-     * The cell's real energy storage.
-     *
-     * <p>{@code maxExtract} is zero, which is the whole of "a power port never gives energy back"
-     * and needs no wrapper class. The controller itself does not spend energy yet; M1-09 will, and
-     * when it does it will need the two-object split
-     * {@code FabMachineBlockEntity.MachineEnergy}/{@code WithdrawNothing} uses, because a buffer
-     * that refuses extraction is a buffer that cannot pay for its own work.</p>
-     */
-    public static final class ControllerEnergy extends SimpleEnergyHandler {
-
-        private final BlockEntity owner;
-
-        ControllerEnergy(BlockEntity owner) {
-            super(ENERGY_CAPACITY, ENERGY_MAX_INSERT, 0);
-            this.owner = owner;
-        }
-
-        @Override
-        protected void onEnergyChanged(int previousAmount) {
-            this.owner.setChanged();
-        }
-    }
 }

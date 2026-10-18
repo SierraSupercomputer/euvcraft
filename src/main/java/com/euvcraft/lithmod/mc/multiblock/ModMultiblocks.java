@@ -1,12 +1,15 @@
 package com.euvcraft.lithmod.mc.multiblock;
 
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
+import com.euvcraft.lithmod.mc.machine.process.ProcessCellMenu;
 
 import net.minecraft.core.registries.Registries;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -34,41 +37,48 @@ public final class ModMultiblocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(EUVCRAFTMod.MODID);
 
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
-        DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, EUVCRAFTMod.MODID);
+            DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, EUVCRAFTMod.MODID);
+
+    // Menu type registration on the mod bus (not a second registry class)
+    public static final DeferredRegister<MenuType<?>> MENU_TYPES =
+            DeferredRegister.create(Registries.MENU, EUVCRAFTMod.MODID);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<ProcessCellMenu>> PROCESS_CELL_MENU_TYPE =
+            MENU_TYPES.register("process_cell", () -> IMenuTypeExtension.create(ProcessCellMenu::new));
 
     // ---------------------------------------------------------------- blocks
 
     /** The controller: owns the cell and its energy buffer. */
     public static final DeferredBlock<ProcessCellControllerBlock> PROCESS_CELL_CONTROLLER =
-        BLOCKS.registerBlock("process_cell_controller", ProcessCellControllerBlock::new,
-            properties -> properties.strength(3.0f, 6.0f).requiresCorrectToolForDrops());
+            BLOCKS.registerBlock("process_cell_controller", ProcessCellControllerBlock::new,
+                    properties -> properties.strength(3.0f, 6.0f).requiresCorrectToolForDrops());
 
     /** Casing: the filler blocks. */
     public static final DeferredBlock<ProcessCellCasingBlock> PROCESS_CELL_CASING =
-        BLOCKS.registerBlock("process_cell_casing", ProcessCellCasingBlock::new,
-            properties -> properties.strength(2.5f, 5.0f).requiresCorrectToolForDrops());
+            BLOCKS.registerBlock("process_cell_casing", ProcessCellCasingBlock::new,
+                    properties -> properties.strength(2.5f, 5.0f).requiresCorrectToolForDrops());
 
     /** Power port: the only member that exposes anything. */
     public static final DeferredBlock<ProcessCellPowerPortBlock> PROCESS_CELL_POWER_PORT =
-        BLOCKS.registerBlock("process_cell_power_port", ProcessCellPowerPortBlock::new,
-            properties -> properties.strength(2.5f, 5.0f).requiresCorrectToolForDrops());
+            BLOCKS.registerBlock("process_cell_power_port", ProcessCellPowerPortBlock::new,
+                    properties -> properties.strength(2.5f, 5.0f).requiresCorrectToolForDrops());
 
     // ---------------------------------------------------------------- block entity types
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ProcessCellControllerBlockEntity>>
-        PROCESS_CELL_CONTROLLER_BE = BLOCK_ENTITIES.register("process_cell_controller",
+            PROCESS_CELL_CONTROLLER_BE = BLOCK_ENTITIES.register("process_cell_controller",
             () -> new BlockEntityType<ProcessCellControllerBlockEntity>(
-                ProcessCellControllerBlockEntity::new, PROCESS_CELL_CONTROLLER.get()));
+                    ProcessCellControllerBlockEntity::new, PROCESS_CELL_CONTROLLER.get()));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ProcessCellCasingBlockEntity>>
-        PROCESS_CELL_CASING_BE = BLOCK_ENTITIES.register("process_cell_casing",
+            PROCESS_CELL_CASING_BE = BLOCK_ENTITIES.register("process_cell_casing",
             () -> new BlockEntityType<ProcessCellCasingBlockEntity>(
-                ProcessCellCasingBlockEntity::new, PROCESS_CELL_CASING.get()));
+                    ProcessCellCasingBlockEntity::new, PROCESS_CELL_CASING.get()));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ProcessCellPowerPortBlockEntity>>
-        PROCESS_CELL_POWER_PORT_BE = BLOCK_ENTITIES.register("process_cell_power_port",
+            PROCESS_CELL_POWER_PORT_BE = BLOCK_ENTITIES.register("process_cell_power_port",
             () -> new BlockEntityType<ProcessCellPowerPortBlockEntity>(
-                ProcessCellPowerPortBlockEntity::new, PROCESS_CELL_POWER_PORT.get()));
+                    ProcessCellPowerPortBlockEntity::new, PROCESS_CELL_POWER_PORT.get()));
 
     // ---------------------------------------------------------------- block items
     //
@@ -83,6 +93,7 @@ public final class ModMultiblocks {
     public static void register(IEventBus modEventBus) {
         BLOCKS.register(modEventBus);
         BLOCK_ENTITIES.register(modEventBus);
+        MENU_TYPES.register(modEventBus); // register menu types on mod bus
         modEventBus.addListener(ModMultiblocks::registerCapabilities);
     }
 
@@ -96,8 +107,8 @@ public final class ModMultiblocks {
      */
     private static void registerCapabilities(RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(Capabilities.Energy.BLOCK, PROCESS_CELL_POWER_PORT_BE.get(),
-            (blockEntity, side) -> blockEntity instanceof ProcessCellPowerPortBlockEntity port
-                ? port.energy()
-                : null);
+                (blockEntity, side) -> blockEntity instanceof ProcessCellPowerPortBlockEntity port
+                        ? port.energy()
+                        : null);
     }
 }

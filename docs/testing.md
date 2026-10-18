@@ -304,3 +304,16 @@ Actual registered packaging cases:
 
 
 See `reports/M1-10_test-and-package.md` for per-class arithmetic, actual command output, every new test’s fault evidence and source API handoff.
+
+
+## M1-09 Process Cell checks
+
+**Offline Gradle command (production 12c3ebf)**:
+```
+.\gradlew.bat test checkCoreImports jar runGameTestServer --offline --console=plain
+```
+Expected: 509 unit tests in 74 classes; 791 distinct server cases including all 121 registered project IDs; no failures/errors/skips.
+
+**Current 632d867**: 17 `ProcessCell` prefix cases (16 new + 1 old block drop) — purpose: stronger test assertions only.
+
+See `reports/M1-09_process-cell-controller.md` for actual registered IDs, class rows and executed fault controls. Final reviews and a separate merge candidate remain pending. Source pins are not merge approval.
