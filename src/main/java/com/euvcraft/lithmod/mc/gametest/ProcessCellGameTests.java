@@ -515,6 +515,13 @@ public final class ProcessCellGameTests {
             h.assertValueEqual(16, resist(cell), "wrong-type drag changes no machine items");
             h.assertValueEqual(4, menu.getCarried().getCount(), "wrong-type drag retains all cursor items");
 
+            menu.setCarried(new ItemStack(ModItems.RESIST_T2.get(), 4));
+            menu.clicked(-999, AbstractContainerMenu.getQuickcraftMask(0, 2), ContainerInput.QUICK_CRAFT, player);
+            menu.clicked(2, AbstractContainerMenu.getQuickcraftMask(1, 2), ContainerInput.QUICK_CRAFT, player);
+            menu.clicked(-999, AbstractContainerMenu.getQuickcraftMask(2, 2), ContainerInput.QUICK_CRAFT, player);
+            h.assertValueEqual(16, resist(cell), "creative drag cannot clone resist into the active slot");
+            h.assertValueEqual(4, menu.getCarried().getCount(), "rejected creative drag keeps the cursor unchanged");
+
             // Verify physical FOUP UUID/item/count and cursor count assertions
             ItemStack finalFoup = cell.slot(0);
             h.assertValueEqual(foupUuid, FoupItems.trustedContentsOf(finalFoup).lotId(), "final FOUP UUID matches");

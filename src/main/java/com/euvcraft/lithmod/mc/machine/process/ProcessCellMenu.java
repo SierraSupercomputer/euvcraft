@@ -51,6 +51,8 @@ public class ProcessCellMenu extends FabMachineMenu {
 
     private final ContainerData cellData;
     private final boolean serverSide;
+    private boolean resistInsertionInProgress;
+    private int observedQuickcraftType = -1;
 
     public ProcessCellMenu(int containerId, Inventory playerInventory, FabMachineBlockEntity machine) {
         super(ModMultiblocks.PROCESS_CELL_MENU_TYPE.get(), containerId, playerInventory, machine,
@@ -109,6 +111,13 @@ public class ProcessCellMenu extends FabMachineMenu {
 
         // Slot 2: RESIST - allows top-up only when same item+components as accepted contract
         addCustomSlot(new LockedSlot(machineSlots(), ProcessCellControllerBlockEntity.SLOT_RESIST, 98, 35) {
+            @Override
+            public boolean mayPickup(Player player) {
+                // Vanilla's single-target drag delegates privately to PICKUP. This permission
+                // exists only inside an insertion operation with a matching nonempty cursor.
+                return resistInsertionInProgress || !inputsLocked();
+            }
+
             @Override
             public boolean mayPlace(ItemStack stack) {
                 if (inputsLocked()) {
@@ -252,6 +261,23 @@ public class ProcessCellMenu extends FabMachineMenu {
 
     @Override
     public void clicked(int slotIndex, int button, net.minecraft.world.inventory.ContainerInput action, Player player) {
+        if (action == net.minecraft.world.inventory.ContainerInput.QUICK_CRAFT) {
+            int header = getQuickcraftHeader(button);
+            if (header == QUICKCRAFT_HEADER_START) observedQuickcraftType = getQuickcraftType(button);
+            ItemStack carried = getCarried();
+            resistInsertionInProgress = inputsLocked() && !carried.isEmpty()
+                && (observedQuickcraftType == QUICKCRAFT_TYPE_CHARITABLE
+                    || observedQuickcraftType == QUICKCRAFT_TYPE_GREEDY)
+                && slots.get(ProcessCellControllerBlockEntity.SLOT_RESIST).mayPlace(carried);
+            try {
+                super.clicked(slotIndex, button, action, player);
+            } finally {
+                resistInsertionInProgress = false;
+                if (header >= QUICKCRAFT_HEADER_END) observedQuickcraftType = -1;
+            }
+            return;
+        }
+        observedQuickcraftType = -1;
         // Vanilla checks mayPickup before merging into an occupied slot. Permit insertion
         // explicitly while keeping every extraction and swap path locked.
         if (inputsLocked() && slotIndex == ProcessCellControllerBlockEntity.SLOT_RESIST
@@ -283,6 +309,15 @@ public class ProcessCellMenu extends FabMachineMenu {
             }
         }
         super.clicked(slotIndex, button, action, player);
+    }
+
+    @Override
+    public boolean canDragTo(Slot slot) {
+        // Creative drag-fill may still operate on the player's own inventory, but must
+        // never create additional resist in a locked machine input.
+        return !(inputsLocked() && observedQuickcraftType == QUICKCRAFT_TYPE_CLONE
+                && slot == slots.get(ProcessCellControllerBlockEntity.SLOT_RESIST))
+            && super.canDragTo(slot);
     }
 
     // ------------------------------------------------------------------------
