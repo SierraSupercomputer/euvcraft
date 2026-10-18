@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "R": "minecraft:redstone",
+    "S": "minecraft:sugar",
+    "G": "minecraft:glass_bottle"
+  },
+  "pattern": [
+    "RSR",
+    "SGS",
+    "RSR"
+  ],
+  "result": {
+    "id": "lithmod:resist_t1",
+    "count": 4
+  }
+}

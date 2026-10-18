@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "G": "minecraft:gold_ingot",
+    "Q": "minecraft:quartz",
+    "R": "minecraft:redstone"
+  },
+  "pattern": [
+    "GQG",
+    "QRQ",
+    "GQG"
+  ],
+  "result": {
+    "id": "lithmod:mercury_lamp",
+    "count": 1
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "C": "minecraft:copper_ingot",
+    "G": "minecraft:gold_ingot",
+    "I": "minecraft:iron_ingot"
+  },
+  "pattern": [
+    "CGC",
+    "GIG",
+    "CGC"
+  ],
+  "result": {
+    "id": "lithmod:contact_plate",
+    "count": 1
+  }
+}

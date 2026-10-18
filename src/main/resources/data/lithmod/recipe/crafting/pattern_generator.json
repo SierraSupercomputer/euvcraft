@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "C": "minecraft:copper_block",
+    "R": "minecraft:redstone",
+    "Q": "minecraft:quartz"
+  },
+  "pattern": [
+    "CQC",
+    "RQR",
+    "CQC"
+  ],
+  "result": {
+    "id": "lithmod:pattern_generator",
+    "count": 1
+  }
+}

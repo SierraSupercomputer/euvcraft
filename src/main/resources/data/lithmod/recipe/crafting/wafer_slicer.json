@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "D": "minecraft:diamond",
+    "I": "minecraft:iron_ingot",
+    "G": "minecraft:glass"
+  },
+  "pattern": [
+    "DID",
+    "IGI",
+    "DID"
+  ],
+  "result": {
+    "id": "lithmod:wafer_slicer",
+    "count": 1
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "G": "minecraft:gold_ingot",
+    "R": "minecraft:redstone",
+    "I": "minecraft:iron_ingot"
+  },
+  "pattern": [
+    "GRG",
+    "RIR",
+    "GRG"
+  ],
+  "result": {
+    "id": "lithmod:process_cell_controller",
+    "count": 1
+  }
+}

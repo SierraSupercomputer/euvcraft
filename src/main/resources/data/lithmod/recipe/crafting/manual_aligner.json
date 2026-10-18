@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "S": "minecraft:stick",
+    "R": "minecraft:redstone"
+  },
+  "pattern": [
+    "ISI",
+    "SRS",
+    "ISI"
+  ],
+  "result": {
+    "id": "lithmod:manual_aligner",
+    "count": 1
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "G": "minecraft:glass",
+    "Q": "minecraft:quartz",
+    "D": "minecraft:diamond"
+  },
+  "pattern": [
+    "GQG",
+    "QDQ",
+    "GQG"
+  ],
+  "result": {
+    "id": "lithmod:reduction_lens",
+    "count": 1
+  }
+}

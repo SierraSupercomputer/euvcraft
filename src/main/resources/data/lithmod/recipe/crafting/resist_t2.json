@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "R": "minecraft:redstone",
+    "G": "minecraft:glowstone_dust",
+    "B": "minecraft:glass_bottle"
+  },
+  "pattern": [
+    "RGR",
+    "GBG",
+    "RGR"
+  ],
+  "result": {
+    "id": "lithmod:resist_t2",
+    "count": 4
+  }
+}
