@@ -358,7 +358,9 @@ public final class ProcessCellGameTests {
         };
         Connection connection = new Connection(PacketFlow.SERVERBOUND);
         new EmbeddedChannel(connection);
+        net.neoforged.neoforge.network.registration.NetworkRegistry.configureMockConnection(connection);
         level.getServer().getPlayerList().placeNewPlayer(connection, player, cookie);
+        player.getAbilities().instabuild = true;
         return player;
     }
 
@@ -392,6 +394,16 @@ public final class ProcessCellGameTests {
             player.setPos(controllerPos.getX() + 0.5, controllerPos.getY() + 0.5, controllerPos.getZ() + 0.5);
             ProcessCellMenu menu = new ProcessCellMenu(7, player.getInventory(), cell);
             player.containerMenu = menu;
+
+            // Prove the creative fixture can clone an ordinary player-inventory item.
+            h.assertTrue(player.getAbilities().instabuild, "creative clone precondition");
+            menu.slots.get(9).set(new ItemStack(Items.STONE));
+            menu.setCarried(ItemStack.EMPTY);
+            menu.clicked(9, 2, ContainerInput.CLONE, player);
+            h.assertTrue(menu.getCarried().is(Items.STONE) && menu.getCarried().getCount() == 64,
+                "creative clone works for the player's own inventory");
+            menu.setCarried(ItemStack.EMPTY);
+            menu.slots.get(9).set(ItemStack.EMPTY);
 
             // All 8 machine slots mayPickup must be false
             for (int i = 0; i < 8; i++) {
@@ -488,6 +500,20 @@ public final class ProcessCellGameTests {
             menu.clicked(2, 0, ContainerInput.PICKUP_ALL, player);
             h.assertValueEqual(12, resist(cell), "real PICKUP_ALL cannot extract active resist");
             h.assertValueEqual(1, menu.getCarried().getCount(), "real PICKUP_ALL leaves the cursor count unchanged");
+
+            // Real left-drag sequence: stage bits 0, 1, 2; type bits zero.
+            menu.setCarried(new ItemStack(ModItems.RESIST_T2.get(), 4));
+            menu.clicked(-999, 0, ContainerInput.QUICK_CRAFT, player);
+            menu.clicked(2, 1, ContainerInput.QUICK_CRAFT, player);
+            menu.clicked(-999, 2, ContainerInput.QUICK_CRAFT, player);
+            h.assertValueEqual(16, resist(cell), "same-type drag inserts four resist");
+            h.assertTrue(menu.getCarried().isEmpty(), "same-type drag consumes exactly the cursor stack");
+            menu.setCarried(new ItemStack(ModItems.RESIST_T1.get(), 4));
+            menu.clicked(-999, 0, ContainerInput.QUICK_CRAFT, player);
+            menu.clicked(2, 1, ContainerInput.QUICK_CRAFT, player);
+            menu.clicked(-999, 2, ContainerInput.QUICK_CRAFT, player);
+            h.assertValueEqual(16, resist(cell), "wrong-type drag changes no machine items");
+            h.assertValueEqual(4, menu.getCarried().getCount(), "wrong-type drag retains all cursor items");
 
             // Verify physical FOUP UUID/item/count and cursor count assertions
             ItemStack finalFoup = cell.slot(0);
@@ -616,6 +642,18 @@ public final class ProcessCellGameTests {
 
             // Return near
             player.setPos(controllerPos.getX() + 0.5, controllerPos.getY() + 0.5, controllerPos.getZ() + 0.5);
+
+            // Matching coordinates in another dimension must still be rejected.
+            ServerLevel otherLevel = h.getLevel().getServer().getLevel(Level.NETHER);
+            h.assertTrue(otherLevel != null, "other dimension exists for wrong-world validation");
+            CommonListenerCookie otherCookie = CommonListenerCookie.createInitial(
+                new GameProfile(UUID.randomUUID(), "wrong-world-process"), false);
+            ServerPlayer otherPlayer = new ServerPlayer(h.getLevel().getServer(), otherLevel,
+                otherCookie.gameProfile(), otherCookie.clientInformation());
+            otherPlayer.setPos(controllerPos.getX() + 0.5, controllerPos.getY() + 0.5, controllerPos.getZ() + 0.5);
+            otherPlayer.containerMenu = serverMenu;
+            h.assertFalse(serverMenu.clickMenuButton(otherPlayer, 0), "wrong-world player cannot abort");
+            h.assertFalse(cell.aborted(), "wrong-world request leaves the run active");
 
             // Construct client-style Menu(id, inventory, (FabMachineBlockEntity)null), set pointer clientMenu
             ProcessCellMenu clientMenu = new ProcessCellMenu(8, player.getInventory(), (ProcessCellControllerBlockEntity) null);
@@ -762,6 +800,20 @@ public final class ProcessCellGameTests {
             h.assertValueEqual(ProcessCellMenu.STATUS_ABORTED, clientMenu.status(), "client status ABORTED after abort");
             h.assertFalse(clientMenu.inputsLocked(), "client unlocked after abort");
             h.assertValueEqual(0, clientMenu.locked(), "client locked = 0 after abort");
+
+            // Release the Abort latch, then reject a T2 mask on a real T1 line.
+            ItemStack sameLot = cell.removeItemNoUpdate(0);
+            cell.setItem(0, sameLot);
+            Item[] weakParts = {ModItems.MERCURY_LAMP.get(), ModItems.CONTACT_PLATE.get(),
+                ModItems.MANUAL_ALIGNER.get(), ModItems.BASIC_AIR_FILTER.get(), ModItems.OPTICAL_MICROSCOPE.get()};
+            for (int i = 0; i < 5; i++) cell.setSlot(3 + i, new ItemStack(weakParts[i]));
+            tick(cell, 1);
+            h.assertTrue(cell.lastRefusal() != null && cell.lastRefusal().is(RefusalReason.Code.LINE_CANNOT_RUN_TIER),
+                "real weak line produces the expected refusal");
+            for (int i = 0; i < 12; i++) clientMenu.setData(i, serverDataSlots.get(i).get());
+            h.assertValueEqual(RefusalReason.Code.LINE_CANNOT_RUN_TIER.ordinal() + 1, clientMenu.refusal(),
+                "client receives the actual weak-line refusal");
+            h.assertFalse(clientMenu.inputsLocked(), "refused run stays unlocked on client");
         });
         h.succeed();
     }

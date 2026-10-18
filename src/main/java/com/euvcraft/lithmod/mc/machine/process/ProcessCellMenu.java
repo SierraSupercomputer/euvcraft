@@ -252,12 +252,26 @@ public class ProcessCellMenu extends FabMachineMenu {
 
     @Override
     public void clicked(int slotIndex, int button, net.minecraft.world.inventory.ContainerInput action, Player player) {
+        // Vanilla checks mayPickup before merging into an occupied slot. Permit insertion
+        // explicitly while keeping every extraction and swap path locked.
+        if (inputsLocked() && slotIndex == ProcessCellControllerBlockEntity.SLOT_RESIST
+                && action == net.minecraft.world.inventory.ContainerInput.PICKUP
+                && (button == 0 || button == 1)) {
+            resetQuickCraft();
+            ItemStack carried = getCarried();
+            Slot resist = slots.get(ProcessCellControllerBlockEntity.SLOT_RESIST);
+            if (!carried.isEmpty() && resist.mayPlace(carried)) {
+                setCarried(resist.safeInsert(carried, button == 0 ? carried.getCount() : 1));
+            }
+            return;
+        }
         // Guard hotbar SWAP/THROW/CLONE/QUICK_MOVE on locked machine slots
         if (inputsLocked() && slotIndex >= 0 && slotIndex < ProcessCellControllerBlockEntity.INPUT_SLOTS) {
             // action values in 26.3: PICKUP, QUICK_MOVE, SWAP, CLONE, THROW, QUICK_CRAFT
             switch (action) {
                 case SWAP, THROW, CLONE, QUICK_MOVE -> {
                     // Block these actions on locked machine input slots
+                    resetQuickCraft();
                     return;
                 }
                 case PICKUP, QUICK_CRAFT -> {
