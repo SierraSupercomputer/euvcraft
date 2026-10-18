@@ -51,9 +51,6 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.mojang.serialization.JsonOps;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -560,6 +557,7 @@ public final class PresentationGameTests {
         }
         h.assertTrue(!blockIds.isEmpty(), "no lithmod block is registered at all");
 
+        Set<String> visitedModels = new HashSet<>();
         // ---- Verify item assets ----
         for (Identifier id : itemIds) {
             String path = id.getPath();
@@ -572,10 +570,11 @@ public final class PresentationGameTests {
             // language entry (descriptionId format: item.lithmod.<id>)
             String langKey = "item." + EUVCRAFTMod.MODID + "." + path;
             h.assertTrue(lang.containsKey(langKey), langKey + " has no language entry");
+            collectModelRefs(readJson(gson, "/assets/lithmod/items/" + path + ".json"), visitedModels);
+            collectModelRefs(readJson(gson, "/assets/lithmod/models/item/" + path + ".json"), visitedModels);
         }
 
         // ---- Verify block assets ----
-        Set<String> visitedModels = new HashSet<>();
         for (Identifier blockId : blockIds) {
             String path = blockId.getPath();
 
@@ -584,7 +583,11 @@ public final class PresentationGameTests {
             h.assertTrue(hasResource(blockstatePath), blockId + " has no blockstate JSON");
             JsonObject blockstate = readJson(gson, blockstatePath);
             // Recursively collect model references from blockstate
-            collectModelRefs(blockstate, visitedModels);
+            Set<String> blockModels = new HashSet<>();
+            collectModelRefs(blockstate, blockModels);
+            h.assertTrue(!blockModels.isEmpty(), blockId + " blockstate names no model");
+            visitedModels.addAll(blockModels);
+            h.assertTrue(lang.containsKey("block.lithmod." + path), blockId + " has no block language entry");
 
             // loot table
             String lootPath = "/data/lithmod/loot_table/blocks/" + path + ".json";
@@ -624,17 +627,16 @@ public final class PresentationGameTests {
                     blockId + " is not harvestable with iron pickaxe (isCorrectToolForDrops failed)");
         }
 
-        // ---- Verify all referenced models exist and parse ----
-        for (String modelRef : visitedModels) {
-            // lithmod:<modelpath> must exist at /assets/lithmod/models/<modelpath>.json
-            if (modelRef.startsWith("lithmod:")) {
-                String modelPath = modelRef.substring("lithmod:".length());
-                String resourcePath = "/assets/lithmod/models/" + modelPath + ".json";
-                h.assertTrue(hasResource(resourcePath), "Referenced model " + modelRef + " missing at " + resourcePath);
-                // Parse to ensure valid JSON
-                readJson(gson, resourcePath);
-            }
-            // vanilla parents allowed (not checked)
+        // Follow item definitions and every mod model parent, without repeated traversal.
+        Deque<String> pendingModels = new ArrayDeque<>(visitedModels);
+        Set<String> checkedModels = new HashSet<>();
+        while (!pendingModels.isEmpty()) {
+            String ref = pendingModels.removeFirst();
+            if (!ref.startsWith("lithmod:") || !checkedModels.add(ref)) continue;
+            JsonObject model = readJson(gson, "/assets/lithmod/models/" + ref.substring("lithmod:".length()) + ".json");
+            Set<String> parents = new HashSet<>();
+            collectModelRefs(model, parents);
+            pendingModels.addAll(parents);
         }
 
         // Verify nonempty registered inventory (already checked above with !itemIds.isEmpty())
@@ -739,6 +741,9 @@ public final class PresentationGameTests {
         // Create survival player with iron pickaxe (exact setup from MachineDropGameTests)
         ServerPlayer player = createSurvivalPlayerWithIronPickaxe(level, h.absolutePos(pullerPos));
 
+        h.assertValueEqual(GameType.SURVIVAL, player.gameMode.getGameModeForPlayer(), "Real survival game mode required");
+        h.assertTrue(level.getBlockState(h.absolutePos(pullerPos)).canHarvestBlock(level, h.absolutePos(pullerPos), player), "Pickaxe cannot harvest the production machine");
+        h.assertTrue(level.getBlockState(h.absolutePos(casingPos)).canHarvestBlock(level, h.absolutePos(casingPos), player), "Pickaxe cannot harvest the structure block");
         // Break CRYSTAL_PULLER
         Map<Item, Integer> beforePuller = countItems(h, h.absolutePos(pullerPos), 2.0);
         h.assertValueEqual(0, sumOf(beforePuller), "test area already held item entities before breaking CRYSTAL_PULLER");
@@ -793,7 +798,7 @@ public final class PresentationGameTests {
 
     private static Map<Item, Integer> countItems(GameTestHelper h, BlockPos centre, double radius) {
         Map<Item, Integer> counts = new HashMap<>();
-        for (ItemEntity entity : h.getLevel().getEntities(EntityType.ITEM,
+        for (ItemEntity entity : h.getLevel().getEntities(net.minecraft.world.entity.EntityTypes.ITEM,
                 new net.minecraft.world.phys.AABB(centre).inflate(radius), Entity::isAlive)) {
             ItemStack stack = entity.getItem();
             if (!stack.isEmpty()) {

@@ -335,6 +335,9 @@ class PresentationResourceTest {
         // ---- Verify die type keys used by current registered M1 items ----
         assertTrue(lang.containsKey("dieType.lithmod.logic"), "Missing dieType.lithmod.logic");
         assertTrue(lang.containsKey("dieType.lithmod.memory"), "Missing dieType.lithmod.memory");
+        for (String kind : com.euvcraft.lithmod.core.SupportLines.ALL) {
+            assertTrue(lang.containsKey("componentKind.lithmod." + kind), "Missing component kind translation: " + kind);
+        }
         // compute and nand exist in DieTypes but not yet used by registered M1 items
     }
 
@@ -355,54 +358,23 @@ class PresentationResourceTest {
      * Returns only complete literal string keys, not dynamic/concatenated expressions.
      */
     private static Set<String> findTranslatableKeysInSource() throws IOException {
+        Path sourceRoot = findProjectRoot().resolve("src/main/java");
+        assertTrue(Files.isDirectory(sourceRoot), "Production source tree is unavailable: " + sourceRoot);
         Set<String> keys = new HashSet<>();
-
-        // Find project root (assumes test runs from project root or similar)
-        Path projectRoot = findProjectRoot();
-        Path srcMainJava = projectRoot.resolve("src/main/java");
-
-        if (!Files.exists(srcMainJava)) {
-            // Fallback: try relative to class location
-            String classPath = PresentationResourceTest.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-            Path classDir = Paths.get(classPath).getParent();
-            // Navigate up to find src/main/java
-            Path candidate = classDir;
-            while (candidate != null && !Files.exists(candidate.resolve("src/main/java"))) {
-                candidate = candidate.getParent();
-            }
-            if (candidate != null) {
-                srcMainJava = candidate.resolve("src/main/java");
+        Pattern pattern = Pattern.compile("Component\\.translatable(?:Escape)?\\(\\s*\"([^\"\\r\\n]+)\"\\s*([,)+])");
+        List<Path> files;
+        try (Stream<Path> sourceFiles = Files.walk(sourceRoot)) {
+            files = sourceFiles.filter(path -> path.toString().endsWith(".java")).toList();
+        }
+        assertTrue(!files.isEmpty(), "No production Java files were scanned");
+        for (Path file : files) {
+            Matcher matcher = pattern.matcher(Files.readString(file, StandardCharsets.UTF_8));
+            while (matcher.find()) {
+                // A plus denotes a dynamic prefix, covered by the explicit catalog checks.
+                if (!matcher.group(2).equals("+")) keys.add(matcher.group(1));
             }
         }
-
-        if (!Files.exists(srcMainJava)) {
-            // Cannot locate source; return empty set (test will pass vacuously)
-            return keys;
-        }
-
-        // Pattern to match Component.translatable("literal_key") - only simple string literals
-        // This regex matches: Component.translatable("key") where key contains no concatenation
-        Pattern pattern = Pattern.compile(
-                "Component\\.translatable\\(\\s*\"([^\"]+)\"\\s*\\)");
-
-        Files.walk(srcMainJava)
-                .filter(p -> p.toString().endsWith(".java"))
-                .forEach(javaFile -> {
-                    try {
-                        String content = Files.readString(javaFile, StandardCharsets.UTF_8);
-                        Matcher matcher = pattern.matcher(content);
-                        while (matcher.find()) {
-                            String key = matcher.group(1);
-                            // Only add if it's a complete key (doesn't end with dot, not a partial prefix)
-                            if (!key.endsWith(".") && !key.contains("%") && !key.contains("+")) {
-                                keys.add(key);
-                            }
-                        }
-                    } catch (IOException ignored) {
-                        // Skip unreadable files
-                    }
-                });
-
+        assertTrue(!keys.isEmpty(), "No literal translation calls found");
         return keys;
     }
 
