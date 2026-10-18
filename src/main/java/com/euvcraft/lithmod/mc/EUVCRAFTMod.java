@@ -23,8 +23,11 @@ import com.euvcraft.lithmod.mc.registry.ModDataComponents;
 import com.euvcraft.lithmod.mc.registry.ModItems;
 import com.euvcraft.lithmod.mc.gametest.MachineDropGameTests;
 import com.euvcraft.lithmod.mc.gametest.MachineGameTests;
+import com.euvcraft.lithmod.mc.gametest.MaskGameTests;
 import com.euvcraft.lithmod.mc.gametest.MultiblockGameTests;
 import com.euvcraft.lithmod.mc.gametest.SiliconGameTests;
+import com.euvcraft.lithmod.mc.machine.mask.MaskMachines;
+import com.euvcraft.lithmod.mc.machine.mask.MaskTooltipAppenders;
 import com.euvcraft.lithmod.mc.machine.silicon.SiliconMachines;
 import com.euvcraft.lithmod.mc.machine.test.ModMachines;
 import com.euvcraft.lithmod.mc.multiblock.ModMultiblocks;
@@ -42,11 +45,13 @@ public class EUVCRAFTMod {
         ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
         ModMachines.register(modEventBus);
         SiliconMachines.register(modEventBus);
+        MaskMachines.register(modEventBus);
         ModMultiblocks.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(FoupTooltipAppenders::register);
         modEventBus.addListener(ChipTooltipAppenders::register);
+        modEventBus.addListener(MaskTooltipAppenders::register);
 modEventBus.addListener(ComponentTooltipAppenders::register);
         com.euvcraft.lithmod.mc.gametest.EUVCRAFTGameTests.register(modEventBus);
         com.euvcraft.lithmod.mc.gametest.FabRandomGameTests.register(modEventBus);
@@ -58,6 +63,7 @@ com.euvcraft.lithmod.mc.gametest.ComponentGameTests.register(modEventBus);
         MachineDropGameTests.register(modEventBus);
         MultiblockGameTests.register(modEventBus);
         SiliconGameTests.register(modEventBus);
+        MaskGameTests.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.LOCAL, FabConfig.getSpec());
         config = new FabConfig();

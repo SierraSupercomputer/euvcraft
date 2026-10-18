@@ -4,6 +4,8 @@ import java.util.function.Supplier;
 
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.euvcraft.lithmod.mc.FoupItems;
+import com.euvcraft.lithmod.core.DieTypes;
+import com.euvcraft.lithmod.core.MaskData;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -129,6 +131,63 @@ public final class ModCreativeTabs {
             })
             .build()
     );
+
+    /**
+     * The photomask group: the blank plate, one example mask per die type the
+     * milestone designs for, and the machine that cuts them.
+     *
+     * <p>A fifth tab for the same reason the others exist: the game tests pin the
+     * entry count of the main, chips, process cell, line component and silicon
+     * chain tabs, so a new item group gets a new tab rather than a new entry in
+     * one of those.</p>
+     *
+     * <p>The Pattern Generator is appended last so the four entries above keep
+     * their positions: a creative tab's entry order is what a test asserting on
+     * "the fourth entry" reads, and only the total grows. It has no recipes in
+     * this milestone, so it is here for look and layout rather than as a way to
+     * reach the machine in a survival game — {@code /give} and the game tests
+     * place it.</p>
+     */
+    public static final Supplier<CreativeModeTab> MASKS = CREATIVE_MODE_TABS.register(
+        "5_masks",
+        () -> CreativeModeTab.builder()
+            .title(Component.translatable("itemGroup.lithmod.masks"))
+            .icon(() -> new ItemStack(ModItems.MASK.get()))
+            .displayItems((parameters, output) -> {
+                output.accept(ModItems.BLANK_MASK.get());
+                output.accept(sampleMask(DieTypes.LOGIC, 1));
+                output.accept(sampleMask(DieTypes.LOGIC, 2));
+                output.accept(sampleMask(DieTypes.MEMORY, 2));
+                output.accept(ModItems.PATTERN_GENERATOR.get());
+            })
+            .build()
+    );
+
+    /**
+     * Builds one usable photomask for the tab.
+     *
+     * <p>The tab hands out masks that are actually patterned: a design a writer
+     * would accept, not a bare {@code mask} stack with no design at all. The die
+     * types have to be members of {@link com.euvcraft.lithmod.core.DieTypes#ALL},
+     * because that is what {@link com.euvcraft.lithmod.core.MaskData} accepts;
+     * the samples therefore pass the canonical constants rather than literal ids,
+     * because those constants are the bare ids and a namespaced literal is
+     * rejected.</p>
+     *
+     * <p>The remaining uses come from the config binding rather than from a number
+     * written here, so the samples follow the configured {@code maskUses} instead
+     * of pinning a balance value into a tab.</p>
+     *
+     * @param dieType   canonical bare die type id
+     * @param tierIndex 1-based node tier the sample mask is cut for
+     * @return a mask stack with the public design component filled in
+     */
+    private static ItemStack sampleMask(String dieType, int tierIndex) {
+        ItemStack mask = new ItemStack(ModItems.MASK.get());
+        mask.set(ModDataComponents.MASK_DATA.get(),
+            new MaskData(dieType, tierIndex, EUVCRAFTMod.settings().maskUses()));
+        return mask;
+    }
 
     private ModCreativeTabs() {
     }

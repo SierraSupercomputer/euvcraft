@@ -185,3 +185,57 @@ Invalid override:
 
 This repository lives inside a OneDrive folder. Exclude `.git`, `build`, `.gradle`,
 and `run` from sync; see the task report for the steps. Do not move the repository.
+
+## Mask and pattern generator (M1-06)
+
+The mask item and the Pattern Generator run under the same commands as the rest of
+the mod (`.\gradlew.bat test --offline`, `.\gradlew.bat checkCoreImports --offline`,
+`.\gradlew.bat runGameTestServer --offline`). The counts below are the M1-06 coordinator
+run at head `433a8f5`.
+
+Unit tests: 71 suites / 71 classes, 450 tests, 0 failures, 0 errors, 0 skipped. Three
+classes are new and hold 41 of the new methods: `MaskDataTest` (12, mask record
+validation and use consumption), `MaskRulesTest` (19, the Gen 1 mask-shop gate) and
+`MaskDataCodecTest` (10, JSON/NBT/stream round trips and rejection of bad data). The
+per-class table is in `docs/reports/M1-06_mask-and-pattern-generator.md`.
+
+Every new unit method has an executed negative control, not a suggested one: 16
+deliberate mutants against the 31 core methods at `66a17d9` and 4 against the 10 codec
+methods at `d90cee1`. The mutated files were restored byte-for-byte and the positive
+suite re-run afterwards, so the passing table above is a post-restore run. The failures
+quoted in those logs are named JUnit assertions, not XML-regex matches.
+
+Game tests: the XML report holds 751 case records, all 751 passed, 0 required failures
+and 0 optional cases skipped, and all 81 registered `lithmod:*` IDs are present and
+passing. Most of the 751 come from other installed mods, so 751 is not the number of project
+tests, and the 81 IDs are cases, not assertions. The 19 new server cases are
+`lithmod:mask_catalog_and_creative_tab`, `lithmod:mask_data_component_round_trip`,
+`lithmod:mask_tooltip_lines`, and these 16: `pattern_generator_block_use_opens_the_menu`,
+`pattern_generator_cancels_when_an_input_is_withdrawn`, `pattern_generator_cuts_a_logic_t1_mask`,
+`pattern_generator_cuts_a_logic_t2_mask`, `pattern_generator_cuts_a_memory_t2_mask`,
+`pattern_generator_exposes_energy_only`, `pattern_generator_menu_layout_and_shift_click`,
+`pattern_generator_pauses_on_a_full_output_slot`, `pattern_generator_pauses_without_energy`,
+`pattern_generator_refuses_a_compute_t3_design`, `pattern_generator_refuses_a_memory_t1_design`,
+`pattern_generator_refuses_a_product_that_is_not_a_mask`,
+`pattern_generator_refuses_a_product_without_a_design`,
+`pattern_generator_save_load_round_trip`, `pattern_generator_ticker_is_server_side` and
+`pattern_generator_uses_the_config_at_completion` (all under the `lithmod:` namespace).
+
+Each of those 19 cases was also observed failing under a deliberate production fault
+before being restored: the `behavior` fault drives the completion stamp, Gen 1 gating,
+runner guards, menu, ticker, interaction and stack/tooltip/status-wire paths; the
+`energy` fault drives the FE cap and the pending cost; the `persistence` fault changes
+only the snapshot writer back to the old NBT form and catches the exact recipe-identity
+loss. Five cases outside the target set also fail under the behavior fault because they
+share the same base hooks. The case-by-case control table is in the M1-06 report.
+
+Client limit: no live client rendering or screen check was done, and the client-side
+ticker branch is not covered — the server tests cover the server ticker and the
+detached-level guard only, not `ClientLevel`. The new models reuse vanilla textures as
+placeholders, and the pre-existing missing GUI bar assets are a disclosed presentation
+follow-up. No visual pass is claimed. The public `MaskData` is intentionally networked
+through its registered stream codec; only the private running-recipe snapshot data is
+server persistence.
+
+No three-separate-process repeat of the suite was run for M1-06; that remains M1-12
+acceptance work.
