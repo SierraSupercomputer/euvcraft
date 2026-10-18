@@ -173,9 +173,14 @@ public class ProcessCellScreen extends FabMachineScreen<ProcessCellMenu> {
         if (status == ProcessCellMenu.STATUS_DEFINITION_MISSING) {
             return Component.translatable("state.lithmod.process_cell.missing_definition");
         }
+        int refusal = this.menu.refusal();
+        if (refusal > 0 && refusal <= RefusalReason.Code.values().length) {
+            return Component.translatable("state.lithmod.process_cell."
+                + RefusalReason.Code.values()[refusal - 1].name().toLowerCase(java.util.Locale.ROOT));
+        }
         if (status >= 0 && status < ProcessState.values().length) {
             ProcessState state = ProcessState.values()[status];
-            return Component.translatable("state.lithmod.process_cell." + state.name().toLowerCase());
+            return Component.translatable("state.lithmod.process_cell." + state.name().toLowerCase(java.util.Locale.ROOT));
         }
         return Component.translatable("state.lithmod.process_cell.idle");
     }
@@ -192,13 +197,13 @@ public class ProcessCellScreen extends FabMachineScreen<ProcessCellMenu> {
 
     /** Builds the design line: "Tier T, Die Type" or "Design: -" when no contract. */
     private Component designText() {
-        int tierIdx = this.menu.tierIndex() - 1; // stored as +1
+        int tierIdx = this.menu.tierIndex(); // actual public tier index
         int dieIdx = this.menu.dieIndex() - 1;   // stored as +1
-        if (tierIdx >= 0 && dieIdx >= 0 && tierIdx < 2 && dieIdx < DieTypes.ALL.size()) {
-            String tierKey = tierIdx == 0 ? "tier.lithmod.t1" : "tier.lithmod.t2";
+        if (tierIdx > 0 && dieIdx >= 0 && tierIdx <= 8 && dieIdx < DieTypes.ALL.size()) {
+            Component tier = Component.literal("T" + tierIdx);
             String dieKey = "dieType.lithmod." + DieTypes.ALL.get(dieIdx);
             return Component.translatable("label.lithmod.process_cell.design",
-                    Component.translatable(tierKey), Component.translatable(dieKey));
+                    tier, Component.translatable(dieKey));
         }
         return Component.translatable("label.lithmod.process_cell.design_none");
     }

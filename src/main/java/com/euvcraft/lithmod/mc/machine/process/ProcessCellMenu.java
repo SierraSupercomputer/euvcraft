@@ -1,6 +1,8 @@
 package com.euvcraft.lithmod.mc.machine.process;
 
 import com.euvcraft.lithmod.core.DieTypes;
+import com.euvcraft.lithmod.core.MaskData;
+import com.euvcraft.lithmod.mc.registry.ModDataComponents;
 import com.euvcraft.lithmod.core.ProcessState;
 import com.euvcraft.lithmod.core.RefusalReason;
 import com.euvcraft.lithmod.mc.ResistCatalog;
@@ -24,57 +26,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
-/**
- * Menu for the Process Cell: eight hand-fed input slots with run-state locking.
- * <p>
- * Slot layout (indices 0..7):
- * 0 FOUP, 1 MASK, 2 RESIST, 3 LIGHT_SOURCE, 4 OPTICS, 5 STAGE, 6 CLEANROOM, 7 METROLOGY
- * </p>
- * <p>
- * While the controller reports {@link ProcessCellControllerBlockEntity#inputsLocked()} (running,
- * paused, or pending), the FOUP, mask and component slots are locked for placement and pickup.
- * The resist slot permits placement <em>only</em> when {@link ProcessCellControllerBlockEntity#canTopUpResist(ItemStack)}
- * returns true — same item and same components as the accepted contract. This works even when the
- * resist slot is currently empty.
- * </p>
- * <p>
- * In idle, aborted or finished states, normal hand-feeding with the same predicates and max
- * counts is permitted.
- * </p>
- * <p>
- * Eight coarse {@link ContainerData} values are synced after the base four:
- * <ol>
- *   <li>{@code STATUS} (index 4): {@link ProcessState} ordinal 0..5 plus {@code ABORTED=6}, {@code DEFINITION_MISSING=7}</li>
- *   <li>{@code REFUSAL} (index 5): {@link RefusalReason.Code} ordinal + 1, 0 = none</li>
- *   <li>{@code LAYER} (index 6): current layer (0 when no run)</li>
- *   <li>{@code TOTAL} (index 7): total layers (0 when no contract)</li>
- *   <li>{@code FORMED} (index 8): 1 if cell is formed, 0 otherwise</li>
- *   <li>{@code TIER} (index 9): tier index + 1 (0 when no contract)</li>
- *   <li>{@code DIE} (index 10): {@link DieTypes#ALL} index + 1 (0 when no contract)</li>
- *   <li>{@code LOCKED} (index 11): 1 if inputs are locked, 0 otherwise</li>
- * </ol>
- * </p>
- * <p>
- * Server reads the controller's current getters and definition; mask tier/die display prefer
- * {@link com.euvcraft.lithmod.mc.registry.ModDataComponents#MASK_DATA} if present, falling back to
- * the accepted contract's public tier/die via the controller's existing getters. The client uses a
- * {@link SimpleContainerData} of size 8. No whole FOUP lot, {@link com.euvcraft.lithmod.mc.machine.process.ProcessRunRequest},
- * per-wafer rolls/flags/pass counts or defect factor are serialized into the menu. No custom sync
- * packet or full NBT is added.
- * </p>
- * <p>
- * {@link #quickMoveStack} is overridden to reject extraction from locked machine indices 0..7
- * because the base implementation ignores {@code mayPickup}. Player-to-machine quick-move may
- * route only valid same-type resist while locked via the actual slot predicates.
- * </p>
- * <p>
- * Hotbar SWAP, THROW, CLONE and QUICK_MOVE on locked machine slots are guarded in
- * {@link #clicked(int, int, net.minecraft.world.inventory.ClickAction, Player)} using the actual
- * {@link net.minecraft.world.inventory.ClickAction} API. Normal PICKUP and QUICK_CRAFT same-type
- * resist top-up is preserved. Double-click/PICKUP_ALL must not extract locked machine inputs;
- * {@link Slot#canTakeItemForPickAll(ItemStack)} is overridden on the locked slots.
- * </p>
- */
+/** Eight hand-fed inputs. The server owns permissions; only coarse public state is synced. */
 public class ProcessCellMenu extends FabMachineMenu {
 
     // ContainerData wire indices (base DATA_COUNT = 4)
@@ -105,7 +57,30 @@ public class ProcessCellMenu extends FabMachineMenu {
                 ProcessCellControllerBlockEntity.INPUT_SLOTS, ProcessCellControllerBlockEntity.SLOT_COUNT);
 
         // Both sides get their own ContainerData; server updates it from controller getters.
-        this.cellData = new SimpleContainerData(8);
+        this.cellData = machine instanceof ProcessCellControllerBlockEntity controller ? new ContainerData() {
+            @Override
+            public int get(int index) {
+                MaskData mask = controller.slot(ProcessCellControllerBlockEntity.SLOT_MASK)
+                    .get(ModDataComponents.MASK_DATA.get());
+                return switch (index) {
+                    case 0 -> controller.aborted() ? STATUS_ABORTED : controller.definition().isEmpty()
+                        ? STATUS_DEFINITION_MISSING : controller.processState().ordinal();
+                    case 1 -> controller.lastRefusal() == null ? REFUSAL_NONE : controller.lastRefusal().code().ordinal() + 1;
+                    case 2 -> controller.currentLayer();
+                    case 3 -> controller.totalLayers();
+                    case 4 -> controller.isFormed() ? 1 : 0;
+                    case 5 -> mask == null ? controller.tierIndex() : mask.tierIndex();
+                    case 6 -> {
+                        String die = mask == null ? controller.dieType() : mask.dieType();
+                        yield die == null ? 0 : DieTypes.ALL.indexOf(die) + 1;
+                    }
+                    case 7 -> controller.inputsLocked() ? 1 : 0;
+                    default -> 0;
+                };
+            }
+            @Override public void set(int index, int value) { }
+            @Override public int getCount() { return 8; }
+        } : new SimpleContainerData(8);
         this.serverSide = machine instanceof ProcessCellControllerBlockEntity;
         addDataSlots(this.cellData);
     }
@@ -138,7 +113,9 @@ public class ProcessCellMenu extends FabMachineMenu {
             public boolean mayPlace(ItemStack stack) {
                 if (inputsLocked()) {
                     ProcessCellControllerBlockEntity controller = getController();
-                    return controller != null && controller.canTopUpResist(stack);
+                    // The client predicts catalog placement; the server enforces the frozen item/components.
+                    return controller == null ? !stack.isEmpty() && ResistCatalog.tierOf(stack) > 0
+                        : controller.canTopUpResist(stack);
                 }
                 return !stack.isEmpty() && ResistCatalog.tierOf(stack) > 0;
             }
@@ -177,7 +154,7 @@ public class ProcessCellMenu extends FabMachineMenu {
      */
     public boolean inputsLocked() {
         ProcessCellControllerBlockEntity controller = getController();
-        return controller != null && controller.inputsLocked();
+        return controller != null ? controller.inputsLocked() : cellData != null && locked() != 0;
     }
 
     /**
@@ -185,7 +162,7 @@ public class ProcessCellMenu extends FabMachineMenu {
      */
     public boolean aborted() {
         ProcessCellControllerBlockEntity controller = getController();
-        return controller != null && controller.aborted();
+        return controller != null ? controller.aborted() : status() == STATUS_ABORTED;
     }
 
     /**
@@ -216,7 +193,7 @@ public class ProcessCellMenu extends FabMachineMenu {
         return cellData.get(DATA_FORMED - FabMachineBlockEntity.DATA_COUNT);
     }
 
-    /** Tier index + 1 (0 when no contract). */
+    /** Tier index, or zero when no mask or accepted contract. */
     public int tierIndex() {
         return cellData.get(DATA_TIER - FabMachineBlockEntity.DATA_COUNT);
     }
@@ -232,44 +209,11 @@ public class ProcessCellMenu extends FabMachineMenu {
     }
 
     /**
-     * Server-side: called each tick to push the controller's current coarse state into the
-     * synced ContainerData. No-op on the client.
-     */
-    public void updateContainerData() {
-        if (!serverSide) return;
-        ProcessCellControllerBlockEntity controller = getController();
-        if (controller == null) return;
-
-        ProcessState state = controller.processState();
-        int status;
-        if (controller.aborted()) {
-            status = STATUS_ABORTED;
-        } else if (!controller.definition().isPresent()) {
-            status = STATUS_DEFINITION_MISSING;
-        } else {
-            status = state.ordinal();
-        }
-        cellData.set(DATA_STATUS - FabMachineBlockEntity.DATA_COUNT, status);
-
-        RefusalReason refusal = controller.lastRefusal();
-        int refusalVal = (refusal == null) ? REFUSAL_NONE : refusal.code().ordinal() + 1;
-        cellData.set(DATA_REFUSAL - FabMachineBlockEntity.DATA_COUNT, refusalVal);
-
-        cellData.set(DATA_LAYER - FabMachineBlockEntity.DATA_COUNT, controller.currentLayer());
-        cellData.set(DATA_TOTAL - FabMachineBlockEntity.DATA_COUNT, controller.totalLayers());
-        cellData.set(DATA_FORMED - FabMachineBlockEntity.DATA_COUNT, controller.isFormed() ? 1 : 0);
-        cellData.set(DATA_TIER - FabMachineBlockEntity.DATA_COUNT, controller.tierIndex() + 1);
-        String die = controller.dieType();
-        int dieIdx = (die == null) ? 0 : (DieTypes.ALL.indexOf(die) + 1);
-        cellData.set(DATA_DIE - FabMachineBlockEntity.DATA_COUNT, dieIdx);
-        cellData.set(DATA_LOCKED - FabMachineBlockEntity.DATA_COUNT, controller.inputsLocked() ? 1 : 0);
-    }
-
-    /**
      * Server-validated Abort button handler.
      * Returns false for: other id, client side, not a ServerPlayer, wrong player.containerMenu,
      * stale or wrong world, distance > 8, no active input lock.
      */
+    @Override
     public boolean clickMenuButton(Player player, int id) {
         if (id != ABORT_BUTTON) return false;
         if (!serverSide) return false;
@@ -278,7 +222,7 @@ public class ProcessCellMenu extends FabMachineMenu {
         if (!stillValid(player)) return false;
 
         ProcessCellControllerBlockEntity controller = getController();
-        if (controller == null) return false;
+        if (controller == null || !(controller.getLevel() instanceof net.minecraft.server.level.ServerLevel)) return false;
         if (controller.getLevel() != player.level()) return false;
 
         double dx = player.getX() - (controller.getBlockPos().getX() + 0.5);
@@ -294,42 +238,22 @@ public class ProcessCellMenu extends FabMachineMenu {
 
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
-        if (index < 0 || index >= slots.size()) {
+        if (inputsLocked() && index >= 0 && index < ProcessCellControllerBlockEntity.INPUT_SLOTS)
             return ItemStack.EMPTY;
-        }
-        Slot slot = slots.get(index);
-        if (!slot.hasItem()) {
-            return ItemStack.EMPTY;
-        }
-
-        // While inputs are locked, reject extraction FROM locked machine slots (indices 0..7)
-        // because base quickMoveStack ignores mayPickup.
-        if (inputsLocked() && index < machineSlotCount && index < ProcessCellControllerBlockEntity.INPUT_SLOTS) {
-            return ItemStack.EMPTY;
-        }
-
-        ItemStack original = slot.getItem();
-        ItemStack copy = original.copy();
-
-        boolean moved = index < this.machineSlotCount
-                ? moveItemStackTo(original, this.machineSlotCount, slots.size(), true)
-                : moveItemStackTo(original, 0, this.machineSlotCount, false);
-
-        if (!moved) {
-            return ItemStack.EMPTY;
-        }
-        if (original.isEmpty()) {
-            slot.set(ItemStack.EMPTY);
-        } else {
-            slot.setChanged();
-        }
-        return copy;
+        return super.quickMoveStack(player, index);
     }
 
     @Override
-    public void clicked(int slotIndex, int button, net.minecraft.world.inventory.ClickAction action, Player player) {
+    public boolean canTakeItemForPickAll(ItemStack stack, Slot slot) {
+        int index = slots.indexOf(slot);
+        return !(inputsLocked() && index >= 0 && index < ProcessCellControllerBlockEntity.INPUT_SLOTS)
+            && super.canTakeItemForPickAll(stack, slot);
+    }
+
+    @Override
+    public void clicked(int slotIndex, int button, net.minecraft.world.inventory.ContainerInput action, Player player) {
         // Guard hotbar SWAP/THROW/CLONE/QUICK_MOVE on locked machine slots
-        if (inputsLocked() && slotIndex >= 0 && slotIndex < machineSlotCount && slotIndex < ProcessCellControllerBlockEntity.INPUT_SLOTS) {
+        if (inputsLocked() && slotIndex >= 0 && slotIndex < ProcessCellControllerBlockEntity.INPUT_SLOTS) {
             // action values in 26.3: PICKUP, QUICK_MOVE, SWAP, CLONE, THROW, QUICK_CRAFT
             switch (action) {
                 case SWAP, THROW, CLONE, QUICK_MOVE -> {
@@ -371,11 +295,6 @@ public class ProcessCellMenu extends FabMachineMenu {
             return super.mayPickup(player);
         }
 
-        @Override
-        public boolean canTakeItemForPickAll(ItemStack stack) {
-            if (inputsLocked()) return false;
-            return super.canTakeItemForPickAll(stack);
-        }
     }
 
     /**
@@ -393,11 +312,6 @@ public class ProcessCellMenu extends FabMachineMenu {
             return true;
         }
 
-        @Override
-        public boolean canTakeItemForPickAll(ItemStack stack) {
-            if (inputsLocked()) return false;
-            return super.canTakeItemForPickAll(stack);
-        }
     }
 
     /**
@@ -420,10 +334,5 @@ public class ProcessCellMenu extends FabMachineMenu {
             return super.mayPickup(player);
         }
 
-        @Override
-        public boolean canTakeItemForPickAll(ItemStack stack) {
-            if (inputsLocked()) return false;
-            return super.canTakeItemForPickAll(stack);
-        }
     }
 }
