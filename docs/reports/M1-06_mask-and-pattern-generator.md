@@ -11,7 +11,7 @@ Independent final reviews approved `8a6c5a2430c4c9e6f0db29854c37ebcdf0427bf9`; b
 - Core. `MaskData` requires a die type that is one of the bare `DieTypes.ALL` names, a `tierIndex` of at least 1 with no upper cap, and `usesRemaining` of 0 or more; `consumeUse()` returns a new record with one use fewer and never mutates, `isSpent()` is true only at zero, and consuming a spent mask throws. `MaskRules.canPattern(...)` is the Gen 1 mask-shop gate: the **tier** must exist in both the die-rules and the generation-matrix tier registries, the die type is separately validated against the exact `DieTypes.ALL` and by `DieRules.canMake`, and then a real `GenerationMatrix` decision runs for the `mask_shop`. `MaskRules` takes the installed generation as its third argument; the concrete machine passes `1`. The task prose and the source disagree on the matrix argument order; the source wins (see §6).
 - Items. `blank_mask` is stackable (64) and `mask` is stack size 1 with no default design, carrying a public persistent component (`lithmod:mask_data`) networked through its registered stream codec; a present component's `uses_remaining` defaults to 0, but a bare mask has no component at all and is refused. Three translatable public tooltip lines (die type, tier, uses remaining) and an own MASKS creative tab with five entries (blank mask, three configured sample masks, generator).
 - Generator. A single hand-fed block on the generic `FabMachineBlockEntity` and `MachineRecipeRunner`, with two ordinary ingredient inputs and one output. The Gen 1 gate runs before FE, input and progress; `usesRemaining` is stamped from the `maskUses` config value only at completion; a refusal produces no output and a synced status the menu shows. Energy-only: no item or fluid capability, no hopper access, external extraction refused.
-- Persistence and verification. The run spec is a private `spec_text` JSON string, so NbtOps cannot rewrite object keys or numerics, and a broken new key is authoritative rather than falling back to a stale legacy identity. Verification: 71 unit suites / 450 tests / 0 failures, errors or skips, and 751 passing game-test case records that include all 81 registered project IDs; every new unit method (41) and new server case (19) has an executed negative control. These measurements are from the pre-integration source checkpoint.
+- Persistence and verification. The running recipe snapshot is a private `spec_text` JSON string, so NbtOps cannot rewrite object keys or numerics, and a broken new key is authoritative rather than falling back to a stale legacy identity. Verification: 71 unit suites / 450 tests / 0 failures, errors or skips, and 751 passing game-test case records that include all 81 registered project IDs; every new unit method (41) and new server case (19) has an executed negative control. These measurements are from the pre-integration source checkpoint.
 
 ## 2. Files changed
 
@@ -57,7 +57,7 @@ Independent final reviews approved `8a6c5a2430c4c9e6f0db29854c37ebcdf0427bf9`; b
 | docs/reports/M1-06_mask-and-pattern-generator-conservation_review.md | new | Independent conservation review record. |
 | docs/reports/M1-06_mask-and-pattern-generator-conformance_review.md | new | Independent conformance review record. |
 
-39 changed paths: 35 files under `src/` (main Java, resources, and the three new unit-test classes under `src/test/`) plus this report and the appended `docs/testing.md`. No deletions; every entry is an addition (`A`) or a modification (`M`).
+39 changed paths: 35 files under `src/` (main Java, resources, and the three new unit-test classes under `src/test/`) plus this report, the appended `docs/testing.md`, and two independent review records. No deletions; every entry is an addition (`A`) or a modification (`M`).
 
 ## 3. Verification
 
@@ -259,7 +259,7 @@ None.
 
 ## 8. Handoff
 
-Signatures and constants below are complete actual declarations taken from `API.txt` (a deliberate declaration listing that omits class/method bodies and closing braces, not a truncated full source), the registry diff `REGISTRY.txt` and the machine definition. The mask data component id is `lithmod:mask_data` via `ModDataComponents.MASK_DATA`.
+Signatures and constants below were extracted from the source classes listed in section 2, the component/item registries, `FabConfig`, and the machine definition. The mask data component id is `lithmod:mask_data` via `ModDataComponents.MASK_DATA`.
 
 | Type | Selected verified signatures and constants (exact) |
 | --- | --- |
