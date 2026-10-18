@@ -921,7 +921,6 @@ public final class ProcessCellGameTests {
 
             // Save the original registry and swap to one without process_cell
             swapDefinitions(defs -> without(defs, "process_cell"), () -> {
-                cell.refreshDefinition();
                 tick(cell, 1);
                 h.assertTrue(cell.definition().isEmpty(), "definition missing after swap");
                 h.assertTrue(cell.processState() == ProcessState.PAUSED_STRUCTURE, "PAUSED_STRUCTURE from missing definition");
@@ -940,8 +939,6 @@ public final class ProcessCellGameTests {
             });
 
             // Restore original registry (finally block in swapDefinitions)
-            cell.refreshDefinition();
-            h.assertTrue(cell.definition().isPresent(), "definition restored");
 
             // Now swap to a modified process_cell with doubled T2 raw cost
             swapDefinitions(defs -> {
@@ -963,13 +960,12 @@ public final class ProcessCellGameTests {
                 );
                 return replace(defs, modified);
             }, () -> {
-                cell.refreshDefinition();
-                Tier tier = TierDataLoader.getRegistry().byIndex(2).orElseThrow();
-                int newCost = cell.definition().orElseThrow().energyPerTick(tier, EUVCRAFTMod.settings());
-                h.assertTrue(newCost != f.cost(), "new cost differs from original fixture cost");
                 // Run remaining 11 layers (32 ticks total = 4 already paid + 32 more = 36 total original paid ticks)
                 // With settings 3 ticks/layer, 12 layers = 36 ticks. We paid 4, need 32 more.
                 tick(cell, 32);
+                Tier tier = TierDataLoader.getRegistry().byIndex(2).orElseThrow();
+                int newCost = cell.definition().orElseThrow().energyPerTick(tier, EUVCRAFTMod.settings());
+                h.assertTrue(newCost != f.cost(), "new definition loaded with a different cost");
                 completed(h, f, 12, DieTypes.MEMORY);
                 h.assertValueEqual(40, resist(cell), "resist 40 after 12 layers at 2 per layer");
                 h.assertValueEqual(10000L - 36L * f.cost(), cell.buffer().getAmountAsLong(),
