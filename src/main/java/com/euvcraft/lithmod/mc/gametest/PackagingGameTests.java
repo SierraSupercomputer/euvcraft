@@ -782,6 +782,8 @@ public final class PackagingGameTests {
 
         helper.assertFalse(machine.isQueueActive(),
             "the machine started a queue on a client-view FOUP");
+        helper.assertFalse(machine.isPaused(),
+            "a client view reached judgment instead of being ignored by the trusted read");
         helper.assertTrue(machine.refusalReason() == null,
             "the machine published a refusal of " + machine.refusalReason() + "; a client view "
                 + "is not an admission failure, it is nothing being offered");
