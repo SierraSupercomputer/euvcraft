@@ -239,3 +239,125 @@ server persistence.
 
 No three-separate-process repeat of the suite was run for M1-06; that remains M1-12
 acceptance work.
+
+## Test and Package machine (M1-10)
+
+The Test and Package machine (`test_package`) is a single-block fabricator that judges a finished logic lot at admission, consumes the original FOUP immediately (replacing it with an empty FOUP of the same item and capacity but a new `lotId`), and then processes wafers one at a time using only the frozen pass flags. It never retains the original lot, rolls, or spec — breaking the machine mid-run permanently loses the remaining queued wafers and the original lot cannot be recovered.
+
+### Machine definition
+
+`data/lithmod/machines/test_package.json` (snake_case keys):
+- `energy_capacity`: 20000
+- `max_receive`: 2000
+- `energy_per_tick`: 20
+- `per_tier_energy_per_tick`: {}
+- `params.ticks_per_wafer`: 10
+- `params.package_per_wafer`: 1
+- `input_slots`: 2 (FOUP + package)
+- `output_slots`: 6 (4 chip + 2 scrap)
+
+Configurable `chipsPerWafer` default 4 (range 1..64).
+
+### Slots (server-side indices)
+
+| index | slot | predicate |
+|---|---|---|
+| 0 | FOUP input | `FoupSlot` (trusted contents only) |
+| 1 | Package input | `chip_package` item only |
+| 2–5 | Chip outputs | extract-only, `ChipCatalog.chipFor(dieType, tierIndex)` |
+| 6–7 | Scrap outputs | extract-only, `chip_scrap` |
+
+No item handler capability on any side; energy capability accepts FE, refuses extraction.
+
+### Admission and run rules
+
+1. **Admission** (runs once when a valid FOUP + package + energy are present):
+   - Reads lot via `FoupItems.trustedContentsOf` (refuses client views, empty lots, lots with no spec)
+   - Tier, die type, core count come from the lot's frozen `RunSpec`
+   - Judges lot once via `FabYieldService.evaluateLot` → keeps only `List<Boolean>` pass flags
+   - **Consumes the original FOUP**: replaces slot 0 with a fresh empty FOUP (same item, same stored capacity, new `lotId`)
+   - Freezes: ordered pass flags, `chipsPerWafer`, `package_per_wafer`, `ticks_per_wafer`, `energy_per_tick`, die type, tier
+   - Refusal reasons (enum `PackagingRefusalReason`, wire ordinals): `NO_LOT`, `LOT_INCOMPLETE`, `NO_SPEC`, `NO_CHIP_FOR_DIE`, `GENERATION_UNMET`
+
+2. **Work loop** (one wafer per `ticks_per_wafer` ticks):
+   - Needs `energy_per_tick` FE per tick (full-or-zero draw)
+   - On completion of a **passing** wafer: consumes `package_per_wafer` packages from slot 1, outputs `chipsPerWafer` catalog chips to slots 2–5
+   - On completion of a **failing** wafer: outputs `chipsPerWafer` scrap to slots 6–7, consumes **no** packages
+   - Pauses if output slots have no room (chips or scrap), resumes when player clears space
+   - Pauses if energy buffer < `energy_per_tick` or (for passing wafer) package slot empty
+   - Progress, paid ticks, and queue state persisted in BE NBT under child `packaging`
+
+3. **Breaking mid-run**:
+   - Remaining queued wafers are **lost** (no items dropped for them)
+   - Only actually finished outputs, real inventory, and the returned empty FOUP drop
+   - Original lot **cannot be recovered** — this is the intentional anti-duplication rule
+
+4. **Reload / definition changes**:
+   - Invalid new admission params affect only the *next* lot; accepted queue uses frozen params
+   - Missing definition pauses and persists queue; base buffer capacity closing can discard FE; after definition returns, recharge remaining FE
+   - Malformed private queue NBT fails closed without recovering lot/creating outputs; real inventory preserved
+
+### Menu
+
+- 44 slots (player inv + machine slots)
+- 7 wire values: base 4 (energy, capacity, progress, maxProgress) + `state` (idle/running/paused/refused), `done` (wafers completed), `total` (total wafers)
+- **Never shows per-wafer results** — only aggregate done/total
+
+### Commands
+
+Unit tests (includes 59 new core methods in `PackagingPlanTest`, `PackagingRulesTest`, `PackagingRunTest`):
+```powershell
+.\gradlew.bat test --offline
+.\gradlew.bat checkCoreImports --offline
+```
+
+Game tests (24 new `lithmod:packaging_*` cases, registered 1 attempt / 1 required):
+```powershell
+.\gradlew.bat runGameTestServer --offline
+```
+
+### Game test cases (what each proves)
+
+| test ID | what it proves |
+|---|---|
+| `lithmod:packaging_admits_complete_lot` | valid complete lot admitted, pass flags frozen, empty FOUP returned |
+| `lithmod:packaging_admits_complete_lot_no_chip_item` | die type with no catalog chip item refused (`NO_CHIP_FOR_DIE`) |
+| `lithmod:packaging_admits_complete_lot_incomplete` | lot not at tier's last layer refused (`LOT_INCOMPLETE`) |
+| `lithmod:packaging_admits_complete_lot_generation_unmet` | gen matrix unsatisfied for `test_packaging` gen 1 refused (`GENERATION_UNMET`) |
+| `lithmod:packaging_admits_complete_lot_no_spec` | lot with no frozen RunSpec refused (`NO_SPEC`) |
+| `lithmod:packaging_admits_complete_lot_no_lot` | FOUP with no lot refused (`NO_LOT`) |
+| `lithmod:packaging_run_all_pass` | all wafers pass → chip count = `chipsPerWafer × passing`, packages = `passing × package_per_wafer`, chips are catalog item |
+| `lithmod:packaging_run_all_fail` | all wafers fail → scrap count = `chipsPerWafer × failing`, zero packages used |
+| `lithmod:packaging_run_mixed` | mixed pass/fail → chips and scrap counts add up correctly |
+| `lithmod:packaging_run_chips_per_wafer_1` | `chipsPerWafer=1` works |
+| `lithmod:packaging_run_chips_per_wafer_4` | `chipsPerWafer=4` works |
+| `lithmod:packaging_run_pauses_no_energy` | pauses when FE < `energy_per_tick`, resumes on recharge |
+| `lithmod:packaging_run_pauses_no_packages` | pauses when package slot empty on passing wafer, resumes on insert |
+| `lithmod:packaging_run_pauses_full_outputs` | pauses when chip/scrap outputs full, resumes when player clears |
+| `lithmod:packaging_run_save_load_mid_run` | NBT round-trip mid-run resumes exactly (same progress, same outputs) |
+| `lithmod:packaging_run_save_load_mid_tick` | NBT round-trip mid-tick resumes exactly |
+| `lithmod:packaging_run_broken_mid_run_loses_remaining` | breaking mid-run drops no chips for remaining wafers, original lot gone |
+| `lithmod:packaging_run_broken_mid_run_drops_only_finished` | only finished outputs + real inventory + returned empty FOUP drop |
+| `lithmod:packaging_run_no_item_handler` | block exposes no item/fluid/hopper capability |
+| `lithmod:packaging_run_menu_no_per_wafer_result` | menu wires show only done/total, never per-wafer pass/fail |
+| `lithmod:packaging_run_foup_consumed_at_admission` | original FOUP consumed at admission tick, empty FOUP with new lotId placed |
+| `lithmod:packaging_run_returned_foup_empty_new_lotid` | returned FOUP is empty, same capacity, new lotId |
+| `lithmod:packaging_run_packages_consumed_on_pass_only` | packages consumed only for passing wafers, at completion |
+| `lithmod:packaging_run_scrap_on_fail_no_packages` | failing wafers produce scrap, use zero packages |
+| `lithmod:packaging_run_reload_retains_frozen_params` | `/reload` with changed definition params does not affect running queue |
+
+### Verification status (commit `149063bf`)
+
+- Unit: 509 tests / 74 classes (0 failures/errors/skips). 3 new classes, 59 new methods, all with executed negative controls (48 executions, 47 valid, 39 distinct faults, exact restoration).
+- Game: 775 tests complete, all 105 registered `lithmod:*` IDs present and passing. 24 new packaging IDs.
+- Core fault controls: **complete**. Runtime fault controls: **in progress** (9 of 24 new IDs have target-specific failed assertions; 15 PENDING).
+- Client rendering/ticker not verified (dedicated server only).
+- Final reviews and M1-12 integration pending.
+
+### Key operational notes for players
+
+- **Put a complete lot (at tier's last layer) + chip packages + FE in** → machine judges once, returns empty FOUP immediately, then runs.
+- **If you break the machine mid-run, the remaining wafers are gone forever.** The empty FOUP in the slot is not your original lot.
+- **Full output slots pause the machine.** Take items out to resume.
+- **Packages are only consumed when a passing wafer finishes.** Failing wafers use no packages.
+- **Menu shows only overall progress (done/total), not which wafers passed or failed.**
