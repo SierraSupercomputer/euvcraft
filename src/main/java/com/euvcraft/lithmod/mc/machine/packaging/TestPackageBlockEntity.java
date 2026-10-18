@@ -285,16 +285,25 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
         }
         refreshDefinition();
 
-        MachineParams params = resolveParams();
-        if (params == null) {
-            // No usable definition: admit nothing and advance nothing. An accepted queue
-            // survives this untouched and resumes when the definition comes back.
-            this.paused = isQueueActive();
-            publish();
-            return;
+        boolean changed;
+        if (isQueueActive()) {
+            if (definition().isEmpty()) {
+                this.paused = true;
+                publish();
+                return;
+            }
+            // Accepted work uses its frozen parameters. Current admission settings
+            // govern the next lot, even when those settings are temporarily invalid.
+            changed = advance();
+        } else {
+            MachineParams params = resolveParams();
+            if (params == null) {
+                this.paused = false;
+                publish();
+                return;
+            }
+            changed = attemptAdmission(params);
         }
-
-        boolean changed = isQueueActive() ? advance() : attemptAdmission(params);
         publish();
         if (changed) {
             setChanged();
@@ -562,11 +571,12 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
      */
     private int bankRoom(int first, int count, Item item) {
         int room = 0;
+        ItemStack product = new ItemStack(item);
         for (int index = first; index < first + count; index++) {
             ItemStack stack = slot(index);
             if (stack.isEmpty()) {
-                room += MAX_STACK;
-            } else if (stack.is(item)) {
+                room += product.getMaxStackSize();
+            } else if (ItemStack.isSameItemSameComponents(stack, product)) {
                 room += Math.max(0, stack.getMaxStackSize() - stack.getCount());
             }
         }
@@ -582,13 +592,14 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
      */
     private void insertIntoBank(int first, int count, Item item, int amount) {
         int remaining = amount;
+        ItemStack product = new ItemStack(item);
         for (int index = first; index < first + count && remaining > 0; index++) {
             ItemStack stack = slot(index);
             if (stack.isEmpty()) {
-                int placed = Math.min(remaining, MAX_STACK);
+                int placed = Math.min(remaining, product.getMaxStackSize());
                 setSlot(index, new ItemStack(item, placed));
                 remaining -= placed;
-            } else if (stack.is(item)) {
+            } else if (ItemStack.isSameItemSameComponents(stack, product)) {
                 int placed = Math.min(remaining, Math.max(0, stack.getMaxStackSize() - stack.getCount()));
                 if (placed > 0) {
                     stack.setCount(stack.getCount() + placed);
@@ -759,6 +770,9 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
 
     /** Rebuilds the flag list from its saved form, refusing anything that is not a 0 or a 1. */
     private static PackagingPlan planFromFlags(String flags, int chipsPerWafer, int packagesPerWafer) {
+        if (chipsPerWafer > MAX_STACK || packagesPerWafer > MAX_STACK) {
+            throw new IllegalArgumentException("a packaging snapshot exceeds supported per-wafer quantities");
+        }
         if (flags.isEmpty()) {
             throw new IllegalArgumentException("a packaging snapshot needs at least one wafer flag");
         }
