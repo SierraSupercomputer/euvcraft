@@ -980,6 +980,10 @@ public final class ProcessCellGameTests {
     private static void malformedStateStaysStopped(GameTestHelper h) {
         settings(() -> {
             Fixture f = fixture(h, 2, 64, 4, false);
+            CompoundTag legacyIdle = save(h.getLevel(), f.cell());
+            legacyIdle.remove("processRun");
+            legacyIdle.remove("processHasRun");
+            legacyIdle.remove("processAbortLatched");
             var cell = f.cell();
             tick(cell, 4);
             h.assertValueEqual(1, lot(cell).lotLayer(), "one layer before corruption test");
@@ -1042,6 +1046,13 @@ public final class ProcessCellGameTests {
             tag7.put("processRun", runTag7);
             loadAndAssertStopped(h, cell, tag7, originalLotId, originalLayer, originalResist, originalFE, originalUses);
 
+            CompoundTag orphan = originalTag.copy();
+            orphan.remove("processHasRun");
+            loadAndAssertStopped(h, cell, orphan, originalLotId, originalLayer, originalResist, originalFE, originalUses);
+            CompoundTag wrongPayloadType = originalTag.copy();
+            wrongPayloadType.putString("processRun", "invalid-run-payload");
+            loadAndAssertStopped(h, cell, wrongPayloadType, originalLotId, originalLayer, originalResist, originalFE, originalUses);
+
             // Positive control: load valid original tag + tick 1 resumes progress 2 without additional resist charge
             load(h.getLevel(), cell, originalTag);
             tick(cell, 1);
@@ -1050,6 +1061,12 @@ public final class ProcessCellGameTests {
             h.assertValueEqual(originalLotId, lot(cell).lotId(), "positive control lot UUID preserved");
             h.assertTrue(cell.inputsLocked(), "positive control still active");
             h.assertFalse(cell.aborted(), "positive control not aborted");
+            load(h.getLevel(), cell, legacyIdle);
+            tick(cell, 1);
+            h.assertTrue(cell.inputsLocked() && !cell.aborted(), "legacy idle save admits normally");
+            h.assertValueEqual(1, cell.progressTicks(), "legacy idle admission makes one tick");
+            h.assertValueEqual(62, resist(cell), "legacy idle admission pays one layer");
+            h.assertValueEqual(10000L - f.cost(), cell.buffer().getAmountAsLong(), "legacy idle pays one energy tick");
         });
         h.succeed();
     }
@@ -1080,8 +1097,10 @@ public final class ProcessCellGameTests {
             ItemStack originalMask = cell.slot(1).copy();
             ItemStack originalPart = cell.slot(3).copy();
             long expectedFE = 10000L - 4L * f.cost();
-            for (int target : new int[]{0, 1, 3}) {
+            for (int target : new int[]{0, 1, 2, 3, 4, 5, 6, 7}) {
                 load(h.getLevel(), cell, saved);
+                List<ItemStack> accepted = new ArrayList<>();
+                for (int slot = 0; slot < 8; slot++) accepted.add(cell.slot(slot).copy());
                 // Restore the accepted run without paying another tick by loading its real snapshot.
                 ItemStack replacement;
                 if (target == 0) {
@@ -1090,11 +1109,14 @@ public final class ProcessCellGameTests {
                 } else if (target == 1) {
                     replacement = new ItemStack(ModItems.MASK.get());
                     replacement.set(ModDataComponents.MASK_DATA.get(), new MaskData(DieTypes.LOGIC, 1, 2));
-                } else replacement = new ItemStack(ModItems.MERCURY_LAMP.get());
+                } else if (target == 2) replacement = new ItemStack(ModItems.RESIST_T1.get(), 60);
+                else replacement = new ItemStack(ModItems.MERCURY_LAMP.get());
                 cell.setSlot(target, replacement.copy());
                 tick(cell, 1);
                 h.assertTrue(cell.aborted() && !cell.inputsLocked(), "tampering stops and unlocks: " + target);
                 h.assertTrue(ItemStack.matches(replacement, cell.slot(target)), "replacement untouched: " + target);
+                for (int slot = 0; slot < 8; slot++) if (slot != target) h.assertTrue(
+                    ItemStack.matches(accepted.get(slot), cell.slot(slot)), "other input unchanged: " + slot);
                 h.assertValueEqual(60, resist(cell), "tampering spends no resist");
                 h.assertValueEqual(expectedFE, cell.buffer().getAmountAsLong(), "tampering spends no energy");
                 if (target != 0) h.assertTrue(ItemStack.matches(originalFoup, cell.slot(0)), "accepted FOUP unchanged");
