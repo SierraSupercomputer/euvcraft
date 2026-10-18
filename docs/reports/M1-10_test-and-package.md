@@ -232,7 +232,9 @@ Server negative controls:11 completed runs with 17 mutation entries cover all 24
 | `lithmod:test_package_resumes_when_its_definition_returns` | reload | a missing definition dropped the accepted queue on tick 0 |
 
 Fixes discovered during verification: Completion descriptions leaked package use; accepted queues incorrectly depended on current invalid admission settings; output preflight/insertion needed component equality; saved quantities required bounds. Test repairs separately corrected current Minecraft APIs, admission-tick accounting, missing success signals and a pre-break total that omitted scrap. The first full combined preview passed774/775 because of that fixture arithmetic; corrected code/test149063bf passed775/775. The final restored source is checked clean; the separate merge candidate subsequently passed a fresh full positive run; see the final acceptance record.
-The final candidate contains 775 distinct server cases: 774 passed, no required failures, and one optional Arcforge failure (rcforge:creosote_moves) recorded as skipped. All 105 project IDs passed. See the acceptance record for this result; the earlier measured source run above had all775passing.\n\n## 4. Spec conformance
+The final candidate contains 775 distinct server cases: 774 passed, no required failures, and one optional Arcforge failure (`arcforge:creosote_moves`) recorded as skipped. All 105 project IDs passed. See the acceptance record for this result; the earlier measured source run above had all 775 passing.
+
+## 4. Spec conformance
 
 | Requirement | Status | Evidence |
 | --- | --- | --- |

@@ -5,7 +5,7 @@ Accepted 2026-10-18T10:16:04.763Z. Original mk4 remains untouched; nothing was p
 | Evidence | Result |
 | --- | --- |
 | Reviewed task commit | `256b9aa9573bc17db728d6ff15f4659bcaeedf0c` |
-| Full merge-candidate check | `73a4d77c3a8e5eda22057086b0501a9bb0b51c23`;509unit tests/74classes and775distinct server cases,0failures/errors/skips |
+| Full merge-candidate check | `73a4d77c3a8e5eda22057086b0501a9bb0b51c23`;509 unit tests/74 classes passed;775 server XML cases:774 passed,0 required failures,1 optional Arcforge failure recorded as skipped |
 | Explicit project inventory | All105registered `lithmod:*` IDs present and passing |
 | Core production controls | All59new methods;48executions,47valid,39distinctfault labels; exact restoration |
 | Runtime production controls | All24new IDs;11completed runs/17mutation entries; exact restoration |
@@ -18,6 +18,6 @@ Accepted 2026-10-18T10:16:04.763Z. Original mk4 remains untouched; nothing was p
 
 The fresh candidate check ran after all deliberate faults were restored. Its source/report tree exactly matched the reviewed task. A subsequent merge included the child’s duplicate fixture-fix commit; Git tree equality proved every tested file unchanged before master fast-forward. Only factual acceptance documentation follows this verified integration; it changes no tested source/resources/tests.
 
-Optional dependency result: rcforge:creosote_moves failed (armor stand did not sink far enough at tick602), represented as skipped in XML. It passed the earlier full source run; no Arcforge code or test was changed, disabled or retried to obtain a green count. Build exit0 and all project/required tests passed. This optional result remains disclosed for M1-12 repetitions.
+Optional dependency result: `arcforge:creosote_moves` failed (armor stand did not sink far enough at tick602), represented as skipped in XML. It passed the earlier full source run; no Arcforge code or test was changed, disabled or retried to obtain a green count. Build exit0 and all project/required tests passed. This optional result remains disclosed for M1-12 repetitions.
 
 Remaining milestones:M1-09 Process Cell wiring,M1-11 recipes/presentation,M1-12 real end-to-end/repeated-server/client gate. No full playable-M1 or client visual claim is made.
