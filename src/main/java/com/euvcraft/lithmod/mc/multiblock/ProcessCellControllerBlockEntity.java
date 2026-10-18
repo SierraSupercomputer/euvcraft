@@ -134,7 +134,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         // Refresh definition so data sizes/closures update (capacity, per-tick cost)
         refreshDefinition();
         // Do NOT call super.serverTick() — that would drive irrelevant generic recipes; no process logic yet
-        syncData(); // push energy/progress to menu
+        data().set(DATA_ENERGY, (int) buffer().getAmountAsLong());
         setChanged();
     }
 
@@ -295,16 +295,6 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         return new ProcessCellMenu(containerId, playerInventory, this);
     }
 
-    // ---------------------------------------------------------------- extra contents drop
-
-    @Override
-    protected void dropExtraContents(@Nullable Level level, BlockPos pos) {
-        // Drop our 8-slot inventory when the controller is broken
-        if (level != null && !level.isClientSide()) {
-            dropContainer(level, pos, this);
-        }
-    }
-
     // ---------------------------------------------------------------- conversions
 
     private static MultiblockPos toCore(BlockPos pos) {
@@ -329,12 +319,4 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         return converted;
     }
 
-    /**
-     * Access to the definition for this machine, for tests and menu energy capacity display.
-     * Reads the loaded data-driven definition.
-     */
-    public Optional<MachineDefinition> definition() {
-        MachineDefinitionLoader.Registry registry = MachineDefinitionLoader.getRegistry();
-        return registry == null ? Optional.empty() : registry.byId(machineId());
-    }
 }
