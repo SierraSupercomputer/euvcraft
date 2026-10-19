@@ -3,6 +3,7 @@ package com.euvcraft.lithmod.mc;
 import java.util.UUID;
 
 import com.euvcraft.lithmod.core.FoupContents;
+import com.euvcraft.lithmod.core.FoupPublicView;
 import com.euvcraft.lithmod.core.Wafer;
 import com.euvcraft.lithmod.mc.registry.ModDataComponents;
 import com.euvcraft.lithmod.mc.registry.ModItems;
@@ -15,8 +16,10 @@ import org.jspecify.annotations.Nullable;
  * Creation and reading of FOUP stacks.
  *
  * <p>This is the only place that writes {@link ModDataComponents#FOUP_CONTENTS} onto
- * a stack. Everything else reads a lot with {@link #contentsOf(ItemStack)} and
- * rebuilds the stack with {@link #with(Item, FoupContents)}.</p>
+ * a stack. Gameplay reads a lot with {@link #trustedContentsOf(ItemStack)}.
+ * Diagnostic code and the {@link FoupDebugCommand} read with {@link #contentsOf(ItemStack)}.
+ * Client-side prediction and tooltips use {@link #publicViewOf(ItemStack)} and
+ * {@link #isClientView(ItemStack)}.</p>
  *
  * <p>Creation is server side by design: the lot id is drawn with
  * {@link UUID#randomUUID()} and the capacity comes from the server config, so a
@@ -173,5 +176,87 @@ public final class FoupItems {
                 stack.set(ModDataComponents.FOUP_CONTENTS.get(), contents);
             }
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Boundary helpers: narrow, typed access for the two sides of the wire
+    // ------------------------------------------------------------------
+
+    /**
+     * Returns whether a stack carries a sealed (server-trusted) lot.
+     *
+     * <p>A sealed lot is one that was created server-side and carries a real lot id,
+     * real rolls and optionally a run spec. This is the authoritative check for
+     * "is this a lot the server created" and is the opposite of
+     * {@link #isClientView(ItemStack)}. A stack with no lot component returns
+     * {@code false}.</p>
+     *
+     * <p>This does not initialize or mutate the stack. It does not generate a
+     * fresh lot.</p>
+     *
+     * @param stack the stack to read, not null
+     * @return {@code true} if the stack carries a sealed lot
+     */
+    public static boolean hasSealedContents(ItemStack stack) {
+        FoupContents contents = contentsOf(stack);
+        return contents != null && !FoupContentsCodec.isClientView(contents);
+    }
+
+    /**
+     * Returns whether a stack carries a client-view placeholder lot.
+     *
+     * <p>A client view is built by {@link FoupContentsCodec#fromPublicView(int, int, int)}
+     * from the network form: it has the nil UUID ({@link FoupContentsCodec#CLIENT_VIEW_LOT_ID}),
+     * the transmitted wafer count and capacity, and every wafer reads
+     * {@link Wafer#NO_ROLLS}. This is the check for "is this a display value the client
+     * constructed from the network form".</p>
+     *
+     * <p>This does not initialize or mutate the stack. It does not generate a
+     * fresh lot.</p>
+     *
+     * @param stack the stack to read, not null
+     * @return {@code true} if the stack carries a client-view lot
+     */
+    public static boolean isClientView(ItemStack stack) {
+        FoupContents contents = contentsOf(stack);
+        return contents != null && FoupContentsCodec.isClientView(contents);
+    }
+
+    /**
+     * Returns the public view of a stack's lot, or {@code null} if the stack
+     * carries no lot.
+     *
+     * <p>The public view carries only the three numbers a client is allowed to know:
+     * capacity, wafer count and lot layer. It never carries rolls, flags or a run spec.
+     * This is the read for client-side prediction (e.g. {@link EmptyFoupSlot}) and
+     * tooltip rendering.</p>
+     *
+     * <p>This does not initialize or mutate the stack. It does not generate a
+     * fresh lot.</p>
+     *
+     * @param stack the stack to read, not null
+     * @return the public view, or {@code null} when the stack carries no lot
+     */
+    @Nullable
+    public static FoupPublicView publicViewOf(ItemStack stack) {
+        FoupContents contents = contentsOf(stack);
+        return contents == null ? null : contents.publicView();
+    }
+
+    /**
+     * Returns the lot carried by a stack.
+     *
+     * <p><strong>Diagnostic use only.</strong> This reads the raw component without
+     * any trust decision. It is retained for {@link FoupDebugCommand} and
+     * internal diagnostics that need to inspect the raw stored value. Gameplay code
+     * must use {@link #trustedContentsOf(ItemStack)}. Client-side code must use
+     * {@link #publicViewOf(ItemStack)} or {@link #isClientView(ItemStack)}.</p>
+     *
+     * @param stack the stack to read, not null
+     * @return the lot, or {@code null} when the stack carries none
+     */
+    @Nullable
+    public static FoupContents contentsOf(ItemStack stack) {
+        return stack.get(ModDataComponents.FOUP_CONTENTS.get());
     }
 }
