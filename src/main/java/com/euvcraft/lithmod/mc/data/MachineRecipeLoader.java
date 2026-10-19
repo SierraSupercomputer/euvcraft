@@ -2,6 +2,7 @@ package com.euvcraft.lithmod.mc.data;
 
 import com.euvcraft.lithmod.core.MachineRecipeSpec;
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
+import com.euvcraft.lithmod.mc.GameTestFixtures;
 import com.euvcraft.lithmod.mc.recipe.MachineRecipe;
 
 import net.minecraft.resources.Identifier;
@@ -64,9 +65,37 @@ public final class MachineRecipeLoader
     }
 
     private static Parsed parse(Map<Identifier, MachineRecipeSpec> entries, String source) {
-        Parsed parsed = new Parsed(entries);
+        Parsed parsed = parseRuntime(entries);
         setSpecs(parsed);
         return parsed;
+    }
+
+    /**
+     * Runtime publication path: filters out the test-machine fixture recipes (by the
+     * spec's real {@code machineId} payload, not the file name) before publishing when
+     * fixtures are off. Iterates a LinkedHashMap so the incoming file-id order that
+     * {@link #buildResolved} depends on stays stable.
+     *
+     * <p>The public pure builders {@link #build(List, String)} and
+     * {@link #buildResolved(Map)} stay unfiltered for unit tests. The production
+     * Test and Package machine ("test_package") is real content and is never filtered.</p>
+     */
+    private static Parsed parseRuntime(Map<Identifier, MachineRecipeSpec> entries) {
+        if (GameTestFixtures.enabled()) {
+            return new Parsed(entries);
+        }
+        Map<Identifier, MachineRecipeSpec> filtered = new LinkedHashMap<>();
+        entries.forEach((fileId, spec) -> {
+            if (!isFixtureSpec(spec)) {
+                filtered.put(fileId, spec);
+            }
+        });
+        return new Parsed(filtered);
+    }
+
+    /** The test-machine fixture machine id (payload id, not a file-name pattern). */
+    static boolean isFixtureSpec(MachineRecipeSpec spec) {
+        return "test_machine".equals(spec.machineId());
     }
 
     /** Publishes freshly parsed specs, invalidating the resolved registry. */

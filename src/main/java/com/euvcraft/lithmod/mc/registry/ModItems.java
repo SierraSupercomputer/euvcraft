@@ -182,14 +182,15 @@ public final class ModItems {
      * {@code registerSimpleBlockItem} rule as the Process Cell items above.</p>
      *
      * <p>Conditionally registered only when fixtures are enabled. When fixtures are off,
-     * this holder remains declared but is never registered, so no BlockItem exists in
-     * production.</p>
+     * the holder is left null and nothing is registered at all: there is no plain Item
+     * fallback, so the id {@code lithmod:test_machine} is genuinely absent from the item
+     * registry. Every use of this holder is inside fixture-gated game tests.</p>
      */
     public static final DeferredItem<BlockItem> TEST_MACHINE =
         GameTestFixtures.enabled()
             ? ITEMS.registerSimpleBlockItem("test_machine",
                 () -> ModMachines.TEST_MACHINE.get())
-            : ITEMS.registerItem("test_machine", properties -> new Item(properties));
+            : null;
 
     /**
      * The two silicon chain machines' block items.
