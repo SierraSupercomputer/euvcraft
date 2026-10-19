@@ -258,7 +258,7 @@ foreach ($catName in $expectedConfig.Keys) {
 
 $machineDir = Join-Path $Root 'src\main\resources\data\lithmod\machines'
 Assert-Dir $machineDir
-$machineNames = Sort-Ordinal [string[]][System.IO.Directory]::GetFiles($machineDir, '*.json')
+$machineNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($machineDir, '*.json'))
 if ($machineNames.Count -ne 6) {
     Fail "expected 6 machine definition files in data/lithmod/machines, found $($machineNames.Count)"
 }
@@ -284,9 +284,9 @@ $craftingDir = Join-Path $recipeRoot 'crafting'
 $mrDir = Join-Path $Root 'src\main\resources\data\lithmod\machine_recipes'
 Assert-Dir $recipeRoot; Assert-Dir $craftingDir; Assert-Dir $mrDir
 
-$craftingNames = Sort-Ordinal [string[]][System.IO.Directory]::GetFiles($craftingDir, '*.json')
-$cookingNames = Sort-Ordinal [string[]][System.IO.Directory]::GetFiles($recipeRoot, '*.json')
-$machineRecipeNames = Sort-Ordinal [string[]][System.IO.Directory]::GetFiles($mrDir, '*.json')
+$craftingNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($craftingDir, '*.json'))
+$cookingNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($recipeRoot, '*.json'))
+$machineRecipeNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($mrDir, '*.json'))
 $totalRecipes = $craftingNames.Count + $cookingNames.Count + $machineRecipeNames.Count
 if ($totalRecipes -ne 30) {
     Fail "expected 30 recipe resources (28 production + 2 fixture-gated), found $totalRecipes"
@@ -547,15 +547,15 @@ $supportLinesDir = Join-Path $lithDataDir 'support_lines'
 $lootDir = Join-Path $lithDataDir 'loot_table\blocks'
 $tagDir = Join-Path $lithDataDir 'tags\block'
 foreach ($d in @($tiersDir, $dieRulesDir, $supportLinesDir, $lootDir, $tagDir)) { Assert-Dir $d }
-$tierNames = Sort-Ordinal [string[]][System.IO.Directory]::GetFiles($tiersDir, '*.json')
-$dieRuleNames = Sort-Ordinal [string[]][System.IO.Directory]::GetFiles($dieRulesDir, '*.json')
-$supportLineNames = Sort-Ordinal [string[]][System.IO.Directory]::GetFiles($supportLinesDir, '*.json')
-$lootNames = Sort-Ordinal [string[]][System.IO.Directory]::GetFiles($lootDir, '*.json')
-$tagNames = Sort-Ordinal [string[]][System.IO.Directory]::GetFiles($tagDir, '*.json')
+$tierNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($tiersDir, '*.json'))
+$dieRuleNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($dieRulesDir, '*.json'))
+$supportLineNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($supportLinesDir, '*.json'))
+$lootNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($lootDir, '*.json'))
+$tagNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($tagDir, '*.json'))
 
 Emit '| Loader | data/lithmod directory (parsed from loader source) | Tracked source path |'
 Emit '|--------|------------------------------------------------------|---------------------|'
-foreach ($loaderName in (Sort-Ordinal [string[]]$loaderDirs.Keys)) {
+foreach ($loaderName in (Sort-Ordinal ([string[]]$loaderDirs.Keys))) {
     Emit "| $loaderName | data/lithmod/$($loaderDirs[$loaderName]) | src/main/java/com/euvcraft/lithmod/mc/data/$loaderName.java |"
 }
 Emit-Blank

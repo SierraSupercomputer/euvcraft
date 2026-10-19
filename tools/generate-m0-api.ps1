@@ -33,20 +33,44 @@ if ($M1) {
     [void]$m1Output.AppendLine()
     [void]$m1Output.AppendLine('All signatures below are taken from the compiled bytecode by javap; do not hand-edit.')
     [void]$m1Output.AppendLine()
-    foreach ($relative in $typeNames) {
-        $type = $relative.Substring(0, $relative.Length - 6).Replace('/', '.')
-        [void]$m1Output.AppendLine("### $type")
-        [void]$m1Output.AppendLine('```java')
-        $signatureLines = & javap -p (Join-Path $ClassesRoot $relative) 2>&1
-        if ($LASTEXITCODE -ne 0) { throw "javap failed for $relative with exit code $LASTEXITCODE" }
+    # Batch javap inputs to avoid launching one JVM for every type. Validate
+    # each returned section against the expected fully qualified class name.
+    for ($batchStart = 0; $batchStart -lt $typeNames.Count; $batchStart += 8) {
+        $batchEnd = [Math]::Min($batchStart + 8, $typeNames.Count)
+        $classFiles = @($typeNames.GetRange($batchStart, $batchEnd - $batchStart) | ForEach-Object { Join-Path $ClassesRoot $_ })
+        $signatureLines = & javap -J-Duser.language=en -J-Duser.country=US -p @classFiles 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "javap batch failed with exit code $LASTEXITCODE" }
+        $sections = [System.Collections.Generic.List[object]]::new()
+        $section = $null
         foreach ($raw in $signatureLines) {
             $line = $raw.ToString().Trim()
-            if ($line.StartsWith('Compiled from') -or $line -match '\bprivate\b' -or -not $line.Contains('(') -or -not $line.EndsWith(';')) { continue }
-            [void]$m1Output.AppendLine($line)
+            if ($line.StartsWith('Compiled from ')) {
+                $section = [System.Collections.Generic.List[string]]::new()
+                $sections.Add($section)
+            } elseif ($null -ne $section -and $line.Length -gt 0) {
+                $section.Add($line)
+            } elseif ($line.Length -gt 0) {
+                throw "Unexpected javap output before class section: $line"
+            }
         }
-        [void]$m1Output.AppendLine('```')
-        [void]$m1Output.AppendLine()
+        if ($sections.Count -ne $classFiles.Count) { throw 'javap returned an incomplete class batch' }
+        for ($index = 0; $index -lt $sections.Count; $index++) {
+            $relative = $typeNames[$batchStart + $index]
+            $type = $relative.Substring(0, $relative.Length - 6).Replace('/', '.')
+            if ($sections[$index].Count -eq 0 -or $sections[$index][0] -notmatch ('\b(class|interface|enum)\s+' + [regex]::Escape($type) + '(\s|<|$)')) {
+                throw "javap section does not match requested class: $type"
+            }
+            [void]$m1Output.AppendLine("### $type")
+            [void]$m1Output.AppendLine('```java')
+            foreach ($line in $sections[$index]) {
+                if ($line -match '\bprivate\b' -or -not $line.Contains('(') -or -not $line.EndsWith(';')) { continue }
+                [void]$m1Output.AppendLine($line)
+            }
+            [void]$m1Output.AppendLine('```')
+            [void]$m1Output.AppendLine()
+        }
     }
+
     $normalized = $m1Output.ToString().Replace("`r`n", "`n").Replace("`r", "`n")
     [System.IO.File]::WriteAllText($Output, $normalized, [System.Text.UTF8Encoding]::new($false))
     Write-Host "Wrote M1 production signatures"
