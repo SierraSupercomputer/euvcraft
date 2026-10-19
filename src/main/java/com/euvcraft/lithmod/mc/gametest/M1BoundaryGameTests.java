@@ -206,7 +206,7 @@ public final class M1BoundaryGameTests {
         for (int i = 0; i < waferCount; i++) {
             wafers2.add(new Wafer(layer, 0.9f - i * 0.01f, 1)); // flag bit 1
         }
-        RunSpec spec = new RunSpec(DieTypes.LOGIC, 1, 0, 1.0, 1); // dieType, tierIndex, cores, effectiveYield, rollCount
+        RunSpec spec = new RunSpec(DieTypes.LOGIC, 1, 0, 0.6, 1); // dieType, tierIndex, cores, effectiveYield, rollCount
         FoupContents lot2 = new FoupContents(lotId2, capacity, wafers2, spec);
 
         // Verify they have identical public view
@@ -317,9 +317,11 @@ public final class M1BoundaryGameTests {
 
         // --- Test 4: Boundary validations for acceptedFoup / acceptsFoupStack ---
         // Absent lot refused without initializing/mutating/logspam
-        ItemStack noLot = new ItemStack(Items.STONE);
+        ItemStack noLot = new ItemStack(ModItems.FOUP_MK1.get());
         helper.assertTrue(WaferSlicerBlockEntity.acceptedFoup(noLot) == null, "absent lot refused by acceptedFoup");
         helper.assertTrue(!WaferSlicerBlockEntity.acceptsFoupStack(noLot), "absent lot refused by acceptsFoupStack");
+
+        helper.assertTrue(FoupItems.contentsOf(noLot) == null, "Absent component remains absent after admission checks");
 
         // Client view ALWAYS refused by acceptedFoup even empty
         ItemStack emptyClientView = FoupItems.with(ModItems.FOUP_MK1.get(),
@@ -367,13 +369,14 @@ public final class M1BoundaryGameTests {
         FoupContents afterInit = FoupItems.contentsOf(freshFoup);
         helper.assertTrue(afterInit != null && !FoupContentsCodec.isClientView(afterInit),
             "initializeIfMissing produces sealed lot");
-        helper.assertValueEqual(capacity, afterInit.capacity(), "initialized lot has configured capacity");
+        helper.assertValueEqual(FoupItems.configuredCapacity(), afterInit.capacity(), "initialized lot has configured capacity");
 
         // trustedContentsOf unchanged security semantics
         FoupContents fromTrusted = FoupItems.trustedContentsOf(sealedEmptyStack);
         helper.assertTrue(!FoupContentsCodec.isClientView(fromTrusted), "trustedContentsOf returns sealed lot");
         helper.assertValueEqual(lotId1, fromTrusted.lotId(), "trustedContentsOf preserves lot id");
 
+        auditMenuValues(helper, stack1, stack2);
         LOGGER.info("[M1-BOUNDARY] privacyWire: wire invariance verified, boundary checks passed");
         helper.succeed();
     }
@@ -412,7 +415,7 @@ public final class M1BoundaryGameTests {
         for (int i = 0; i < waferCount; i++) {
             wafers2.add(new Wafer(layer, 0.9f - i * 0.01f, 1)); // flag bit 1
         }
-        RunSpec spec = new RunSpec(DieTypes.LOGIC, 1, 0, 1.0, 1); // dieType, tierIndex, cores, effectiveYield, rollCount
+        RunSpec spec = new RunSpec(DieTypes.LOGIC, 1, 0, 0.6, 1); // dieType, tierIndex, cores, effectiveYield, rollCount
         FoupContents lot2 = new FoupContents(lotId2, capacity, wafers2, spec);
 
         ItemStack stack1 = FoupItems.with(ModItems.FOUP_MK1.get(), lot1);
@@ -429,11 +432,12 @@ public final class M1BoundaryGameTests {
         tooltip2.addAll(stack2.getTooltipLines(Item.TooltipContext.EMPTY, null, TooltipFlag.NORMAL));
 
         // Tooltips must be IDENTICAL because they come from identical public view
+        helper.assertTrue(!tooltip1.isEmpty(), "Actual tooltip pipeline must produce text");
         helper.assertValueEqual(tooltip1.size(), tooltip2.size(), "tooltip line count must match");
         for (int i = 0; i < tooltip1.size(); i++) {
             String t1 = tooltip1.get(i).getString();
             String t2 = tooltip2.get(i).getString();
-            helper.assertValueEqual(t1, t2, "tooltip line " + i + " must match: " + t1 + " vs " + t2);
+            helper.assertValueEqual(t1, t2, "tooltip line " + i + " must match without exposing private fields");
         }
 
         // Verify tooltip contains ONLY public values (capacity, wafer count, layer)
@@ -444,11 +448,11 @@ public final class M1BoundaryGameTests {
         // Must NOT contain private values
         for (Wafer w : wafers1) {
             String rollStr = String.valueOf(w.cumulativeRoll());
-            helper.assertTrue(!combinedTooltip.contains(rollStr), "tooltip must not contain roll value: " + rollStr);
+            helper.assertTrue(!combinedTooltip.contains(rollStr), "tooltip must not contain a private roll value");
         }
         for (Wafer w : wafers2) {
             String rollStr = String.valueOf(w.cumulativeRoll());
-            helper.assertTrue(!combinedTooltip.contains(rollStr), "tooltip must not contain roll value: " + rollStr);
+            helper.assertTrue(!combinedTooltip.contains(rollStr), "tooltip must not contain a private roll value");
         }
         helper.assertTrue(!combinedTooltip.contains("FLAG_PROCESSED"), "tooltip must not contain flags");
         helper.assertTrue(!combinedTooltip.contains("RunSpec"), "tooltip must not contain run spec");
@@ -506,15 +510,17 @@ public final class M1BoundaryGameTests {
             }
 
             // --- Assert no private data in captured logs ---
+            helper.assertTrue(capturedLogs.stream().anyMatch(line -> line.contains("client view holding")),
+                    "Log capture must observe the actual rejected-client-view warning");
             String allLogs = String.join("\n", capturedLogs);
             // Forbid private roll values/structures
             for (Wafer w : wafers1) {
                 String rollStr = String.valueOf(w.cumulativeRoll());
-                helper.assertTrue(!allLogs.contains(rollStr), "logs must not contain roll value: " + rollStr);
+                helper.assertTrue(!allLogs.contains(rollStr), "logs must not contain a private roll value");
             }
             for (Wafer w : wafers2) {
                 String rollStr = String.valueOf(w.cumulativeRoll());
-                helper.assertTrue(!allLogs.contains(rollStr), "logs must not contain roll value: " + rollStr);
+                helper.assertTrue(!allLogs.contains(rollStr), "logs must not contain a private roll value");
             }
             // Forbid serialized Wafer/FoupContents/run-spec content
             helper.assertTrue(!allLogs.contains("FLAG_PROCESSED"), "logs must not contain flags");
@@ -560,113 +566,54 @@ public final class M1BoundaryGameTests {
      */
     private static void allHandFed(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
-
-        // --- Enumerate actual registered lithmod blocks from BuiltInRegistries ---
-        net.minecraft.core.registries.BuiltInRegistries.BLOCK.stream()
-            .filter(block -> block instanceof SiliconMachines.CRYSTAL_PULLER.get().getClass()
-                || block instanceof SiliconMachines.WAFER_SLICER.get().getClass()
-                || block instanceof MaskMachines.PATTERN_GENERATOR.get().getClass()
-                || block instanceof PackagingMachines.TEST_PACKAGE.get().getClass()
-                || block instanceof ModMultiblocks.PROCESS_CELL_CONTROLLER.get().getClass()
-                || block instanceof ModMultiblocks.PROCESS_CELL_CASING.get().getClass()
-                || block instanceof ModMultiblocks.PROCESS_CELL_POWER_PORT.get().getClass())
-            .forEach(block -> {
-                // Just verify they're registered
-            });
-
-        // Expected machine block entity types (explicit list of 7 production types)
-        // Based on actual registered machines: CrystalPuller, WaferSlicer, PatternGenerator,
-        // TestPackage, and ProcessCell members (Controller, Casing, PowerPort)
-        List<Class<? extends BlockEntity>> expectedMachineBETypes = List.of(
-            com.euvcraft.lithmod.mc.machine.silicon.CrystalPullerBlockEntity.class,
-            com.euvcraft.lithmod.mc.machine.silicon.WaferSlicerBlockEntity.class,
-            com.euvcraft.lithmod.mc.machine.mask.PatternGeneratorBlockEntity.class,
-            com.euvcraft.lithmod.mc.machine.packaging.TestPackageBlockEntity.class,
-            com.euvcraft.lithmod.mc.multiblock.ProcessCellControllerBlockEntity.class,
-            com.euvcraft.lithmod.mc.multiblock.ProcessCellCasingBlockEntity.class,
-            com.euvcraft.lithmod.mc.multiblock.ProcessCellPowerPortBlockEntity.class
-        );
-
-        Set<Class<? extends BlockEntity>> checkedTypes = new HashSet<>();
-
-        // --- Test each expected machine type ---
-        for (int i = 0; i < expectedMachineBETypes.size(); i++) {
-            Class<? extends BlockEntity> beType = expectedMachineBETypes.get(i);
-            // Use positions close to origin to avoid unloaded chunks
-            BlockPos testPos = new BlockPos(1 + i * 5, 1, 1);
-            BlockEntity be = null;
-
-            if (beType == com.euvcraft.lithmod.mc.machine.silicon.CrystalPullerBlockEntity.class) {
-                helper.setBlock(testPos, SiliconMachines.CRYSTAL_PULLER.get());
-                be = level.getBlockEntity(helper.absolutePos(testPos));
-            } else if (beType == com.euvcraft.lithmod.mc.machine.silicon.WaferSlicerBlockEntity.class) {
-                helper.setBlock(testPos, SiliconMachines.WAFER_SLICER.get());
-                be = level.getBlockEntity(helper.absolutePos(testPos));
-            } else if (beType == com.euvcraft.lithmod.mc.machine.mask.PatternGeneratorBlockEntity.class) {
-                helper.setBlock(testPos, com.euvcraft.lithmod.mc.machine.mask.MaskMachines.PATTERN_GENERATOR.get());
-                be = level.getBlockEntity(helper.absolutePos(testPos));
-            } else if (beType == com.euvcraft.lithmod.mc.machine.packaging.TestPackageBlockEntity.class) {
-                helper.setBlock(testPos, PackagingMachines.TEST_PACKAGE.get());
-                be = level.getBlockEntity(helper.absolutePos(testPos));
-            } else if (beType == com.euvcraft.lithmod.mc.multiblock.ProcessCellControllerBlockEntity.class) {
-                // Build minimal 2x2x3 formed cell for controller
-                buildFormedProcessCell(helper, testPos);
-                be = level.getBlockEntity(helper.absolutePos(testPos));
-            } else if (beType == com.euvcraft.lithmod.mc.multiblock.ProcessCellCasingBlockEntity.class) {
-                // Casing only exists as part of formed cell - test via controller
-                buildFormedProcessCell(helper, testPos);
-                // Find a casing in the structure
-                for (int x = 0; x < 2; x++) {
-                    for (int y = 0; y < 2; y++) {
-                        for (int z = 0; z < 3; z++) {
-                            BlockPos p = testPos.offset(x, y, z);
-                            BlockEntity candidate = level.getBlockEntity(helper.absolutePos(p));
-                            if (candidate instanceof ProcessCellCasingBlockEntity) {
-                                be = candidate;
-                                break;
-                            }
-                        }
-                    }
-                }
-            } else if (beType == com.euvcraft.lithmod.mc.multiblock.ProcessCellPowerPortBlockEntity.class) {
-                buildFormedProcessCell(helper, testPos);
-                for (int x = 0; x < 2; x++) {
-                    for (int y = 0; y < 2; y++) {
-                        for (int z = 0; z < 3; z++) {
-                            BlockPos p = testPos.offset(x, y, z);
-                            BlockEntity candidate = level.getBlockEntity(helper.absolutePos(p));
-                            if (candidate instanceof ProcessCellPowerPortBlockEntity) {
-                                be = candidate;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (be == null) {
-                helper.fail("Block entity of type " + beType.getSimpleName() + " not found at test position");
-                return;
-            }
-
-            checkedTypes.add(beType);
-
-            // Query capabilities for ALL 6 directions + null
-            for (Direction dir : Direction.values()) {
-                testCapabilities(helper, be, dir);
-            }
+        Set<String> expected = new HashSet<>(Set.of("crystal_puller", "wafer_slicer", "pattern_generator",
+                "test_package", "process_cell_controller", "process_cell_casing", "process_cell_power_port"));
+        var registry = net.minecraft.core.registries.BuiltInRegistries.BLOCK;
+        Identifier fixture = Identifier.parse("lithmod:test_machine");
+        if (registry.containsKey(fixture)) expected.add("test_machine");
+        Set<String> registered = new HashSet<>();
+        Set<String> checked = new HashSet<>();
+        BlockPos pos = new BlockPos(1, 1, 1);
+        for (var block : registry) {
+            Identifier id = registry.getKey(block);
+            if (!id.getNamespace().equals("lithmod")) continue;
+            registered.add(id.getPath());
+            helper.setBlock(pos, Blocks.AIR);
+            helper.setBlock(pos, block);
+            BlockEntity be = level.getBlockEntity(helper.absolutePos(pos));
+            helper.assertTrue(be != null, "Every registered M1 block must have a block entity: " + id);
+            helper.assertTrue(be instanceof FabMachineBlockEntity
+                    || be instanceof com.euvcraft.lithmod.mc.multiblock.ProcessCellCasingBlockEntity
+                    || be instanceof com.euvcraft.lithmod.mc.multiblock.ProcessCellPowerPortBlockEntity,
+                    "Unexpected registered block type requires explicit audit: " + id);
+            for (Direction side : Direction.values()) testCapabilities(helper, be, side);
             testCapabilities(helper, be, null);
+            checked.add(id.getPath());
         }
-
-        // --- Verify exact coverage: all 7 expected types were checked ---
-        helper.assertValueEqual(7, checkedTypes.size(),
-            "must check exactly 7 machine block entity types, got " + checkedTypes.size());
-
-        // Also verify no OTHER lithmod block entities slipped through untested
-        // (This is a positive coverage assertion - we report what we checked)
-        LOGGER.info("[M1-BOUNDARY] allHandFed: checked types: " + checkedTypes.stream()
-            .map(Class::getSimpleName).collect(Collectors.joining(", ")));
-
+        helper.assertTrue(!registered.isEmpty(), "Registry audit cannot be empty");
+        helper.assertTrue(expected.equals(registered), "Actual lithmod blocks must match the independent M1 block inventory");
+        helper.assertTrue(registered.equals(checked), "Every actual registered block must be checked");
+        helper.setBlock(pos, Blocks.AIR);
+        buildFormedProcessCell(helper, pos);
+        ProcessCellControllerBlockEntity controller = (ProcessCellControllerBlockEntity)
+                level.getBlockEntity(helper.absolutePos(pos));
+        controller.revalidate();
+        helper.assertTrue(controller.isFormed(), "Capability audit requires a genuinely formed cell");
+        Set<String> formedTypes = new HashSet<>();
+        int members = 0;
+        for (int x=0; x<2; x++) for (int y=0; y<2; y++) for (int z=0; z<3; z++) {
+            BlockPos absolute = helper.absolutePos(pos.offset(x,y,z));
+            BlockEntity be = level.getBlockEntity(absolute);
+            helper.assertTrue(be != null, "Every formed cell member has a block entity");
+            for (Direction side : Direction.values()) testCapabilities(helper, be, side);
+            testCapabilities(helper, be, null);
+            formedTypes.add(registry.getKey(level.getBlockState(absolute).getBlock()).getPath());
+            members++;
+        }
+        helper.assertValueEqual(12, members, "All twelve formed members checked");
+        helper.assertTrue(formedTypes.equals(Set.of("process_cell_controller", "process_cell_casing", "process_cell_power_port")),
+                "All three formed member types checked");
+        LOGGER.info("[M1-BOUNDARY] hand-fed: {} registered blocks on seven sides, plus {} formed members", checked.size(), members);
         helper.succeed();
     }
 
@@ -690,6 +637,7 @@ public final class M1BoundaryGameTests {
     }
 
     private static void testCapabilities(GameTestHelper helper, BlockEntity be, Direction dir) {
+        ServerLevel level = helper.getLevel();
         BlockPos pos = be.getBlockPos();
         // Query Item capability using level.getCapability as in ProcessCellGameTests
         var itemCap = level.getCapability(Capabilities.Item.BLOCK, pos, dir);
@@ -707,7 +655,61 @@ public final class M1BoundaryGameTests {
         // The assertion is that item/fluid are NULL, energy MAY be non-null.
     }
 
-    // Helper to create connected player for menu tests if needed
+    /** Actual registered menus: private input changes cannot add or alter their public data slots. */
+    private static void auditMenuValues(GameTestHelper h, ItemStack first, ItemStack second) {
+        ServerPlayer player = connect(h.getLevel());
+        try {
+            BlockPos cellPos = new BlockPos(1, 1, 1);
+            h.setBlock(cellPos, ModMultiblocks.PROCESS_CELL_CONTROLLER.get());
+            ProcessCellControllerBlockEntity cell = (ProcessCellControllerBlockEntity)
+                    h.getLevel().getBlockEntity(h.absolutePos(cellPos));
+            cell.setSlot(0, first.copy());
+            var cellMenu = new com.euvcraft.lithmod.mc.machine.process.ProcessCellMenu(19, player.getInventory(), cell);
+            List<Integer> before = menuValues(cellMenu);
+            h.assertValueEqual(12, before.size(), "Process Cell has exactly twelve public data slots");
+            List<Integer> expected = new ArrayList<>();
+            for (int i=0; i<FabMachineBlockEntity.DATA_COUNT; i++) expected.add(cell.data().get(i));
+            expected.add(cell.processState().ordinal());
+            expected.add(cell.lastRefusal()==null ? 0 : cell.lastRefusal().code().ordinal()+1);
+            expected.add(cell.currentLayer()); expected.add(cell.totalLayers());
+            expected.add(cell.isFormed()?1:0); expected.add(cell.tierIndex());
+            expected.add(cell.dieType()==null ? 0 : DieTypes.ALL.indexOf(cell.dieType())+1);
+            expected.add(cell.inputsLocked()?1:0);
+            h.assertTrue(expected.equals(before), "Process menu transmits only the defined public tuple");
+            cell.setSlot(0, second.copy());
+            h.assertTrue(before.equals(menuValues(cellMenu)), "Private FOUP changes cannot alter Process Cell data slots");
+
+            BlockPos packagePos = new BlockPos(5, 1, 1);
+            h.setBlock(packagePos, PackagingMachines.TEST_PACKAGE.get());
+            TestPackageBlockEntity packaging = (TestPackageBlockEntity)
+                    h.getLevel().getBlockEntity(h.absolutePos(packagePos));
+            packaging.setSlot(0, first.copy());
+            var packageMenu = new com.euvcraft.lithmod.mc.machine.packaging.TestPackageMenu(20, player.getInventory(), packaging);
+            before = menuValues(packageMenu);
+            h.assertValueEqual(7, before.size(), "Test and Package has exactly seven public data slots");
+            expected.clear();
+            for (int i=0; i<FabMachineBlockEntity.DATA_COUNT; i++) expected.add(packaging.data().get(i));
+            for (int i=0; i<TestPackageBlockEntity.QUEUE_DATA_COUNT; i++) expected.add(packaging.queueData().get(i));
+            h.assertTrue(expected.equals(before), "Packaging menu transmits only the defined public tuple");
+            packaging.setSlot(0, second.copy());
+            h.assertTrue(before.equals(menuValues(packageMenu)), "Private FOUP changes cannot alter packaging data slots");
+        } finally {
+            player.closeContainer();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Integer> menuValues(AbstractContainerMenu menu) {
+        try {
+            Field field = AbstractContainerMenu.class.getDeclaredField("dataSlots");
+            field.setAccessible(true);
+            return ((List<DataSlot>)field.get(menu)).stream().map(DataSlot::get).toList();
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Cannot inspect actual registered menu data slots", e);
+        }
+    }
+
+    // Connected test player, using the same lifecycle as the existing server menu tests.
     private static ServerPlayer connect(ServerLevel level) {
         CommonListenerCookie cookie = CommonListenerCookie.createInitial(
             new GameProfile(UUID.randomUUID(), "boundary-test"), false);
