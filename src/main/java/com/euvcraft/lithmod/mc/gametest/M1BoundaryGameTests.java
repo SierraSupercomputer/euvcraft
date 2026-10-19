@@ -165,13 +165,17 @@ public final class M1BoundaryGameTests {
         UUID dummyId = UUID.randomUUID();
         List<Wafer> wafers = new ArrayList<>(waferCount);
         for (int i = 0; i < waferCount; i++) {
-            wafers.add(Wafer.unprocessed());
+            wafers.add(new Wafer(layer, Wafer.NO_ROLLS, Wafer.NO_FLAGS));
         }
         FoupContents sealed = new FoupContents(dummyId, capacity, wafers, null);
         // Encode via STREAM_CODEC (network form) and decode back to get client view
         ByteBuf buffer = Unpooled.buffer();
-        FoupContentsCodec.STREAM_CODEC.encode(buffer, sealed);
-        return FoupContentsCodec.STREAM_CODEC.decode(buffer);
+        try {
+            FoupContentsCodec.STREAM_CODEC.encode(buffer, sealed);
+            return FoupContentsCodec.STREAM_CODEC.decode(buffer);
+        } finally {
+            buffer.release();
+        }
     }
 
     /**
