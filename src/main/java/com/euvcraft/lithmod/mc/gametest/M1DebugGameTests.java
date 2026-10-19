@@ -108,6 +108,15 @@ public final class M1DebugGameTests {
             h.assertValueEqual(targetMachine.buffer().getCapacityAsInt(),targetMachine.buffer().getAmountAsInt(),"Target fills exactly to real capacity");
             h.assertValueEqual(47,otherMachine.buffer().getAmountAsInt(),"Untargeted machine is unchanged");
 
+            targetMachine.setStoredEnergy(37);
+            var alternateLevel=level.getServer().getLevel(Level.NETHER);
+            h.assertTrue(alternateLevel!=null,"Dimension-redirection control requires the real Nether level");
+            h.assertTrue(execute(dispatcher,admin.withLevel(alternateLevel))>0,
+                    "Redirected command context still fills the player's actual viewed machine");
+            h.assertValueEqual(targetMachine.buffer().getCapacityAsInt(),targetMachine.buffer().getAmountAsInt(),
+                    "Target world follows the player's ray rather than the command context");
+            h.assertValueEqual(47,otherMachine.buffer().getAmountAsInt(),"Redirected context leaves other machine unchanged");
+
             targetMachine.setStoredEnergy(23);
             player.lookAt(EntityAnchorArgument.Anchor.EYES,player.getEyePosition().add(0,20,0));
             h.assertValueEqual(0,execute(dispatcher,admin),"Ray miss fails safely");

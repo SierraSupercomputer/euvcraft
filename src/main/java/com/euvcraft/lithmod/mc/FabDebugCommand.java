@@ -97,7 +97,8 @@ public final class FabDebugCommand {
         }
 
         BlockPos pos = hit.getBlockPos();
-        ServerLevel level = source.getLevel();
+        // /execute may change the command dimension; the ray hit belongs to the player's world.
+        var level = player.level();
         var blockEntity = level.getBlockEntity(pos);
         FabMachineBlockEntity machine = blockEntity instanceof FabMachineBlockEntity be ? be : null;
 
