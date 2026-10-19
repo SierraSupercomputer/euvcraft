@@ -304,13 +304,13 @@ public final class M1ReloadGameTests {
             int paidTicks=0, measuredCost=-1;
             for (int tick=0; tick<2000 && puller.outputSlot().isEmpty(); tick++) {
                 long before = puller.buffer().getAmountAsLong();
-                int progressBefore = puller.progressTicks();
+                int progressBefore = puller.runner().progress();
                 puller.serverTick();
                 long debit = before-puller.buffer().getAmountAsLong();
                 helper.assertTrue(debit >= 0, "Working tick cannot create energy");
                 if (debit > 0) {
                     helper.assertValueEqual((long)expectedCost, debit, "Actual paid-tick buffer debit follows the loaded definition");
-                    helper.assertTrue(puller.progressTicks()>progressBefore || !puller.outputSlot().isEmpty(),
+                    helper.assertTrue(puller.runner().progress()>progressBefore || !puller.outputSlot().isEmpty(),
                             "A paid tick must advance or finish the actual recipe");
                     measuredCost=Math.toIntExact(debit);
                     paidTicks++;
