@@ -6,6 +6,9 @@ import com.euvcraft.lithmod.core.MachineDefinition;
 import com.euvcraft.lithmod.core.MaskData;
 import com.euvcraft.lithmod.core.ProcessState;
 import com.euvcraft.lithmod.core.RunSpec;
+import com.euvcraft.lithmod.core.Tier;
+import com.euvcraft.lithmod.core.Wafer;
+import com.euvcraft.lithmod.core.YieldMath;
 import com.euvcraft.lithmod.mc.ChipCatalog;
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.euvcraft.lithmod.mc.data.TierDataLoader;
@@ -62,6 +65,30 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
+ * Aggregate result of one complete chain run.
+ */
+record ChainResult(
+        UUID lotId,
+        int waferCount,
+        int passing,
+        int chips,
+        int scrap,
+        int packages
+) {
+}
+
+/**
+ * Result of test and package stage.
+ */
+record TestPackageResult(
+        int passing,
+        int chips,
+        int scrap,
+        int packages
+) {
+}
+
+/**
  * End-to-end M1 gate tests: each case drives a complete real-machine chain on a real
  * ServerLevel from raw inputs to final packaged output.
  *
@@ -78,6 +105,10 @@ public final class M1GateGameTests {
     private static final String LOGIC_T1_CHAIN = "m1_gate_logic_t1_chain";
     /** Memory T2 complete chain test. */
     private static final String MEMORY_T2_CHAIN = "m1_gate_memory_t2_chain";
+    /** Statistics: 200 lots each of T1 logic and T2 memory through FabYieldService.applyLayerStep. */
+    private static final String YIELD_STATISTICS = "m1_gate_yield_statistics";
+    /** Twenty machine lots: 10 T1 logic and 10 T2 memory through the full real chain. */
+    private static final String TWENTY_MACHINE_LOTS = "m1_gate_twenty_machine_lots";
 
     private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS =
         DeferredRegister.create(Registries.TEST_FUNCTION, EUVCRAFTMod.MODID);
@@ -90,6 +121,8 @@ public final class M1GateGameTests {
     static {
         FUNCTIONS.register(LOGIC_T1_CHAIN, () -> M1GateGameTests::logicT1Chain);
         FUNCTIONS.register(MEMORY_T2_CHAIN, () -> M1GateGameTests::memoryT2Chain);
+        FUNCTIONS.register(YIELD_STATISTICS, () -> M1GateGameTests::yieldStatistics);
+        FUNCTIONS.register(TWENTY_MACHINE_LOTS, () -> M1GateGameTests::twentyMachineLots);
     }
 
     private M1GateGameTests() {
@@ -111,6 +144,8 @@ public final class M1GateGameTests {
 
         register(event, data, LOGIC_T1_CHAIN);
         register(event, data, MEMORY_T2_CHAIN);
+        register(event, data, YIELD_STATISTICS);
+        register(event, data, TWENTY_MACHINE_LOTS);
         EUVCRAFTMod.LOGGER.info("Registered EUVCRAFT M1 gate game tests");
     }
 
@@ -143,6 +178,26 @@ public final class M1GateGameTests {
     }
 
     // ------------------------------------------------------------------
+    // 3. Yield Statistics: 200 lots each of T1 logic and T2 memory
+    // ------------------------------------------------------------------
+
+    private static void yieldStatistics(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        runYieldStatistics(helper, level);
+        helper.succeed();
+    }
+
+    // ------------------------------------------------------------------
+    // 4. Twenty Machine Lots: 10 T1 logic and 10 T2 memory full chain
+    // ------------------------------------------------------------------
+
+    private static void twentyMachineLots(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        runTwentyMachineLots(helper, level);
+        helper.succeed();
+    }
+
+    // ------------------------------------------------------------------
     // Shared chain driver
     // ------------------------------------------------------------------
 
@@ -154,8 +209,9 @@ public final class M1GateGameTests {
      * @param dieType the die type name (LOGIC or MEMORY)
      * @param tierIndex the node tier index (1 or 2)
      * @param designIngredient the vanilla ingredient that distinguishes the design
+     * @return aggregate result of the chain run
      */
-    private static void runCompleteChain(GameTestHelper helper, ServerLevel level,
+    private static ChainResult runCompleteChain(GameTestHelper helper, ServerLevel level,
             String dieType, int tierIndex, Item designIngredient) {
 
         // ------------------------------------------------------------------
@@ -239,8 +295,10 @@ public final class M1GateGameTests {
             // ============================================================
             // STAGE 6: Test & Package - judge, package, verify exact outputs
             // ============================================================
-            runTestAndPackage(helper, level, packagePos, processedFoupStack, dieType, tierIndex,
+            TestPackageResult pkgResult = runTestAndPackage(helper, level, packagePos, processedFoupStack, dieType, tierIndex,
                 waferCount, maskUsesBefore);
+
+            return new ChainResult(slicedLotId, waferCount, pkgResult.passing(), pkgResult.chips(), pkgResult.scrap(), pkgResult.packages());
 
         } finally {
             // Exact restoration
@@ -526,19 +584,19 @@ public final class M1GateGameTests {
     // STAGE 6: Test & Package - judge, package, verify exact outputs
     // ------------------------------------------------------------------
 
-    private static void runTestAndPackage(GameTestHelper helper, ServerLevel level, BlockPos pos,
+    private static TestPackageResult runTestAndPackage(GameTestHelper helper, ServerLevel level, BlockPos pos,
             ItemStack processedFoupStack, String dieType, int tierIndex,
             int waferCount, int maskUsesBefore) {
 
         helper.setBlock(pos, PackagingMachines.TEST_PACKAGE.get());
         TestPackageBlockEntity machine = (TestPackageBlockEntity) level.getBlockEntity(helper.absolutePos(pos));
         helper.assertTrue(machine != null, "must have TestPackageBlockEntity");
-        if (machine == null) return;
+        if (machine == null) return new TestPackageResult(0, 0, 0, 0);
 
         machine.serverTick(); // Refresh while empty, before admission.
         MachineDefinition definition = machine.definition().orElse(null);
         helper.assertTrue(definition != null, "test_package definition must be loaded");
-        if (definition == null) return;
+        if (definition == null) return new TestPackageResult(0, 0, 0, 0);
 
         int ticksPerWafer = definition.param(TestPackageBlockEntity.TICKS_PER_WAFER_PARAM).orElse(0);
         int packagesPerWafer = definition.param(TestPackageBlockEntity.PACKAGE_PER_WAFER_PARAM).orElse(1);
@@ -663,5 +721,172 @@ public final class M1GateGameTests {
 
         EUVCRAFTMod.LOGGER.info("[M1-GATE] Test & Package: {} wafers ({}, {}) -> {} chips, {} scrap, {} packages, {} FE",
             waferCount, passing, failing, actualChips, actualScrap, packagesUsed, energySpent);
+
+        return new TestPackageResult(passing, actualChips, actualScrap, packagesUsed);
     }
+
+    // ------------------------------------------------------------------
+    // 3. Yield Statistics: 200 lots each of T1 logic and T2 memory
+    // ------------------------------------------------------------------
+
+    /**
+     * Runs exactly 200 lots each of T1 logic and T2 memory through REAL
+     * FabYieldService.applyLayerStep on server level, all physical required layers
+     * (1 and 12). Uses 64 wafers/lot for 12800 samples/tier.
+     * Asserts abs(observedRate - target) <= 0.02 for BOTH tiers.
+     */
+    private static void runYieldStatistics(GameTestHelper helper, ServerLevel level) {
+        // Snapshot and restore yield multiplier
+        double originalYieldMultiplier = FabConfig.YIELD_MULTIPLIER.get();
+        try {
+            // Force yield multiplier = 1.0
+            FabConfig.YIELD_MULTIPLIER.set(1.0);
+            EUVCRAFTMod.config().onConfigReload();
+
+            TierDataLoader.getRegistry();
+            Tier t1 = TierDataLoader.getRegistry().byIndex(1).orElseThrow();
+            Tier t2 = TierDataLoader.getRegistry().byIndex(2).orElseThrow();
+
+            // Verify baseline yields are 60% and 80%
+            double t1Yield = YieldMath.resolveEffectiveYield(t1, EUVCRAFTMod.settings(), null);
+            double t2Yield = YieldMath.resolveEffectiveYield(t2, EUVCRAFTMod.settings(), null);
+            helper.assertTrue(Math.abs(t1Yield - 0.60) <= 1e-9, "T1 baseline yield must be 60%, got " + (t1Yield * 100) + "%");
+            helper.assertTrue(Math.abs(t2Yield - 0.80) <= 1e-9, "T2 baseline yield must be 80%, got " + (t2Yield * 100) + "%");
+
+            final int LOTS = 200;
+            final int WAFERS_PER_LOT = 64;
+            final int T1_LAYERS = 1;
+            final int T2_LAYERS = 12;
+
+            // T1 Logic statistics
+            int t1Passing = 0;
+            int t1Total = 0;
+            for (int lot = 0; lot < LOTS; lot++) {
+                UUID lotId = UUID.randomUUID();
+                FoupContents contents = FoupContents.empty(lotId, WAFERS_PER_LOT);
+                for (int wafer = 0; wafer < WAFERS_PER_LOT; wafer++) {
+                    contents = contents.withWafer(Wafer.unprocessed());
+                }
+                for (int layer = 1; layer <= T1_LAYERS; layer++) {
+                    contents = FabYieldService.applyLayerStep(level, contents, t1, DieTypes.LOGIC, null, layer, 1.0);
+                }
+                t1Passing += FabYieldService.countPassing(level, contents, t1, DieTypes.LOGIC, null);
+                t1Total += contents.size();
+            }
+
+            // T2 Memory statistics
+            int t2Passing = 0;
+            int t2Total = 0;
+            for (int lot = 0; lot < LOTS; lot++) {
+                UUID lotId = UUID.randomUUID();
+                FoupContents contents = FoupContents.empty(lotId, WAFERS_PER_LOT);
+                for (int wafer = 0; wafer < WAFERS_PER_LOT; wafer++) {
+                    contents = contents.withWafer(Wafer.unprocessed());
+                }
+                for (int layer = 1; layer <= T2_LAYERS; layer++) {
+                    contents = FabYieldService.applyLayerStep(level, contents, t2, DieTypes.MEMORY, null, layer, 1.0);
+                }
+                t2Passing += FabYieldService.countPassing(level, contents, t2, DieTypes.MEMORY, null);
+                t2Total += contents.size();
+            }
+
+            double t1Rate = (double) t1Passing / t1Total;
+            double t2Rate = (double) t2Passing / t2Total;
+
+            // Assert tolerance <= 0.02
+            helper.assertTrue(Math.abs(t1Rate - t1Yield) <= 0.02,
+                    "T1 observed rate " + String.format("%.4f", t1Rate) + " vs target " + String.format("%.4f", t1Yield) + " (diff=" + String.format("%.4f", Math.abs(t1Rate - t1Yield)) + ")");
+            helper.assertTrue(Math.abs(t2Rate - t2Yield) <= 0.02,
+                    "T2 observed rate " + String.format("%.4f", t2Rate) + " vs target " + String.format("%.4f", t2Yield) + " (diff=" + String.format("%.4f", Math.abs(t2Rate - t2Yield)) + ")");
+
+            // Log aggregate evidence
+            EUVCRAFTMod.LOGGER.info("[M1-GATE-STATS] T1 logic: {} of {} wafers passed, observed={:.4f} target={:.4f} diff={:.4f}",
+                    t1Passing, t1Total, t1Rate, t1Yield, Math.abs(t1Rate - t1Yield));
+            EUVCRAFTMod.LOGGER.info("[M1-GATE-STATS] T2 memory: {} of {} wafers passed, observed={:.4f} target={:.4f} diff={:.4f}",
+                    t2Passing, t2Total, t2Rate, t2Yield, Math.abs(t2Rate - t2Yield));
+
+        } finally {
+            // Restore yield multiplier
+            FabConfig.YIELD_MULTIPLIER.set(originalYieldMultiplier);
+            EUVCRAFTMod.config().onConfigReload();
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // 4. Twenty Machine Lots: 10 T1 logic and 10 T2 memory full chain
+    // ------------------------------------------------------------------
+
+    /**
+     * Runs exactly 10 T1 logic and 10 T2 memory lots through the full real chain.
+     * Reuses full conservation assertions. Each processed lot has fresh identity.
+     * Machines are reset between runs.
+     */
+    private static void runTwentyMachineLots(GameTestHelper helper, ServerLevel level) {
+        // Snapshot and restore config
+        int originalWafersPerBoule = FabConfig.WAFERS_PER_BOULE.get();
+        int originalResistPerLayer = FabConfig.RESIST_PER_LAYER.get();
+        List<String> originalLayerTicksOverrides = new ArrayList<>(FabConfig.LAYER_TICKS_OVERRIDES.get());
+
+        try {
+            // Bound wafer count so output banks don't hang
+            FabConfig.WAFERS_PER_BOULE.set(4);
+            FabConfig.RESIST_PER_LAYER.set(2);
+            FabConfig.LAYER_TICKS_OVERRIDES.set(List.of("T1=3", "T2=3"));
+            EUVCRAFTMod.config().onConfigReload();
+
+            // Machine positions (spaced apart)
+            BlockPos pullerPos = BASE;
+            BlockPos slicerPos = BASE.offset(MACHINE_SPACING, 0, 0);
+            BlockPos generatorPos = BASE.offset(MACHINE_SPACING * 2, 0, 0);
+            BlockPos cellControllerPos = BASE.offset(MACHINE_SPACING * 3, 0, 0);
+            BlockPos packagePos = BASE.offset(MACHINE_SPACING * 4, 0, 0);
+
+            // Run 10 T1 logic lots
+            for (int i = 0; i < 10; i++) {
+                resetMachines(helper, level, pullerPos, slicerPos, generatorPos, cellControllerPos, packagePos);
+                ChainResult result = runCompleteChain(helper, level, DieTypes.LOGIC, 1, Items.COPPER_INGOT);
+                EUVCRAFTMod.LOGGER.info("[M1-GATE-20LOTS] T1 logic lot {}: {} wafers, {} passing, {} chips, {} scrap, {} packages",
+                        i + 1, result.waferCount(), result.passing(), result.chips(), result.scrap(), result.packages());
+            }
+
+            // Run 10 T2 memory lots
+            for (int i = 0; i < 10; i++) {
+                resetMachines(helper, level, pullerPos, slicerPos, generatorPos, cellControllerPos, packagePos);
+                ChainResult result = runCompleteChain(helper, level, DieTypes.MEMORY, 2, Items.REDSTONE);
+                EUVCRAFTMod.LOGGER.info("[M1-GATE-20LOTS] T2 memory lot {}: {} wafers, {} passing, {} chips, {} scrap, {} packages",
+                        i + 1, result.waferCount(), result.passing(), result.chips(), result.scrap(), result.packages());
+            }
+
+        } finally {
+            // Exact restoration
+            FabConfig.WAFERS_PER_BOULE.set(originalWafersPerBoule);
+            FabConfig.RESIST_PER_LAYER.set(originalResistPerLayer);
+            FabConfig.LAYER_TICKS_OVERRIDES.set(originalLayerTicksOverrides);
+            EUVCRAFTMod.config().onConfigReload();
+        }
+    }
+
+    /**
+     * Resets all machines between lot runs by removing blocks and clearing inventories.
+     * Setting the SAME blockstate does not recreate BE, so we must remove/reset.
+     */
+    private static void resetMachines(GameTestHelper helper, ServerLevel level,
+            BlockPos pullerPos, BlockPos slicerPos, BlockPos generatorPos,
+            BlockPos cellControllerPos, BlockPos packagePos) {
+        // Clear all machine block entities by setting to AIR first
+        helper.setBlock(pullerPos, Blocks.AIR);
+        helper.setBlock(slicerPos, Blocks.AIR);
+        helper.setBlock(generatorPos, Blocks.AIR);
+        // Process cell: clear the whole 2x2x3 structure
+        for (int x = 1; x <= 2; x++) {
+            for (int y = 1; y <= 2; y++) {
+                for (int z = 1; z <= 3; z++) {
+                    BlockPos p = cellControllerPos.offset(x - 1, y - 1, z - 1);
+                    helper.setBlock(p, Blocks.AIR);
+                }
+            }
+        }
+        helper.setBlock(packagePos, Blocks.AIR);
+    }
+
 }
