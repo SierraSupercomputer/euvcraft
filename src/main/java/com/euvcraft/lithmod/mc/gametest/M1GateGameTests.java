@@ -29,6 +29,9 @@ import com.euvcraft.lithmod.mc.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import com.euvcraft.lithmod.mc.multiblock.ProcessCellControllerBlock;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 import net.minecraft.core.Direction;
@@ -275,22 +278,37 @@ public final class M1GateGameTests {
         helper.assertTrue(blastingHolder.id().identifier().getNamespace().equals(EUVCRAFTMod.MODID),
             "silicon blasting recipe must be from lithmod");
 
-        // Use smelting recipe to produce silicon - consume one quartz per result
-        SmeltingRecipe smeltingRecipe = smeltingHolder.value();
-        for (int i = 0; i < count; i++) {
-            ItemStack input = new ItemStack(Items.QUARTZ);
-            SingleRecipeInput recipeInput = new SingleRecipeInput(input);
-            helper.assertTrue(smeltingRecipe.matches(recipeInput, level), "quartz must match smelting recipe");
-            ItemStack result = smeltingRecipe.assemble(recipeInput);
-            helper.assertTrue(result.getItem() == ModItems.SILICON.get(), "recipe must produce silicon");
-            helper.assertValueEqual(1, result.getCount(), "each quartz yields one silicon");
-            input.shrink(1);
-            helper.assertTrue(input.isEmpty(), "one quartz consumed per assembled silicon");
-            silicon.add(result);
-        }
-
-        EUVCRAFTMod.LOGGER.info("[M1-GATE] Obtained {} silicon from quartz via recipe lookup", silicon.size());
+        helper.assertValueEqual(4, count, "four raw quartz feed the complete chain");
+        helper.assertTrue(blastingHolder.id().identifier().toString().equals("lithmod:silicon_from_blasting"),
+            "actual quartz blasting recipe selected");
+        silicon.addAll(cookSilicon(helper, level, BASE.offset(0, 0, 6), Blocks.FURNACE, 2));
+        silicon.addAll(cookSilicon(helper, level, BASE.offset(3, 0, 6), Blocks.BLAST_FURNACE, 2));
+        EUVCRAFTMod.LOGGER.info("[M1-GATE] Took {} silicon from actual furnace and blast-furnace outputs", silicon.size());
         return silicon;
+    }
+
+    /** Raw quartz and fuel are inserted directly; the real vanilla ticker produces every silicon. */
+    private static List<ItemStack> cookSilicon(GameTestHelper h, ServerLevel level, BlockPos relative,
+            Block block, int count) {
+        h.setBlock(relative, Blocks.AIR);
+        h.setBlock(relative, block);
+        BlockPos pos = h.absolutePos(relative);
+        var furnace = (AbstractFurnaceBlockEntity) level.getBlockEntity(pos);
+        h.assertTrue(furnace != null, "real cooking block entity exists");
+        furnace.setItem(0, new ItemStack(Items.QUARTZ, count));
+        furnace.setItem(1, new ItemStack(Items.COAL));
+        for (int tick = 0; tick < 2000 && furnace.getItem(2).getCount() < count; tick++) {
+            AbstractFurnaceBlockEntity.serverTick(level, pos, level.getBlockState(pos), furnace);
+        }
+        h.assertTrue(furnace.getItem(0).isEmpty(), "all raw quartz consumed by actual furnace");
+        h.assertTrue(furnace.getItem(1).isEmpty(), "actual furnace consumes its fuel");
+        ItemStack output = furnace.removeItemNoUpdate(2);
+        h.assertTrue(output.is(ModItems.SILICON.get()), "actual cooking output is silicon");
+        h.assertValueEqual(count, output.getCount(), "one actual silicon per quartz");
+        h.assertTrue(furnace.getItem(2).isEmpty(), "cooking output ownership transferred");
+        List<ItemStack> result = new ArrayList<>();
+        while (!output.isEmpty()) result.add(output.split(1));
+        return result;
     }
 
     // ------------------------------------------------------------------
