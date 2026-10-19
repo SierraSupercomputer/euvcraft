@@ -1,5 +1,6 @@
 {
   "type": "minecraft:block",
+  "neoforge:conditions": [{ "type": "neoforge:registered", "registry": "minecraft:item", "value": "lithmod:test_machine" }],
   "pools": [
     {
       "rolls": 1,
