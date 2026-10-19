@@ -40,8 +40,10 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Rotation;
@@ -58,11 +60,15 @@ import org.slf4j.Logger;
 
 import com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity;
 import com.euvcraft.lithmod.mc.machine.silicon.WaferSlicerBlockEntity;
-import com.euvcraft.lithmod.mc.machine.silicon.WaferSlicerMenu;
 import com.euvcraft.lithmod.mc.machine.silicon.SiliconMachines;
+import com.euvcraft.lithmod.mc.machine.silicon.CrystalPullerBlockEntity;
+import com.euvcraft.lithmod.mc.machine.mask.PatternGeneratorBlockEntity;
+import com.euvcraft.lithmod.mc.machine.mask.MaskMachines;
 import com.euvcraft.lithmod.mc.multiblock.ModMultiblocks;
 import com.euvcraft.lithmod.mc.multiblock.ProcessCellControllerBlock;
 import com.euvcraft.lithmod.mc.multiblock.ProcessCellControllerBlockEntity;
+import com.euvcraft.lithmod.mc.multiblock.ProcessCellCasingBlockEntity;
+import com.euvcraft.lithmod.mc.multiblock.ProcessCellPowerPortBlockEntity;
 import com.euvcraft.lithmod.mc.machine.packaging.TestPackageBlockEntity;
 import com.euvcraft.lithmod.mc.machine.packaging.PackagingMachines;
 import com.euvcraft.lithmod.mc.data.TierDataLoader;
@@ -150,6 +156,25 @@ public final class M1BoundaryGameTests {
     // ------------------------------------------------------------------
 
     /**
+     * Creates a client-view placeholder lot via STREAM_CODEC roundtrip.
+     * This is the only way to get a client view from outside the mc package,
+     * since FoupContentsCodec.fromPublicView is package-private.
+     */
+    private static FoupContents createClientView(int capacity, int waferCount, int layer) {
+        // Build a sealed lot with the desired public view
+        UUID dummyId = UUID.randomUUID();
+        List<Wafer> wafers = new ArrayList<>(waferCount);
+        for (int i = 0; i < waferCount; i++) {
+            wafers.add(Wafer.unprocessed());
+        }
+        FoupContents sealed = new FoupContents(dummyId, capacity, wafers, null);
+        // Encode via STREAM_CODEC (network form) and decode back to get client view
+        ByteBuf buffer = Unpooled.buffer();
+        FoupContentsCodec.STREAM_CODEC.encode(buffer, sealed);
+        return FoupContentsCodec.STREAM_CODEC.decode(buffer);
+    }
+
+    /**
      * Case m1_gate_privacy_wire:
      * Construct two SERVER-TRUSTED sealed FOUP stacks with identical PUBLIC cap/count/layer
      * but DIFFERENT private rolls/flags/run-spec internals.
@@ -179,9 +204,9 @@ public final class M1BoundaryGameTests {
         // Lot 2: rolls around 0.9, WITH flags, WITH run spec
         List<Wafer> wafers2 = new ArrayList<>();
         for (int i = 0; i < waferCount; i++) {
-            wafers2.add(new Wafer(layer, 0.9f - i * 0.01f, Wafer.FLAG_PROCESSED));
+            wafers2.add(new Wafer(layer, 0.9f - i * 0.01f, 1)); // flag bit 1
         }
-        RunSpec spec = new RunSpec(DieTypes.LOGIC, 1, 1.0, 1);
+        RunSpec spec = new RunSpec(DieTypes.LOGIC, 1, 0, 1.0, 1); // dieType, tierIndex, cores, effectiveYield, rollCount
         FoupContents lot2 = new FoupContents(lotId2, capacity, wafers2, spec);
 
         // Verify they have identical public view
@@ -298,7 +323,7 @@ public final class M1BoundaryGameTests {
 
         // Client view ALWAYS refused by acceptedFoup even empty
         ItemStack emptyClientView = FoupItems.with(ModItems.FOUP_MK1.get(),
-            FoupContentsCodec.fromPublicView(capacity, 0, layer));
+            createClientView(capacity, 0, layer));
         helper.assertTrue(WaferSlicerBlockEntity.acceptedFoup(emptyClientView) == null,
             "empty client view refused by acceptedFoup");
         // acceptsFoupStack predicts empty client view acceptable (public wafer count = 0)
@@ -307,7 +332,7 @@ public final class M1BoundaryGameTests {
 
         // Client view with wafers: refused by both
         ItemStack fullClientView = FoupItems.with(ModItems.FOUP_MK1.get(),
-            FoupContentsCodec.fromPublicView(capacity, waferCount, layer));
+            createClientView(capacity, waferCount, layer));
         helper.assertTrue(WaferSlicerBlockEntity.acceptedFoup(fullClientView) == null,
             "full client view refused by acceptedFoup");
         helper.assertTrue(!WaferSlicerBlockEntity.acceptsFoupStack(fullClientView),
@@ -385,9 +410,9 @@ public final class M1BoundaryGameTests {
 
         List<Wafer> wafers2 = new ArrayList<>();
         for (int i = 0; i < waferCount; i++) {
-            wafers2.add(new Wafer(layer, 0.9f - i * 0.01f, Wafer.FLAG_PROCESSED));
+            wafers2.add(new Wafer(layer, 0.9f - i * 0.01f, 1)); // flag bit 1
         }
-        RunSpec spec = new RunSpec(DieTypes.LOGIC, 1, 1.0, 1);
+        RunSpec spec = new RunSpec(DieTypes.LOGIC, 1, 0, 1.0, 1); // dieType, tierIndex, cores, effectiveYield, rollCount
         FoupContents lot2 = new FoupContents(lotId2, capacity, wafers2, spec);
 
         ItemStack stack1 = FoupItems.with(ModItems.FOUP_MK1.get(), lot1);
@@ -399,21 +424,9 @@ public final class M1BoundaryGameTests {
         List<net.minecraft.network.chat.Component> tooltip1 = new ArrayList<>();
         List<net.minecraft.network.chat.Component> tooltip2 = new ArrayList<>();
 
-        // Simulate tooltip generation via the component's TooltipProvider
-        // The FOUP_CONTENTS component has a TooltipProvider via FoupTooltipAppenders
-        net.minecraft.world.item.Item.TooltipContext ctx = net.minecraft.world.item.Item.TooltipContext.of(level);
-        net.minecraft.world.item.TooltipFlag flag = net.minecraft.world.item.TooltipFlag.Default.NORMAL;
-
-        // Get the component from the stack and call its tooltip provider
-        com.euvcraft.lithmod.core.FoupContents comp1 = stack1.get(com.euvcraft.lithmod.mc.registry.ModDataComponents.FOUP_CONTENTS.get());
-        com.euvcraft.lithmod.core.FoupContents comp2 = stack2.get(com.euvcraft.lithmod.mc.registry.ModDataComponents.FOUP_CONTENTS.get());
-
-        if (comp1 instanceof net.minecraft.world.item.component.TooltipProvider provider1) {
-            provider1.addToTooltip(ctx, tooltip1::add, flag, stack1);
-        }
-        if (comp2 instanceof net.minecraft.world.item.component.TooltipProvider provider2) {
-            provider2.addToTooltip(ctx, tooltip2::add, flag, stack2);
-        }
+        // Use the actual registered item tooltip pipeline (as in MaskGameTests/ChipGameTests)
+        tooltip1.addAll(stack1.getTooltipLines(Item.TooltipContext.EMPTY, null, TooltipFlag.NORMAL));
+        tooltip2.addAll(stack2.getTooltipLines(Item.TooltipContext.EMPTY, null, TooltipFlag.NORMAL));
 
         // Tooltips must be IDENTICAL because they come from identical public view
         helper.assertValueEqual(tooltip1.size(), tooltip2.size(), "tooltip line count must match");
@@ -460,7 +473,7 @@ public final class M1BoundaryGameTests {
         try {
             // Trigger trusted read rejection (client view with wafers)
             ItemStack clientViewWithWafers = FoupItems.with(ModItems.FOUP_MK1.get(),
-                FoupContentsCodec.fromPublicView(capacity, waferCount, layer));
+                createClientView(capacity, waferCount, layer));
             FoupItems.trustedContentsOf(clientViewWithWafers);
 
             // Trigger trusted read acceptance (sealed empty)
@@ -550,10 +563,13 @@ public final class M1BoundaryGameTests {
 
         // --- Enumerate actual registered lithmod blocks from BuiltInRegistries ---
         net.minecraft.core.registries.BuiltInRegistries.BLOCK.stream()
-            .filter(block -> block instanceof com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity.FabMachineBlock
-                || block instanceof com.euvcraft.lithmod.multiblock.ProcessCellControllerBlock
-                || block instanceof com.euvcraft.lithmod.multiblock.ProcessCellCasingBlock
-                || block instanceof com.euvcraft.lithmod.multiblock.ProcessCellPowerPortBlock)
+            .filter(block -> block instanceof SiliconMachines.CRYSTAL_PULLER.get().getClass()
+                || block instanceof SiliconMachines.WAFER_SLICER.get().getClass()
+                || block instanceof MaskMachines.PATTERN_GENERATOR.get().getClass()
+                || block instanceof PackagingMachines.TEST_PACKAGE.get().getClass()
+                || block instanceof ModMultiblocks.PROCESS_CELL_CONTROLLER.get().getClass()
+                || block instanceof ModMultiblocks.PROCESS_CELL_CASING.get().getClass()
+                || block instanceof ModMultiblocks.PROCESS_CELL_POWER_PORT.get().getClass())
             .forEach(block -> {
                 // Just verify they're registered
             });
@@ -574,8 +590,10 @@ public final class M1BoundaryGameTests {
         Set<Class<? extends BlockEntity>> checkedTypes = new HashSet<>();
 
         // --- Test each expected machine type ---
-        for (Class<? extends BlockEntity> beType : expectedMachineBETypes) {
-            BlockPos testPos = new BlockPos(100 + checkedTypes.size() * 10, 1, 1);
+        for (int i = 0; i < expectedMachineBETypes.size(); i++) {
+            Class<? extends BlockEntity> beType = expectedMachineBETypes.get(i);
+            // Use positions close to origin to avoid unloaded chunks
+            BlockPos testPos = new BlockPos(1 + i * 5, 1, 1);
             BlockEntity be = null;
 
             if (beType == com.euvcraft.lithmod.mc.machine.silicon.CrystalPullerBlockEntity.class) {
@@ -603,7 +621,7 @@ public final class M1BoundaryGameTests {
                         for (int z = 0; z < 3; z++) {
                             BlockPos p = testPos.offset(x, y, z);
                             BlockEntity candidate = level.getBlockEntity(helper.absolutePos(p));
-                            if (candidate instanceof com.euvcraft.lithmod.mc.multiblock.ProcessCellCasingBlockEntity) {
+                            if (candidate instanceof ProcessCellCasingBlockEntity) {
                                 be = candidate;
                                 break;
                             }
@@ -617,7 +635,7 @@ public final class M1BoundaryGameTests {
                         for (int z = 0; z < 3; z++) {
                             BlockPos p = testPos.offset(x, y, z);
                             BlockEntity candidate = level.getBlockEntity(helper.absolutePos(p));
-                            if (candidate instanceof com.euvcraft.lithmod.mc.multiblock.ProcessCellPowerPortBlockEntity) {
+                            if (candidate instanceof ProcessCellPowerPortBlockEntity) {
                                 be = candidate;
                                 break;
                             }
@@ -672,18 +690,19 @@ public final class M1BoundaryGameTests {
     }
 
     private static void testCapabilities(GameTestHelper helper, BlockEntity be, Direction dir) {
-        // Query Item capability
-        var itemCap = be.getCapability(Capabilities.ItemHandler.BLOCK, dir);
+        BlockPos pos = be.getBlockPos();
+        // Query Item capability using level.getCapability as in ProcessCellGameTests
+        var itemCap = level.getCapability(Capabilities.Item.BLOCK, pos, dir);
         helper.assertTrue(itemCap == null,
             be.getClass().getSimpleName() + " side " + dir + " must NOT expose Item capability (hand-fed only)");
 
         // Query Fluid capability
-        var fluidCap = be.getCapability(Capabilities.FluidHandler.BLOCK, dir);
+        var fluidCap = level.getCapability(Capabilities.Fluid.BLOCK, pos, dir);
         helper.assertTrue(fluidCap == null,
             be.getClass().getSimpleName() + " side " + dir + " must NOT expose Fluid capability (hand-fed only)");
 
         // FE capability is ALLOWED (energy input)
-        var energyCap = be.getCapability(net.neoforged.neoforge.energy.EnergyStorage.BLOCK, dir);
+        var energyCap = level.getCapability(Capabilities.Energy.BLOCK, pos, dir);
         // We don't assert null - FE is allowed. Just verify it doesn't crash.
         // The assertion is that item/fluid are NULL, energy MAY be non-null.
     }

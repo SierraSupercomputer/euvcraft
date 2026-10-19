@@ -285,9 +285,9 @@ public class M1BoundaryResourceTest {
         assertTrue(content.contains("testCapabilities(helper, be, null)"),
             "Must test null direction");
         // Verify FE allowed, item/fluid denied
-        assertTrue(content.contains("Capabilities.ItemHandler.BLOCK") && content.contains("== null"),
+        assertTrue(content.contains("Capabilities.Item.BLOCK") && content.contains("== null"),
             "Must assert item capability is null");
-        assertTrue(content.contains("Capabilities.FluidHandler.BLOCK") && content.contains("== null"),
+        assertTrue(content.contains("Capabilities.Fluid.BLOCK") && content.contains("== null"),
             "Must assert fluid capability is null");
     }
 

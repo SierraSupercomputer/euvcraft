@@ -70,13 +70,16 @@ public final class FoupItems {
     }
 
     /**
-     * Returns the lot carried by a stack.
+     * Returns the lot carried by a stack, or {@code null} when the stack carries none.
+     *
+     * <p>Internal helper for trustedContentsOf, hasSealedContents, isClientView, publicViewOf
+     * and initializeIfMissing. Does not perform any trust decision.</p>
      *
      * @param stack the stack to read, not null
      * @return the lot, or {@code null} when the stack carries none
      */
     @Nullable
-    public static FoupContents contentsOf(ItemStack stack) {
+    private static FoupContents getRawContents(ItemStack stack) {
         return stack.get(ModDataComponents.FOUP_CONTENTS.get());
     }
 
@@ -113,7 +116,7 @@ public final class FoupItems {
      * @return a lot the caller may read rolls from, never null
      */
     public static FoupContents trustedContentsOf(ItemStack stack) {
-        FoupContents contents = contentsOf(stack);
+        FoupContents contents = getRawContents(stack);
         if (contents == null) {
             if (stack.is(ModItems.FOUP_MK1.get()) || stack.is(ModItems.FOUP_MK2.get())) {
                 EUVCRAFTMod.LOGGER.warn(
@@ -198,7 +201,7 @@ public final class FoupItems {
      * @return {@code true} if the stack carries a sealed lot
      */
     public static boolean hasSealedContents(ItemStack stack) {
-        FoupContents contents = contentsOf(stack);
+        FoupContents contents = getRawContents(stack);
         return contents != null && !FoupContentsCodec.isClientView(contents);
     }
 
@@ -218,7 +221,7 @@ public final class FoupItems {
      * @return {@code true} if the stack carries a client-view lot
      */
     public static boolean isClientView(ItemStack stack) {
-        FoupContents contents = contentsOf(stack);
+        FoupContents contents = getRawContents(stack);
         return contents != null && FoupContentsCodec.isClientView(contents);
     }
 
@@ -239,7 +242,7 @@ public final class FoupItems {
      */
     @Nullable
     public static FoupPublicView publicViewOf(ItemStack stack) {
-        FoupContents contents = contentsOf(stack);
+        FoupContents contents = getRawContents(stack);
         return contents == null ? null : contents.publicView();
     }
 
