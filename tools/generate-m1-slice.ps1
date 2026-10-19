@@ -137,7 +137,7 @@ $fabSettingsSource = Read-SourceText $fabSettingsPath
 
 $fabSettingsDefaults = @{}
 foreach ($line in ($fabSettingsSource -split "`r?`n")) {
-    if ($line -match '^\s*public static final (List|Map|int|long|double|boolean|String)\s+([A-Za-z0-9_]+)\s*=\s*(.+?);\s*$') {
+    if ($line -match '^\s*public static final (List(?:<[^>]+>)?|Map(?:<[^>]+>)?|int|long|double|boolean|String)\s+([A-Za-z0-9_]+)\s*=\s*(.+?);\s*$') {
         $fabSettingsDefaults[$matches[2]] = $matches[3].Trim()
     }
 }
@@ -164,18 +164,50 @@ foreach ($line in ($fabConfigSource -split "`r?`n")) {
     $field = ''
     if ($entryBlock -match '^([A-Za-z_][A-Za-z0-9_.]*)\s*=') { $field = $matches[1] } else { Fail "config entry block without field name: $entryBlock" }
         $configKey = $null; $defaultExpr = $null; $range = ''
-        if ($entryBlock -match '\.defineInRange\(\s*"([^"]+)"\s*,\s*([^,]+?)\s*,\s*([^,]+?)\s*,\s*([^)]+?)\)') {
-            $configKey = $matches[1]; $defaultExpr = $matches[2].Trim(); $range = "[$($matches[3].Trim()), $($matches[4].Trim())]"
-        } elseif ($entryBlock -match '\.defineListAllowEmpty\(\s*"([^"]+)"\s*,\s*([^,]+?)\s*(?:,|\))') {
-            $configKey = $matches[1]; $defaultExpr = $matches[2].Trim(); $range = 'list of strings, empty allowed'
-        } elseif ($entryBlock -match '\.defineList\(\s*"([^"]+)"\s*,\s*([^,]+?)\s*(?:,|\))') {
-            $configKey = $matches[1]; $defaultExpr = $matches[2].Trim(); $range = 'list'
-            if ($entryBlock -match 'value >= (\d+)\s*&&\s*value <= (\d+)') {
-                $range = "list of integers, each in [$($matches[1]), $($matches[2])]"
+        $defineCall = [regex]::Match($entryBlock, '\.(defineInRange|defineListAllowEmpty|defineList|define)\s*\(')
+        if (-not $defineCall.Success) { Fail "missing supported config definition: $field" }
+        $defineArguments = [System.Collections.Generic.List[string]]::new()
+        $argumentText = [System.Text.StringBuilder]::new()
+        $depth = 1; $quoted = $false; $escaped = $false
+        for ($offset = $defineCall.Index + $defineCall.Length; $offset -lt $entryBlock.Length; $offset++) {
+            $character = $entryBlock[$offset]
+            if ($quoted) {
+                [void]$argumentText.Append($character)
+                if ($escaped) { $escaped = $false }
+                elseif ($character -eq '\') { $escaped = $true }
+                elseif ($character -eq '"') { $quoted = $false }
+                continue
             }
-        } elseif ($entryBlock -match '\.define\(\s*"([^"]+)"\s*,\s*([^)]+?)\)') {
-            $configKey = $matches[1]; $defaultExpr = $matches[2].Trim(); $range = 'boolean (ModConfigSpec.BooleanValue)'
+            if ($character -eq '"') { $quoted = $true; [void]$argumentText.Append($character); continue }
+            if ($character -eq '(') { $depth++; [void]$argumentText.Append($character); continue }
+            if ($character -eq ')') {
+                $depth--
+                if ($depth -eq 0) { $defineArguments.Add($argumentText.ToString().Trim()); break }
+                [void]$argumentText.Append($character); continue
+            }
+            if ($character -eq ',' -and $depth -eq 1) {
+                $defineArguments.Add($argumentText.ToString().Trim()); [void]$argumentText.Clear(); continue
+            }
+            [void]$argumentText.Append($character)
         }
+        if ($depth -ne 0 -or $quoted -or $defineArguments.Count -lt 2) { Fail "unbalanced config arguments: $field" }
+        if ($defineArguments[0] -notmatch '^"([A-Za-z0-9_]+)"$') { Fail "unsupported config key expression: $field" }
+        $configKey = $matches[1]; $defaultExpr = $defineArguments[1]
+        switch ($defineCall.Groups[1].Value) {
+            'defineInRange' {
+                if ($defineArguments.Count -ne 4) { Fail "invalid range arguments: $field" }
+                $range = "[$($defineArguments[2]), $($defineArguments[3])]"
+            }
+            'defineListAllowEmpty' { $range = 'list of strings, empty allowed' }
+            'defineList' {
+                $range = 'list'
+                if ($entryBlock -match 'value >= (\d+)\s*&&\s*value <= (\d+)') {
+                    $range = "list of integers, each in [$($matches[1]), $($matches[2])]"
+                }
+            }
+            'define' { $range = 'boolean (ModConfigSpec.BooleanValue)' }
+        }
+
         if (-not $configKey) { Fail "config entry '$field' has no define call: $entryBlock" }
         $defaultText = $defaultExpr
         $settingsRef = [regex]::Match($defaultExpr, 'FabSettings\.([A-Za-z0-9_]+)')
@@ -186,6 +218,12 @@ foreach ($line in ($fabConfigSource -split "`r?`n")) {
             }
             $defaultText = "$defaultExpr (=$($fabSettingsDefaults[$constName]))"
         }
+        $range = [regex]::Replace($range, 'FabSettings\.([A-Za-z0-9_]+)', [System.Text.RegularExpressions.MatchEvaluator]{
+            param($constantMatch)
+            $name = $constantMatch.Groups[1].Value
+            if (-not $fabSettingsDefaults.ContainsKey($name)) { Fail "unresolved range constant: $name" }
+            return $fabSettingsDefaults[$name]
+        })
         $entries.Add([pscustomobject]@{
             Category = $category; Key = $configKey; Field = $field
             Default = $defaultText; Range = $range
@@ -575,6 +613,18 @@ foreach ($row in $decisionRows) {
 }
 Emit-Blank
 
+Emit '## 26.3 API Notes from M1 Reports'
+Emit-Blank
+$spikeReport = Join-Path $Root 'docs/reports/M1-02s_energy-spike.md'
+Assert-File $spikeReport
+Emit 'Registration, energy, inventory persistence and menu APIs established by [M1-02s energy spike](reports/M1-02s_energy-spike.md):'
+Emit-Blank
+Emit '| Topic | Verified API | Original source evidence |'
+Emit '|-------|--------------|--------------------------|'
+$spikeRows = @((Read-SourceText $spikeReport) -split "`r?`n" | Where-Object { $_ -match '^\| (Block registration|Energy capability|Block entity type|Menu type registration|Menu abstract methods|Inventory persistence) \|' })
+if ($spikeRows.Count -lt 3) { Fail 'M1-02s API evidence rows missing' }
+foreach ($row in $spikeRows) { Emit $row }
+Emit-Blank
 Emit '## 26.3 API Notes (values derived from actual tracked sources at generation time)'
 Emit-Blank
 Emit '| Note | Source |'
