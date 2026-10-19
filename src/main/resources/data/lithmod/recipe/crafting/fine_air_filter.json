@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "W": "minecraft:white_wool",
+    "G": "minecraft:glass",
+    "I": "minecraft:iron_ingot"
+  },
+  "pattern": [
+    "WGW",
+    "GIG",
+    "WGW"
+  ],
+  "result": {
+    "id": "lithmod:fine_air_filter",
+    "count": 1
+  }
+}

@@ -31,71 +31,43 @@ public final class ModCreativeTabs {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
         DeferredRegister.create(Registries.CREATIVE_MODE_TAB, EUVCRAFTMod.MODID);
 
-    /** The EUVCRAFT tab. */
+    /**
+     * The single EUVCRAFT creative tab.
+     *
+     * <p>Unified ordering (32 stacks): the exact sequence is declared here so the
+     * presentation test can compare {@code tab.getDisplayItems()} against it.
+     * Stale comments about creating multiple tabs to preserve obsolete count tests
+     * have been removed.</p>
+     */
     public static final Supplier<CreativeModeTab> MAIN = CREATIVE_MODE_TABS.register(
         "0_main",
         () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup.lithmod"))
             .icon(() -> new ItemStack(ModItems.FOUP_MK1.get()))
             .displayItems((parameters, output) -> {
-                output.accept(FoupItems.emptyFoup(ModItems.FOUP_MK1.get()));
-                output.accept(FoupItems.emptyFoup(ModItems.FOUP_MK2.get()));
-            })
-            .build()
-    );
-
-    /**
-     * The EUVCRAFT chips and consumables tab.
-     *
-     * <p>A second tab rather than more entries in {@link #MAIN}, because the M0-08 game
-     * test {@code foup_creative_tab_entries} pins the main tab to exactly the two FOUP
-     * variants. Every chip and every consumable this milestone registers appears here,
-     * so later milestones only add entries to this tab.</p>
-     */
-    public static final Supplier<CreativeModeTab> CHIPS = CREATIVE_MODE_TABS.register(
-        "1_chips_and_consumables",
-        () -> CreativeModeTab.builder()
-            .title(Component.translatable("itemGroup.lithmod.chips"))
-            .icon(() -> new ItemStack(ModItems.LOGIC_CHIP_T1.get()))
-            .displayItems((parameters, output) -> {
-                output.accept(ModItems.LOGIC_CHIP_T1.get());
-                output.accept(ModItems.LOGIC_CHIP_T2.get());
-                output.accept(ModItems.MEMORY_CHIP_T2.get());
-                output.accept(ModItems.CHIP_SCRAP.get());
-                output.accept(ModItems.RESIST_T1.get());
-                output.accept(ModItems.RESIST_T2.get());
-                output.accept(ModItems.CHIP_PACKAGE.get());
-            })
-            .build()
-    );
-
-    /**
-     * The Process Cell multiblock blocks.
-     *
-     * <p>A third tab rather than entries in {@link #MAIN} or {@link #CHIPS}: the M0-08 game test
-     * pins the main tab to exactly two entries and the M1-05 test pins the chips tab to exactly
-     * seven, so adding to either would break a passing test rather than extend a feature.</p>
-     */
-    public static final Supplier<CreativeModeTab> PROCESS_CELL = CREATIVE_MODE_TABS.register(
-        "2_process_cell",
-        () -> CreativeModeTab.builder()
-            .title(Component.translatable("itemGroup.lithmod.process_cell"))
-            .icon(() -> new ItemStack(ModItems.PROCESS_CELL_CONTROLLER.get()))
-            .displayItems((parameters, output) -> {
+                // Silicon chain machines
+                output.accept(ModItems.CRYSTAL_PULLER.get());
+                output.accept(ModItems.WAFER_SLICER.get());
+                // Pattern Generator
+                output.accept(ModItems.PATTERN_GENERATOR.get());
+                // Test and Package machine
+                output.accept(ModItems.TEST_PACKAGE.get());
+                // Process Cell multiblock blocks
                 output.accept(ModItems.PROCESS_CELL_CONTROLLER.get());
                 output.accept(ModItems.PROCESS_CELL_CASING.get());
                 output.accept(ModItems.PROCESS_CELL_POWER_PORT.get());
-            })
-            .build()
-    );
-
-    /** The EUVCRAFT line components tab. */
-    public static final Supplier<CreativeModeTab> COMPONENTS = CREATIVE_MODE_TABS.register(
-        "3_line_components",
-        () -> CreativeModeTab.builder()
-            .title(Component.translatable("itemGroup.lithmod.line_components"))
-            .icon(() -> new ItemStack(ModItems.MERCURY_LAMP.get()))
-            .displayItems((parameters, output) -> {
+                // FOUP variants via FoupItems.emptyFoup (real sealed lots)
+                output.accept(FoupItems.emptyFoup(ModItems.FOUP_MK1.get()));
+                output.accept(FoupItems.emptyFoup(ModItems.FOUP_MK2.get()));
+                // Silicon feedstock and boule
+                output.accept(ModItems.SILICON.get());
+                output.accept(ModItems.SILICON_BOULE.get());
+                // Blank mask + three sample patterned masks
+                output.accept(ModItems.BLANK_MASK.get());
+                output.accept(sampleMask(DieTypes.LOGIC, 1));
+                output.accept(sampleMask(DieTypes.LOGIC, 2));
+                output.accept(sampleMask(DieTypes.MEMORY, 2));
+                // Line components (10)
                 output.accept(ModItems.MERCURY_LAMP.get());
                 output.accept(ModItems.I_LINE_LAMP.get());
                 output.accept(ModItems.CONTACT_PLATE.get());
@@ -106,78 +78,15 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.FINE_AIR_FILTER.get());
                 output.accept(ModItems.OPTICAL_MICROSCOPE.get());
                 output.accept(ModItems.OVERLAY_SCOPE.get());
-            })
-            .build()
-    );
-
-    /**
-     * The silicon chain: the two feedstock items and the two machines that turn them into
-     * a lot of wafers.
-     *
-     * <p>A fourth tab for the same reason the others exist: the game tests pin the main tab
-     * to exactly two entries and the chips tab to exactly seven, so adding to either would
-     * break a passing test.</p>
-     */
-    public static final Supplier<CreativeModeTab> SILICON_CHAIN = CREATIVE_MODE_TABS.register(
-        "4_silicon_chain",
-        () -> CreativeModeTab.builder()
-            .title(Component.translatable("itemGroup.lithmod.silicon_chain"))
-            .icon(() -> new ItemStack(ModItems.SILICON.get()))
-            .displayItems((parameters, output) -> {
-                output.accept(ModItems.SILICON.get());
-                output.accept(ModItems.SILICON_BOULE.get());
-                output.accept(ModItems.CRYSTAL_PULLER.get());
-                output.accept(ModItems.WAFER_SLICER.get());
-            })
-            .build()
-    );
-
-    /**
-     * The photomask group: the blank plate, one example mask per die type the
-     * milestone designs for, and the machine that cuts them.
-     *
-     * <p>A fifth tab for the same reason the others exist: the game tests pin the
-     * entry count of the main, chips, process cell, line component and silicon
-     * chain tabs, so a new item group gets a new tab rather than a new entry in
-     * one of those.</p>
-     *
-     * <p>The Pattern Generator is appended last so the four entries above keep
-     * their positions: a creative tab's entry order is what a test asserting on
-     * "the fourth entry" reads, and only the total grows. It has no recipes in
-     * this milestone, so it is here for look and layout rather than as a way to
-     * reach the machine in a survival game — {@code /give} and the game tests
-     * place it.</p>
-     */
-    public static final Supplier<CreativeModeTab> MASKS = CREATIVE_MODE_TABS.register(
-        "5_masks",
-        () -> CreativeModeTab.builder()
-            .title(Component.translatable("itemGroup.lithmod.masks"))
-            .icon(() -> new ItemStack(ModItems.MASK.get()))
-            .displayItems((parameters, output) -> {
-                output.accept(ModItems.BLANK_MASK.get());
-                output.accept(sampleMask(DieTypes.LOGIC, 1));
-                output.accept(sampleMask(DieTypes.LOGIC, 2));
-                output.accept(sampleMask(DieTypes.MEMORY, 2));
-                output.accept(ModItems.PATTERN_GENERATOR.get());
-            })
-            .build()
-    );
-
-    /**
-     * The Test and Package machine's own tab.
-     *
-     * <p>A tab of its own rather than an entry in {@link #SILICON_CHAIN} or {@link #MASKS}:
-     * the game tests pin the entry counts of the existing tabs, so appending to one would
-     * break a passing test rather than extend a feature. Presentation consolidation is a
-     * later milestone's change to this file.</p>
-     */
-    public static final Supplier<CreativeModeTab> TEST_PACKAGE = CREATIVE_MODE_TABS.register(
-        "6_test_package",
-        () -> CreativeModeTab.builder()
-            .title(Component.translatable("itemGroup.lithmod.test_package"))
-            .icon(() -> new ItemStack(ModItems.TEST_PACKAGE.get()))
-            .displayItems((parameters, output) -> {
-                output.accept(ModItems.TEST_PACKAGE.get());
+                // Resists and chip package
+                output.accept(ModItems.RESIST_T1.get());
+                output.accept(ModItems.RESIST_T2.get());
+                output.accept(ModItems.CHIP_PACKAGE.get());
+                // Chips and scrap (4)
+                output.accept(ModItems.LOGIC_CHIP_T1.get());
+                output.accept(ModItems.LOGIC_CHIP_T2.get());
+                output.accept(ModItems.MEMORY_CHIP_T2.get());
+                output.accept(ModItems.CHIP_SCRAP.get());
             })
             .build()
     );

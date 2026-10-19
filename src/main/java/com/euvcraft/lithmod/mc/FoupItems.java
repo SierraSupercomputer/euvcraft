@@ -146,4 +146,32 @@ public final class FoupItems {
     public static boolean isFoup(ItemStack stack) {
         return stack.has(ModDataComponents.FOUP_CONTENTS.get());
     }
+
+    /**
+     * Initializes a FOUP stack with a fresh lot if it lacks FOUP_CONTENTS.
+     *
+     * <p>MUST be called server-side only. Guards against non-FOUP items and
+     * never replaces an existing component (trusted lot OR client-view).
+     * Uses {@link #emptyFoup(Item)} to obtain a fresh UUID/configured capacity
+     * and copies ONLY the generated component onto the original stack.
+     * Keeps other components and stack count.</p>
+     *
+     * @param stack the stack to initialize, not null
+     */
+    public static void initializeIfMissing(ItemStack stack) {
+        // Exact registered FOUP item guard
+        Item item = stack.getItem();
+        if (!(item == ModItems.FOUP_MK1.get() || item == ModItems.FOUP_MK2.get())) {
+            return;
+        }
+
+        // Only initialize when FOUP_CONTENTS is ABSENT
+        if (!stack.has(ModDataComponents.FOUP_CONTENTS.get())) {
+            ItemStack fresh = emptyFoup(item);
+            FoupContents contents = fresh.get(ModDataComponents.FOUP_CONTENTS.get());
+            if (contents != null) {
+                stack.set(ModDataComponents.FOUP_CONTENTS.get(), contents);
+            }
+        }
+    }
 }

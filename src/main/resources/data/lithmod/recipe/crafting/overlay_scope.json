@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "G": "minecraft:glass",
+    "Q": "minecraft:quartz",
+    "I": "minecraft:iron_ingot"
+  },
+  "pattern": [
+    "GQG",
+    "QIQ",
+    "GQG"
+  ],
+  "result": {
+    "id": "lithmod:overlay_scope",
+    "count": 1
+  }
+}

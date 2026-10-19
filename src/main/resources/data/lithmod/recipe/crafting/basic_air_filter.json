@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "W": "minecraft:white_wool",
+    "I": "minecraft:iron_ingot",
+    "P": "minecraft:paper"
+  },
+  "pattern": [
+    "WPW",
+    "IPI",
+    "WPW"
+  ],
+  "result": {
+    "id": "lithmod:basic_air_filter",
+    "count": 1
+  }
+}

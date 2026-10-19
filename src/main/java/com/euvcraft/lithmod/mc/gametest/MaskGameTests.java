@@ -1574,50 +1574,66 @@ public final class MaskGameTests {
                 "the design read back carries another exposure count");
         }
 
-        // The photomask tab: the blank plate, one usable sample per design this milestone
-        // cuts, and the machine.
-        CreativeModeTab tab = ModCreativeTabs.MASKS.get();
+        // The unified MAIN tab: filter to blank_mask and mask entries (blank + three variants)
+        CreativeModeTab tab = ModCreativeTabs.MAIN.get();
         tab.buildContents(new CreativeModeTab.ItemDisplayParameters(
             helper.getLevel().enabledFeatures(), true, helper.getLevel().registryAccess()));
         Collection<ItemStack> displayed = tab.getDisplayItems();
         List<ItemStack> entries = new ArrayList<>(displayed);
-        helper.assertValueEqual(5, entries.size(),
-            "the photomask tab holds " + entries.size() + " entries rather than the five it registers");
 
-        helper.assertTrue(entries.get(0).getItem() == ModItems.BLANK_MASK.get(),
-            "the first photomask tab entry is " + entries.get(0).getItem() + " not the blank plate");
-        helper.assertTrue(entries.get(0).get(ModDataComponents.MASK_DATA.get()) == null,
+        // Check generator presence in original displayed collection separately
+        boolean hasGenerator = false;
+        for (ItemStack stack : entries) {
+            if (stack.getItem() == ModItems.PATTERN_GENERATOR.get()) {
+                hasGenerator = true;
+                break;
+            }
+        }
+        helper.assertTrue(hasGenerator, "the pattern generator is missing from the main tab");
+
+        // Build filtered list: ONLY blank_mask and mask (four entries: blank + three variants)
+        List<ItemStack> maskFiltered = new ArrayList<>();
+        for (ItemStack stack : entries) {
+            Item item = stack.getItem();
+            if (item == ModItems.BLANK_MASK.get() || item == ModItems.MASK.get()) {
+                maskFiltered.add(stack);
+            }
+        }
+        helper.assertValueEqual(4, maskFiltered.size(),
+            "the main tab holds " + maskFiltered.size() + " mask-related entries rather than four");
+
+        // Entry 0: blank mask
+        helper.assertTrue(maskFiltered.get(0).getItem() == ModItems.BLANK_MASK.get(),
+            "the first mask entry is " + maskFiltered.get(0).getItem() + " not the blank plate");
+        helper.assertTrue(maskFiltered.get(0).get(ModDataComponents.MASK_DATA.get()) == null,
             "the blank plate in the tab carries a design");
 
+        // Entries 1-3: three sample masks in order (logic T1, logic T2, memory T2)
         String[] sampleDieTypes = {DieTypes.LOGIC, DieTypes.LOGIC, DieTypes.MEMORY};
         int[] sampleTiers = {1, 2, 2};
         for (int sample = 0; sample < sampleDieTypes.length; sample++) {
-            ItemStack entry = entries.get(1 + sample);
+            ItemStack entry = maskFiltered.get(1 + sample);
             helper.assertTrue(entry.getItem() == ModItems.MASK.get(),
-                "tab entry " + (1 + sample) + " is " + entry.getItem() + " not a photomask");
+                "mask entry " + (1 + sample) + " is " + entry.getItem() + " not a photomask");
             MaskData design = entry.get(ModDataComponents.MASK_DATA.get());
             helper.assertTrue(design != null,
-                "the photomask tab hands out a mask with no design at entry " + (1 + sample));
+                "the main tab hands out a mask with no design at mask entry " + (1 + sample));
             if (design == null) {
                 continue;
             }
             helper.assertTrue(sampleDieTypes[sample].equals(design.dieType()),
-                "the sample at entry " + (1 + sample) + " names the die type " + design.dieType());
+                "the sample at mask entry " + (1 + sample) + " names the die type " + design.dieType());
             helper.assertValueEqual(sampleTiers[sample], design.tierIndex(),
-                "the sample at entry " + (1 + sample) + " names another node tier");
+                "the sample at mask entry " + (1 + sample) + " names another node tier");
             helper.assertValueEqual(configuredUses, design.usesRemaining(),
-                "the sample at entry " + (1 + sample) + " does not follow the configured "
+                "the sample at mask entry " + (1 + sample) + " does not follow the configured "
                     + "maskUses");
             helper.assertFalse(design.isSpent(),
-                "the photomask tab hands out an already spent mask at entry " + (1 + sample));
+                "the main tab hands out an already spent mask at mask entry " + (1 + sample));
         }
-        helper.assertTrue(entries.get(4).getItem() == ModItems.PATTERN_GENERATOR.get(),
-            "the last photomask tab entry is " + entries.get(4).getItem()
-                + " rather than the pattern generator");
 
         LOGGER.info("[M1-06] {}: blank plate stacks to 64, a photomask to 1, a bare mask has no "
-                + "design, and the tab hands out the plate, logic T1/T2, memory T2 at {} uses "
-                + "and the generator",
+                + "design, and the main tab hands out the plate, logic T1/T2, memory T2 at {} uses",
             CATALOG_AND_TAB, configuredUses);
 
         helper.succeed();

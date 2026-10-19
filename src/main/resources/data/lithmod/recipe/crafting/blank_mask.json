@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "Q": "minecraft:quartz",
+    "G": "minecraft:glass",
+    "I": "minecraft:iron_ingot"
+  },
+  "pattern": [
+    "QGQ",
+    "GIG",
+    "QGQ"
+  ],
+  "result": {
+    "id": "lithmod:blank_mask",
+    "count": 1
+  }
+}

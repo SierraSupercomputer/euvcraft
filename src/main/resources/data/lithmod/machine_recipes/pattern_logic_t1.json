@@ -1,0 +1,25 @@
+{
+  "machine": "pattern_generator",
+  "ingredients": [
+    {
+      "item": "lithmod:blank_mask",
+      "count": 1
+    },
+    {
+      "item": "minecraft:copper_ingot",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:mask",
+    "count": 1,
+    "components": {
+      "lithmod:mask_data": {
+        "die_type": "logic",
+        "tier_index": 1,
+        "uses_remaining": 0
+      }
+    }
+  },
+  "ticks": 200
+}

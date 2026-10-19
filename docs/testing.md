@@ -317,3 +317,27 @@ Expected: 509 unit tests in 74 classes; 791 distinct server cases including all 
 **Current 632d867**: 17 `ProcessCell` prefix cases (16 new + 1 old block drop) — purpose: stronger test assertions only.
 
 See `reports/M1-09_process-cell-controller.md` for actual registered IDs, class rows and executed fault controls. M1-09 is accepted; see `reports/M1-09_acceptance.md` for final reviews, the tested merge candidate and its disclosed optional Arcforge result. Source pins alone are not merge approval.
+
+## M1-11 Recipes and Presentation checks
+
+**Offline Gradle command (production 84beb49):**
+```
+.\gradlew.bat test checkCoreImports jar runGameTestServer --offline --console=plain
+```
+
+**Measured at source head `84beb495b8f052a141777165a1d11d555cf48cb9`:**
+
+- Unit tests: 513 tests in 75 classes, 0 failures/errors/skipped; 75-class XML table in the M1-11 report
+- Game tests: 801 case records, 801 unique names, 800 passed, 0 required failures, 1 optional failure (`arcforge:creosote_moves`) represented as skipped; all 131 project cases passed
+- 10 new presentation IDs registered and passing (see report for full list)
+- Verified literal checks: translation calls with arguments, `RefusalReason.Code` and `ProcessState` enum keys, registered component kind/tier keys, M1 die/tier labels
+- Registry/resource checks: models/item defs, blockstate/parent refs, loot/self-drops, pickaxe/harvest tags, survival drops for Crystal Puller and Process Cell Casing (exact one each, `player.gameMode.destroyBlock`)
+- Creative tab: one tab `lithmod:0_main`, 32 stacks, 30 unique production types + 2 mask variants; 31 items + 8 blocks registered including `test_machine` fixture (M1-12 will gate/remove; not already gated)
+- FOUP init: server hooks initialize only absent component (UUID/cap/config), preserve existing lot/client view/other components; `trustedContentsOf` still rejects fabricated wafers
+- GUI bars: plain solid fill, distinct empty/fill colors, localized tooltips; no raster/new art, no client render claim
+- Datapack probe: `blank_mask` override via real server reload + unkeyed lookup/sourcePackId, restores selection/result before success, no MockRegistry
+- Recipe guide: `tools/generate-m1-recipes.ps1 -Check` verified; stale probe failed without mutation, exact guide restored
+- Known failures: coordinator repaired generator syntax, test API, quoted mask JSON (1 unit + 3 server), solid fill, imports, DataPack API/stale RecipeManager, entity constant, language/coverage, 6 missing block names; stale packet dispatch caused rejected FOUP/creative attempts — checkpoints preserved, paths fixed; no fault controls beyond actual failed check + stale probe
+- Limitations: no 3-process repeat (M1-12), no visual pass, Arcforge skip honest, candidate/final reviews + master merge PENDING, GLM recipe phase approve only scoped (Beam 429), M1-12 full chain/statistics/privacy/hand-fed/definition reload/debug energy/fixture gate/handoff/manual remain future, no complete playable M1 claim
+
+See `reports/M1-11_recipes-and-presentation.md` for factual scope/result, actual relative changed paths, recipes/guide, FOUP and GUI/creative changes, thorough measured evidence, limitations, review/integration PENDING.
