@@ -61,6 +61,8 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -89,11 +91,11 @@ record TestPackageResult(
 }
 
 /**
- * End-to-end M1 gate tests: each case drives a complete real-machine chain on a real
- * ServerLevel from raw inputs to final packaged output.
+ * M1 gate tests: chain cases drive real machines on a ServerLevel from raw inputs
+ * to final packaged output; the statistical case exercises the server yield service.
  *
- * <p>No simulation, no handcrafted intermediate products, no FabYieldService.applyLayerStep
- * calls by the test. Every machine is ticked through its actual serverTick with real FE.
+ * <p>Chain cases use no handcrafted intermediate products or direct
+ * FabYieldService.applyLayerStep calls. Machines use their actual serverTick with real FE.
  * All configuration borrowed only inside synchronous try/finally with exact restoration.
  * h.succeed() called AFTER cleanup.
  */
@@ -790,6 +792,8 @@ public final class M1GateGameTests {
                 t2Total += contents.size();
             }
 
+            helper.assertTrue(t1Total == LOTS * WAFERS_PER_LOT, "T1 must sample exactly 12800 wafers");
+            helper.assertTrue(t2Total == LOTS * WAFERS_PER_LOT, "T2 must sample exactly 12800 wafers");
             double t1Rate = (double) t1Passing / t1Total;
             double t2Rate = (double) t2Passing / t2Total;
 
@@ -800,9 +804,9 @@ public final class M1GateGameTests {
                     "T2 observed rate " + String.format("%.4f", t2Rate) + " vs target " + String.format("%.4f", t2Yield) + " (diff=" + String.format("%.4f", Math.abs(t2Rate - t2Yield)) + ")");
 
             // Log aggregate evidence
-            EUVCRAFTMod.LOGGER.info("[M1-GATE-STATS] T1 logic: {} of {} wafers passed, observed={:.4f} target={:.4f} diff={:.4f}",
+            EUVCRAFTMod.LOGGER.info("[M1-GATE-STATS] T1 logic: {} of {} wafers passed, observed={} target={} diff={}",
                     t1Passing, t1Total, t1Rate, t1Yield, Math.abs(t1Rate - t1Yield));
-            EUVCRAFTMod.LOGGER.info("[M1-GATE-STATS] T2 memory: {} of {} wafers passed, observed={:.4f} target={:.4f} diff={:.4f}",
+            EUVCRAFTMod.LOGGER.info("[M1-GATE-STATS] T2 memory: {} of {} wafers passed, observed={} target={} diff={}",
                     t2Passing, t2Total, t2Rate, t2Yield, Math.abs(t2Rate - t2Yield));
 
         } finally {
@@ -841,10 +845,12 @@ public final class M1GateGameTests {
             BlockPos cellControllerPos = BASE.offset(MACHINE_SPACING * 3, 0, 0);
             BlockPos packagePos = BASE.offset(MACHINE_SPACING * 4, 0, 0);
 
+            Set<UUID> seenLotIds = new HashSet<>();
             // Run 10 T1 logic lots
             for (int i = 0; i < 10; i++) {
                 resetMachines(helper, level, pullerPos, slicerPos, generatorPos, cellControllerPos, packagePos);
                 ChainResult result = runCompleteChain(helper, level, DieTypes.LOGIC, 1, Items.COPPER_INGOT);
+                helper.assertTrue(seenLotIds.add(result.lotId()), "Each machine lot must have a fresh identity");
                 EUVCRAFTMod.LOGGER.info("[M1-GATE-20LOTS] T1 logic lot {}: {} wafers, {} passing, {} chips, {} scrap, {} packages",
                         i + 1, result.waferCount(), result.passing(), result.chips(), result.scrap(), result.packages());
             }
@@ -853,10 +859,12 @@ public final class M1GateGameTests {
             for (int i = 0; i < 10; i++) {
                 resetMachines(helper, level, pullerPos, slicerPos, generatorPos, cellControllerPos, packagePos);
                 ChainResult result = runCompleteChain(helper, level, DieTypes.MEMORY, 2, Items.REDSTONE);
+                helper.assertTrue(seenLotIds.add(result.lotId()), "Each machine lot must have a fresh identity");
                 EUVCRAFTMod.LOGGER.info("[M1-GATE-20LOTS] T2 memory lot {}: {} wafers, {} passing, {} chips, {} scrap, {} packages",
                         i + 1, result.waferCount(), result.passing(), result.chips(), result.scrap(), result.packages());
             }
 
+            helper.assertTrue(seenLotIds.size() == 20, "Must complete exactly 20 independent machine lots");
         } finally {
             // Exact restoration
             FabConfig.WAFERS_PER_BOULE.set(originalWafersPerBoule);
