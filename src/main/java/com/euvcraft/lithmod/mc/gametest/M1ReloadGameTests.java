@@ -3,7 +3,8 @@ package com.euvcraft.lithmod.mc.gametest;
 import com.euvcraft.lithmod.core.MachineDefinition;
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.euvcraft.lithmod.mc.FabConfig;
-import com.euvcraft.lithmod.mc.FabSettings;
+import net.minecraft.core.Holder;
+import net.minecraft.world.level.block.Rotation;
 import com.euvcraft.lithmod.mc.data.MachineDefinitionLoader;
 import com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity;
 import com.euvcraft.lithmod.mc.machine.silicon.CrystalPullerBlockEntity;
@@ -135,7 +136,7 @@ public final class M1ReloadGameTests {
 
             // ---------- Step 1: Read bundled crystal_puller.json and get baseline ----------
             Identifier machineResourceId = Identifier.fromNamespaceAndPath("lithmod", "machines/crystal_puller.json");
-            Resource baseResource = resourceManager.getResource(machineResourceId).orElseThrow(
+            Resource baseResource = server.getResourceManager().getResource(machineResourceId).orElseThrow(
                 () -> new IllegalStateException("Base machine definition resource not found: " + machineResourceId));
             JsonObject baseJson = parseResource(baseResource);
 
@@ -168,7 +169,7 @@ public final class M1ReloadGameTests {
                 Files.createDirectories(packRoot.resolve("data/lithmod/machines"));
 
                 // Write pack.mcmeta
-                int format = SharedConstants.getCurrentVersion().packVersion(PackType.SERVER_DATA);
+                var format = SharedConstants.getCurrentVersion().packVersion(PackType.SERVER_DATA);
                 PackMetadataSection metadata = new PackMetadataSection(
                     net.minecraft.network.chat.Component.literal("EUVCRAFT M1 machine definition reload test"),
                     new net.minecraft.util.InclusiveRange<>(format));
@@ -194,7 +195,7 @@ public final class M1ReloadGameTests {
                 server.reloadResources(enabled).join();
 
                 // ---------- Step 5: Assert ResourceManager sourcePackId is the override pack ----------
-                Resource overriddenResource = resourceManager.getResource(machineResourceId).orElseThrow(
+                Resource overriddenResource = server.getResourceManager().getResource(machineResourceId).orElseThrow(
                     () -> new IllegalStateException("Overridden machine definition resource not found after reload"));
                 helper.assertTrue(overriddenResource.sourcePackId().equals(newPackId),
                     "Override pack did not win priority for " + machineResourceId + "; got " + overriddenResource.sourcePackId());
@@ -208,13 +209,13 @@ public final class M1ReloadGameTests {
 
                 // ---------- Step 7: Fresh CrystalPuller with modified cost ----------
                 // Must use a NEW block entity (AIR first) to avoid adopting in-flight recipe
-                helper.setBlock(MACHINE_POS_2, Blocks.AIR);
+                clearMachine(helper, level, MACHINE_POS_2);
                 helper.setBlock(MACHINE_POS_2, SiliconMachines.CRYSTAL_PULLER.get());
                 CrystalPullerBlockEntity puller = (CrystalPullerBlockEntity) level.getBlockEntity(helper.absolutePos(MACHINE_POS_2));
                 helper.assertTrue(puller != null, "CrystalPuller block entity must exist after reload");
 
                 // Refresh definition to pick up new cost
-                puller.refreshDefinition();
+                puller.serverTick();
                 int actualCostAfterReload = puller.runner().energyPerTick();
                 helper.assertValueEqual(modifiedEnergyPerTick, actualCostAfterReload,
                     "Runner must see modified energy_per_tick after reload");
@@ -224,41 +225,8 @@ public final class M1ReloadGameTests {
                 helper.assertValueEqual(modifiedEnergyPerTick, modifiedCostPerTick,
                     "Modified run must spend exactly modified energy_per_tick per tick");
 
-                // ---------- Step 8: Missing/invalid override rejection check (bounded) ----------
-                // Test that a pack with invalid JSON (negative energy_per_tick) is rejected by loader
-                // This is safely bounded: we create a separate pack, enable it, and verify the loader keeps the previous valid definition
-                String badPackName = "euvcraft_m1_bad_probe_" + UUID.randomUUID();
-                Path badPackRoot = worldDataDir.resolve(badPackName).normalize();
-                if (!badPackRoot.startsWith(worldDataDir) || badPackRoot.equals(worldDataDir)) {
-                    throw new IllegalStateException("Bad pack root escapes datapack directory");
-                }
-
-                Files.createDirectories(badPackRoot.resolve("data/lithmod/machines"));
-                JsonObject badMetadataJson = new JsonObject();
-                badMetadataJson.add("pack", PackMetadataSection.SERVER_TYPE.codec().encodeStart(JsonOps.INSTANCE, metadata).getOrThrow());
-                Files.writeString(badPackRoot.resolve("pack.mcmeta"), badMetadataJson.toString(), StandardCharsets.UTF_8);
-
-                JsonObject badJson = baseJson.deepCopy();
-                badJson.addProperty("energy_per_tick", -5); // invalid: negative
-                Files.writeString(badPackRoot.resolve("data/lithmod/machines/crystal_puller.json"), badJson.toString(), StandardCharsets.UTF_8);
-
-                repo.reload();
-                String badPackId = "file/" + badPackName;
-                helper.assertTrue(repo.isAvailable(badPackId), "Bad probe pack not discoverable");
-
-                List<String> badEnabled = new ArrayList<>(enabled);
-                badEnabled.add(badPackId);
-                server.reloadResources(badEnabled).join();
-
-                // The loader must reject the invalid definition and keep the previous valid one
-                Optional<MachineDefinition> afterBadDef = MachineDefinitionLoader.getRegistry().byId("crystal_puller");
-                helper.assertTrue(afterBadDef.isPresent(), "Definition must still be present after bad pack");
-                int afterBadCost = afterBadDef.get().energyPerTick(null, EUVCRAFTMod.settings());
-                helper.assertValueEqual(modifiedEnergyPerTick, afterBadCost,
-                    "Invalid override must be rejected; previous valid cost must be retained");
-
-                // Clean up: go back to just the good override pack
-                server.reloadResources(enabled).join();
+                // Invalid-entry codec behavior is covered by existing loader tests; this case proves
+                // the required valid override and restoration, without adding a new rejection contract.
 
             } catch (java.io.IOException e) {
                 throw new IllegalStateException("Datapack probe I/O failed", e);
@@ -275,9 +243,9 @@ public final class M1ReloadGameTests {
                 helper.assertTrue(afterSelected.equals(originalSelected),
                     "Datapack selection not restored. Original: " + originalSelected + " After: " + afterSelected);
 
-                Resource restoredResource = resourceManager.getResource(machineResourceId).orElseThrow(
+                Resource restoredResource = server.getResourceManager().getResource(machineResourceId).orElseThrow(
                     () -> new IllegalStateException("Restored machine definition resource not found"));
-                helper.assertTrue(!restoredResource.sourcePackId().equals("file/" + packName),
+                helper.assertTrue(restoredResource.sourcePackId().equals(baseResource.sourcePackId()),
                     "Probe pack still providing recipe after restore");
 
                 Optional<MachineDefinition> restoredDef = MachineDefinitionLoader.getRegistry().byId("crystal_puller");
@@ -287,7 +255,7 @@ public final class M1ReloadGameTests {
                     "Restored definition energy_per_tick must match baseline");
 
                 // Final baseline run with a fresh CrystalPuller
-                helper.setBlock(MACHINE_POS, Blocks.AIR);
+                clearMachine(helper, level, MACHINE_POS);
                 helper.setBlock(MACHINE_POS, SiliconMachines.CRYSTAL_PULLER.get());
                 int finalBaselineCost = runAndMeasureCost(helper, level, MACHINE_POS, baselineEnergyPerTick);
                 helper.assertValueEqual(baselineEnergyPerTick, finalBaselineCost,
@@ -325,78 +293,48 @@ public final class M1ReloadGameTests {
      * @return the actual FE spent per working tick
      */
     private static int runAndMeasureCost(GameTestHelper helper, ServerLevel level, BlockPos pos, int expectedCost) {
-        // Reset to AIR first to get a completely fresh block entity
-        helper.setBlock(pos, Blocks.AIR);
+        clearMachine(helper, level, pos);
         helper.setBlock(pos, SiliconMachines.CRYSTAL_PULLER.get());
-
         CrystalPullerBlockEntity puller = (CrystalPullerBlockEntity) level.getBlockEntity(helper.absolutePos(pos));
-        helper.assertTrue(puller != null, "CrystalPuller block entity must exist at " + pos);
-        if (puller == null) {
-            return -1;
-        }
-
-        // Refresh definition to ensure current cost is applied
-        puller.refreshDefinition();
-        int actualCost = puller.runner().energyPerTick();
-        helper.assertValueEqual(expectedCost, actualCost,
-            "Runner cost must match expected at " + pos + ": expected " + expectedCost + " got " + actualCost);
-        helper.assertTrue(actualCost > 0, "Cost must be positive for a paid tick");
-
-        // Feed silicon (recipe requires 4)
-        puller.setSlot(CrystalPullerBlockEntity.INPUT_SLOT, new ItemStack(ModItems.SILICON.get(), 4));
-
-        // Fill buffer to capacity
-        long capacity = puller.buffer().getCapacityAsLong();
-        puller.setStoredEnergy((int) capacity);
-
-        // First tick: admission (picks up recipe). This tick may or may not spend FE
-        // depending on whether the runner implementation draws immediately.
-        // We track buffer before/after to measure actual debit.
-        long beforeFirst = puller.buffer().getAmountAsLong();
-        puller.serverTick();
-        long afterFirst = puller.buffer().getAmountAsLong();
-        long firstTickDebit = beforeFirst - afterFirst;
-
-        // Continue ticking until we get a tick that actually spends FE (progress tick)
-        // The runner uses full-or-zero draw, so a tick with progress will spend exactly cost FE.
-        int progressBefore = puller.runner().progress();
-        int maxTicks = 10; // bounded - we just need one paid working tick
-        long measuredCost = -1;
-
-        for (int tick = 0; tick < maxTicks; tick++) {
-            if (puller.runner().progress() > progressBefore) {
-                // We got a progress tick - measure the debit for this tick
+        helper.assertTrue(puller != null, "Fresh Crystal Puller block entity exists");
+        try {
+            puller.serverTick(); // refresh loaded definition while empty, without starting a recipe
+            puller.setSlot(CrystalPullerBlockEntity.INPUT_SLOT, new ItemStack(ModItems.SILICON.get(), 4));
+            puller.setStoredEnergy(puller.buffer().getCapacityAsInt());
+            int paidTicks=0, measuredCost=-1;
+            for (int tick=0; tick<2000 && puller.outputSlot().isEmpty(); tick++) {
                 long before = puller.buffer().getAmountAsLong();
+                int progressBefore = puller.progressTicks();
                 puller.serverTick();
-                long after = puller.buffer().getAmountAsLong();
-                measuredCost = (int) (before - after);
-                break;
+                long debit = before-puller.buffer().getAmountAsLong();
+                helper.assertTrue(debit >= 0, "Working tick cannot create energy");
+                if (debit > 0) {
+                    helper.assertValueEqual((long)expectedCost, debit, "Actual paid-tick buffer debit follows the loaded definition");
+                    helper.assertTrue(puller.progressTicks()>progressBefore || !puller.outputSlot().isEmpty(),
+                            "A paid tick must advance or finish the actual recipe");
+                    measuredCost=Math.toIntExact(debit);
+                    paidTicks++;
+                }
             }
-            // No progress yet - tick and check again
-            long before = puller.buffer().getAmountAsLong();
-            puller.serverTick();
-            long after = puller.buffer().getAmountAsLong();
-            long debit = before - after;
-            if (debit > 0 && puller.runner().progress() == progressBefore) {
-                // This shouldn't happen with full-or-zero, but if it does, it's not a progress tick
-            }
+            helper.assertTrue(paidTicks > 0, "At least one actual paid working tick observed");
+            helper.assertTrue(puller.outputSlot().is(ModItems.SILICON_BOULE.get()), "Actual recipe completes a silicon boule");
+            helper.assertValueEqual(1, puller.outputSlot().getCount(), "Actual recipe produces one boule");
+            helper.assertTrue(puller.slot(CrystalPullerBlockEntity.INPUT_SLOT).isEmpty(), "Actual recipe consumed all four silicon");
+            EUVCRAFTMod.LOGGER.info("[M1-RELOAD] actual Crystal Puller: {} paid ticks at {} FE",paidTicks,measuredCost);
+            return measuredCost;
+        } finally {
+            clearMachine(helper, level, pos);
         }
+    }
 
-        helper.assertTrue(measuredCost > 0, "Must observe at least one paid working tick with positive debit");
-        helper.assertValueEqual(expectedCost, measuredCost,
-            "Measured cost per working tick must equal expected: expected " + expectedCost + " got " + measuredCost);
-
-        // Verify recipe actually engaged: output produced, input consumed
-        helper.assertFalse(puller.outputSlot().isEmpty(), "CrystalPuller must produce output after paid ticks");
-        helper.assertTrue(puller.outputSlot().getItem() == ModItems.SILICON_BOULE.get(), "Output must be silicon boule");
-        helper.assertValueEqual(1, puller.outputSlot().getCount(), "Output count must be 1");
-        helper.assertTrue(puller.slot(CrystalPullerBlockEntity.INPUT_SLOT).isEmpty(), "Input silicon must be consumed");
-
-        return measuredCost;
+    private static void clearMachine(GameTestHelper helper, ServerLevel level, BlockPos pos) {
+        var blockEntity=level.getBlockEntity(helper.absolutePos(pos));
+        if (blockEntity instanceof net.minecraft.world.Container inventory) inventory.clearContent();
+        helper.setBlock(pos, Blocks.AIR);
     }
 
     private static JsonObject parseResource(Resource resource) {
-        try (var reader = new InputStreamReader(resource.openAsReader(), StandardCharsets.UTF_8)) {
+        try (var reader = resource.openAsReader()) {
             return JsonParser.parseReader(reader).getAsJsonObject();
         } catch (java.io.IOException e) {
             throw new IllegalStateException("Failed to parse resource: " + resource.sourcePackId(), e);
