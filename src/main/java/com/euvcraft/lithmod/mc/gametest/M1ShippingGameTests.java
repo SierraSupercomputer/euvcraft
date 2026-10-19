@@ -168,28 +168,26 @@ public final class M1ShippingGameTests {
         }
     }
 
-    /**
-     * Proves the fixture item is not reachable from any creative tab. Display items
-     * are built client-side, so on a headless probe server tabs may report empty or
-     * unusable lists; those tabs are skipped, and registry absence is already proved
-     * by {@link #assertRegistryAbsence}.
-     */
+    /** Builds the actual mod tab on the server; empty contents cannot pass. */
     private static void assertCreativeAbsence(GameTestHelper helper) {
-        for (CreativeModeTab tab : BuiltInRegistries.CREATIVE_MODE_TAB) {
-            List<ItemStack> display;
-            try {
-                display = tab.getDisplayItems();
-            } catch (RuntimeException skipped) {
-                continue;
-            }
-            if (display == null) {
-                continue;
-            }
-            for (ItemStack stack : display) {
-                helper.assertTrue(stack.isEmpty()
-                        || !FIXTURE_ID.equals(BuiltInRegistries.ITEM.getKey(stack.getItem())),
-                    "no creative tab may list the test_machine fixture item");
-            }
+        var level = helper.getLevel();
+        var params = new CreativeModeTab.ItemDisplayParameters(
+            level.enabledFeatures(), true, level.registryAccess());
+        CreativeModeTab tab = com.euvcraft.lithmod.mc.registry.ModCreativeTabs.MAIN.get();
+        tab.buildContents(params);
+        var display = tab.getDisplayItems();
+        helper.assertTrue(!display.isEmpty(), "production creative tab must have contents");
+        helper.assertTrue(display.stream().anyMatch(stack ->
+            Identifier.parse("lithmod:crystal_puller").equals(BuiltInRegistries.ITEM.getKey(stack.getItem()))),
+            "production machine must appear in actual creative contents");
+        helper.assertTrue(display.stream().anyMatch(stack ->
+            Identifier.parse("lithmod:foup_mk1").equals(BuiltInRegistries.ITEM.getKey(stack.getItem()))),
+            "production FOUP must appear in actual creative contents");
+        for (ItemStack stack : display) {
+            helper.assertTrue(stack.isEmpty()
+                    || !FIXTURE_ID.equals(BuiltInRegistries.ITEM.getKey(stack.getItem())),
+                "creative tab must not list the test-machine fixture");
         }
+        helper.succeed();
     }
 }

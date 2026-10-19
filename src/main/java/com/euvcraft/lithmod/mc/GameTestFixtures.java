@@ -57,7 +57,7 @@ public final class GameTestFixtures {
         // Guard FMLLoader.getCurrentOrNull if outside-loader calls require it;
         // property false early return prevents unit JVM dependency init.
         // Installed loader 12.0.10 has FMLEnvironment.isProduction() METHOD, not .production field.
-        boolean isProd = FMLEnvironment.isProduction();
+        boolean isProd = FMLLoader.getCurrentOrNull() == null || FMLEnvironment.isProduction();
         fixturesEnabled = !isProd;
         return fixturesEnabled;
     }
@@ -81,7 +81,7 @@ public final class GameTestFixtures {
             return false;
         }
         // Production must not register probe even if property is true
-        boolean isProd = FMLEnvironment.isProduction();
+        boolean isProd = FMLLoader.getCurrentOrNull() == null || FMLEnvironment.isProduction();
         shippingProbeEnabled = !isProd;
         return shippingProbeEnabled;
     }
