@@ -441,7 +441,7 @@ public final class M1BoundaryGameTests {
         for (int i = 0; i < tooltip1.size(); i++) {
             String t1 = tooltip1.get(i).getString();
             String t2 = tooltip2.get(i).getString();
-            helper.assertValueEqual(t1, t2, "tooltip line " + i + " must match without exposing private fields");
+            helper.assertTrue(t1.equals(t2), "Tooltip public text must be invariant at line " + i);
         }
 
         // Verify tooltip contains ONLY public values (capacity, wafer count, layer)
@@ -539,6 +539,7 @@ public final class M1BoundaryGameTests {
             helper.assertTrue(!allLogs.matches("(?s).*wafer.*0\\.1.*0\\.9.*"), "logs must not dump multiple roll values");
 
         } finally {
+            clearBoundaryFixture(helper, new BlockPos(1, 1, 1));
             capturingAppender.stop();
             coreLogger.removeAppender(capturingAppender);
         }
@@ -698,6 +699,8 @@ public final class M1BoundaryGameTests {
             packaging.setSlot(0, second.copy());
             h.assertTrue(before.equals(menuValues(packageMenu)), "Private FOUP changes cannot alter packaging data slots");
         } finally {
+            clearBoundaryFixture(h, new BlockPos(1, 1, 1));
+            clearBoundaryFixture(h, new BlockPos(5, 1, 1));
             player.closeContainer();
         }
     }
@@ -711,6 +714,12 @@ public final class M1BoundaryGameTests {
         } catch (ReflectiveOperationException e) {
             throw new IllegalStateException("Cannot inspect actual registered menu data slots", e);
         }
+    }
+
+    private static void clearBoundaryFixture(GameTestHelper helper, BlockPos relative) {
+        var blockEntity = helper.getLevel().getBlockEntity(helper.absolutePos(relative));
+        if (blockEntity instanceof net.minecraft.world.Container inventory) inventory.clearContent();
+        helper.setBlock(relative, Blocks.AIR);
     }
 
     // Connected test player, using the same lifecycle as the existing server menu tests.

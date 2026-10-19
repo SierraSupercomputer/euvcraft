@@ -303,11 +303,17 @@ public final class M1GateGameTests {
             return new ChainResult(slicedLotId, waferCount, pkgResult.passing(), pkgResult.chips(), pkgResult.scrap(), pkgResult.packages());
 
         } finally {
+            try {
+                resetMachines(helper, level, BASE, BASE.offset(MACHINE_SPACING,0,0),
+                        BASE.offset(MACHINE_SPACING*2,0,0), BASE.offset(MACHINE_SPACING*3,0,0),
+                        BASE.offset(MACHINE_SPACING*4,0,0));
+            } finally {
             // Exact restoration
             FabConfig.WAFERS_PER_BOULE.set(originalWafersPerBoule);
             FabConfig.RESIST_PER_LAYER.set(originalResistPerLayer);
             FabConfig.LAYER_TICKS_OVERRIDES.set(originalLayerTicksOverrides);
             EUVCRAFTMod.config().onConfigReload();
+            }
         }
 
     }
@@ -882,19 +888,44 @@ public final class M1GateGameTests {
             BlockPos pullerPos, BlockPos slicerPos, BlockPos generatorPos,
             BlockPos cellControllerPos, BlockPos packagePos) {
         // Clear all machine block entities by setting to AIR first
-        helper.setBlock(pullerPos, Blocks.AIR);
-        helper.setBlock(slicerPos, Blocks.AIR);
-        helper.setBlock(generatorPos, Blocks.AIR);
+        clearFixtureBlock(helper, level, pullerPos);
+        clearFixtureBlock(helper, level, slicerPos);
+        clearFixtureBlock(helper, level, generatorPos);
         // Process cell: clear the whole 2x2x3 structure
         for (int x = 1; x <= 2; x++) {
             for (int y = 1; y <= 2; y++) {
                 for (int z = 1; z <= 3; z++) {
                     BlockPos p = cellControllerPos.offset(x - 1, y - 1, z - 1);
-                    helper.setBlock(p, Blocks.AIR);
+                    clearFixtureBlock(helper, level, p);
                 }
             }
         }
-        helper.setBlock(packagePos, Blocks.AIR);
+        clearFixtureBlock(helper, level, packagePos);
+        clearFixtureBlock(helper, level, BASE.offset(0,0,6));
+        clearFixtureBlock(helper, level, BASE.offset(3,0,6));
+    }
+
+    /** Test-owned inventory leftovers are discarded only after all production assertions.
+     * Removing a populated machine invokes real inventory drops; those entities otherwise
+     * outlive the tiny empty structure and contaminate later drop tests in the shared world.
+     */
+    private static void clearFixtureBlock(GameTestHelper helper, ServerLevel level, BlockPos relative) {
+        BlockPos absolute = helper.absolutePos(relative);
+        var bounds = new net.minecraft.world.phys.AABB(absolute).inflate(2.0);
+        var type = net.minecraft.world.entity.EntityTypes.ITEM;
+        int previous = level.getEntities(type, bounds, net.minecraft.world.entity.Entity::isAlive).size();
+        var blockEntity = level.getBlockEntity(absolute);
+        if (blockEntity instanceof net.minecraft.world.Container inventory) {
+            inventory.clearContent();
+            for (int slot=0; slot<inventory.getContainerSize(); slot++)
+                helper.assertTrue(inventory.getItem(slot).isEmpty(), "Owned test inventory cleared before teardown");
+        }
+        helper.setBlock(relative, Blocks.AIR);
+        var remaining = level.getEntities(type, bounds, net.minecraft.world.entity.Entity::isAlive);
+        helper.assertValueEqual(previous, remaining.size(), "Fixture teardown must create no item drops");
+        // Also clear stale entities left at this same owned fixture position by an earlier
+        // failed run. This is local test cleanup, never a global entity sweep.
+        remaining.forEach(net.minecraft.world.entity.Entity::discard);
     }
 
 }
