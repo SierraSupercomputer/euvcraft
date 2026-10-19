@@ -27,6 +27,7 @@ import com.euvcraft.lithmod.mc.gametest.MaskGameTests;
 import com.euvcraft.lithmod.mc.gametest.M1GateGameTests;
 import com.euvcraft.lithmod.mc.gametest.M1BoundaryGameTests;
 import com.euvcraft.lithmod.mc.gametest.M1ReloadGameTests;
+import com.euvcraft.lithmod.mc.gametest.M1DebugGameTests;
 import com.euvcraft.lithmod.mc.gametest.MultiblockGameTests;
 import com.euvcraft.lithmod.mc.gametest.PackagingGameTests;
 import com.euvcraft.lithmod.mc.gametest.ProcessCellGameTests;
@@ -78,6 +79,7 @@ com.euvcraft.lithmod.mc.gametest.ComponentGameTests.register(modEventBus);
         M1GateGameTests.register(modEventBus);
         M1BoundaryGameTests.register(modEventBus);
         M1ReloadGameTests.register(modEventBus);
+        M1DebugGameTests.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.LOCAL, FabConfig.getSpec());
         config = new FabConfig();
@@ -89,6 +91,7 @@ com.euvcraft.lithmod.mc.gametest.ComponentGameTests.register(modEventBus);
         modEventBus.addListener(EUVCRAFTMod::configReloaded);
 
         NeoForge.EVENT_BUS.addListener(FoupDebugCommand::register);
+        NeoForge.EVENT_BUS.addListener(FabDebugCommand::register);
 
         NeoForge.EVENT_BUS.register(TierDataLoader.class);
         NeoForge.EVENT_BUS.register(SupportLineDataLoader.class);
