@@ -38,7 +38,7 @@ if ($M1) {
     for ($batchStart = 0; $batchStart -lt $typeNames.Count; $batchStart += 8) {
         $batchEnd = [Math]::Min($batchStart + 8, $typeNames.Count)
         $classFiles = @($typeNames.GetRange($batchStart, $batchEnd - $batchStart) | ForEach-Object { Join-Path $ClassesRoot $_ })
-        $signatureLines = & javap -J-Duser.language=en -J-Duser.country=US -p @classFiles 2>&1
+        $signatureLines = & javap '-J-Duser.language=en' '-J-Duser.country=US' -p @classFiles 2>&1
         if ($LASTEXITCODE -ne 0) { throw "javap batch failed with exit code $LASTEXITCODE" }
         $sections = [System.Collections.Generic.List[object]]::new()
         $section = $null
