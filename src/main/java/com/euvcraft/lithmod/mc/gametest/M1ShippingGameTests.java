@@ -92,7 +92,7 @@ public final class M1ShippingGameTests {
             environment, Level.OVERWORLD, Identifier.withDefaultNamespace("empty"),
             200, 0, true, Rotation.NONE, false, 1, 1, false, 0);
 
-        Identifier id = Identifier.fromNamespaceAndPath(EUVCRAFTMod.MODID, CASE);
+        Identifier id = Identifier.fromNamespaceAndPath("lithmod", "m1_gate_shipping_no_fixtures");
         ResourceKey<Consumer<GameTestHelper>> function = ResourceKey.create(Registries.TEST_FUNCTION, id);
         event.registerTest(id, new FunctionGameTestInstance(function, data));
     }
