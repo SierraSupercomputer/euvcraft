@@ -1,5 +1,7 @@
 # M1-11 Recipes and Presentation — Factual Scope and Result
 
+Accepted after two independent whole-task reviews and a separate full merge-candidate check. See [acceptance](M1-11_acceptance.md) and [review records](M1-11_review.md). Pending statements below describe the source-report authoring stage; the acceptance record supersedes them.
+
 **Source head:** `84beb495b8f052a141777165a1d11d555cf48cb9`  
 **Base:** `f502454a4ab04885dd9ca42f79c4efc29cead4d8`  
 **Status:** Documentation commit will follow without production change.  

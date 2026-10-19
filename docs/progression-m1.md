@@ -43,7 +43,7 @@ Both are data-driven and configurable via datapack. The user explicitly chose bo
 
 ## 5. Process Cell — Formed Multiblock Structure
 
-**Structure:** 2×2 footprint, **three layers tall**, **twelve total members** (see M1-09 report for exact orientation).  
+**Structure:** **two blocks wide, two tall and three long**, **twelve total members** (see M1-09 report for exact orientation).  
 **Components** are **five item slots** in the controller, not placed component blocks. Required per tier:
 
 | Slot | T1 | T2 |

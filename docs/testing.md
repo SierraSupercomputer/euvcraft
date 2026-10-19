@@ -341,3 +341,5 @@ See `reports/M1-09_process-cell-controller.md` for actual registered IDs, class 
 - Limitations: no 3-process repeat (M1-12), no visual pass, Arcforge skip honest, candidate/final reviews + master merge PENDING, GLM recipe phase approve only scoped (Beam 429), M1-12 full chain/statistics/privacy/hand-fed/definition reload/debug energy/fixture gate/handoff/manual remain future, no complete playable M1 claim
 
 See `reports/M1-11_recipes-and-presentation.md` for factual scope/result, actual relative changed paths, recipes/guide, FOUP and GUI/creative changes, thorough measured evidence, limitations, review/integration PENDING.
+
+M1-11 accepted: see `reports/M1-11_acceptance.md` and `reports/M1-11_review.md` for the final candidate results and two independent approvals. Earlier pending statements describe source-phase authoring.
