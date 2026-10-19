@@ -602,8 +602,7 @@ function Show-OutputPath([string]$Path) {
 
 $sha256 = [System.Security.Cryptography.SHA256]::Create()
 try {
-    $expectedHash = [BitConverter]::ToString($sha256.ComputeHash($expectedBytes)).Replace('-', '')
-        .ToLowerInvariant()
+    $expectedHash = ([BitConverter]::ToString($sha256.ComputeHash($expectedBytes))).Replace('-', '').ToLowerInvariant()
 } finally {
     $sha256.Dispose()
 }
