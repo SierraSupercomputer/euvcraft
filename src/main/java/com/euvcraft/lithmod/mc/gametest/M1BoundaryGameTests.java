@@ -466,17 +466,26 @@ public final class M1BoundaryGameTests {
         // --- Capture mod logging during trusted read rejection/normal validation ---
         // We'll use a custom appender to capture log output
         org.apache.logging.log4j.Logger log4jLogger = org.apache.logging.log4j.LogManager.getLogger(EUVCRAFTMod.LOGGER.getName());
-        List<String> capturedLogs = new ArrayList<>();
+        List<String> capturedLogs = new java.util.concurrent.CopyOnWriteArrayList<>();
         org.apache.logging.log4j.core.Logger coreLogger = (org.apache.logging.log4j.core.Logger) log4jLogger;
+        var loggerContext = coreLogger.getContext();
+        var loggerConfiguration = loggerContext.getConfiguration();
+        var captureOwner = loggerConfiguration.getLoggerConfig(EUVCRAFTMod.LOGGER.getName());
+        Set<String> configuredNamesBefore = Set.copyOf(loggerConfiguration.getLoggers().keySet());
+        Set<String> appendersBefore = Set.copyOf(captureOwner.getAppenders().keySet());
         org.apache.logging.log4j.core.Appender capturingAppender = new org.apache.logging.log4j.core.appender.AbstractAppender("M1BoundaryCapture", null, null, true, null) {
             @Override
             public void append(org.apache.logging.log4j.core.LogEvent event) {
-                String msg = event.getMessage().getFormattedMessage();
-                capturedLogs.add(msg);
+                if (EUVCRAFTMod.LOGGER.getName().equals(event.getLoggerName())) {
+                    capturedLogs.add(event.getMessage().getFormattedMessage());
+                }
             }
         };
         capturingAppender.start();
-        coreLogger.addAppender(capturingAppender);
+        // Attach to the existing effective configuration. Logger.addAppender can create a
+        // child LoggerConfig. Keep the original inherited routing and level configuration intact.
+        captureOwner.addAppender(capturingAppender, null, null);
+        loggerContext.updateLoggers();
 
         try {
             // Trigger trusted read rejection (client view with wafers)
@@ -539,10 +548,19 @@ public final class M1BoundaryGameTests {
             helper.assertTrue(!allLogs.matches("(?s).*wafer.*0\\.1.*0\\.9.*"), "logs must not dump multiple roll values");
 
         } finally {
-            clearBoundaryFixture(helper, new BlockPos(1, 1, 1));
-            capturingAppender.stop();
-            coreLogger.removeAppender(capturingAppender);
+            try {
+                clearBoundaryFixture(helper, new BlockPos(1, 1, 1));
+            } finally {
+                captureOwner.removeAppender(capturingAppender.getName());
+                capturingAppender.stop();
+                loggerContext.updateLoggers();
+                helper.assertTrue(configuredNamesBefore.equals(loggerConfiguration.getLoggers().keySet()),
+                        "Log capture must not leave a new logger configuration behind");
+                helper.assertTrue(appendersBefore.equals(captureOwner.getAppenders().keySet()),
+                        "Log capture must restore all original appenders");
+            }
         }
+        EUVCRAFTMod.LOGGER.info("[M1-BOUNDARY] mod logger routing restored after capture");
 
         // --- Explicit declaration: /debug foup inspect is EXEMPT (diagnostic privileged) ---
         // Test must not call it and must declare this leak

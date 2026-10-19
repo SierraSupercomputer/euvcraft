@@ -90,14 +90,14 @@ public final class FabDebugCommand {
         }
 
         // Raycast from player's eyes up to normal block interaction distance (6 blocks)
-        BlockHitResult hit = player.pick(6.0, 1.0f, false);
-        if (hit == null || hit.getType() != HitResult.Type.BLOCK) {
+        HitResult picked = player.pick(6.0, 1.0f, false);
+        if (!(picked instanceof BlockHitResult hit) || hit.getType() != HitResult.Type.BLOCK) {
             source.sendFailure(Component.translatable("commands.lithmod.fab.energy.no_target"));
             return 0;
         }
 
         BlockPos pos = hit.getBlockPos();
-        ServerLevel level = player.serverLevel();
+        ServerLevel level = source.getLevel();
         var blockEntity = level.getBlockEntity(pos);
         FabMachineBlockEntity machine = blockEntity instanceof FabMachineBlockEntity be ? be : null;
 
