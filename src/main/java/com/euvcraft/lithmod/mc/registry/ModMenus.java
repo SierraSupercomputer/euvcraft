@@ -15,6 +15,11 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  * <p>{@code IMenuTypeExtension.create} is what supplies the client-side constructor that
  * takes a {@code RegistryFriendlyByteBuf}; the plain
  * {@code new MenuType<>(MenuSupplier, FeatureFlagSet)} constructor cannot.</p>
+ *
+ * <p>The test machine menu is conditionally registered only when fixtures are enabled.
+ * When fixtures are off, the holder remains declared but is never registered, so no
+ * MenuType exists in production. The screen registration in {@link MachineClientEvents}
+ * guards against null to prevent client crashes.</p>
  */
 public final class ModMenus {
 
