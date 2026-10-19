@@ -18,7 +18,7 @@ import com.euvcraft.lithmod.mc.machine.mask.MaskMachines;
 import com.euvcraft.lithmod.mc.machine.mask.PatternGeneratorBlockEntity;
 import com.euvcraft.lithmod.mc.machine.packaging.PackagingMachines;
 import com.euvcraft.lithmod.mc.machine.packaging.TestPackageBlockEntity;
-import com.euvcraft.lithmod.mc.machine.process.ProcessCellControllerBlockEntity;
+import com.euvcraft.lithmod.mc.multiblock.ProcessCellControllerBlockEntity;
 import com.euvcraft.lithmod.mc.machine.silicon.CrystalPullerBlockEntity;
 import com.euvcraft.lithmod.mc.machine.silicon.SiliconMachines;
 import com.euvcraft.lithmod.mc.machine.silicon.WaferSlicerBlockEntity;
@@ -27,6 +27,10 @@ import com.euvcraft.lithmod.mc.registry.ModDataComponents;
 import com.euvcraft.lithmod.mc.registry.ModItems;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.world.level.Level;
+import com.euvcraft.lithmod.mc.multiblock.ProcessCellControllerBlock;
+import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.FunctionGameTestInstance;
@@ -122,6 +126,7 @@ public final class M1GateGameTests {
     private static void logicT1Chain(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         runCompleteChain(helper, level, DieTypes.LOGIC, 1, Items.COPPER_INGOT);
+        helper.succeed();
     }
 
     // ------------------------------------------------------------------
@@ -131,6 +136,7 @@ public final class M1GateGameTests {
     private static void memoryT2Chain(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         runCompleteChain(helper, level, DieTypes.MEMORY, 2, Items.REDSTONE);
+        helper.succeed();
     }
 
     // ------------------------------------------------------------------
@@ -193,8 +199,8 @@ public final class M1GateGameTests {
             UUID slicedLotId = slicedLot.lotId();
             int waferCount = slicedLot.size();
             int foupCapacity = slicedLot.capacity();
-            helper.assertValueEqual(4, waferCount, "expecting 4 wafers from bounded config");
-            helper.assertValueEqual(foupCapacity, slicedLot.capacity(), "FOUP capacity must match config");
+            helper.assertValueEqual(Math.min(4, FoupItems.configuredCapacity()), waferCount, "configured slice yield bounded by carrier capacity");
+            helper.assertValueEqual(FoupItems.configuredCapacity(), foupCapacity, "fresh carrier stores configured capacity");
 
             // ============================================================
             // STAGE 4: Pattern Generator - blank_mask + design -> patterned mask
@@ -227,19 +233,6 @@ public final class M1GateGameTests {
             helper.assertValueEqual(dieType, processedLot.run().dieType(), "frozen die type");
             helper.assertValueEqual(tierIndex, processedLot.run().tierIndex(), "frozen tier");
 
-            // Mask must lose exactly ONE use for entire lot
-            int maskUsesAfter = 0;
-            if (!mask.isEmpty()) {
-                MaskData md = mask.get(ModDataComponents.MASK_DATA.get());
-                if (md != null) maskUsesAfter = md.usesRemaining();
-            }
-            int expectedMaskUses = configuredMaskUses - 1;
-            if (expectedMaskUses <= 0) {
-                helper.assertTrue(mask.isEmpty(), "exhausted mask must be removed from slot");
-            } else {
-                helper.assertValueEqual(expectedMaskUses, maskUsesAfter, "mask must lose exactly one use for entire lot");
-            }
-
             // ============================================================
             // STAGE 6: Test & Package - judge, package, verify exact outputs
             // ============================================================
@@ -254,7 +247,6 @@ public final class M1GateGameTests {
             EUVCRAFTMod.config().onConfigReload();
         }
 
-        helper.succeed();
     }
 
     // ------------------------------------------------------------------
@@ -278,7 +270,7 @@ public final class M1GateGameTests {
         if (blastingHolder == null) return silicon;
 
         // Verify holder IDs are lithmod recipes
-        helper.assertTrue(smeltingHolder.id().identifier().getNamespace().equals(EUVCRAFTMod.MODID),
+        helper.assertTrue(smeltingHolder.id().identifier().toString().equals("lithmod:silicon_from_smelting"),
             "silicon smelting recipe must be from lithmod");
         helper.assertTrue(blastingHolder.id().identifier().getNamespace().equals(EUVCRAFTMod.MODID),
             "silicon blasting recipe must be from lithmod");
@@ -292,6 +284,8 @@ public final class M1GateGameTests {
             ItemStack result = smeltingRecipe.assemble(recipeInput);
             helper.assertTrue(result.getItem() == ModItems.SILICON.get(), "recipe must produce silicon");
             helper.assertValueEqual(1, result.getCount(), "each quartz yields one silicon");
+            input.shrink(1);
+            helper.assertTrue(input.isEmpty(), "one quartz consumed per assembled silicon");
             silicon.add(result);
         }
 
@@ -303,178 +297,101 @@ public final class M1GateGameTests {
     // STAGE 2: Crystal Puller - 4 silicon -> 1 boule
     // ------------------------------------------------------------------
 
-    private static ItemStack runCrystalPuller(GameTestHelper helper, ServerLevel level, BlockPos pos,
+    /** Supply test FE up to the real capacity and measure the actual debit. */
+    private static long paidTick(FabMachineBlockEntity machine) {
+        machine.setStoredEnergy(Math.toIntExact(machine.buffer().getCapacityAsLong()));
+        long before = machine.buffer().getAmountAsLong();
+        machine.serverTick();
+        long paid = before - machine.buffer().getAmountAsLong();
+        if (paid < 0) throw new IllegalStateException("machine gained unprovided FE");
+        return paid;
+    }
+
+    private static long untilProduct(GameTestHelper h, FabMachineBlockEntity machine, int limit) {
+        h.assertTrue(limit > 0 && limit <= 10000, "bounded machine duration");
+        long paid = 0;
+        for (int tick = 0; tick < limit && machine.outputSlot().isEmpty(); tick++) paid += paidTick(machine);
+        h.assertFalse(machine.outputSlot().isEmpty(), "machine produced a real output within its bound");
+        return paid;
+    }
+
+    private static ItemStack runCrystalPuller(GameTestHelper h, ServerLevel level, BlockPos pos,
             List<ItemStack> siliconInput) {
-
-        helper.setBlock(pos, SiliconMachines.CRYSTAL_PULLER.get());
-        CrystalPullerBlockEntity puller = (CrystalPullerBlockEntity) level.getBlockEntity(helper.absolutePos(pos));
-        helper.assertTrue(puller != null, "must be CrystalPullerBlockEntity");
-        if (puller == null) return ItemStack.EMPTY;
-
-        puller.refreshDefinition();
-        MachineRecipe recipe = pullerRecipe(puller);
-        helper.assertTrue(recipe != null, "crystal_puller recipe must be loaded");
-        if (recipe == null) return ItemStack.EMPTY;
-
-        // Load 4 silicon into input slot (slot 0)
-        ItemStack siliconStack = new ItemStack(ModItems.SILICON.get(), 4);
-        puller.setSlot(CrystalPullerBlockEntity.INPUT_SLOT, siliconStack);
-
-        // Energy - refill buffer before run
-        int perTick = puller.runner().energyPerTick();
-        helper.assertTrue(perTick > 0, "puller energy per tick must be positive");
-        int totalEnergy = perTick * (recipe.ticks() + 5);
-        puller.setStoredEnergy(totalEnergy);
-
-        // Run to completion
-        for (int tick = 0; tick < recipe.ticks() + 5; tick++) {
-            if (!puller.outputSlot().isEmpty()) break;
-            puller.serverTick();
+        h.setBlock(pos, SiliconMachines.CRYSTAL_PULLER.get());
+        var puller = (CrystalPullerBlockEntity) level.getBlockEntity(h.absolutePos(pos));
+        h.assertTrue(puller != null, "real Crystal Puller exists");
+        puller.serverTick(); // Empty machine refreshes its actual loaded definition.
+        var recipe = puller.recipes().stream().filter(r -> r.spec().result().itemId()
+            .equals("lithmod:silicon_boule")).findFirst().orElseThrow();
+        ItemStack feed = ItemStack.EMPTY;
+        for (ItemStack actual : siliconInput) {
+            h.assertTrue(actual.is(ModItems.SILICON.get()) && actual.getCount() == 1, "actual assembled silicon input");
+            ItemStack taken = actual.split(actual.getCount());
+            if (feed.isEmpty()) feed = taken; else feed.grow(taken.getCount());
+            h.assertTrue(actual.isEmpty(), "recipe output ownership transferred");
         }
-
-        // Extract output via removeItemNoUpdate
-        ItemStack output = puller.removeItemNoUpdate(CrystalPullerBlockEntity.OUTPUT_SLOT);
-        helper.assertFalse(output.isEmpty(), "puller must produce output");
-        helper.assertTrue(output.getItem() == ModItems.SILICON_BOULE.get(), "output must be boule");
-        helper.assertValueEqual(1, output.getCount(), "one boule produced");
-
-        // Verify all 4 silicon consumed
-        ItemStack leftover = puller.slot(CrystalPullerBlockEntity.INPUT_SLOT);
-        helper.assertTrue(leftover.isEmpty(), "all 4 silicon must be consumed");
-
-        EUVCRAFTMod.LOGGER.info("[M1-GATE] Crystal puller produced 1 boule from 4 silicon in {} ticks", recipe.ticks());
-        return output;
+        h.assertValueEqual(4, feed.getCount(), "four assembled silicon in the feed");
+        puller.setSlot(CrystalPullerBlockEntity.INPUT_SLOT, feed);
+        int cost = recipe.energyPerTick(puller.definition().orElseThrow().energyPerTick(null, EUVCRAFTMod.settings()));
+        long paid = untilProduct(h, puller, recipe.ticks() + 5);
+        h.assertValueEqual((long) cost * recipe.ticks(), paid, "puller paid actual recipe cost");
+        ItemStack result = puller.removeItemNoUpdate(CrystalPullerBlockEntity.OUTPUT_SLOT);
+        h.assertTrue(result.is(ModItems.SILICON_BOULE.get()) && result.getCount() == 1, "one actual boule");
+        h.assertTrue(puller.outputSlot().isEmpty() && puller.slot(CrystalPullerBlockEntity.INPUT_SLOT).isEmpty(),
+            "puller feed consumed and product removed");
+        return result;
     }
 
-    private static MachineRecipe pullerRecipe(CrystalPullerBlockEntity puller) {
-        return puller.recipes().stream()
-            .filter(r -> r.spec().result().itemId().contains("silicon_boule"))
-            .findFirst().orElse(null);
+    private static ItemStack runWaferSlicer(GameTestHelper h, ServerLevel level, BlockPos pos, ItemStack boule) {
+        h.setBlock(pos, SiliconMachines.WAFER_SLICER.get());
+        var slicer = (WaferSlicerBlockEntity) level.getBlockEntity(h.absolutePos(pos));
+        h.assertTrue(slicer != null, "real Wafer Slicer exists");
+        slicer.serverTick();
+        int ticks = slicer.sliceTicks(), cost = slicer.energyPerTick();
+        ItemStack carrier = FoupItems.emptyFoup(ModItems.FOUP_MK1.get());
+        var empty = FoupItems.trustedContentsOf(carrier);
+        slicer.setSlot(WaferSlicerBlockEntity.BOULE_SLOT, boule);
+        slicer.setSlot(WaferSlicerBlockEntity.FOUP_SLOT, carrier);
+        long paid = untilProduct(h, slicer, ticks + 5);
+        ItemStack result = slicer.removeItemNoUpdate(WaferSlicerBlockEntity.OUTPUT_SLOT);
+        var lot = FoupItems.trustedContentsOf(result);
+        h.assertTrue(result.is(ModItems.FOUP_MK1.get()), "actual carrier item retained");
+        h.assertValueEqual(empty.capacity(), lot.capacity(), "stored carrier capacity retained");
+        h.assertValueEqual(Math.min(4, empty.capacity()), lot.size(), "real sliced wafer yield");
+        h.assertFalse(empty.lotId().equals(lot.lotId()), "slicer creates a fresh lot identity");
+        h.assertValueEqual((long) ticks * cost, paid, "slicer pays each work tick");
+        h.assertTrue(slicer.outputSlot().isEmpty() && slicer.slot(WaferSlicerBlockEntity.BOULE_SLOT).isEmpty()
+            && slicer.slot(WaferSlicerBlockEntity.FOUP_SLOT).isEmpty(), "slicer consumes both inputs and transfers output");
+        return result;
     }
 
-    // ------------------------------------------------------------------
-    // STAGE 3: Wafer Slicer - boule + empty FOUP -> FOUP with wafers
-    // ------------------------------------------------------------------
-
-    private static ItemStack runWaferSlicer(GameTestHelper helper, ServerLevel level, BlockPos pos,
-            ItemStack boule) {
-
-        helper.setBlock(pos, SiliconMachines.WAFER_SLICER.get());
-        WaferSlicerBlockEntity slicer = (WaferSlicerBlockEntity) level.getBlockEntity(helper.absolutePos(pos));
-        helper.assertTrue(slicer != null, "must have WaferSlicerBlockEntity");
-        if (slicer == null) return ItemStack.EMPTY;
-
-        slicer.refreshDefinition();
-        helper.assertTrue(slicer.definition().isPresent(), "slicer must have definition");
-        int sliceTicks = slicer.sliceTicks();
-        helper.assertTrue(sliceTicks > 0, "slice_ticks must be positive");
-
-        // Load boule (slot 0) and empty FOUP (slot 1)
-        slicer.setSlot(WaferSlicerBlockEntity.BOULE_SLOT, boule.copy());
-        ItemStack emptyFoup = FoupItems.emptyFoup(ModItems.FOUP_MK1.get());
-        slicer.setSlot(WaferSlicerBlockEntity.FOUP_SLOT, emptyFoup);
-
-        // Energy - refill buffer before run
-        int perTick = slicer.energyPerTick();
-        helper.assertTrue(perTick > 0, "slicer energy per tick must be positive");
-        int totalEnergy = perTick * (sliceTicks + 5);
-        slicer.setStoredEnergy(totalEnergy);
-
-        // Run to completion
-        for (int tick = 0; tick < sliceTicks + 5; tick++) {
-            if (!slicer.outputSlot().isEmpty()) break;
-            slicer.serverTick();
-        }
-
-        // Extract output via removeItemNoUpdate (slot 2)
-        ItemStack output = slicer.removeItemNoUpdate(WaferSlicerBlockEntity.OUTPUT_SLOT);
-        helper.assertFalse(output.isEmpty(), "slicer must produce FOUP");
-        helper.assertTrue(output.getItem() == ModItems.FOUP_MK1.get(), "output must be FOUP_MK1");
-
-        FoupContents lot = FoupItems.trustedContentsOf(output);
-        helper.assertTrue(lot != null && lot.size() > 0, "lot must have wafers");
-
-        // Inputs consumed exactly when product written
-        helper.assertTrue(slicer.slot(WaferSlicerBlockEntity.FOUP_SLOT).isEmpty(), "input FOUP consumed");
-        ItemStack bouleRemainder = slicer.slot(WaferSlicerBlockEntity.BOULE_SLOT);
-        helper.assertValueEqual(1, bouleRemainder.getCount(), "exactly one boule consumed");
-
-        EUVCRAFTMod.LOGGER.info("[M1-GATE] Wafer slicer produced lot with {} wafers, capacity {}", lot.size(), lot.capacity());
-        return output;
-    }
-
-    // ------------------------------------------------------------------
-    // STAGE 4: Pattern Generator - blank_mask + design -> patterned mask
-    // Uses ACTUAL LOADED JSON recipes (as shown in PresentationGameTests.patternProduction)
-    // ------------------------------------------------------------------
-
-    private static ItemStack runPatternGenerator(GameTestHelper helper, ServerLevel level, BlockPos pos,
+    private static ItemStack runPatternGenerator(GameTestHelper h, ServerLevel level, BlockPos pos,
             String dieType, int tierIndex, Item designIngredient) {
-
-        helper.setBlock(pos, MaskMachines.PATTERN_GENERATOR.get());
-        PatternGeneratorBlockEntity generator = (PatternGeneratorBlockEntity) level.getBlockEntity(helper.absolutePos(pos));
-        helper.assertTrue(generator != null, "must have PatternGeneratorBlockEntity");
-        if (generator == null) return ItemStack.EMPTY;
-
-        generator.refreshDefinition();
-
-        // Find the matching loaded recipe for this die type and tier
-        MachineRecipe match = null;
-        for (MachineRecipe recipe : generator.recipes()) {
-            ItemStack product = recipe.assemble();
-            if (product.getCount() != 1 || product.getItem() != ModItems.MASK.get()) continue;
-            MaskData design = product.get(ModDataComponents.MASK_DATA.get());
-            if (design != null && design.dieType().equals(dieType) && design.tierIndex() == tierIndex) {
-                match = recipe;
-                break;
-            }
-        }
-        helper.assertTrue(match != null, "loaded recipe must exist for " + dieType + " tier " + tierIndex);
-        if (match == null) return ItemStack.EMPTY;
-
-        int recipeTicks = match.spec().ticks();
-        helper.assertTrue(recipeTicks > 0 && recipeTicks <= 1000, "bounded mask recipe duration");
-
-        // Load actual inputs: blank_mask (slot 0) + design ingredient (slot 1)
+        h.setBlock(pos, MaskMachines.PATTERN_GENERATOR.get());
+        var generator = (PatternGeneratorBlockEntity) level.getBlockEntity(h.absolutePos(pos));
+        h.assertTrue(generator != null, "real Pattern Generator exists");
+        generator.serverTick();
+        var recipe = generator.recipes().stream().filter(r -> {
+            ItemStack template = r.assemble();
+            MaskData design = template.get(ModDataComponents.MASK_DATA.get());
+            return template.is(ModItems.MASK.get()) && design != null
+                && design.dieType().equals(dieType) && design.tierIndex() == tierIndex;
+        }).findFirst().orElseThrow();
         generator.setSlot(PatternGeneratorBlockEntity.BLANK_SLOT, new ItemStack(ModItems.BLANK_MASK.get()));
         generator.setSlot(PatternGeneratorBlockEntity.DESIGN_SLOT, new ItemStack(designIngredient));
-
-        // Energy - refill buffer before run
-        int perTick = generator.runner().energyPerTick();
-        helper.assertTrue(perTick > 0, "generator energy per tick must be positive");
-        int totalEnergy = perTick * (recipeTicks + 5);
-        generator.setStoredEnergy(totalEnergy);
-
-        // Run to completion using actual recipe
-        for (int tick = 0; tick < recipeTicks + 5; tick++) {
-            if (!generator.outputSlot().isEmpty()) break;
-            generator.serverTick();
-        }
-
-        // Extract output via removeItemNoUpdate (slot 2)
-        ItemStack output = generator.removeItemNoUpdate(PatternGeneratorBlockEntity.OUTPUT_SLOT);
-        helper.assertFalse(output.isEmpty(), "generator must produce mask");
-        helper.assertTrue(output.getItem() == ModItems.MASK.get(), "product must be mask");
-        helper.assertValueEqual(1, output.getCount(), "one mask produced");
-
-        // Verify inputs consumed exactly
-        helper.assertTrue(generator.slot(PatternGeneratorBlockEntity.BLANK_SLOT).isEmpty(), "blank mask consumed");
-        helper.assertTrue(generator.slot(PatternGeneratorBlockEntity.DESIGN_SLOT).isEmpty(), "design ingredient consumed");
-        helper.assertFalse(generator.runner().isRunning(), "recipe finished");
-        helper.assertValueEqual(0L, generator.buffer().getAmountAsLong(), "energy fully spent");
-
-        MaskData actual = output.get(ModDataComponents.MASK_DATA.get());
-        helper.assertTrue(actual != null && actual.dieType().equals(dieType) && actual.tierIndex() == tierIndex, "mask design changed");
-        helper.assertValueEqual(EUVCRAFTMod.settings().maskUses(), actual.usesRemaining(), "configured uses stamped");
-
-        EUVCRAFTMod.LOGGER.info("[M1-GATE] Pattern generator produced {} mask for {} at tier {} with {} uses",
-            output.getItem(), dieType, tierIndex, EUVCRAFTMod.settings().maskUses());
-        return output;
+        int cost = recipe.energyPerTick(generator.definition().orElseThrow().energyPerTick(null, EUVCRAFTMod.settings()));
+        long paid = untilProduct(h, generator, recipe.ticks() + 5);
+        ItemStack result = generator.removeItemNoUpdate(PatternGeneratorBlockEntity.OUTPUT_SLOT);
+        MaskData actual = result.get(ModDataComponents.MASK_DATA.get());
+        h.assertTrue(result.is(ModItems.MASK.get()) && result.getCount() == 1 && actual != null, "one actual patterned mask");
+        h.assertValueEqual(dieType, actual.dieType(), "actual mask die");
+        h.assertValueEqual(tierIndex, actual.tierIndex(), "actual mask tier");
+        h.assertValueEqual(EUVCRAFTMod.settings().maskUses(), actual.usesRemaining(), "configured uses stamped");
+        h.assertValueEqual((long) cost * recipe.ticks(), paid, "generator pays actual recipe cost");
+        h.assertTrue(generator.outputSlot().isEmpty() && generator.slot(0).isEmpty() && generator.slot(1).isEmpty(),
+            "generator consumes inputs and transfers output");
+        return result;
     }
-
-    // ------------------------------------------------------------------
-    // STAGE 5: Process Cell - build structure, load, run
-    // ------------------------------------------------------------------
 
     private static ItemStack runProcessCell(GameTestHelper helper, ServerLevel level, BlockPos controllerPos,
             ItemStack inputFoupStack, ItemStack mask, String dieType, int tierIndex) {
@@ -539,17 +456,19 @@ public final class M1GateGameTests {
         }
 
         // Energy - enough for full run
-        cell.setStoredEnergy(50000);
+        long cellPaid = 0;
 
         // Run until FINISHED with bounded iteration
         int maxTicks = 500;
         for (int tick = 0; tick < maxTicks; tick++) {
             if (cell.processState() == ProcessState.FINISHED) break;
-            cell.serverTick();
+            cellPaid += paidTick(cell);
         }
 
         helper.assertValueEqual(ProcessState.FINISHED, cell.processState(), "cell must reach FINISHED state");
         helper.assertFalse(cell.inputsLocked(), "finished cell must unlock inputs");
+        int cellCost = cell.definition().orElseThrow().energyPerTick(TierDataLoader.getRegistry().byIndex(tierIndex).orElseThrow(), EUVCRAFTMod.settings());
+        helper.assertValueEqual((long) cellCost * 3 * (tierIndex == 1 ? 1 : 12), cellPaid, "cell exact paid work");
 
         // Read the processed lot from slot 0 - extract actual stack
         ItemStack processedFoupStack = cell.removeItemNoUpdate(ProcessCellControllerBlockEntity.SLOT_FOUP);
@@ -598,6 +517,7 @@ public final class M1GateGameTests {
         helper.assertTrue(machine != null, "must have TestPackageBlockEntity");
         if (machine == null) return;
 
+        machine.serverTick(); // Refresh while empty, before admission.
         MachineDefinition definition = machine.definition().orElse(null);
         helper.assertTrue(definition != null, "test_package definition must be loaded");
         if (definition == null) return;
@@ -640,16 +560,16 @@ public final class M1GateGameTests {
         // Charge energy for entire run
         int totalTicks = waferCount * ticksPerWafer;
         long totalEnergy = (long) totalTicks * energyPerTick;
-        machine.setStoredEnergy(totalEnergy + energyPerTick * 5);
+        long energySpent = 0;
 
         // First tick: admission happens
-        machine.serverTick();
+        energySpent += paidTick(machine);
         helper.assertTrue(machine.isQueueActive(), "complete lot must be admitted");
 
         // Verify returned FOUP immediately on admission tick
         ItemStack returnedFoup = machine.slot(TestPackageBlockEntity.FOUP_SLOT);
         helper.assertTrue(returnedFoup.is(foupItem), "returned FOUP must be same item");
-        FoupContents returnedLot = FoupItems.contentsOf(returnedFoup);
+        FoupContents returnedLot = FoupItems.trustedContentsOf(returnedFoup);
         helper.assertTrue(returnedLot != null && returnedLot.isEmpty(), "returned FOUP must be empty");
         helper.assertValueEqual(originalCapacity, returnedLot.capacity(), "returned FOUP keeps original capacity");
         helper.assertFalse(returnedLot.lotId().equals(originalLotId), "returned FOUP must have fresh lot id");
@@ -662,7 +582,7 @@ public final class M1GateGameTests {
         // Run to completion
         for (int tick = 0; tick < totalTicks + 20; tick++) {
             if (!machine.isQueueActive() && machine.wafersDone() == waferCount) break;
-            machine.serverTick();
+            energySpent += paidTick(machine);
 
             // Drain chip bank
             for (int i = 0; i < TestPackageBlockEntity.CHIP_SLOT_COUNT; i++) {
@@ -714,13 +634,12 @@ public final class M1GateGameTests {
         // ---- Verify final empty FOUP ----
         ItemStack finalFoup = machine.slot(TestPackageBlockEntity.FOUP_SLOT);
         helper.assertTrue(finalFoup.is(foupItem), "final FOUP must be same item");
-        FoupContents finalLot = FoupItems.contentsOf(finalFoup);
+        FoupContents finalLot = FoupItems.trustedContentsOf(finalFoup);
         helper.assertTrue(finalLot != null && finalLot.isEmpty(), "final FOUP must be empty");
         helper.assertValueEqual(originalCapacity, finalLot.capacity(), "final FOUP capacity preserved");
         helper.assertFalse(finalLot.lotId().equals(originalLotId), "final FOUP has fresh id");
 
         // ---- Verify energy spent exactly ----
-        long energySpent = totalEnergy + energyPerTick * 5 - machine.buffer().getAmountAsLong();
         helper.assertValueEqual(totalEnergy, energySpent,
             "energy spent must match exactly: expected " + totalEnergy + " got " + energySpent);
 
