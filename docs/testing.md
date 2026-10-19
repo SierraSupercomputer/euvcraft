@@ -317,3 +317,97 @@ Expected: 509 unit tests in 74 classes; 791 distinct server cases including all 
 **Current 632d867**: 17 `ProcessCell` prefix cases (16 new + 1 old block drop) — purpose: stronger test assertions only.
 
 See `reports/M1-09_process-cell-controller.md` for actual registered IDs, class rows and executed fault controls. M1-09 is accepted; see `reports/M1-09_acceptance.md` for final reviews, the tested merge candidate and its disclosed optional Arcforge result. Source pins alone are not merge approval.
+
+## M1-11 Recipes and Presentation checks
+
+**Offline Gradle command (production 84beb49):**
+```
+.\gradlew.bat test checkCoreImports jar runGameTestServer --offline --console=plain
+```
+
+**Measured at source head `84beb495b8f052a141777165a1d11d555cf48cb9`:**
+
+### Unit tests (JUnit 5)
+- 513 tests in 75 classes
+- 0 failures, 0 errors, 0 skipped
+- Per-class counts in `build/test-results/test/*.xml`
+- Mechanical 75-class XML table appended by coordinator (marker: `UNIT_TABLE_GENERATED_BY_COORDINATOR`)
+
+### Game tests (runGameTestServer)
+- 801 case records, 801 unique names, 800 passed records
+- 0 required failures
+- 1 optional failure recorded as skipped: `arcforge:creosote_moves` (exactly facts, do not reclassify skip as pass)
+- 131 project cases — all required positive per facts
+- 10 new presentation IDs registered and passing:
+  - `lithmod:presentation_recipe_registry`
+  - `lithmod:presentation_crafting_lookup`
+  - `lithmod:presentation_pattern_production`
+  - `lithmod:presentation_obtainability`
+  - `lithmod:presentation_foup_crafting`
+  - `lithmod:presentation_foup_initialization`
+  - `lithmod:presentation_creative_order`
+  - `lithmod:presentation_datapack_override`
+  - `lithmod:presentation_assets_and_harvest`
+  - `lithmod:presentation_survival_drops`
+
+### Verified literal checks (runtime)
+- Translation calls including arguments
+- `coreRefusalReason` enum keys
+- `ProcessState` enum keys
+- Registered component kind keys
+- Registered tier keys
+- M1 die/tier labels
+
+### Verified registry / resource checks (runtime)
+- Actual registry models / item defs
+- Blockstate variant + parent refs
+- Loot / self-drops
+- Live pickaxe tags
+- Iron tool harvest tags
+- Survival destroy: Crystal Puller + Process Cell Casing — exact one each, `ServerPlayerGameMode.SURVIVAL`
+
+### Creative tab
+- Exactly one tab: `lithmod:main`
+- 32 stacks in requested group order
+- 30 unique production item types + 2 extra MASK variants
+- Runtime currently registered: 31 items + 8 blocks INCLUDING `test_machine` fixture
+- M1-12 will gate/remove fixture from shipping; **do NOT claim already gated**
+
+### FOUP initialization
+- Server hooks initialize ONLY absent component: fresh UUID/cap/config
+- Preserves existing lot, client view, other components
+- `trustedContentsOf` still rejects client-fabricated wafers
+
+### GUI bars
+- Plain Minecraft solid fill with different empty/fill colors
+- Localized energy/progress tooltips
+- **No raster/new art, NO actual client render claim**
+
+### Datapack probe
+- Override `blank_mask` count via real server reload and unkeyed recipe lookup/sourcePackId
+- Finally restores selection/result BEFORE success
+- Disabled owned probe left ignored in test world
+- **No MockRegistry claim**
+
+### Recipe guide generation
+- Command: `tools/generate-m1-recipes.ps1 -Check` verified
+- Normal generation updates guide
+- Stale guide probe failed without mutating; exact guide restored
+
+### Known failures (honestly summarized, no blame to worker for coordinator error)
+Coordinator repaired: generator PowerShell syntax, wrong test API/duplicated craft grids, quoted mask JSON bug (found 1 unit + 3 server failures), solid fill pipeline, imported ServerLevel/logger, dataPack API/stale RecipeManager/premature success, entity constant, weak language/model coverage, 6 real missing block translations.
+Coordinator stale instruction packet dispatch caused rejected FOUP test/first creative attempt; preserved checkpoints; fixed packet paths + validated phase helper.
+Final positive checks do NOT erase failed receipts.
+No executed fault control claim beyond actual failed resource check + guide-stale probe/restore; later explicit controls not yet performed.
+
+### Limitations
+- No three-separate-process repeat of the suite; remains M1-12 acceptance work
+- No visual pass claimed — client-side rendering/screen not verified
+- Optional Arcforge outcome exactly facts, do not reclassify skip as pass
+- Source full check includes dependencies; required project cases all positive per facts
+- Separate candidate/final 2 whole-task reviews / master merge PENDING
+- Free GLM recipe phase approve at 96a5 with 2 option allow is only scoped review; Beam 429 observed
+- M1-12 full chain / statistics / privacy / hand-fed / definition reload / debug command / shipping fixture gate / generated handoff / manual walkthrough remain later
+- No complete playable M1 or visual proof
+
+See `reports/M1-11_recipes-and-presentation.md` for factual scope/result, actual relative changed paths, recipes/guide, FOUP and GUI/creative changes, thorough measured evidence, limitations, review/integration PENDING.

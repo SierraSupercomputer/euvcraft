@@ -1,0 +1,232 @@
+# M1-11 Recipes and Presentation — Factual Scope and Result
+
+**Source head:** `84beb495b8f052a141777165a1d11d555cf48cb9`  
+**Base:** `f502454a4ab04885dd9ca42f79c4efc29cead4d8`  
+**Status:** Documentation commit will follow without production change.  
+**Reviews:** Separate candidate/final 2 whole-task reviews / master merge PENDING.  
+**Free GLM recipe phase approve at 96a5 with 2 option allow** is only scoped review; Beam 429 observed.
+
+---
+
+## 1. Scope (What M1-11 Defines)
+
+M1-11 delivers the **presentation layer** for the M1 progression pack:
+- Creative tab population and order (32 stacks, 30 unique production items + 2 mask variants)
+- FOUP initialization server hooks (fresh UUID/cap/config on absent component; preserves existing lot/client view/other components; `trustedContentsOf` still rejects client-fabricated wafers)
+- GUI bars: plain Minecraft solid fill with different empty/fill colors and localized energy/progress tooltips — **no raster/new art, no actual client render claim**
+- Literal translation calls including arguments + `coreRefusalReason` / `ProcessState` enum keys checked
+- Registered component kind/tier keys checked at runtime
+- M1 die/tier labels checked
+- Datapack probe override for `blank_mask` count via real server reload and unkeyed recipe lookup/sourcePackId; finally restores selection/result BEFORE success; disabled owned probe left ignored in test world
+- Recipe guide generation command `tools/generate-m1-recipes.ps1 -Check` verified; normal generation updates guide, stale guide probe failed without mutating the exact restored guide
+
+**Explicitly NOT in M1-11:**
+- Mk2 machines, T6 core choices, chip-consuming recipes, EL changes, scrap recycling
+- Debug energy fill command (M1-12)
+- Hidden roll/yield number player displays
+- Complete playable M1 or visual proof
+- Three-separate-process game test repeat (M1-12 acceptance)
+- Shipping fixture gate for `test_machine` (M1-12 will gate/remove; **do NOT claim already gated**)
+
+---
+
+## 2. Changed Paths (Relative to Repository Root)
+
+```
+docs/recipes.md
+src/main/java/com/euvcraft/lithmod/mc/EUVCRAFTMod.java
+src/main/java/com/euvcraft/lithmod/mc/FoupItem.java
+src/main/java/com/euvcraft/lithmod/mc/FoupItems.java
+src/main/java/com/euvcraft/lithmod/mc/gametest/ChipGameTests.java
+src/main/java/com/euvcraft/lithmod/mc/gametest/FoupGameTests.java
+src/main/java/com/euvcraft/lithmod/mc/gametest/MaskGameTests.java
+src/main/java/com/euvcraft/lithmod/mc/gametest/PresentationGameTests.java
+src/main/java/com/euvcraft/lithmod/mc/machine/screen/FabMachineScreen.java
+src/main/java/com/euvcraft/lithmod/mc/registry/ModCreativeTabs.java
+src/main/java/com/euvcraft/lithmod/mc/registry/ModItems.java
+src/main/resources/assets/lithmod/lang/en_us.json
+src/main/resources/data/lithmod/machine_recipes/pattern_logic_t1.json
+src/main/resources/data/lithmod/machine_recipes/pattern_logic_t2.json
+src/main/resources/data/lithmod/machine_recipes/pattern_memory_t2.json
+src/main/resources/data/lithmod/recipe/crafting/basic_air_filter.json
+src/main/resources/data/lithmod/recipe/crafting/blank_mask.json
+src/main/resources/data/lithmod/recipe/crafting/chip_package.json
+src/main/resources/data/lithmod/recipe/crafting/contact_plate.json
+src/main/resources/data/lithmod/recipe/crafting/crystal_puller.json
+src/main/resources/data/lithmod/recipe/crafting/fine_air_filter.json
+src/main/resources/data/lithmod/recipe/crafting/foup_mk1.json
+src/main/resources/data/lithmod/recipe/crafting/i_line_lamp.json
+src/main/resources/data/lithmod/recipe/crafting/manual_aligner.json
+src/main/resources/data/lithmod/recipe/crafting/mercury_lamp.json
+src/main/resources/data/lithmod/recipe/crafting/optical_microscope.json
+src/main/resources/data/lithmod/recipe/crafting/overlay_scope.json
+src/main/resources/data/lithmod/recipe/crafting/pattern_generator.json
+src/main/resources/data/lithmod/recipe/crafting/process_cell_casing.json
+src/main/resources/data/lithmod/recipe/crafting/process_cell_controller.json
+src/main/resources/data/lithmod/recipe/crafting/process_cell_power_port.json
+src/main/resources/data/lithmod/recipe/crafting/reduction_lens.json
+src/main/resources/data/lithmod/recipe/crafting/resist_t1.json
+src/main/resources/data/lithmod/recipe/crafting/resist_t2.json
+src/main/resources/data/lithmod/recipe/crafting/stepper_stage.json
+src/main/resources/data/lithmod/recipe/crafting/test_package.json
+src/main/resources/data/lithmod/recipe/crafting/wafer_slicer.json
+src/test/java/com/euvcraft/lithmod/mc/PresentationResourceTest.java
+tools/generate-m1-recipes.ps1
+```
+
+---
+
+## 3. Recipes and Guide (Measured)
+
+| Metric | Value |
+|---|---|
+| Total recipes in guide | 30 |
+| Production recipes | 28 |
+| Test-only fixtures | 2 (`test_machine_from_ingot`, `test_machine_from_planks`) |
+| Guide SHA-256 | `F14D4CD081D8121E65D07FFFAF1E0BD7537461210F89740234D0BAC4312DBB22` |
+| Guide check passed | Yes |
+
+The guide is generated by `tools/generate-m1-recipes.ps1` from actual recipe JSON. Do not edit by hand. Machine ingredient slot numbers are zero-based. Ingredients and timings are editable placeholders. Mask templates specify the public design; the Pattern Generator supplies the configured use count on completion.
+
+---
+
+## 4. FOUP and GUI / Creative Changes (Measured)
+
+### FOUP Initialization (Server Hooks)
+- Initializes **ONLY** absent component: fresh UUID, capacity, config
+- Preserves existing lot, client view, other components
+- `trustedContentsOf` still rejects client-fabricated wafers
+
+### GUI Bars
+- Plain Minecraft solid fill
+- Different empty/fill colors
+- Localized energy/progress tooltips
+- **No raster/new art**
+- **No actual client render claim**
+
+### Creative Tab
+- Exactly **one** creative tab: `lithmod:main`
+- **32 stacks** in requested group order
+- **30 unique production item types**
+- **2 extra MASK variants** (logic T1, logic T2, memory T2 — blank_mask is base)
+- `test_machine` fixture omitted from progression
+- **Runtime currently registered: 31 items + 8 blocks INCLUDING test_machine fixture**
+- M1-12 will gate/remove fixture from shipping; **do NOT claim already gated**
+
+### Block Name Fixes (Base Had Missing Keys)
+Fixed 6 keys:
+- `crystal_puller`
+- `wafer_slicer`
+- `process_cell_controller`
+- `process_cell_casing`
+- `process_cell_power_port`
+- `test_machine`
+
+### Registry Verification (All Checked at Runtime)
+- Actual registry models / item defs
+- Blockstate variant + parent refs
+- Loot / self-drops
+- Live pickaxe tags
+- Iron tool harvest tags
+- Survival test production: Crystal Puller + Process Cell Casing actual `ServerPlayerGameMode.SURVIVAL` destroy — exact one each
+
+---
+
+## 5. Thorough Measured Evidence
+
+### Unit Tests
+| Metric | Value |
+|---|---|
+| Tests | 513 |
+| Classes | 75 |
+| Failures | 0 |
+| Errors | 0 |
+| Skipped | 0 |
+
+**UNIT_TABLE_GENERATED_BY_COORDINATOR** — mechanical 75-class XML table appended by coordinator; do not invent table.
+
+### Runtime Game Tests
+| Metric | Value |
+|---|---|
+| Case records | 801 |
+| Unique names | 801 |
+| Passed records | 800 |
+| Required failures | 0 |
+| Optional failures as skipped | 1 (`arcforge:creosote_moves`) |
+
+**Project cases:** 131 (all required positive per facts)
+
+### Presentation IDs (10 New — Actual, No Other Count Claimed)
+1. `lithmod:presentation_recipe_registry`
+2. `lithmod:presentation_crafting_lookup`
+3. `lithmod:presentation_pattern_production`
+4. `lithmod:presentation_obtainability`
+5. `lithmod:presentation_foup_crafting`
+6. `lithmod:presentation_foup_initialization`
+7. `lithmod:presentation_creative_order`
+8. `lithmod:presentation_datapack_override`
+9. `lithmod:presentation_assets_and_harvest`
+10. `lithmod:presentation_survival_drops`
+
+### Literal Checks (Verified)
+- Translation calls including arguments
+- `coreRefusalReason` enum keys
+- `ProcessState` enum keys
+- Registered component kind keys
+- Registered tier keys
+- M1 die/tier labels
+
+### Datapack Probe
+- Override `blank_mask` count via real server reload
+- Unkeyed recipe lookup / sourcePackId
+- Finally restores selection/result BEFORE success
+- Disabled owned probe left ignored in test world
+- **No MockRegistry claim**
+
+### Survival Drops
+- Crystal Puller: `ServerPlayerGameMode.SURVIVAL` destroy — exact one
+- Process Cell Casing: `ServerPlayerGameMode.SURVIVAL` destroy — exact one
+
+---
+
+## 6. Known Failures (Honestly Summarized, No Blame to Worker for Coordinator Error)
+
+| Area | Failure | Resolution |
+|---|---|---|
+| Generator PowerShell syntax | Coordinator repaired | Fixed |
+| Wrong test API / duplicated craft grids | Coordinator repaired | Fixed |
+| Quoted mask JSON bug | Found 1 unit + 3 server failures | Fixed |
+| Solid fill pipeline | Coordinator repaired | Fixed |
+| Imported ServerLevel/logger | Coordinator repaired | Fixed |
+| DataPack API / stale RecipeManager / premature success | Coordinator repaired | Fixed |
+| Entity constant | Coordinator repaired | Fixed |
+| Weak language / model coverage | Coordinator repaired | Fixed |
+| 6 real missing block translations | Coordinator repaired | Fixed |
+| Coordinator stale instruction packet dispatch | Caused rejected FOUP test / first creative attempt | Preserved checkpoints; fixed packet paths + validated phase helper |
+| Final positive checks | Do NOT erase failed receipts | Preserved |
+
+**No executed fault control claim beyond:** actual failed resource check + guide-stale probe/restore; later explicit controls not yet performed.
+
+---
+
+## 7. Limitations
+
+- **No three-separate-process repeat** of the suite; remains M1-12 acceptance work
+- **No visual pass** claimed — client-side rendering/screen not verified
+- **Optional Arcforge outcome:** exactly facts, do not reclassify skip as pass (`arcforge:creosote_moves` skipped)
+- **Source full check includes dependencies**; required project cases all positive per facts
+- **Separate candidate/final 2 whole-task reviews / master merge PENDING**
+- **Free GLM recipe phase approve at 96a5 with 2 option allow** is only scoped review; Beam 429 observed
+- **M1-12 full chain / statistics / privacy / hand-fed / definition reload / debug command / shipping fixture gate / generated handoff / manual walkthrough remain later**
+- **No complete playable M1 or visual proof**
+
+---
+
+## 8. Review / Integration
+
+**PENDING:**
+- Candidate review (whole task)
+- Final review (whole task)
+- Master merge
+
+**Scoped review completed:** Free GLM recipe phase approve at 96a5 with 2 option allow (Beam 429 observed)
