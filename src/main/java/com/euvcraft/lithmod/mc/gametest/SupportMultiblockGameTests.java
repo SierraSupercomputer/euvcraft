@@ -414,10 +414,12 @@ public final class SupportMultiblockGameTests {
         h.assertTrue(old.isFormed(), "initial form failed");
         BlockPos portAbs = h.absolutePos(portOf(controller, facing, 0));
 
-        h.getLevel().setBlock(h.absolutePos(controller), Blocks.AIR.defaultBlockState(), 2);
-        h.getLevel().setBlock(h.absolutePos(controller), blockFor(SupportMachineKind.PURIFIER)
-            .defaultBlockState().setValue(SupportMachineControllerBlock.FACING, facing), 3);
-        SupportMachineBlockEntity fresh = controllerAt(h, controller);
+        // Replace the loaded BE without normal onPlace auto-formation, matching chunk reload.
+        BlockPos controllerAbs = h.absolutePos(controller);
+        SupportMachineBlockEntity fresh = new SupportMachineBlockEntity(controllerAbs,
+            h.getLevel().getBlockState(controllerAbs));
+        h.getLevel().removeBlockEntity(controllerAbs);
+        h.getLevel().setBlockEntity(fresh);
         h.assertTrue(fresh != null && fresh != old, "replacement builds a new controller BE");
         if (fresh == null) {
             return;
@@ -425,6 +427,9 @@ public final class SupportMultiblockGameTests {
         h.assertTrue(old.isRemoved(), "departed owner is removed");
         h.assertFalse(fresh.isFormed(), "fresh core starts unformed");
         h.assertTrue(fresh.members().isEmpty(), "fresh core must not inherit the old member list");
+
+        old.revalidate();
+        h.assertFalse(old.isFormed(), "departed controller cannot reclaim replacement identity");
 
         // The member backstop: the port's own tick resets the visual state because the owner left.
         BlockEntity portEntity = h.getLevel().getBlockEntity(portAbs);
@@ -441,6 +446,13 @@ public final class SupportMultiblockGameTests {
         // A fresh owner reforms the same structure and re-lends the buffer.
         fresh.revalidate();
         h.assertTrue(fresh.isFormed(), "fresh owner reforms the same structure");
+        old.revalidate();
+        h.assertTrue(fresh.isFormed(), "departed validation cannot unform live replacement");
+        for (BlockPos pos : fresh.members()) {
+            h.assertTrue(formedFlag(h.getLevel(), pos), "replacement retains formed member " + pos);
+            if (h.getLevel().getBlockEntity(pos) instanceof SupportMemberBlockEntity member)
+                h.assertTrue(member.controller() == fresh, "member belongs only to live replacement");
+        }
         h.assertTrue(h.getLevel().getCapability(Capabilities.Energy.BLOCK, portAbs, Direction.NORTH) != null,
             "re-owned formed port exposes FE again");
         h.succeed();
