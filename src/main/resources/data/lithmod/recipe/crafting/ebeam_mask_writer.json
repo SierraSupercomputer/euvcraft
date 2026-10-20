@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "DGD",
+    "RBR",
+    "ILI"
+  ],
+  "key": {
+    "D": "minecraft:diamond",
+    "G": "minecraft:glass",
+    "R": "minecraft:redstone",
+    "B": "lithmod:blank_mask",
+    "I": "minecraft:iron_ingot",
+    "L": "lithmod:logic_chip_t2"
+  },
+  "result": {
+    "id": "lithmod:ebeam_mask_writer",
+    "count": 1
+  }
+}

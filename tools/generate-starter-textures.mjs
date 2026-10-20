@@ -3,9 +3,9 @@
  * EUVCRAFT M1 Starter Texture Generator (Node >= 22, built-ins only: fs/path/url/zlib/crypto).
  *
  * Reads tools/starter-textures.json (schema v2: recipes, not char patterns) and:
- *  - rasterizes 23 item sprites (transparent background) and 14 block face tiles (fully opaque),
+ *  - rasterizes 34 item sprites (transparent background) and 14 block face tiles (fully opaque),
  *  - encodes deterministic RGBA8 PNGs (filter 0, level-9 deflate, unsigned zlib.crc32 CRCs),
- *  - writes 23 item models + 10 block models, plus a 6x nearest-neighbor preview atlas,
+ *  - writes 34 item models + 10 block models, plus a 6x nearest-neighbor preview atlas,
  *  - --check mode compares shipped assets without writing; the optional preview is ignored.
  *
  * Writes are limited to the validated output paths; nothing is deleted or overwritten outside them.
@@ -17,16 +17,28 @@ import { fileURLToPath } from 'url';
 import { deflateSync, crc32 } from 'zlib';
 import { createHash } from 'crypto';
 import { computeJoinedPanels } from './lib/joined-panels.mjs';
+import { computeSupportAssets } from './lib/support-assets.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-// Exact expected production asset sets (M1). Anything extra/missing in the manifest fails.
+// Exact expected production asset sets (M1 plus T3). Anything extra/missing in the manifest fails.
 const EXPECTED_ITEM_IDS = [
   'foup_mk1', 'foup_mk2', 'logic_chip_t1', 'logic_chip_t2', 'memory_chip_t2',
   'chip_scrap', 'silicon', 'silicon_boule', 'resist_t1', 'resist_t2',
   'chip_package', 'blank_mask', 'mask', 'mercury_lamp', 'i_line_lamp',
   'contact_plate', 'reduction_lens', 'manual_aligner', 'stepper_stage',
   'basic_air_filter', 'fine_air_filter', 'optical_microscope', 'overlay_scope',
+  'pure_silicon_boule',
+  'logic_chip_t3',
+  'memory_chip_t3',
+  'compute_chip_t3',
+  'nand_chip_t3',
+  'krf_excimer_laser',
+  'duv_projection_lens',
+  'precision_stepper_stage',
+  'hepa_filter',
+  'laser_interferometer',
+  'resist_t3',
 ];
 // Ten block models. Controller state suffixes are matched exactly ('_formed'/'_unformed'),
 // never via a loose endsWith('formed') which would also hit 'unformed'.
@@ -428,6 +440,10 @@ export function main() {
   }
   for (const [path, bytes] of joined.models) {
     if (computed.models.has(path)) throw new Error('Joined JSON output collision: ' + path);
+    computed.models.set(path, bytes);
+  }
+  for (const [path, bytes] of computeSupportAssets()) {
+    if (computed.models.has(path)) throw new Error('Support JSON output collision: ' + path);
     computed.models.set(path, bytes);
   }
   computed.joinedPreview = joined.preview;

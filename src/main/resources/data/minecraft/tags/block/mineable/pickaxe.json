@@ -11,6 +11,10 @@
     "lithmod:process_cell_casing",
     "lithmod:process_cell_power_port",
     "lithmod:test_package",
-    "lithmod:process_cell_operating_panel"
+    "lithmod:process_cell_operating_panel",
+    "lithmod:boule_purifier",
+    "lithmod:ebeam_mask_writer",
+    "lithmod:support_casing",
+    "lithmod:support_power_port"
   ]
 }
