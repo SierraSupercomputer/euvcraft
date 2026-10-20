@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "minecraft:item/feather"
+    "layer0": "lithmod:item/fine_air_filter"
   }
 }

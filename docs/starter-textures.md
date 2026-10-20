@@ -39,7 +39,7 @@ The generator writes **only**:
 
 - the 23 item textures + 23 item models listed in `output.itemModelsToUpdate`,
 - the block face textures for the 10 block models in `output.blockModelsToUpdate`
-  (4 single `all` tiles + 2 controllers × side/top/front),
+  (8 single `all` tiles + 2 controllers × side/top/front),
 - `build/starter-textures-preview.png`.
 
 Nothing is deleted; the `test_machine` fixture is not touched. Direct PNG edits are

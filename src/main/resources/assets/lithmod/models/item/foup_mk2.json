@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "minecraft:item/brewing_stand"
+    "layer0": "lithmod:item/foup_mk2"
   }
 }

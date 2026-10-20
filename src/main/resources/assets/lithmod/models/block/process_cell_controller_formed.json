@@ -1,6 +1,10 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/orientable",
   "textures": {
-    "all": "minecraft:block/iron_block"
+    "top": "lithmod:block/process_cell_controller_formed_top",
+    "bottom": "lithmod:block/process_cell_controller_formed_top",
+    "side": "lithmod:block/process_cell_controller_formed_side",
+    "front": "lithmod:block/process_cell_controller_formed_front",
+    "particle": "lithmod:block/process_cell_controller_formed_side"
   }
 }

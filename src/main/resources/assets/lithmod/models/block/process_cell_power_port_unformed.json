@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/cube_all",
   "textures": {
-    "all": "minecraft:block/lapis_block"
+    "all": "lithmod:block/process_cell_power_port_unformed"
   }
 }

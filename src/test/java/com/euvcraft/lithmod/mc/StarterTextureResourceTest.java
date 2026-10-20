@@ -261,7 +261,7 @@ class StarterTextureResourceTest {
             if (Set.of("test_machine", "crystal_puller", "wafer_slicer", "test_package",
                 "pattern_generator", "process_cell_controller", "process_cell_casing",
                 "process_cell_power_port").contains(id)) continue; // block items
-            // Other items (if any) are allowed but not required to have custom textures
+            fail("Unexpected production item model: " + id);
         }
     }
 

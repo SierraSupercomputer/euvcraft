@@ -6,7 +6,7 @@
  *  - rasterizes 23 item sprites (transparent background) and 14 block face tiles (fully opaque),
  *  - encodes deterministic RGBA8 PNGs (filter 0, level-9 deflate, unsigned zlib.crc32 CRCs),
  *  - writes 23 item models + 10 block models, plus a 6x nearest-neighbor preview atlas,
- *  - --check mode recomputes everything and only compares; it never writes (preview included).
+ *  - --check mode compares shipped assets without writing; the optional preview is ignored.
  *
  * Writes are limited to the validated output paths; nothing is deleted or overwritten outside them.
  */
@@ -65,6 +65,9 @@ function hexToRgba(hex) {
 
 function validateLists(object, list, kind, ids) {
   const errors = [];
+  if (!object || typeof object !== 'object' || Array.isArray(object) || !Array.isArray(list)) {
+    return [`${kind} requires an asset object and an ID array`];
+  }
   const seen = new Set();
   for (const id of list) {
     if (typeof id !== 'string') errors.push(`${kind} entry not a string: ${JSON.stringify(id)}`);
@@ -72,7 +75,7 @@ function validateLists(object, list, kind, ids) {
     seen.add(id);
   }
   const set = Object.keys(object);
-  const exact = set.length === ids.length && ids.every((id) => seen.has(id)) && seen.size === ids.length;
+  const exact = set.length === ids.length && ids.every((id) => set.includes(id) && seen.has(id)) && seen.size === ids.length;
   if (!exact) errors.push(`${kind} entries must equal the exact expected ${ids.length} IDs`);
   return errors;
 }
@@ -163,7 +166,7 @@ function drawOp(img, op, palette, ids) {
   } else {
     fail([`${ids}: unknown op kind "${kind}" (supported: rect, frame, dot, line)`]);
   }
-  if (minXY[0] < 0 || minXY[1] < 0 || maxXY[0] > 15 || maxXY[1] > 15) {
+  if ([...minXY, ...maxXY].some((coordinate) => coordinate < 0 || coordinate > 15)) {
     fail([`${ids}: op ${JSON.stringify(op)} exceeds the 16x16 canvas`]);
   }
   const put = (px, py) => {
