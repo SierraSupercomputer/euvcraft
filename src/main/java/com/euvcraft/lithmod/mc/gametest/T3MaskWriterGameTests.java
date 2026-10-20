@@ -197,9 +197,35 @@ public final class T3MaskWriterGameTests {
             200, 0, true, Rotation.NONE, false, 1, 1, false, 0);
 
         // Register all test functions
-        for (String name : FUNCTIONS.getEntries().keySet()) {
-            register(event, data, name);
-        }
+        register(event, data, "ebeam_select_logic_t1");
+        register(event, data, "ebeam_select_logic_t2");
+        register(event, data, "ebeam_select_memory_t2");
+        register(event, data, "ebeam_select_logic_t3");
+        register(event, data, "ebeam_select_memory_t3");
+        register(event, data, "ebeam_select_compute_t3");
+        register(event, data, "ebeam_select_nand_t3");
+        register(event, data, "ebeam_write_logic_t1_mask");
+        register(event, data, "ebeam_write_logic_t2_mask");
+        register(event, data, "ebeam_write_memory_t2_mask");
+        register(event, data, "ebeam_write_logic_t3_mask");
+        register(event, data, "ebeam_write_memory_t3_mask");
+        register(event, data, "ebeam_write_compute_t3_mask");
+        register(event, data, "ebeam_write_nand_t3_mask");
+        register(event, data, "ebeam_cannot_start_unformed");
+        register(event, data, "ebeam_cannot_start_bad_id");
+        register(event, data, "ebeam_cannot_start_distant");
+        register(event, data, "ebeam_cannot_start_wrong_menu");
+        register(event, data, "ebeam_busy_select_no_change");
+        register(event, data, "ebeam_busy_start_no_change");
+        register(event, data, "ebeam_pause_on_output_full");
+        register(event, data, "ebeam_pause_on_no_power");
+        register(event, data, "ebeam_resume_to_exact_one_output");
+        register(event, data, "ebeam_save_load_live_json_reload");
+        register(event, data, "ebeam_repeated_completion_no_extra");
+        register(event, data, "ebeam_invalid_save_cancels");
+        register(event, data, "ebeam_input_tamper_conservation");
+        register(event, data, "ebeam_old_g1_masks_legacy_codec");
+        register(event, data, "ebeam_g1_generator_cannot_produce_g2");
         LOGGER.info("Registered EUVCRAFT T3 E-beam Mask Writer game tests");
     }
 
@@ -522,7 +548,9 @@ public final class T3MaskWriterGameTests {
             helper.fail("no e-beam block entity at " + MACHINE);
             return;
         }
-        // Do NOT form the multiblock
+        helper.setBlock(cellOf(MACHINE, Direction.NORTH, 0, 0, 0, 1), Blocks.AIR);
+        machine.revalidate();
+        helper.assertFalse(machine.isFormed(), "unformed fixture must retain a broken cell");
 
         loadFixture(helper, machine, REDSTONE_ID);
         charge(helper, machine, fixtureCost(machine) * RECIPE_TICKS);
@@ -583,6 +611,7 @@ public final class T3MaskWriterGameTests {
 
         SupportMachineMenu menu = createMenu(machine, player);
         menu.clickMenuButton(player, SupportMachineMenu.EBEAM_DESIGN_BUTTON_BASE + 0);
+        player.setPos(machine.getBlockPos().getX() + 20, machine.getBlockPos().getY(), machine.getBlockPos().getZ());
         boolean started = menu.clickMenuButton(player, SupportMachineMenu.EBEAM_START_BUTTON);
         helper.assertFalse(started, "job started from too far away");
         helper.assertFalse(machine.isEbeamJobRunning(), "job running from too far away");
@@ -908,17 +937,23 @@ public final class T3MaskWriterGameTests {
         ServerPlayer player = connect(helper.getLevel());
         SupportMachineMenu menu = createMenu(machine, player);
 
-        // Complete 3 masks in sequence
+        int completed = 0;
         for (int i = 0; i < 3; i++) {
-            menu.clickMenuButton(player, SupportMachineMenu.EBEAM_DESIGN_BUTTON_BASE + 0);
-            menu.clickMenuButton(player, SupportMachineMenu.EBEAM_START_BUTTON);
+            loadFixture(helper, machine, REDSTONE_ID);
+            charge(helper, machine, fixtureCost(machine) * RECIPE_TICKS);
+            helper.assertTrue(menu.clickMenuButton(player, 0), "select next job design");
+            helper.assertTrue(menu.clickMenuButton(player, SupportMachineMenu.EBEAM_START_BUTTON), "start next job");
             runUntilOutput(machine, RECIPE_TICKS + 5);
-
-            helper.assertValueEqual(i + 1, machine.outputSlot().getCount(), "output count wrong after completion " + (i + 1));
+            helper.assertValueEqual(1, machine.outputSlot().getCount(), "one nonstackable mask per job");
             MaskData design = machine.outputSlot().get(ModDataComponents.MASK_DATA.get());
-            helper.assertTrue(design != null && design.shopGeneration() == 2, "mask " + (i + 1) + " is not GEN2");
+            helper.assertTrue(design != null && design.shopGeneration() == 2, "completed mask is G2");
+            machine.clearSlot(2);
+            completed++;
+            runMachine(machine, 20);
+            helper.assertTrue(machine.outputSlot().isEmpty(), "completed job cannot emit another mask");
+            helper.assertFalse(machine.isEbeamJobRunning(), "writer never auto-starts");
         }
-
+        helper.assertValueEqual(3, completed, "all three independently supplied jobs complete");
         player.closeContainer();
         helper.succeed();
     }

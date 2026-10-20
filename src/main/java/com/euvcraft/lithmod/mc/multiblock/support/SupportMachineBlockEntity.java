@@ -698,7 +698,7 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
         return selectedEbeamRecipe(designIndex) != null;
     }
 
-    private @Nullable SupportRecipeLoader.Resolved selectedEbeamRecipe(int index) {
+    private SupportRecipeLoader.@Nullable Resolved selectedEbeamRecipe(int index) {
         if (index < 0 || index >= EBEAM_DESIGNS.length) return null;
         SupportRecipeLoader.Registry registry = SupportRecipeLoader.getRegistry();
         if (registry == null) return null;
