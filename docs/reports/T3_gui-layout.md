@@ -89,3 +89,9 @@ Fixed overlapping output slots in Crystal Puller and Wafer Slicer menus. The bot
 - Render verification requires manual in-game check
 - Texture/background art not updated (wells derive from actual slot coordinates via `FabMachineScreen.drawSlotWells`)
 - T3 multiblocks/content are separate later phases; not edited here
+
+## Coordinator verification
+
+Source `2e6dc98b368c2e5439b51922c5ad91e5b61eac8c`:579units/80classes pass with zero failures/errors/skips, core-import and release-jar checks pass. The complete server ran835distinctcases: 834passes and 1optional skips, zero required failures. All165projectIDs pass, retaining all164prior IDs; the new actual case is `lithmod:silicon_menu_layout_nonoverlap_and_coords`. The known optional Arcforge creosote failure is preserved; it was not selectively retried.
+
+Original-layout fault `1f74559c23f41a0c8c8df0b76872342aff82769f` failed the new geometry case as intended with unchanged tests; exact tree restored at `a611fd801acbebf7a0e79d2448fa4ce6a4ad55d8`. Nemotron authored the draft. The first actual compilation failed on an undefined test-loop variable; the coordinator repaired only that typo. The failed draft/check are preserved. A coordinator receipt-script quoting defect was also repaired without rerunning successful game tests. All24coordinator Node tests pass. No machine processing logic, slot indices, inventory rules or unrelated screens changed. Final independent free review/candidate acceptance follows; owner-rendered GUI confirmation remains pending.
