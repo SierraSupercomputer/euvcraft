@@ -144,13 +144,13 @@ public class SupportMachineMenu extends FabMachineMenu {
         Container slots = machineSlots();
         if (kind() == SupportMachineKind.PURIFIER) {
             // Input validation accepts only the known present items; outputs never accept input.
-            addCustomSlot(new ValidatedInputSlot(slots, SLOT_IN_0, IN_0_X, SLOT_Y, ModItems.SILICON_BOULE.get()));
-            addCustomSlot(new ValidatedInputSlot(slots, SLOT_IN_1, IN_1_X, SLOT_Y, net.minecraft.world.item.Items.WATER_BUCKET));
+            addCustomSlot(new ValidatedInputSlot(slots, 0, IN_0_X, SLOT_Y, ModItems.SILICON_BOULE.get()));
+            addCustomSlot(new ValidatedInputSlot(slots, 1, IN_1_X, SLOT_Y, net.minecraft.world.item.Items.WATER_BUCKET));
             addOutputSlot(2, OUT_A_X, SLOT_Y);
             addOutputSlot(3, OUT_B_X, SLOT_Y);
         } else {
-            addCustomSlot(new ValidatedInputSlot(slots, SLOT_IN_0, IN_0_X, SLOT_Y, ModItems.BLANK_MASK.get()));
-            addCustomSlot(new ValidatedInputSlot(slots, SLOT_IN_1, IN_1_X, SLOT_Y, net.minecraft.world.item.Items.REDSTONE));
+            addCustomSlot(new ValidatedInputSlot(slots, 0, IN_0_X, SLOT_Y, ModItems.BLANK_MASK.get()));
+            addCustomSlot(new ValidatedInputSlot(slots, 1, IN_1_X, SLOT_Y, net.minecraft.world.item.Items.REDSTONE));
             addOutputSlot(2, OUT_B_X, SLOT_Y);
         }
     }
