@@ -429,71 +429,31 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
 
     /** Flags or unflags every listed member and rewires its controller link with PART and FACING. */
     private void updateMembers(List<BlockPos> positions, Direction facing, boolean formed) {
-        if (level == null) {
-            return;
-        }
-        for (int i = 0; i < positions.size(); i++) {
-            BlockPos pos = positions.get(i);
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof ProcessCellMemberBlockEntity member) {
-                // Only attach if this member still belongs to us (not claimed by another controller)
-                if (formed) {
-                    member.attach(this, true, i, facing);
-                } else {
-                    // Unforming: only detach if still owned by us
-                    if (member.controller() == this) {
-                        member.attach(null, false, 0, null);
-                    }
-                }
+        if (level == null) return;
+        List<BlockPos> current = members();
+        for (BlockPos pos : positions) {
+            BlockEntity entity = level.getBlockEntity(pos);
+            // A departed controller must never modify the replacement at its old location.
+            if (entity instanceof ProcessCellControllerBlockEntity core && core != this) continue;
+            if (entity instanceof ProcessCellMemberBlockEntity member) {
+                ProcessCellControllerBlockEntity owner = member.controller();
+                if (owner != null && owner != this && level.getBlockEntity(owner.getBlockPos()) == owner
+                        && owner.isFormed() && owner.members().contains(pos)) continue;
             }
+            int part = formed ? current.indexOf(pos) : 0;
+            if (part < 0) continue;
             BlockState state = level.getBlockState(pos);
-            // Only write a state that actually differs. Writing unconditionally would notify the
-            // neighbours, whose neighborChanged handler calls straight back into revalidate().
-            if (state.getBlock() instanceof ProcessCellCasingBlock) {
-                boolean curFormed = state.getValue(ProcessCellCasingBlock.FORMED);
-                int curPart = state.getValue(ProcessCellCasingBlock.PART);
-                Direction curFacing = state.getValue(ProcessCellCasingBlock.FACING);
-                int newPart = formed ? positions.indexOf(pos) : 0;
-                Direction newFacing = formed ? facing : Direction.NORTH;
-                if (curFormed != formed || curPart != newPart || curFacing != newFacing) {
-                    level.setBlock(pos, state
-                        .setValue(ProcessCellCasingBlock.FORMED, formed)
-                        .setValue(ProcessCellCasingBlock.PART, newPart)
-                        .setValue(ProcessCellCasingBlock.FACING, newFacing), 3);
-                }
-            } else if (state.getBlock() instanceof ProcessCellPowerPortBlock) {
-                boolean curFormed = state.getValue(ProcessCellPowerPortBlock.FORMED);
-                int curPart = state.getValue(ProcessCellPowerPortBlock.PART);
-                Direction curFacing = state.getValue(ProcessCellPowerPortBlock.FACING);
-                int newPart = formed ? positions.indexOf(pos) : 0;
-                Direction newFacing = formed ? facing : Direction.NORTH;
-                if (curFormed != formed || curPart != newPart || curFacing != newFacing) {
-                    level.setBlock(pos, state
-                        .setValue(ProcessCellPowerPortBlock.FORMED, formed)
-                        .setValue(ProcessCellPowerPortBlock.PART, newPart)
-                        .setValue(ProcessCellPowerPortBlock.FACING, newFacing), 3);
-                }
-            } else if (state.getBlock() instanceof ProcessCellOperatingPanelBlock) {
-                boolean curFormed = state.getValue(ProcessCellOperatingPanelBlock.FORMED);
-                int curPart = state.getValue(ProcessCellOperatingPanelBlock.PART);
-                Direction curFacing = state.getValue(ProcessCellOperatingPanelBlock.FACING);
-                int newPart = formed ? positions.indexOf(pos) : 0;
-                Direction newFacing = formed ? facing : Direction.NORTH;
-                if (curFormed != formed || curPart != newPart || curFacing != newFacing) {
-                    level.setBlock(pos, state
-                        .setValue(ProcessCellOperatingPanelBlock.FORMED, formed)
-                        .setValue(ProcessCellOperatingPanelBlock.PART, newPart)
-                        .setValue(ProcessCellOperatingPanelBlock.FACING, newFacing), 3);
-                }
-            } else if (state.getBlock() instanceof ProcessCellControllerBlock) {
-                boolean curFormed = state.getValue(ProcessCellControllerBlock.FORMED);
-                int curPart = state.getValue(ProcessCellControllerBlock.PART);
-                if (curFormed != formed || curPart != (formed ? positions.indexOf(pos) : 0)) {
-                    level.setBlock(pos, state
-                        .setValue(ProcessCellControllerBlock.FORMED, formed)
-                        .setValue(ProcessCellControllerBlock.PART, formed ? positions.indexOf(pos) : 0), 3);
-                }
+            if (!(state.getBlock() instanceof ProcessCellControllerBlock)
+                    && !(state.getBlock() instanceof ProcessCellCasingBlock)
+                    && !(state.getBlock() instanceof ProcessCellPowerPortBlock)
+                    && !(state.getBlock() instanceof ProcessCellOperatingPanelBlock)) continue;
+            if (entity instanceof ProcessCellMemberBlockEntity member) {
+                member.attach(formed ? this : null, formed, part, formed ? facing : null);
             }
+            BlockState next = state.setValue(ProcessCellControllerBlock.FORMED, formed)
+                .setValue(ProcessCellControllerBlock.PART, part);
+            if (formed) next = next.setValue(ProcessCellControllerBlock.FACING, facing);
+            if (next != state) level.setBlock(pos, next, 3);
         }
     }
 
@@ -505,7 +465,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
      * blocks: the second controller finds the first one's members already spoken for.</p>
      */
     private BlockKind blockKindAt(MultiblockPos corePos) {
-        if (level == null) {
+        if (level == null || level.getBlockEntity(worldPosition) != this) {
             return BlockKind.OTHER;
         }
         BlockPos pos = new BlockPos(corePos.x(), corePos.y(), corePos.z());

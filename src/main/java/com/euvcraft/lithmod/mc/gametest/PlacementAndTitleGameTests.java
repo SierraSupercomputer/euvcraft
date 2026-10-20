@@ -394,7 +394,7 @@ public final class PlacementAndTitleGameTests {
                         Player player = h.makeMockPlayer(GameType.CREATIVE);
                         BlockPlaceContext context = placementContext(h, player, yaw, pitch,
                                 h.absolutePos(TARGET), h.absolutePos(SUPPORT));
-                        BlockState state = panelItem.getPlacementState(context);
+                        BlockState state = ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get().getStateForPlacement(context);
                         Direction facing = state.getValue(ProcessCellOperatingPanelBlock.FACING);
                         h.assertTrue(facing.getAxis().isHorizontal(),
                                 "operator panel FACING must always be horizontal (yaw " + yaw + ", pitch " + pitch + "), got " + facing);

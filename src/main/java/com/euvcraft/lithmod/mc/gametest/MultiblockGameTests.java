@@ -1203,12 +1203,18 @@ public final class MultiblockGameTests {
                 "after restore pos=" + rel + ": PART mismatch");
         }
 
+        BlockPos dropPos=helper.absolutePos(controller);
+        var dropArea=new net.minecraft.world.phys.AABB(dropPos.getX()-2,dropPos.getY()-2,dropPos.getZ()-2,
+            dropPos.getX()+4,dropPos.getY()+4,dropPos.getZ()+5);
+        var priorDrops=helper.getLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,dropArea);
+        var priorIds=priorDrops.stream().map(net.minecraft.world.entity.item.ItemEntity::getUUID).collect(java.util.stream.Collectors.toSet());
+        int beforeFoups=priorDrops.stream().filter(e->e.getItem().is(ModItems.FOUP_MK1.get())).mapToInt(e->e.getItem().getCount()).sum();
         // Remove the core (controller) -> member ticks clear without inventory dup
         // First, put something in the controller's inventory to verify no duplication
         if (helper.getLevel().getBlockEntity(helper.absolutePos(controller)) instanceof ProcessCellControllerBlockEntity cbe) {
-            cbe.setItem(0, new ItemStack(ModItems.FOUP.get())); // put a FOUP in slot 0
+            cbe.setItem(0, new ItemStack(ModItems.FOUP_MK1.get())); // put a FOUP in slot 0
         }
-        helper.setBlock(controller, Blocks.AIR.defaultBlockState());
+        helper.getLevel().destroyBlock(helper.absolutePos(controller), true);
 
         // Each surviving member should clear its formed state on its own tick
         for (BlockPos rel : expected) {
@@ -1240,10 +1246,11 @@ public final class MultiblockGameTests {
             helper.assertValueEqual(0, partVal, "member at " + rel + " should have PART=0 after controller removal");
         }
 
-        // Verify controller inventory was not duplicated (the FOUP should be gone with the block)
-        // The block entity is gone, so no inventory to check - this is the "no inventory dup" assertion
-        helper.assertTrue(helper.getLevel().getBlockEntity(helper.absolutePos(controller)) == null,
-            "controller block entity should be gone");
+        var afterDrops=helper.getLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,dropArea);
+        int afterFoups=afterDrops.stream().filter(e->e.getItem().is(ModItems.FOUP_MK1.get())).mapToInt(e->e.getItem().getCount()).sum();
+        helper.assertValueEqual(beforeFoups+1,afterFoups,"controller removal drops exactly its one stored FOUP");
+        helper.assertTrue(helper.getLevel().getBlockEntity(dropPos)==null,"controller BE removed");
+        for(var entity:afterDrops)if(!priorIds.contains(entity.getUUID()))entity.discard();
 
         // Cleanup
         for (BlockPos rel : expected) {
@@ -1262,117 +1269,41 @@ public final class MultiblockGameTests {
     //     Keep both positive and negative owner checks, no blanket exceptions/skips.
     // ------------------------------------------------------------------
     private static void operatorPanelVisualReloadOwner(GameTestHelper helper) {
-        ServerLevel level = helper.getLevel();
-        BlockPos controller = new BlockPos(1, 1, 1);
-        Direction facing = Direction.NORTH;
-        int u0 = 0;
-        int v0 = 0;
-
-        // Build and form a cell
-        List<BlockPos> cells = buildCell(helper, controller, facing, u0, v0);
-        ProcessCellControllerBlockEntity originalCore = revalidate(helper, controller);
-        helper.assertTrue(originalCore.isFormed(), "original cell should form");
-
-        // Simulate reload: create stale FORMED/PART state on members with no in-memory link
-        // We do this by manually setting block states to formed=true, part=11, but NOT
-        // calling attach on the member block entities (so controller link is null)
-        List<BlockPos> expected = cellsOf(controller, facing, u0, v0);
-        for (BlockPos rel : expected) {
-            BlockPos abs = helper.absolutePos(rel);
-            BlockState state = level.getBlockState(abs);
-            BlockState stale = state;
-            if (state.getBlock() instanceof ProcessCellCasingBlock) {
-                stale = state.setValue(ProcessCellCasingBlock.FORMED, true)
-                    .setValue(ProcessCellCasingBlock.PART, 11)
-                    .setValue(ProcessCellCasingBlock.FACING, facing);
-            } else if (state.getBlock() instanceof ProcessCellPowerPortBlock) {
-                stale = state.setValue(ProcessCellPowerPortBlock.FORMED, true)
-                    .setValue(ProcessCellPowerPortBlock.PART, 11)
-                    .setValue(ProcessCellPowerPortBlock.FACING, facing);
-            } else if (state.getBlock() instanceof ProcessCellOperatingPanelBlock) {
-                stale = state.setValue(ProcessCellOperatingPanelBlock.FORMED, true)
-                    .setValue(ProcessCellOperatingPanelBlock.PART, 11)
-                    .setValue(ProcessCellOperatingPanelBlock.FACING, facing);
-            } else if (state.getBlock() instanceof ProcessCellControllerBlock) {
-                stale = state.setValue(ProcessCellControllerBlock.FORMED, true)
-                    .setValue(ProcessCellControllerBlock.PART, 11);
-            }
-            level.setBlock(abs, stale, 3);
-            // Clear the member's in-memory link (simulating reload where controller link not persisted)
-            if (level.getBlockEntity(abs) instanceof ProcessCellMemberBlockEntity member) {
-                // Use reflection or direct access? The fields are private.
-                // Instead, we just verify that serverTick will clear it since controller is null
-            }
+        ServerLevel level=helper.getLevel();
+        List<BlockState> staleStates=List.of(
+            ModMultiblocks.PROCESS_CELL_CASING.get().defaultBlockState(),
+            ModMultiblocks.PROCESS_CELL_POWER_PORT.get().defaultBlockState(),
+            ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get().defaultBlockState());
+        for(int i=0;i<staleStates.size();i++) {
+            BlockPos rel=new BlockPos(1+2*i,1,1),abs=helper.absolutePos(rel);
+            BlockState stale=staleStates.get(i).setValue(ProcessCellCasingBlock.FORMED,true)
+                .setValue(ProcessCellCasingBlock.PART,11).setValue(ProcessCellCasingBlock.FACING,Direction.EAST);
+            helper.setBlock(rel,stale);
+            var member=(ProcessCellMemberBlockEntity)level.getBlockEntity(abs);
+            helper.assertTrue(member.controller()==null&&!member.isMemberOfFormedCell(),"fresh BE has no restored ephemeral owner");
+            member.serverTick();BlockState cleared=level.getBlockState(abs);
+            helper.assertFalse(cleared.getValue(ProcessCellCasingBlock.FORMED),"unowned loaded visual state clears for role "+i);
+            helper.assertValueEqual(0,cleared.getValue(ProcessCellCasingBlock.PART),"unowned loaded PART resets for role "+i);
+            helper.setBlock(rel,Blocks.AIR.defaultBlockState());
         }
-
-        // Now run serverTick on all members - they should clear stale state because
-        // there's no live controller link
-        for (BlockPos rel : expected) {
-            BlockPos abs = helper.absolutePos(rel);
-            if (level.getBlockEntity(abs) instanceof ProcessCellMemberBlockEntity member) {
-                member.serverTick();
-            }
+        BlockPos controller=new BlockPos(1,1,1),absolute=helper.absolutePos(controller);
+        List<BlockPos> cells=buildCell(helper,controller,Direction.NORTH,0,0);
+        var original=revalidate(helper,controller);helper.assertTrue(original.isFormed(),"original owner formed");
+        var replacement=new ProcessCellControllerBlockEntity(absolute,level.getBlockState(absolute));
+        level.removeBlockEntity(absolute);level.setBlockEntity(replacement);
+        original.revalidate();helper.assertFalse(original.isFormed(),"old instance cannot reclaim against replacement identity");
+        for(BlockPos rel:cells)if(level.getBlockEntity(helper.absolutePos(rel)) instanceof ProcessCellMemberBlockEntity member)member.serverTick();
+        replacement.revalidate();helper.assertTrue(replacement.isFormed(),"live replacement forms after stale links clear");
+        original.revalidate();
+        helper.assertTrue(replacement.isFormed(),"stale validation cannot unform current owner");
+        for(int i=0;i<cells.size();i++) {
+            BlockPos abs=helper.absolutePos(cells.get(i));BlockState state=level.getBlockState(abs);
+            helper.assertTrue(state.getValue(ProcessCellControllerBlock.FORMED),"replacement retains every member flag");
+            helper.assertValueEqual(i,state.getValue(ProcessCellControllerBlock.PART),"replacement retains ordered part "+i);
+            if(level.getBlockEntity(abs) instanceof ProcessCellMemberBlockEntity member)
+                helper.assertTrue(member.controller()==replacement,"member belongs only to live replacement");
         }
-
-        // Verify all members cleared their stale formed state
-        for (BlockPos rel : expected) {
-            BlockPos abs = helper.absolutePos(rel);
-            BlockState state = level.getBlockState(abs);
-            boolean formedFlag = false;
-            int partVal = -1;
-            if (state.hasProperty(ProcessCellCasingBlock.FORMED)) {
-                formedFlag = state.getValue(ProcessCellCasingBlock.FORMED);
-                partVal = state.getValue(ProcessCellCasingBlock.PART);
-            } else if (state.hasProperty(ProcessCellPowerPortBlock.FORMED)) {
-                formedFlag = state.getValue(ProcessCellPowerPortBlock.FORMED);
-                partVal = state.getValue(ProcessCellPowerPortBlock.PART);
-            } else if (state.hasProperty(ProcessCellOperatingPanelBlock.FORMED)) {
-                formedFlag = state.getValue(ProcessCellOperatingPanelBlock.FORMED);
-                partVal = state.getValue(ProcessCellOperatingPanelBlock.PART);
-            }
-            helper.assertFalse(formedFlag, "stale member at " + rel + " should clear FORMED on serverTick");
-            helper.assertValueEqual(0, partVal, "stale member at " + rel + " should reset PART to 0 on serverTick");
-        }
-
-        // Now test: replaced controller at same position must not be claimed by old core instance
-        // and members ultimately link new real core
-        // Place a NEW controller at the same position
-        helper.setBlock(controller, ModMultiblocks.PROCESS_CELL_CONTROLLER.get()
-            .defaultBlockState().setValue(ProcessCellControllerBlock.FACING, facing));
-        ProcessCellControllerBlockEntity newCore = revalidate(helper, controller);
-        helper.assertTrue(newCore != originalCore, "new controller should be a different instance");
-        helper.assertTrue(newCore.isFormed(), "new controller should form the cell");
-
-        // Verify all members now link to the new core (positive owner check)
-        for (BlockPos rel : expected) {
-            BlockPos abs = helper.absolutePos(rel);
-            if (level.getBlockEntity(abs) instanceof ProcessCellMemberBlockEntity member) {
-                helper.assertTrue(member.controller() == newCore,
-                    "member at " + rel + " should link to new core (positive owner check)");
-                helper.assertTrue(member.isMemberOfFormedCell(),
-                    "member at " + rel + " should be formed with new core");
-            }
-        }
-
-        // Negative owner check: old core instance must not own any members
-        for (BlockPos rel : expected) {
-            BlockPos abs = helper.absolutePos(rel);
-            if (level.getBlockEntity(abs) instanceof ProcessCellMemberBlockEntity member) {
-                helper.assertFalse(member.controller() == originalCore,
-                    "member at " + rel + " must not link to old core instance (negative owner check)");
-            }
-        }
-
-        // Cleanup
-        for (BlockPos rel : expected) {
-            BlockPos abs = helper.absolutePos(rel);
-            if (level.getBlockEntity(abs) instanceof ProcessCellControllerBlockEntity cbe) {
-                cbe.clearContent();
-            }
-            helper.setBlock(rel, Blocks.AIR.defaultBlockState());
-        }
-
-        LOGGER.info("[M1-03d] operator_panel_visual_reload_owner: stale state cleared, new core owns members, old core rejected");
+        for(BlockPos rel:cells)helper.setBlock(rel,Blocks.AIR.defaultBlockState());
         helper.succeed();
     }
 }

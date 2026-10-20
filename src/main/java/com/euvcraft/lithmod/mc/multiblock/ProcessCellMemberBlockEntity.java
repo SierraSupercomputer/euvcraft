@@ -76,52 +76,28 @@ public abstract class ProcessCellMemberBlockEntity extends BlockEntity {
      * and there is nobody left to push an update.</p>
      */
     public void serverTick() {
-        if (level == null || level.isClientSide()) {
-            return;
-        }
-        // Verify live controller identity by world position, not just object reference
-        if (this.formed && this.controller != null) {
-            BlockPos controllerPos = this.controller.getBlockPos();
-            BlockEntity be = level.getBlockEntity(controllerPos);
-            boolean controllerAlive = (be == this.controller && this.controller.isFormed());
-            if (!controllerAlive) {
-                this.formed = false;
-                this.controller = null;
-                this.part = 0;
-                this.facing = null;
-                clearFormedState();
-                setChanged();
-            }
+        if (level == null || level.isClientSide()) return;
+        boolean live = controller != null && !controller.isRemoved()
+            && level.getBlockEntity(controller.getBlockPos()) == controller
+            && controller.isFormed() && controller.members().contains(worldPosition);
+        BlockState state = level.getBlockState(worldPosition);
+        // All member classes share equal named properties, including after an actual BE reload.
+        boolean persistedFormed = state.hasProperty(ProcessCellCasingBlock.FORMED)
+            && state.getValue(ProcessCellCasingBlock.FORMED);
+        boolean stalePart = state.hasProperty(ProcessCellCasingBlock.PART)
+            && state.getValue(ProcessCellCasingBlock.PART) != 0;
+        if (!live && (formed || controller != null || persistedFormed || stalePart)) {
+            attach(null, false, 0, null);
+            clearFormedState();
         }
     }
 
-    /**
-     * Takes this member's block state back to unformed.
-     *
-     * <p>Needed for the one case the controller cannot cover: when the controller block itself is
-     * removed there is no controller left to push an update, so each surviving member has to take
-     * its own flag down.</p>
-     */
+    /** Clear coarse visual state even if no ephemeral owner was restored from disk. */
     private void clearFormedState() {
         BlockState state = level.getBlockState(worldPosition);
-        if (state.hasProperty(ProcessCellCasingBlock.FORMED)
-                && state.getValue(ProcessCellCasingBlock.FORMED)) {
-            level.setBlock(worldPosition, state
-                .setValue(ProcessCellCasingBlock.FORMED, Boolean.FALSE)
-                .setValue(ProcessCellCasingBlock.PART, Integer.valueOf(0))
-                .setValue(ProcessCellCasingBlock.FACING, Direction.NORTH), 3);
-        } else if (state.hasProperty(ProcessCellPowerPortBlock.FORMED)
-                && state.getValue(ProcessCellPowerPortBlock.FORMED)) {
-            level.setBlock(worldPosition, state
-                .setValue(ProcessCellPowerPortBlock.FORMED, Boolean.FALSE)
-                .setValue(ProcessCellPowerPortBlock.PART, Integer.valueOf(0))
-                .setValue(ProcessCellPowerPortBlock.FACING, Direction.NORTH), 3);
-        } else if (state.hasProperty(ProcessCellOperatingPanelBlock.FORMED)
-                && state.getValue(ProcessCellOperatingPanelBlock.FORMED)) {
-            level.setBlock(worldPosition, state
-                .setValue(ProcessCellOperatingPanelBlock.FORMED, Boolean.FALSE)
-                .setValue(ProcessCellOperatingPanelBlock.PART, Integer.valueOf(0))
-                .setValue(ProcessCellOperatingPanelBlock.FACING, Direction.NORTH), 3);
-        }
+        BlockState next = state;
+        if (next.hasProperty(ProcessCellCasingBlock.FORMED)) next = next.setValue(ProcessCellCasingBlock.FORMED, false);
+        if (next.hasProperty(ProcessCellCasingBlock.PART)) next = next.setValue(ProcessCellCasingBlock.PART, 0);
+        if (next != state) level.setBlock(worldPosition, next, 3);
     }
 }
