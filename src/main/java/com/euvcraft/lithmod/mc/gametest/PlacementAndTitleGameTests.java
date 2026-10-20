@@ -1,10 +1,15 @@
 package com.euvcraft.lithmod.mc.gametest;
 
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
+import com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity;
 import com.euvcraft.lithmod.mc.multiblock.ModMultiblocks;
 import com.euvcraft.lithmod.mc.multiblock.ProcessCellControllerBlock;
 import com.euvcraft.lithmod.mc.multiblock.ProcessCellControllerBlockEntity;
 import com.euvcraft.lithmod.mc.registry.ModItems;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -15,12 +20,13 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.gametest.framework.TestData;
 import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -28,6 +34,7 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.IEventBus;
@@ -36,22 +43,23 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 import org.slf4j.Logger;
 
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 
 /**
  * Game tests for the Process Cell controller placement and title repair.
  *
  * <p>Three cases, registered only inside the existing normal-fixture branch in
- * {@link EUVCRAFTMod} (same as {@link ClientPolishGameTests}):
- * </p>
- * <ol>
- *   <li>{@code placement_title_vertical_contexts}: vertical-context test using
- *       real player pitch/yaw via {@link GameTestHelper#makeMockPlayer(GameType)}.</li>
- *   <li>{@code placement_title_actual_placement}: actual placement using
- *       {@link BlockItem#place(BlockPlaceContext)} with real support block/hitpoint.</li>
- *   <li>{@code placement_title_localized_name}: verifies the dynamic title and
- *       the bundled en_us translation key resolves to "Lithography Machine".</li>
- * </ol>
+ * {@link EUVCRAFTMod} (same as {@link ClientPolishGameTests}): vertical
+ * placement contexts driven by real player yaw/pitch, real
+ * {@link BlockItem#place(BlockPlaceContext)} placements onto the same fixture,
+ * and the controller's dynamic localized title against the bundled en_us
+ * resource. Every mock player is a real {@link Player} from
+ * {@link GameTestHelper#makeMockPlayer(GameType)}; rotation is set with
+ * {@code setYRot}/{@code setXRot} only and is never overwritten by
+ * {@code lookAt}.</p>
  */
 public final class PlacementAndTitleGameTests {
 
@@ -62,6 +70,20 @@ public final class PlacementAndTitleGameTests {
     private static final String VERTICAL_CONTEXTS = "placement_title_vertical_contexts";
     private static final String ACTUAL_PLACEMENT = "placement_title_actual_placement";
     private static final String LOCALIZED_NAME = "placement_title_localized_name";
+
+    /** The language resource bundled with the mod. */
+    private static final String LANGUAGE_PATH = "/assets/lithmod/lang/en_us.json";
+    /** The translation key the Process Cell controller's display name must use. */
+    private static final String CONTROLLER_KEY = "block.lithmod.process_cell";
+
+    /** Fixture: one supporting stone, relative to the test structure. */
+    private static final BlockPos SUPPORT = new BlockPos(1, 1, 1);
+    /** Fixture: the air cell the controller is placed in, directly above the stone. */
+    private static final BlockPos TARGET = new BlockPos(1, 2, 1);
+    /** The controller position for the title case, relative to the test structure. */
+    private static final BlockPos CONTROLLER = new BlockPos(1, 1, 1);
+    /** The four horizontal yaws under test. */
+    private static final Direction[] YAWS = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
 
     private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS =
             DeferredRegister.create(Registries.TEST_FUNCTION, "lithmod");
@@ -103,264 +125,175 @@ public final class PlacementAndTitleGameTests {
     }
 
     // ------------------------------------------------------------------------
-    // Test 1: vertical-context test
+    // shared helper
     // ------------------------------------------------------------------------
-    // Uses actual GameTestHelper.makeMockPlayer(GameType.CREATIVE) supported by
-    // installed source, sets yaw for NORTH/EAST/SOUTH/WEST and pitch +/-89.9 (and 0),
-    // actual BlockPlaceContext(player, InteractionHand.MAIN_HAND, ItemStack, BlockHitResult)
-    // (see actual constructor), aims at fixture from above/below as appropriate.
-    // Calls actual controller getStateForPlacement; requires horizontal opposite of
-    // player's yaw, FORMED=false. Asserts at least upward/downward nearest-look
-    // contexts precondition to prove this would trigger old bug; uses real pitch,
-    // does NOT override getNearestLookingDirection/getHorizontalDirection or fake property.
+
+    /**
+     * Builds one real placement context against the fixture: sets only the player's
+     * yaw and pitch ({@code lookAt} would overwrite them, so it is never called),
+     * positions the player clear of the target cell's hitbox, puts a freshly built
+     * controller stack in the main hand and aims a hit on the support stone's top
+     * face. Both block arguments are absolute world coordinates; the player's
+     * horizontal direction equal to the requested yaw is asserted so a stale or
+     * corrected rotation cannot pass unnoticed.
+     */
+    private static BlockPlaceContext placementContext(GameTestHelper h, Player player,
+            Direction yaw, float pitch, BlockPos targetAbs, BlockPos supportAbs) {
+        player.setYRot(yaw.toYRot());
+        player.setXRot(pitch);
+        // Stand beside the fixture along the requested yaw so the player's own box
+        // never intersects the cell the controller is placed into.
+        double x = supportAbs.getX() + 0.5 + yaw.getStepX() * 2.0;
+        double z = supportAbs.getZ() + 0.5 + yaw.getStepZ() * 2.0;
+        // +89.9 looks down (player comes from above the air cell); -89.9 looks up
+        // (player comes from below the supporting stone).
+        double y = pitch > 0 ? targetAbs.getY() + 2.5 : supportAbs.getY() - 2.0;
+        player.setPos(x, y, z);
+        h.assertValueEqual(yaw, player.getDirection(),
+                "the mock player's horizontal direction must equal the requested yaw (yaw " + yaw + ", pitch " + pitch + ")");
+        ItemStack stack = new ItemStack(ModItems.PROCESS_CELL_CONTROLLER.get());
+        player.setItemInHand(InteractionHand.MAIN_HAND, stack);
+        BlockHitResult hit = new BlockHitResult(
+                new Vec3(supportAbs.getX() + 0.5, supportAbs.getY() + 1.0, supportAbs.getZ() + 0.5),
+                Direction.UP, supportAbs, true);
+        return new BlockPlaceContext(player, InteractionHand.MAIN_HAND, stack, hit);
+    }
+
+    /**
+     * Empties a placed controller's inventory through the real block entity (read
+     * at the absolute position) before the block itself is cleared, so the removal
+     * drops nothing.
+     */
+    private static void clearPlacedController(GameTestHelper h, ServerLevel level, BlockPos relativeTarget) {
+        if (level.getBlockEntity(h.absolutePos(relativeTarget)) instanceof FabMachineBlockEntity machine) {
+            machine.clearContent();
+        }
+        h.setBlock(relativeTarget, Blocks.AIR.defaultBlockState());
+    }
+
+    // ------------------------------------------------------------------------
+    // Test 1: placement title vertical contexts
+    // ------------------------------------------------------------------------
+
+    /**
+     * Twelve real contexts: four yaws at pitches -89.9, 0 and +89.9. A steep pitch
+     * must make the nearest looking direction vertical (seen up and seen down both)
+     * while {@code getStateForPlacement} still uses the horizontal opposite of the
+     * yaw; level pitch behaves identically to the steep ones.
+     */
     private static void verticalContexts(GameTestHelper h) {
-        // Build a minimal fixture: a single block of stone at (1,1,1) to aim at.
-        BlockPos fixture = new BlockPos(1, 1, 1);
-        h.setBlock(fixture, Blocks.STONE);
-
-        // The controller item stack
-        ItemStack controllerStack = new ItemStack(ModMultiblocks.PROCESS_CELL_CONTROLLER.get().asItem());
-
-        // Test all four horizontal facings (yaw) with three pitches each
-        Direction[] yaws = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
-        float[] pitches = {-89.9f, 0f, 89.9f}; // steep down, level, steep up
-
-        for (Direction yaw : yaws) {
-            for (float pitch : pitches) {
-                // Create a mock player with the specified yaw and pitch
-                ServerPlayer player = h.makeMockPlayer(GameType.CREATIVE);
-                player.setYRot(yaw.toYRot());
-                player.setXRot(pitch);
-
-                // Position player above the fixture for downward aim, or below for upward
-                // For simplicity, place the player at a position looking at the fixture
-                // from the appropriate vertical angle.
-                Vec3 playerPos;
-                if (pitch < 0) {
-                    // Looking down from above
-                    playerPos = new Vec3(fixture.getX() + 0.5, fixture.getY() + 3.0, fixture.getZ() + 0.5);
-                } else if (pitch > 0) {
-                    // Looking up from below
-                    playerPos = new Vec3(fixture.getX() + 0.5, fixture.getY() - 2.0, fixture.getZ() + 0.5);
-                } else {
-                    // Level - from the side
-                    Vec3 offset = yaw.getUnitVec3().scale(-3.0);
-                    playerPos = new Vec3(fixture.getX() + 0.5 + offset.x, fixture.getY() + 1.0, fixture.getZ() + 0.5 + offset.z);
-                }
-                player.setPos(playerPos.x, playerPos.y, playerPos.z);
-                player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES,
-                        new Vec3(fixture.getX() + 0.5, fixture.getY() + 0.5, fixture.getZ() + 0.5));
-
-                // Create a BlockHitResult aiming at the fixture
-                BlockHitResult hitResult = new BlockHitResult(
-                        new Vec3(fixture.getX() + 0.5, fixture.getY() + 0.5, fixture.getZ() + 0.5),
-                        Direction.UP, // hit the top face
-                        fixture,
-                        true
-                );
-
-                // Create the real BlockPlaceContext
-                BlockPlaceContext context = new BlockPlaceContext(
-                        player, InteractionHand.MAIN_HAND, controllerStack, hitResult
-                );
-
-                // Call the actual controller's getStateForPlacement
-                BlockState state = ModMultiblocks.PROCESS_CELL_CONTROLLER.get().getStateForPlacement(context);
-
-                // Verify the facing is the horizontal opposite of player's yaw
-                Direction expectedFacing = yaw.getOpposite();
-                Direction actualFacing = state.getValue(ProcessCellControllerBlock.FACING);
-                h.assertValueEqual(expectedFacing, actualFacing,
-                        "yaw=" + yaw + " pitch=" + pitch + ": facing must be horizontal opposite of yaw");
-
-                // Verify FORMED is false (default)
-                h.assertValueEqual(false, state.getValue(ProcessCellControllerBlock.FORMED),
-                        "yaw=" + yaw + " pitch=" + pitch + ": FORMED must be false by default");
-
-                // For steep pitches (+/-89.9), verify that getNearestLookingDirection would
-                // have returned a vertical direction, proving the old bug would trigger.
-                // We don't override anything; we just assert the precondition.
-                if (Math.abs(pitch) > 45.0f) {
-                    Direction nearest = context.getNearestLookingDirection();
-                    h.assertTrue(nearest.getAxis() == Direction.Axis.Y,
-                            "yaw=" + yaw + " pitch=" + pitch + ": precondition - nearest looking direction is vertical (would trigger old bug)");
-                    // And verify getHorizontalDirection returns the correct horizontal
-                    Direction horizontal = context.getHorizontalDirection();
-                    h.assertValueEqual(yaw, horizontal,
-                            "yaw=" + yaw + " pitch=" + pitch + ": getHorizontalDirection must return player's horizontal yaw");
+        h.setBlock(SUPPORT, Blocks.STONE);
+        try {
+            for (Direction yaw : YAWS) {
+                for (float pitch : new float[] {-89.9f, 0f, 89.9f}) {
+                    Player player = h.makeMockPlayer(GameType.CREATIVE);
+                    BlockPlaceContext context = placementContext(h, player, yaw, pitch,
+                            h.absolutePos(TARGET), h.absolutePos(SUPPORT));
+                    BlockState state = ModMultiblocks.PROCESS_CELL_CONTROLLER.get().getStateForPlacement(context);
+                    h.assertValueEqual(yaw.getOpposite(), state.getValue(ProcessCellControllerBlock.FACING),
+                            "facing must be the horizontal opposite of the player yaw (yaw " + yaw + ", pitch " + pitch + ")");
+                    h.assertFalse(state.getValue(ProcessCellControllerBlock.FORMED),
+                            "a freshly built controller state must not be formed (yaw " + yaw + ", pitch " + pitch + ")");
+                    if (Math.abs(pitch) > 45.0f) {
+                        Direction nearest = context.getNearestLookingDirection();
+                        h.assertTrue(nearest.getAxis() == Direction.Axis.Y,
+                                "a steep pitch must make the nearest looking direction vertical, saw " + nearest
+                                        + " (yaw " + yaw + ", pitch " + pitch + ")");
+                        h.assertValueEqual(pitch > 0 ? Direction.DOWN : Direction.UP, nearest,
+                                "the nearest looking direction must follow the pitch sign (yaw " + yaw + ", pitch " + pitch + ")");
+                    }
                 }
             }
+        } finally {
+            h.setBlock(SUPPORT, Blocks.AIR.defaultBlockState());
         }
-
         h.succeed();
     }
 
     // ------------------------------------------------------------------------
-    // Test 2: actual placement
+    // Test 2: placement title actual placement
     // ------------------------------------------------------------------------
-    // Real BlockItem.place(actual BlockPlaceContext), all four yaw facings and both
-    // steep pitches, into suitable empty fixture with real support block/hitpoint.
-    // Verify actual world controller and opposite horizontal facing. Ensure test
-    // cleanup clears controller/fixture without drops; don't add players to level list
-    // if not needed. GameTestHelper.makeMockPlayer is a real Player instance suitable
-    // for context and avoids connection ceremony; makeMockServerPlayerInLevel is
-    // deprecated and can pollute server. Avoid GameTestHelper.placeBlock: it creates
-    // a special no-player TestBlockPlaceContext that overrides only nearest direction
-    // and will not test this bug. Avoid blanket catches: unexpected placement
-    // failure must fail.
+
+    /**
+     * Real {@code BlockItem.place} with a real support stone and hitpoint, four
+     * yaws at both steep pitches, always into the same air target above the stone.
+     * Each iteration is cleared in a finally block even when an assertion fails:
+     * the placed block entity's inventory is emptied before the block goes away,
+     * so nothing drops and no state leaks to the next iteration.
+     */
     private static void actualPlacement(GameTestHelper h) {
         ServerLevel level = h.getLevel();
-
-        // Build a fixture: a flat stone floor at y=1 to place on
-        for (int x = 0; x < 3; x++) {
-            for (int z = 0; z < 3; z++) {
-                h.setBlock(new BlockPos(x + 1, 1, z + 1), Blocks.STONE);
-            }
-        }
-
-        ItemStack controllerStack = new ItemStack(ModMultiblocks.PROCESS_CELL_CONTROLLER.get().asItem());
-        BlockItem blockItem = (BlockItem) controllerStack.getItem();
-
-        Direction[] yaws = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
-        float[] steepPitches = {-89.9f, 89.9f}; // steep down, steep up
-
-        for (Direction yaw : yaws) {
-            for (float pitch : steepPitches) {
-                // Each iteration uses a fresh position to avoid collision
-                BlockPos placePos = new BlockPos(
-                        1 + yaw.getStepX(), 2, 1 + yaw.getStepZ()
-                );
-
-                // Create a mock player
-                ServerPlayer player = h.makeMockPlayer(GameType.CREATIVE);
-                player.setYRot(yaw.toYRot());
-                player.setXRot(pitch);
-
-                // Position player appropriately for the pitch
-                Vec3 playerPos;
-                if (pitch < 0) {
-                    // Looking down from above
-                    playerPos = new Vec3(placePos.getX() + 0.5, placePos.getY() + 3.0, placePos.getZ() + 0.5);
-                } else {
-                    // Looking up from below
-                    playerPos = new Vec3(placePos.getX() + 0.5, placePos.getY() - 2.0, placePos.getZ() + 0.5);
+        BlockItem controllerItem = ModItems.PROCESS_CELL_CONTROLLER.get();
+        h.setBlock(SUPPORT, Blocks.STONE);
+        try {
+            for (Direction yaw : YAWS) {
+                for (float pitch : new float[] {-89.9f, 89.9f}) {
+                    try {
+                        Player player = h.makeMockPlayer(GameType.CREATIVE);
+                        BlockPlaceContext context = placementContext(h, player, yaw, pitch,
+                                h.absolutePos(TARGET), h.absolutePos(SUPPORT));
+                        InteractionResult result = controllerItem.place(context);
+                        h.assertTrue(result.consumesAction(),
+                                "placing the controller item must succeed (yaw " + yaw + ", pitch " + pitch + "), got " + result);
+                        BlockState placed = level.getBlockState(h.absolutePos(TARGET));
+                        h.assertTrue(placed.is(ModMultiblocks.PROCESS_CELL_CONTROLLER.get()),
+                                "the world block at the target must be the controller (yaw " + yaw + ", pitch " + pitch + ")");
+                        h.assertValueEqual(yaw.getOpposite(), placed.getValue(ProcessCellControllerBlock.FACING),
+                                "the placed controller must face the horizontal opposite of the player yaw (yaw " + yaw + ", pitch " + pitch + ")");
+                        h.assertFalse(placed.getValue(ProcessCellControllerBlock.FORMED),
+                                "a placed controller must not be formed (yaw " + yaw + ", pitch " + pitch + ")");
+                    } finally {
+                        clearPlacedController(h, level, TARGET);
+                    }
                 }
-                player.setPos(playerPos.x, playerPos.y, playerPos.z);
-                player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES,
-                        new Vec3(placePos.getX() + 0.5, placePos.getY() + 0.5, placePos.getZ() + 0.5));
-
-                // Hit result: aiming at the block below (the support block)
-                BlockPos supportPos = placePos.below();
-                BlockHitResult hitResult = new BlockHitResult(
-                        new Vec3(supportPos.getX() + 0.5, supportPos.getY() + 1.0, supportPos.getZ() + 0.5),
-                        Direction.UP,
-                        supportPos,
-                        false
-                );
-
-                // Real BlockPlaceContext
-                BlockPlaceContext context = new BlockPlaceContext(
-                        player, InteractionHand.MAIN_HAND, controllerStack, hitResult
-                );
-
-                // Real BlockItem.place - this must not be wrapped in a blanket catch
-                InteractionResult result = blockItem.place(context);
-                h.assertTrue(result.consumesAction(),
-                        "yaw=" + yaw + " pitch=" + pitch + ": placement must succeed");
-
-                // Verify the placed controller in the world
-                BlockState placedState = level.getBlockState(placePos);
-                h.assertTrue(placedState.is(ModMultiblocks.PROCESS_CELL_CONTROLLER.get()),
-                        "yaw=" + yaw + " pitch=" + pitch + ": placed block must be controller");
-
-                Direction expectedFacing = yaw.getOpposite();
-                Direction actualFacing = placedState.getValue(ProcessCellControllerBlock.FACING);
-                h.assertValueEqual(expectedFacing, actualFacing,
-                        "yaw=" + yaw + " pitch=" + pitch + ": world controller facing must be horizontal opposite of yaw");
-
-                h.assertValueEqual(false, placedState.getValue(ProcessCellControllerBlock.FORMED),
-                        "yaw=" + yaw + " pitch=" + pitch + ": FORMED must be false");
-
-                // Cleanup: clear the controller and the support fixture without drops
-                // First clear the controller's block entity inventory if any
-                var be = level.getBlockEntity(placePos);
-                if (be instanceof net.minecraft.world.Container container) {
-                    container.clearContent();
-                }
-                level.setBlock(placePos, Blocks.AIR.defaultBlockState(), 3);
             }
+        } finally {
+            h.setBlock(SUPPORT, Blocks.AIR.defaultBlockState());
         }
-
-        // Clear the floor
-        for (int x = 0; x < 3; x++) {
-            for (int z = 0; z < 3; z++) {
-                h.setBlock(new BlockPos(x + 1, 1, z + 1), Blocks.AIR.defaultBlockState());
-            }
-        }
-
         h.succeed();
     }
 
     // ------------------------------------------------------------------------
-    // Test 3: localized name
+    // Test 3: placement title localized name
     // ------------------------------------------------------------------------
-    // Instantiate/place real controller BE, call getDisplayName and assert component
-    // translation key is block.lithmod.process_cell (use actual component contents
-    // accessor in installed API or serialized component), load bundled en_us JSON
-    // and require actual key resolves to Lithography Machine. Do not rely on
-    // Component.getString translation on dedicated server (no client language loaded).
-    // This tests dynamic backend title plus actual language resource, not just a
-    // disconnected hardcoded JSON key. Do not leak private lots/state.
+
+    /**
+     * The placed controller's real {@code getDisplayName} must carry the
+     * {@code block.lithmod.process_cell} translation key, and the bundled en_us
+     * resource must resolve that exact key to "Lithography Machine". The key is
+     * read off the component's translatable contents, never through
+     * {@code getString}, which cannot resolve on a dedicated server.
+     */
     private static void localizedName(GameTestHelper h) {
         ServerLevel level = h.getLevel();
+        h.setBlock(CONTROLLER, ModMultiblocks.PROCESS_CELL_CONTROLLER.get().defaultBlockState()
+                .setValue(ProcessCellControllerBlock.FACING, Direction.NORTH));
+        try {
+            ProcessCellControllerBlockEntity controller =
+                    level.getBlockEntity(h.absolutePos(CONTROLLER)) instanceof ProcessCellControllerBlockEntity blockEntity
+                            ? blockEntity : null;
+            h.assertTrue(controller != null, "placing the controller must create its block entity");
 
-        // Place a controller in the world
-        BlockPos controllerPos = new BlockPos(1, 1, 1);
-        h.setBlock(controllerPos,
-                ModMultiblocks.PROCESS_CELL_CONTROLLER.get().defaultBlockState()
-                        .setValue(ProcessCellControllerBlock.FACING, Direction.NORTH));
+            Component displayName = controller.getDisplayName();
+            h.assertTrue(displayName.getContents() instanceof TranslatableContents,
+                    "the controller display name must be a translatable component: " + displayName);
+            TranslatableContents contents = (TranslatableContents) displayName.getContents();
+            h.assertValueEqual(CONTROLLER_KEY, contents.getKey(),
+                    "the dynamic display name must use the " + CONTROLLER_KEY + " key");
 
-        // Get the block entity
-        ProcessCellControllerBlockEntity controller =
-                level.getBlockEntity(controllerPos) instanceof ProcessCellControllerBlockEntity c
-                        ? c : null;
-        h.assertTrue(controller != null, "controller block entity must exist");
-
-        // Call getDisplayName (from FabMachineBlockEntity)
-        Component displayName = controller.getDisplayName();
-
-        // Verify the translation key is block.lithmod.process_cell
-        // In 26.3, Component.translatable stores the key; we can check the string
-        // representation or serialize it. The key should be in the component.
-        String displayString = displayName.getString();
-        h.assertTrue(displayString.contains("block.lithmod.process_cell")
-                        || displayString.equals("Lithography Machine"),
-                "display name must use translation key block.lithmod.process_cell or resolve to Lithography Machine; got: " + displayString);
-
-        // Load bundled en_us.json and require the key resolves to "Lithography Machine"
-        java.io.InputStream input = PlacementAndTitleGameTests.class.getResourceAsStream("/assets/lithmod/lang/en_us.json");
-        h.assertTrue(input != null, "bundled en_us.json must be loadable");
-
-        com.google.gson.JsonElement root;
-        try (java.io.InputStreamReader reader = new java.io.InputStreamReader(input, java.nio.charset.StandardCharsets.UTF_8)) {
-            root = com.google.gson.JsonParser.parseReader(reader);
-        } catch (Exception e) {
-            throw new AssertionError("Failed to parse en_us.json", e);
+            InputStream input = PlacementAndTitleGameTests.class.getResourceAsStream(LANGUAGE_PATH);
+            h.assertTrue(input != null, "the bundled en_us.json must be on the classpath");
+            try (InputStreamReader reader = new InputStreamReader(input, StandardCharsets.UTF_8)) {
+                JsonElement root = JsonParser.parseReader(reader);
+                h.assertTrue(root.isJsonObject(), "en_us.json must be a JSON object");
+                JsonObject lang = root.getAsJsonObject();
+                h.assertTrue(lang.has(CONTROLLER_KEY), "en_us.json must contain " + CONTROLLER_KEY);
+                h.assertValueEqual("Lithography Machine", lang.get(CONTROLLER_KEY).getAsString(),
+                        CONTROLLER_KEY + " must translate to Lithography Machine");
+            }
+        } finally {
+            clearPlacedController(h, level, CONTROLLER);
         }
-
-        h.assertTrue(root.isJsonObject(), "en_us.json must be a JSON object");
-        com.google.gson.JsonObject lang = root.getAsJsonObject();
-        h.assertTrue(lang.has("block.lithmod.process_cell"), "en_us.json must contain block.lithmod.process_cell");
-        String translation = lang.get("block.lithmod.process_cell").getAsString();
-        h.assertValueEqual("Lithography Machine", translation,
-                "block.lithmod.process_cell must translate to 'Lithography Machine'");
-
-        // Cleanup
-        if (controller != null) {
-            controller.clearContent();
-        }
-        level.setBlock(controllerPos, Blocks.AIR.defaultBlockState(), 3);
-
         h.succeed();
     }
 }
