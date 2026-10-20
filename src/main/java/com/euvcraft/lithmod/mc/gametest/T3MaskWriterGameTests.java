@@ -133,8 +133,8 @@ public final class T3MaskWriterGameTests {
     private static final String REDSTONE_ID = "minecraft:redstone";
     private static final String MASK_ID = EUVCRAFTMod.MODID + ":mask";
 
-    /** How long every fixture recipe takes, in ticks. Small so a test can drive it by hand. */
-    private static final int RECIPE_TICKS = 20;
+    /** Shipping JSON duration; tests drive server ticks synchronously. */
+    private static final int RECIPE_TICKS = 1200;
 
     private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS =
         DeferredRegister.create(net.minecraft.core.registries.Registries.TEST_FUNCTION,
@@ -307,7 +307,7 @@ public final class T3MaskWriterGameTests {
     }
 
     private static @Nullable SupportMachineBlockEntity ebeamAt(GameTestHelper helper, BlockPos pos) {
-        BlockEntity be = helper.getLevel().getBlockEntity(pos);
+        BlockEntity be = helper.getLevel().getBlockEntity(helper.absolutePos(pos));
         if (be instanceof SupportMachineBlockEntity machine && machine.kind() == SupportMachineKind.EBEAM) {
             return machine;
         }
@@ -1065,35 +1065,34 @@ public final class T3MaskWriterGameTests {
     }
 
     private static void g1GeneratorCannotProduceG2(GameTestHelper helper) {
-        // Verify PatternGenerator (G1) cannot produce GEN2 masks even if recipe requests it
-        placeEbeam(helper, MACHINE); // Using e-beam machine but testing the principle
-        SupportMachineBlockEntity machine = ebeamAt(helper, MACHINE);
-        if (machine == null) {
-            helper.fail("no e-beam block entity at " + MACHINE);
-            return;
+        helper.setBlock(MACHINE, com.euvcraft.lithmod.mc.machine.mask.MaskMachines.PATTERN_GENERATOR.get().defaultBlockState());
+        var generator = (com.euvcraft.lithmod.mc.machine.mask.PatternGeneratorBlockEntity)
+            helper.getLevel().getBlockEntity(helper.absolutePos(MACHINE));
+        var recipe = new com.euvcraft.lithmod.core.MachineRecipeSpec("pattern_generator",
+            List.of(com.euvcraft.lithmod.core.MachineIngredient.item(BLANK_MASK_ID, 1),
+                com.euvcraft.lithmod.core.MachineIngredient.item(REDSTONE_ID, 1)),
+            new com.euvcraft.lithmod.core.MachineResult(MASK_ID, 1, Map.of("lithmod:mask_data",
+                "{\"die_type\":\"logic\",\"tier_index\":1,\"uses_remaining\":9,\"shop_generation\":2}")), 4, 5);
+        try {
+            var field = com.euvcraft.lithmod.mc.data.MachineRecipeLoader.class.getDeclaredField("resolved");
+            field.setAccessible(true);
+            Object previous = field.get(null);
+            try {
+                field.set(null, com.euvcraft.lithmod.mc.data.MachineRecipeLoader.build(List.of(recipe), "T3 G1 provenance fixture"));
+                generator.setSlot(0, new ItemStack(ModItems.BLANK_MASK.get()));
+                generator.setSlot(1, new ItemStack(Items.REDSTONE));
+                generator.setStoredEnergy(20);
+                for (int tick = 0; tick < 6; tick++) generator.serverTick();
+                MaskData design = generator.outputSlot().get(ModDataComponents.MASK_DATA.get());
+                helper.assertTrue(design != null, "actual Pattern Generator produces a usable mask");
+                helper.assertValueEqual(1, design.shopGeneration(), "G1 generator normalizes a forged G2 recipe template");
+                helper.assertValueEqual(0L, generator.buffer().getAmountAsLong(), "one actual G1 job charged exactly twenty FE");
+            } finally {
+                field.set(null, previous);
+            }
+        } catch (ReflectiveOperationException failure) {
+            throw new AssertionError("G1 registry fixture", failure);
         }
-        machine.revalidate();
-        helper.assertTrue(machine.isFormed(), "multiblock did not form");
-
-        // The e-beam always produces GEN2 (hardcoded in completeEbeamJob)
-        // This test verifies that the PatternGenerator (which is GEN1) is separate
-        // and its constant MASK_SHOP_GENERATION = 1 prevents it from making GEN2 masks.
-        // Since we don't have a PatternGenerator here, we assert the e-beam DOES produce GEN2.
-
-        loadFixture(helper, machine, REDSTONE_ID);
-        charge(helper, machine, fixtureCost(machine) * RECIPE_TICKS);
-
-        ServerPlayer player = connect(helper.getLevel());
-        SupportMachineMenu menu = createMenu(machine, player);
-
-        menu.clickMenuButton(player, SupportMachineMenu.EBEAM_DESIGN_BUTTON_BASE + 0);
-        menu.clickMenuButton(player, SupportMachineMenu.EBEAM_START_BUTTON);
-        runUntilOutput(machine, RECIPE_TICKS + 5);
-
-        MaskData design = machine.outputSlot().get(ModDataComponents.MASK_DATA.get());
-        helper.assertValueEqual(2, design.shopGeneration(), "e-beam must produce GEN2 masks");
-
-        player.closeContainer();
         helper.succeed();
     }
 

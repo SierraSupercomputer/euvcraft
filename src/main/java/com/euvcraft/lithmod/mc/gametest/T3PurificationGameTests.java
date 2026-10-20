@@ -439,13 +439,17 @@ public final class T3PurificationGameTests {
         helper.assertTrue(purifier.slot(SupportMachineBlockEntity.SLOT_IN_1).is(Items.WATER_BUCKET),
             "a full tank consumed the water bucket anyway");
 
-        // An unformed cell exchanges nothing, even with a bucket in the slot.
+        // Keep the controller alive and break one casing: bucket exchange must be formation-gated.
         purifier.clearContent();
-        purifier.clearContent();
-        helper.getLevel().removeBlock(helper.absolutePos(CELL), false);
-        // The step above destroys the controller; place an air marker cell: unformed.
-        SupportMachineBlockEntity unformed = controllerAt(helper.getLevel(), helper.absolutePos(CELL));
-        helper.assertTrue(unformed == null, "removing the controller left a block entity behind");
+        tank.drain(tank.amount(), false);
+        helper.getLevel().removeBlock(cellsOf(helper.absolutePos(CELL), Direction.NORTH).get(11), false);
+        purifier.revalidate();
+        helper.assertFalse(purifier.isFormed(), "broken casing unforms the existing controller");
+        purifier.setSlot(SupportMachineBlockEntity.SLOT_IN_1, new ItemStack(Items.WATER_BUCKET));
+        tickSupport(purifier, 3);
+        helper.assertValueEqual(0, purifier.waterAmount(), "unformed controller exchanges no water");
+        helper.assertTrue(purifier.slot(SupportMachineBlockEntity.SLOT_IN_1).is(Items.WATER_BUCKET), "unformed controller retains water bucket");
+        helper.assertTrue(purifier.slot(SupportMachineBlockEntity.SLOT_EMPTY_BUCKET_OUT).isEmpty(), "unformed controller returns no free bucket");
         LOGGER.info("[T3] purifier_bucket_exchange_conserves: exact 1000 mB fill, blocked-output, "
             + "wrong-fluid and full-tank cases all conserved");
         helper.succeed();
