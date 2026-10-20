@@ -213,7 +213,7 @@ automation. Do not use GameTest fixture flags for a normal client launch.
 30. Create the pack and override the existing `crystal_puller` recipe. This overrides a
     definition; it does not add a new recipe type.
     ```powershell
-    $pack = Join-Path "run/saves/$world" "datapacks/m1_walkthrough"
+    $pack = Join-Path (Get-Location).Path "run/saves/$world/datapacks/m1_walkthrough"
     New-Item -ItemType Directory -Force -Path (Join-Path $pack "data/lithmod/machine_recipes") | Out-Null
     $meta = '{"pack":{"description":"M1 owner walkthrough","min_format":121,"max_format":[121,0]}}'
     $recipe = '{"machine":"crystal_puller","ingredients":[{"item":"lithmod:silicon","count":4}],"result":{"item":"lithmod:silicon_boule","count":1},"ticks":20}'
