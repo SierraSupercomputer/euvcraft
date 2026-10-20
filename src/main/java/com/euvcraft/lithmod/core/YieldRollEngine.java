@@ -177,7 +177,7 @@ public final class YieldRollEngine {
             processed.add(new Wafer(layerNumber, stored(cumulative), wafer.flags()));
         }
 
-        FoupContents next = new FoupContents(lot.lotId(), lot.capacity(), processed, lot.run());
+        FoupContents next = new FoupContents(lot.lotId(), lot.capacity(), processed, lot.run(), lot.grade());
         if (firstLayer) {
             next = next.withRun(spec);
         }
