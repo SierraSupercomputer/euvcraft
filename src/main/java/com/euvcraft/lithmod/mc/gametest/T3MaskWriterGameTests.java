@@ -866,7 +866,9 @@ public final class T3MaskWriterGameTests {
     private static void saveLoadLiveJsonReload(GameTestHelper helper) {
         placeEbeam(helper, MACHINE);
         SupportMachineBlockEntity machine = ebeamAt(helper, MACHINE);
-        helper.assertTrue(machine != null && machine.isFormed(), "actual E-beam forms");
+        helper.assertTrue(machine != null, "actual E-beam controller exists");
+        machine.revalidate();
+        helper.assertTrue(machine.isFormed(), "actual E-beam forms");
         ServerPlayer player = connect(helper.getLevel());
         SupportMachineMenu menu = createMenu(machine, player);
         var config = EUVCRAFTMod.config();

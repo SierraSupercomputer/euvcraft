@@ -1,6 +1,11 @@
 package com.euvcraft.lithmod.mc.gametest;
 
 import com.euvcraft.lithmod.core.DieTypes;
+import com.euvcraft.lithmod.core.RefusalReason;
+import com.euvcraft.lithmod.core.ProcessRun;
+import com.euvcraft.lithmod.core.MachineDefinition;
+import com.euvcraft.lithmod.core.SupportLines;
+import com.euvcraft.lithmod.core.GenerationMatrix;
 import com.euvcraft.lithmod.core.FoupContents;
 import com.euvcraft.lithmod.core.FoupPublicView;
 import com.euvcraft.lithmod.core.MaskData;
@@ -386,7 +391,7 @@ public final class T3ContentGameTests {
         helper.assertTrue(cell.lastRefusal() != null, "must have refusal reason");
         // T3 requires PURE substrate (generation 2), ORDINARY is generation 1
         // The refusal should be GENERATION_UNMET for substrate line
-        helper.assertTrue(cell.lastRefusal().type() == RefusalReason.Type.GENERATION_UNMET,
+        helper.assertTrue(cell.lastRefusal().code() == RefusalReason.Code.GENERATION_UNMET,
             "refusal must be GENERATION_UNMET for substrate");
 
         helper.succeed();
@@ -438,7 +443,7 @@ public final class T3ContentGameTests {
         helper.assertTrue(cell.processState() == ProcessState.IDLE, "T3 must refuse G1 mask even with PURE substrate");
         helper.assertTrue(cell.lastRefusal() != null, "must have refusal reason");
         // T3 requires mask shop generation 2
-        helper.assertTrue(cell.lastRefusal().type() == RefusalReason.Type.GENERATION_UNMET,
+        helper.assertTrue(cell.lastRefusal().code() == RefusalReason.Code.GENERATION_UNMET,
             "refusal must be GENERATION_UNMET for mask_shop");
 
         helper.succeed();
@@ -646,8 +651,8 @@ public final class T3ContentGameTests {
             int progressAtSave = cell.progressTicks();
 
             // Save contract and snapshot (simulate chunk save)
-            ProcessCellRunPersistence.Contract contract = cell.contract;
-            ProcessRun.Snapshot snapshot = cell.run.snapshot();
+            ProcessCellRunPersistence.Contract contract = privateField(cell, "contract", ProcessCellRunPersistence.Contract.class);
+            ProcessRun.Snapshot snapshot = privateField(cell, "run", ProcessRun.class).snapshot();
             helper.assertTrue(contract != null && snapshot != null, "contract and snapshot must exist");
             helper.assertTrue(contract.grade() == WaferSubstrate.PURE, "contract must carry PURE grade");
 
@@ -792,7 +797,7 @@ public final class T3ContentGameTests {
         cell.serverTick();
         helper.assertTrue(cell.processState() == ProcessState.IDLE, "forged ORDINARY lot must be refused for T3");
         helper.assertTrue(cell.lastRefusal() != null, "must have refusal");
-        helper.assertTrue(cell.lastRefusal().type() == RefusalReason.Type.GENERATION_UNMET,
+        helper.assertTrue(cell.lastRefusal().code() == RefusalReason.Code.GENERATION_UNMET,
             "refusal must be GENERATION_UNMET");
 
         helper.succeed();
@@ -926,4 +931,14 @@ public final class T3ContentGameTests {
         }
         helper.setBlock(relative, net.minecraft.world.level.block.Blocks.AIR);
     }
+    private static <T> T privateField(Object owner, String name, Class<T> type) {
+        try {
+            var field = owner.getClass().getDeclaredField(name);
+            field.setAccessible(true);
+            return type.cast(field.get(owner));
+        } catch (ReflectiveOperationException failure) {
+            throw new AssertionError("Frozen process fixture field " + name, failure);
+        }
+    }
+
 }

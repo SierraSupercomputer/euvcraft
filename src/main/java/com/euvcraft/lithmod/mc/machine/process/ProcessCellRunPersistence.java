@@ -2,6 +2,7 @@ package com.euvcraft.lithmod.mc.machine.process;
 
 import com.euvcraft.lithmod.core.DefaultStatRules;
 import com.euvcraft.lithmod.core.FoupContents;
+import com.euvcraft.lithmod.core.WaferSubstrate;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.datafixers.util.Pair;
 import com.euvcraft.lithmod.core.DieTypes;
@@ -246,52 +247,18 @@ public final class ProcessCellRunPersistence {
             }
             foupTemplate = foupTemplate.copy(); // defensive copy singleton
 
-            // T3 admission validation: grade and mask shopGeneration must satisfy requiredGenerations
-            if (tier.index() == 3) {
-                // For T3: SUBSTRATE must be at least grade.generation() (PURE=2), MASK_SHOP must be at least maskData.shopGeneration()
-                // Other three lines remain at G1 for M1
-                int substrateGen = grade.generation();
-                int maskShopGen = maskData.shopGeneration();
-                if (substrateGen < 2) {
-                    throw new IllegalArgumentException("T3 requires PURE substrate (generation 2), got " + grade.id());
-                }
-                if (maskShopGen < 2) {
-                    throw new IllegalArgumentException("T3 requires mask shop generation 2, got " + maskShopGen);
-                }
-                Map<String, Integer> installedForT3 = Map.of(
-                        SupportLines.SUBSTRATE, substrateGen,
-                        SupportLines.MASK_SHOP, maskShopGen,
-                        SupportLines.DEPOSITION_ETCH, 1,
-                        SupportLines.UTILITIES, 1,
-                        SupportLines.TEST_PACKAGING, 1
-                );
-                GenerationMatrix matrix;
-                try {
-                    matrix = GenerationMatrix.build(tierRegistry, requiredGenerations, "Contract.requiredGenerations");
-                } catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("requiredGenerations invalid: " + e.getMessage());
-                }
-                if (!matrix.unmetLines(installedForT3, tier).isEmpty()) {
-                    throw new IllegalArgumentException("T3 installed generations do not satisfy requiredGenerations for tier " + tier.id());
-                }
-            } else {
-                // Validate GenerationMatrix builds and unmetLines is empty for M1 G1 map (T1/T2)
-                GenerationMatrix matrix;
-                try {
-                    matrix = GenerationMatrix.build(tierRegistry, requiredGenerations, "Contract.requiredGenerations");
-                } catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("requiredGenerations invalid: " + e.getMessage());
-                }
-                Map<String, Integer> m1G1Map = Map.of(
-                        SupportLines.SUBSTRATE, 1,
-                        SupportLines.MASK_SHOP, 1,
-                        SupportLines.DEPOSITION_ETCH, 1,
-                        SupportLines.UTILITIES, 1,
-                        SupportLines.TEST_PACKAGING, 1
-                );
-                if (!matrix.unmetLines(m1G1Map, tier).isEmpty()) {
-                    throw new IllegalArgumentException("M1 G1 map does not satisfy requiredGenerations for tier " + tier.id());
-                }
+            if (tier.index() == 3 && (grade.generation() < 2 || maskData.shopGeneration() < 2)) {
+                throw new IllegalArgumentException("T3 requires pure wafers and a generation-2 mask");
+            }
+            GenerationMatrix matrix = GenerationMatrix.build(tierRegistry, requiredGenerations, "Contract.requiredGenerations");
+            Map<String, Integer> installed = Map.of(
+                SupportLines.SUBSTRATE, grade.generation(),
+                SupportLines.MASK_SHOP, maskData.shopGeneration(),
+                SupportLines.DEPOSITION_ETCH, 1,
+                SupportLines.UTILITIES, 1,
+                SupportLines.TEST_PACKAGING, 1);
+            if (!matrix.unmetLines(installed, tier).isEmpty()) {
+                throw new IllegalArgumentException("Frozen installed generations do not satisfy the accepted tier");
             }
 
             // Validate five components via LineLoadoutReader and DefaultStatRules against stored lineStats
@@ -362,26 +329,12 @@ public final class ProcessCellRunPersistence {
             if (maskData == null) {
                 throw new IllegalArgumentException("frozen mask missing MASK_DATA");
             }
-            Map<String, Integer> installedGenerations;
-            if (tier.index() == 3) {
-                // T3 uses actual grade and mask shop generation
-                installedGenerations = Map.of(
-                        SupportLines.SUBSTRATE, this.grade.generation(),
-                        SupportLines.MASK_SHOP, maskData.shopGeneration(),
-                        SupportLines.DEPOSITION_ETCH, 1,
-                        SupportLines.UTILITIES, 1,
-                        SupportLines.TEST_PACKAGING, 1
-                );
-            } else {
-                // T1/T2: all G1 for M1
-                installedGenerations = Map.of(
-                        SupportLines.SUBSTRATE, 1,
-                        SupportLines.MASK_SHOP, 1,
-                        SupportLines.DEPOSITION_ETCH, 1,
-                        SupportLines.UTILITIES, 1,
-                        SupportLines.TEST_PACKAGING, 1
-                );
-            }
+            Map<String, Integer> installedGenerations = Map.of(
+                SupportLines.SUBSTRATE, this.grade.generation(),
+                SupportLines.MASK_SHOP, maskData.shopGeneration(),
+                SupportLines.DEPOSITION_ETCH, 1,
+                SupportLines.UTILITIES, 1,
+                SupportLines.TEST_PACKAGING, 1);
 
             // Compute cores: T3 compute uses core count 1, others null
             Integer cores = (tier.index() == 3 && DieTypes.COMPUTE.equals(dieType)) ? 1 : null;
@@ -469,7 +422,7 @@ public final class ProcessCellRunPersistence {
     ).apply(i, ContractFields::new)).flatXmap(f -> validated(() -> new Contract(f.tier(), f.dieType(),
         f.usesRemaining(), f.layerTicks(), f.resistPerLayer(), f.energyPerTick(), f.lineStats(), f.tiers(),
         f.requiredGenerations(), f.mask(), f.components(), f.resistTemplate(), UUID.fromString(f.lotId()), f.foupTemplate(),
-        WaferSubstrate.fromIdOrDefault(f.grade))),
+        WaferSubstrate.fromIdOrThrow(f.grade))),
         c -> DataResult.success(new ContractFields(c.tier(), c.dieType(), c.usesRemaining(), c.layerTicks(),
             c.resistPerLayer(), c.energyPerTick(), c.lineStats(), c.tiers(), c.requiredGenerations(), c.mask(),
             c.components(), c.resistTemplate(), c.lotId().toString(), c.foupTemplate(), c.grade().id())));
