@@ -154,8 +154,8 @@ class StructureMatcherTest {
             MultiblockDirection facing, int u0, int v0) {
         Map<MultiblockPos, BlockKind> blocks = new HashMap<>();
         // The box extends along facing (opposite of back) for length cells
-        // Origin is at controller + facing (one step in front of controller)
-        MultiblockPos origin = controller.add(facingVector(facing));
+        // Keep the real anchor at (u0,v0,0); mirror only the depth direction.
+        MultiblockPos origin = controller.add(rightVector(facing).multiply(-u0)).add(UP.multiply(-v0));
         for (int u = 0; u < SHAPE.width(); u++) {
             for (int v = 0; v < SHAPE.height(); v++) {
                 for (int d = 0; d < SHAPE.length(); d++) {
@@ -337,8 +337,11 @@ class StructureMatcherTest {
     void match_rejectsCompleteBoxBuiltInFrontOfController(MultiblockDirection facing) {
         for (int u0 = 0; u0 < SHAPE.width(); u0++) {
             for (int v0 = 0; v0 < SHAPE.height(); v0++) {
-                MatchResult result = StructureMatcher.match(CONTROLLER, facing, SHAPE,
-                        worldBuiltInFront(CONTROLLER, facing, u0, v0));
+                Function<MultiblockPos, BlockKind> world = worldBuiltInFront(CONTROLLER, facing, u0, v0);
+                assertEquals(BlockKind.CONTROLLER, world.apply(CONTROLLER), "mirrored fixture keeps actual anchor");
+                if (v0 == 0) assertEquals(BlockKind.OPERATING_PANEL, world.apply(CONTROLLER.add(UP)),
+                        "mirrored bottom-row fixture keeps the required panel above the anchor");
+                MatchResult result = StructureMatcher.match(CONTROLLER, facing, SHAPE, world);
 
                 assertRejects(result, "wrong block", facing, u0, v0);
             }

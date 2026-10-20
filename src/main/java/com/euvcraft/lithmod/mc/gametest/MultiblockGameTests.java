@@ -336,6 +336,8 @@ public final class MultiblockGameTests {
                 BlockPos mirroredControllerRel = mirrored.get(u0 * SHAPE.height() * SHAPE.length() + v0 * SHAPE.length() + 0);
                 // The mirrored box's panel is at (u0, v0+1, 0)
                 BlockPos mirroredPanelRel = mirrored.get(u0 * SHAPE.height() * SHAPE.length() + (v0 + 1) * SHAPE.length() + 0);
+                helper.assertTrue(mirroredControllerRel.equals(controller), "mirrored fixture retains the actual controller anchor");
+                helper.assertTrue(mirroredPanelRel.equals(controller.above()), "mirrored fixture retains the required panel anchor");
                 // Port positions in mirrored box (back face = d=2)
                 BlockPos mirroredPortARel = mirrored.get(PORT_A[0] * SHAPE.height() * SHAPE.length() + PORT_A[1] * SHAPE.length() + PORT_A[2]);
                 BlockPos mirroredPortBRel = mirrored.get(PORT_B[0] * SHAPE.height() * SHAPE.length() + PORT_B[1] * SHAPE.length() + PORT_B[2]);
@@ -386,13 +388,13 @@ public final class MultiblockGameTests {
         List<BlockPos> cells = new ArrayList<>(SHAPE.volume());
         // The mirrored box extends along the facing direction (opposite of back), d = 0..2
         // Controller sits at front face of mirrored box at (u0, v0, 0) relative to mirrored origin
-        // Mirrored origin = controller + facing (one step in front of controller)
+        // Depth zero contains the actual controller; positive depth extends outward along facing.
         for (int u = 0; u < SHAPE.width(); u++) {
             for (int v = 0; v < SHAPE.height(); v++) {
                 for (int d = 0; d < SHAPE.length(); d++) {
                     BlockPos mirrored = cell(controller, facing, u0, v0, u, v, 0);
                     int[] fv = facingVector(facing);
-                    mirrored = mirrored.offset(fv[0] * (d + 1), fv[1] * (d + 1), fv[2] * (d + 1));
+                    mirrored = mirrored.offset(fv[0] * d, fv[1] * d, fv[2] * d);
                     cells.add(mirrored);
                 }
             }
