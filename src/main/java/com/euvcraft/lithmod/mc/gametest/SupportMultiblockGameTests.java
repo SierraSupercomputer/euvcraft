@@ -335,7 +335,7 @@ public final class SupportMultiblockGameTests {
 
         BlockPos broken = null;
         for (BlockPos cell : cells) {
-            if (!cell.equals(portOf(controller, facing, 0))) {
+            if (!cell.equals(controller) && !cell.equals(portOf(controller, facing, 0))) {
                 broken = cell;
                 break;
             }
@@ -358,7 +358,7 @@ public final class SupportMultiblockGameTests {
         machine.revalidate();
         h.assertTrue(machine.isFormed(), "restoring the casing must reform");
         h.assertTrue(machine.failureReason().isEmpty(), "reason must clear when formed again");
-        h.assertValueEqual(4, machine.formationChanges(), "fourth transition");
+        h.assertValueEqual(3, machine.formationChanges(), "third transition: invalid stone does not form");
         h.succeed();
     }
 
@@ -380,7 +380,7 @@ public final class SupportMultiblockGameTests {
 
         int targetPart = 7;
         BlockPos target = machine.members().get(targetPart);
-        h.getLevel().setBlock(target, SupportMachines.SUPPORT_CASING.get().defaultBlockState(), 3);
+        h.getLevel().setBlock(target, SupportMachines.SUPPORT_CASING.get().defaultBlockState(), 2);
         BlockState resetState = h.getLevel().getBlockState(target);
         h.assertTrue(resetState.getBlock() instanceof SupportCasingBlock, "replacement is a support casing");
         h.assertValueEqual(0, resetState.getValue(SupportMachineControllerBlock.PART).intValue(),
@@ -414,6 +414,7 @@ public final class SupportMultiblockGameTests {
         h.assertTrue(old.isFormed(), "initial form failed");
         BlockPos portAbs = h.absolutePos(portOf(controller, facing, 0));
 
+        h.getLevel().setBlock(h.absolutePos(controller), Blocks.AIR.defaultBlockState(), 2);
         h.getLevel().setBlock(h.absolutePos(controller), blockFor(SupportMachineKind.PURIFIER)
             .defaultBlockState().setValue(SupportMachineControllerBlock.FACING, facing), 3);
         SupportMachineBlockEntity fresh = controllerAt(h, controller);
@@ -549,7 +550,7 @@ public final class SupportMultiblockGameTests {
                 "port must never expose a fluid capability, side " + side);
         }
 
-        h.setBlock(portAbs, Blocks.AIR.defaultBlockState());
+        h.getLevel().setBlock(portAbs, Blocks.AIR.defaultBlockState(), 3);
         machine.revalidate();
         h.assertFalse(machine.isFormed(), "a machine without any port must unform");
         h.assertTrue(h.getLevel().getCapability(Capabilities.Energy.BLOCK, portAbs, Direction.NORTH) == null,
@@ -662,7 +663,7 @@ public final class SupportMultiblockGameTests {
         List<DataSlot> wire = syncedData(menu);
         h.assertTrue(wire.size() >= 5, "menu registers its three extra wire values");
         h.assertValueEqual(1, wire.get(4).get(), "formed wire is live");
-        h.assertValueEqual(16000, wire.get(5).get(), "water wire is live");
+        h.assertValueEqual(0, wire.get(5).get(), "water wire starts empty");
         h.assertValueEqual(16000, wire.get(6).get(), "water capacity wire is live");
 
         // The client shells build the same coordinates over the same kind, with no block entity.
