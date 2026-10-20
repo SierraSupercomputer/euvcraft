@@ -343,3 +343,47 @@ See `reports/M1-09_process-cell-controller.md` for actual registered IDs, class 
 See `reports/M1-11_recipes-and-presentation.md` for factual scope/result, actual relative changed paths, recipes/guide, FOUP and GUI/creative changes, thorough measured evidence, limitations, review/integration PENDING.
 
 M1-11 accepted: see `reports/M1-11_acceptance.md` and `reports/M1-11_review.md` for the final candidate results and two independent approvals. Earlier pending statements describe source-phase authoring.
+
+## M1-12 Gate Verification and Handoff checks
+
+**Offline Gradle command (production `be5670fe3a8261b98f20f22e6d29db7d6d7d9f33`):**
+```
+.\gradlew.bat test checkCoreImports jar runGameTestServer --offline --console=plain
+```
+
+**Measured at source head `be5670fe3a8261b98f20f22e6d29db7d6d7d9f33`:**
+
+- Unit tests: 517 tests in 76 classes, 0 failures/errors/skipped; 76-class XML table mechanically appended from `build/test-results/test/*.xml` (see `build/M1-12-report/UNIT-ROWS.json`).
+- Game tests: **THREE SEPARATE, complete `runGameTestServer` processes** executed. Each run: 810 case records, 810 unique names, 810 passed, 0 required failures, 0 optional failures; all 140 registered project IDs present and passing in every run. Arcforge creosote: 0 failed runs across 3 processes.
+- Bootstrap failure: preserved failed bootstrap attempt BEFORE any server cases (m1-12-final-full-2).
+- Cached prebuilt Minecraft NeoForge dependency jars: hash guard verified (actual wrong hash control).
+- Normal mod GameTest compile task / real server runs: no Arcforge edits.
+- First full wrapper queue-event collision after saved positive Gradle result reconciled from actual XML without Minecraft rerun.
+
+**M1-12 Phase Scope and Actual Counts (from phase receipts, not guessed targets):**
+
+1. **Chain Verified** (step 2): Quartz smelt AND blast → puller/slicer/JSON mask/formed cell/TestPackage chains T1 logic / T2 memory 12 layers. Exact conservation / FE cost / mask one whole lot / new empty FOUP. 2 chain game tests registered and passing.
+2. **Statistics Verified** (step 3): 200 lots × 64 wafers = 12,800 wafers per tier (T1/T2); plus 10 machine chain lots per tier.
+   - Phase receipt samples: T1 7,649/12,800 (0.5976, target 0.6); T2 10,239/12,800 (0.7999, target 0.8).
+   - Three full runs observed samples:
+     - Run 1: T1 7,696/12,800 (0.60125); T2 10,231/12,800 (0.79930)
+     - Run 2: T1 7,586/12,800 (0.59266); T2 10,195/12,800 (0.79648)
+     - Run 3: T1 7,682/12,800 (0.60016); T2 10,169/12,800 (0.79445)
+3. **Boundaries Verified** (steps 4/5): Privacy actual wire/public menu/tooltip invariance and routine capture plus bounded source lexical audit (not formal flow proof); raw access diagnostic-only. Hand-fed actual 8 fixture-on-blocks (7 sides) + 12 formed members. Shipping removes fixture leaving 7 production blocks (source inventory); off-probe checks fixture absence with several production positive controls — NOT additional 7-block all-side capability execution. 138 project cases passing.
+4. **Reload + Debug Verified** (steps 6/7): Definition reload baseline 20, override 27, restore 20 FE each full 400 paid ticks; actual datapack priority and full recipe measurement. Debug energy command: actual flag / ADMINS3 / redirected source / player look target / formed controller / miss / console / runtime off. Logger configuration and appenders restored. 140 project cases passing.
+5. **Fixtures Verified** (step 8): Shipping fixture gate — explicit `lithmodFixtures` property + `FMLEnvironment.isProduction()`; production and ordinary dev runs leave `test_machine` absent from block/item/BE/menu/capability/screen registries. Off/probe run registers only `m1_gate_shipping_no_fixtures`; probe verifies nonempty production registries, definitions, recipes, built creative-tab contents. Release JAR excludes ONLY the 8 fixture JSON paths (not processResources); three shared tags fixture optional; conditional fixture loot using installed NeoForge registered condition. ProductionTestPackage preserved. Historical fixture classes may remain unreachable; no claim of physically stripped class files. Source pathname audit: classified copyright + intentional path detectors + historical reports; no mass delete history. 517 unit tests, 140 project game tests, shipping-off probe pass, clean release JAR (410 entries, SHA-256 `b4dddc8072951348cbe3f9b8a078e84be56d78fb7c304fe8fab5b5f9d4050956`).
+6. **Generator Controls**: Ordinary M0 byte-identical (SHA-256 `b2807c9d1925705fdfc499ca1f9b7d1b65422a5ca104697ab5f46df38d7f25f6`); two generations identical; French culture identical; missing output/compiled API fails without writing; actual changed machine input makes check fail; source bytes exactly restored; fresh check passes; check does not mutate document. Deterministic + stale + missing input controls only if verified FACTS. Generated handoff proof and preserved ordinary M0 output. Client manual execution pending.
+
+**Limitations:**
+- Privacy audit: bounded lexical + actual wire/menu/tooltip/log invariance only; not formal information-flow proof.
+- No actual rendered client check; no visual pass claimed.
+- Historical fixture classes may remain unreachable; not physically stripped.
+- Source pathname audit: classification only; no mass history deletion.
+- Arcforge creosote skip honest; 0 failed runs across 3 processes but not comprehensive Arcforge test.
+- Generator client manual execution pending.
+- Full final reviews (candidate) and master integration/merge PENDING.
+- Manual owner walkthrough: checklist written, execution pending; owner confirmed launch only.
+
+See `reports/M1-12_m1-gate-and-handoff.md` for factual scope/result, actual relative changed paths, all phase receipts, thorough measured evidence, limitations, review/integration PENDING.
+
+M1-12 candidate will be checked separately; do not preclaim its outcome. Actual Gradle compilation outcomes: full2-cached compileJava FROM-CACHE, full3-cached UP-TO-DATE. Do not claim a fresh javac execution for those repeated server runs; compilation task/cache keys were retained and actual new server JVMs executed all 810 cases. Unit/core/jar checks at be567 already passed 517/76.

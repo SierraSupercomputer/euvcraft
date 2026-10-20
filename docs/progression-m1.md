@@ -88,10 +88,41 @@ Exactly **one creative tab** (`lithmod:0_main`) with **32 stacks** in requested 
 - **Hidden roll/yield numbers:** never displayed to player.
 - **Complete playable M1 or visual proof:** M1-12 covers end-to-end, client gates, statistics, privacy, hand-fed reload, debug command, shipping fixture gate, generated handoff, manual walkthrough.
 
-## 9. References
+## 9. M1-12 End-to-End Gates (Acceptance Summary)
+
+M1-12 completes the M1 pack with end-to-end chain verification, 200-lot statistics, privacy/boundary audits, tier definition reload, debug energy command, fixture shipping gate, generated handoff proof, and **three separate full server process runs**.
+
+### What M1-12 Verified (Actual Observed Counts)
+
+- **Full quartz→silicon→boule→wafers→mask→formed cell→test/package chains:** T1 logic (1 layer) and T2 memory (12 layers) — exact conservation, FE cost, mask one whole lot, new empty FOUP returned.
+- **200 lots × 64 wafers = 12,800 wafers per tier** (T1/T2), plus 10 machine chain lots per tier. Phase receipt samples: T1 ~59.8–60.1% (target 60%), T2 ~79.4–80.0% (target 80%).
+- **Privacy:** Actual wire/public menu/tooltip/log invariance + bounded source lexical audit (not formal proof). Hand-fed 8 fixture-on-blocks (7 sides) + 12 formed members.
+- **Shipping fixture gate:** Explicit `lithmodFixtures` config + `FMLEnvironment.isProduction()` — `test_machine` absent from block/item/BE/menu/capability/screen in production/dev. Release JAR excludes ONLY 8 fixture JSONs (not processResources); three shared tags fixture optional; conditional fixture loot via NeoForge condition. ProductionTestPackage preserved.
+- **Definition reload:** Baseline 20, override 27, restore 20 FE each full 400 paid ticks — real datapack priority, full recipe measurement.
+- **Debug energy command:** Actual flag / ADMINS3 / redirected source / player look target / formed controller / miss / console / runtime off.
+- **Generator handoff:** Ordinary M0 byte-identical; two generations identical; French culture identical; deterministic/stale/missing-input controls verified.
+- **Three separate server processes:** Each 810 cases, 810 unique, 810 passed; all 140 project IDs present in every run; Arcforge creosote 0/3 failed; cached prebuilt dependency hash guard verified; bootstrap failure preserved.
+
+### What M1-12 Does NOT Claim
+
+- No formal information-flow privacy proof.
+- No actual rendered client check or visual pass.
+- Historical fixture classes may remain unreachable (not physically stripped).
+- Source pathname audit: classification only, no mass history deletion.
+- Arcforge creosote skip honest (not comprehensive Arcforge test).
+- Generator client manual execution pending.
+- T6 core choices: later owner decision; does not enable M1 core play.
+- Complete playable M1: M1-12 covers end-to-end, client gates, statistics, privacy, hand-fed reload, debug command, shipping fixture gate, generated handoff, manual walkthrough — but final reviews, candidate check, and master merge are PENDING.
+
+### Manual Walkthrough
+
+Owner checklist written; execution pending. Owner confirmed singleplayer launch only.
+
+## 10. References
 
 - Full recipe table (generated): [docs/recipes.md](recipes.md)
 - Machine definitions: `data/lithmod/machines/*.json`
 - Machine recipes: `data/lithmod/machine_recipes/*.json`
 - Crafting recipes: `data/lithmod/recipe/crafting/*.json`
 - Tier data: `data/lithmod/tiers/*.json`
+- M1-12 Gate Verification and Handoff Report: `docs/reports/M1-12_m1-gate-and-handoff.md`
