@@ -8,6 +8,7 @@ import com.euvcraft.lithmod.core.multiblock.MultiblockPos;
 import com.euvcraft.lithmod.core.multiblock.SupportStructureMatcher;
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.euvcraft.lithmod.mc.data.SupportRecipeLoader;
+import com.euvcraft.lithmod.mc.recipe.SupportRecipe;
 import com.euvcraft.lithmod.mc.multiblock.EnergyBufferProvider;
 import com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity;
 

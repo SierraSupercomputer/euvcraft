@@ -30,7 +30,7 @@ import net.minecraft.gametest.framework.TestData;
 import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
-import net.minecraft.network.PacketFlow;
+import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -660,7 +660,7 @@ public final class T3PurificationGameTests {
                 return;
             }
             CompoundTag copy = saved.copy();
-            CompoundTag jobTag = copy.getCompound("purifierJob");
+            CompoundTag jobTag = copy.getCompound("purifierJob").orElseThrow();
             switch (corruption) {
                 case "progress" -> jobTag.putInt("progress", duration);
                 case "duration" -> jobTag.putInt("duration", 0);
@@ -817,7 +817,7 @@ public final class T3PurificationGameTests {
 
             // A hand-edited grade field is not trusted: the run is dropped.
             CompoundTag tampered = saved.copy();
-            CompoundTag slicerTag = tampered.getCompound("slicer");
+            CompoundTag slicerTag = tampered.getCompound("slicer").orElseThrow();
             slicerTag.putString("bouleGrade", "gilded");
             reloaded.resetSlice();
             reloaded.loadWithComponents(TagValueInput.create(
@@ -841,7 +841,7 @@ public final class T3PurificationGameTests {
      * test cannot drive a real server resource reload; the previous registry is put back in a
      * {@code finally} so the fallback runs no matter what the body did.</p>
      */
-    private static void withSupportRegistry(@Nullable SupportRecipeLoader.Registry registry,
+    private static void withSupportRegistry(SupportRecipeLoader.@Nullable Registry registry,
             Runnable action) {
         try {
             Field field = SupportRecipeLoader.class.getDeclaredField("resolved");

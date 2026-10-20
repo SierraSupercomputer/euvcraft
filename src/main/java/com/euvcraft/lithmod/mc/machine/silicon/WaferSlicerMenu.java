@@ -72,7 +72,7 @@ public class WaferSlicerMenu extends FabMachineMenu {
         }
 
         @Override
-        public boolean mayPickup(@Nullable net.minecraft.world.entity.player.Player player) {
+        public boolean mayPickup(net.minecraft.world.entity.player.@Nullable Player player) {
             return true;
         }
     }
