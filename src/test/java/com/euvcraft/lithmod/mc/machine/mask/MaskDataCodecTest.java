@@ -49,20 +49,34 @@ class MaskDataCodecTest {
 
     @Test
     void jsonRoundTripKeepsThePublicFields() {
-        MaskData data = new MaskData(LOGIC, 2, 7);
+        MaskData data = new MaskData(LOGIC, 2, 7, 2);
 
         JsonElement encodedElement = MaskDataCodec.CODEC.encodeStart(JsonOps.INSTANCE, data).result().orElseThrow();
         JsonObject json = encodedElement.getAsJsonObject();
         assertEquals(LOGIC, json.get("die_type").getAsString());
         assertEquals(2, json.get("tier_index").getAsInt());
         assertEquals(7, json.get("uses_remaining").getAsInt());
+        assertEquals(2, json.get("shop_generation").getAsInt());
 
         assertEquals(data, MaskDataCodec.CODEC.parse(JsonOps.INSTANCE, json).result().orElseThrow());
     }
 
     @Test
+    void jsonRoundTripDefaultsGenerationToOne() {
+        MaskData data = new MaskData(LOGIC, 2, 7); // 3-arg ctor defaults to gen 1
+
+        JsonElement encodedElement = MaskDataCodec.CODEC.encodeStart(JsonOps.INSTANCE, data).result().orElseThrow();
+        JsonObject json = encodedElement.getAsJsonObject();
+        assertEquals(1, json.get("shop_generation").getAsInt());
+
+        MaskData decoded = MaskDataCodec.CODEC.parse(JsonOps.INSTANCE, json).result().orElseThrow();
+        assertEquals(data, decoded);
+        assertEquals(1, decoded.shopGeneration());
+    }
+
+    @Test
     void nbtRoundTripIsStableWhenRepeated() {
-        MaskData data = new MaskData(MEMORY, 1, 3);
+        MaskData data = new MaskData(MEMORY, 1, 3, 2);
         MaskData decoded = data;
         for (int cycle = 0; cycle < 3; cycle++) {
             Tag encoded = MaskDataCodec.CODEC.encodeStart(NbtOps.INSTANCE, decoded).result().orElseThrow();
@@ -74,12 +88,13 @@ class MaskDataCodecTest {
     @Test
     void nbtUsesThePublicFieldNames() {
         Tag encoded =
-            MaskDataCodec.CODEC.encodeStart(NbtOps.INSTANCE, new MaskData(MEMORY, 1, 3)).result().orElseThrow();
+            MaskDataCodec.CODEC.encodeStart(NbtOps.INSTANCE, new MaskData(MEMORY, 1, 3, 2)).result().orElseThrow();
 
         CompoundTag tag = (CompoundTag) encoded;
         assertEquals(MEMORY, tag.getString("die_type").orElseThrow());
         assertEquals(1, tag.getInt("tier_index").orElseThrow().intValue());
         assertEquals(3, tag.getInt("uses_remaining").orElseThrow().intValue());
+        assertEquals(2, tag.getInt("shop_generation").orElseThrow().intValue());
     }
 
     @Test
@@ -89,31 +104,57 @@ class MaskDataCodecTest {
         json.addProperty("tier_index", 1);
 
         MaskData fromJson = MaskDataCodec.CODEC.parse(JsonOps.INSTANCE, json).result().orElseThrow();
-        assertEquals(new MaskData(LOGIC, 1, 0), fromJson);
+        assertEquals(new MaskData(LOGIC, 1, 0, 1), fromJson);
 
         CompoundTag tag = new CompoundTag();
         tag.putString("die_type", LOGIC);
         tag.putInt("tier_index", 2);
 
         MaskData fromNbt = MaskDataCodec.CODEC.parse(NbtOps.INSTANCE, tag).result().orElseThrow();
-        assertEquals(new MaskData(LOGIC, 2, 0), fromNbt);
+        assertEquals(new MaskData(LOGIC, 2, 0, 1), fromNbt);
         assertTrue(fromNbt.isSpent(), "a template without a use count is a spent mask, not an endless one");
     }
 
     @Test
+    void aMissingShopGenerationDefaultsToOne() {
+        JsonObject json = new JsonObject();
+        json.addProperty("die_type", LOGIC);
+        json.addProperty("tier_index", 1);
+        json.addProperty("uses_remaining", 5);
+
+        MaskData fromJson = MaskDataCodec.CODEC.parse(JsonOps.INSTANCE, json).result().orElseThrow();
+        assertEquals(new MaskData(LOGIC, 1, 5, 1), fromJson);
+
+        CompoundTag tag = new CompoundTag();
+        tag.putString("die_type", LOGIC);
+        tag.putInt("tier_index", 2);
+        tag.putInt("uses_remaining", 3);
+
+        MaskData fromNbt = MaskDataCodec.CODEC.parse(NbtOps.INSTANCE, tag).result().orElseThrow();
+        assertEquals(new MaskData(LOGIC, 2, 3, 1), fromNbt);
+    }
+
+    @Test
     void anUnknownDieTypeIsRejected() {
-        assertRejected("dieType", fields("photons", 1, 4));
+        assertRejected("dieType", fields("photons", 1, 4, 1));
     }
 
     @Test
     void aTierBelowOneIsRejected() {
-        assertRejected("tierIndex", fields(LOGIC, 0, 4));
-        assertRejected("tierIndex", fields(LOGIC, -1, 4));
+        assertRejected("tierIndex", fields(LOGIC, 0, 4, 1));
+        assertRejected("tierIndex", fields(LOGIC, -1, 4, 1));
     }
 
     @Test
     void aNegativeUseCountIsRejected() {
-        assertRejected("usesRemaining", fields(LOGIC, 1, -1));
+        assertRejected("usesRemaining", fields(LOGIC, 1, -1, 1));
+    }
+
+    @Test
+    void anInvalidShopGenerationIsRejected() {
+        assertRejected("shopGeneration", fields(LOGIC, 1, 4, 0));
+        assertRejected("shopGeneration", fields(LOGIC, 1, 4, 3));
+        assertRejected("shopGeneration", fields(LOGIC, 1, 4, -1));
     }
 
     @Test
@@ -125,7 +166,7 @@ class MaskDataCodecTest {
 
     @Test
     void streamCodecRoundTripsTheSamePublicData() {
-        MaskData data = new MaskData(MEMORY, 2, 5);
+        MaskData data = new MaskData(MEMORY, 2, 5, 2);
 
         ByteBuf buffer = Unpooled.buffer();
         try {
@@ -138,25 +179,31 @@ class MaskDataCodecTest {
 
     @Test
     void streamCodecRejectsInvalidData() {
-        assertStreamRejected("photons", 1, 4);
-        assertStreamRejected(LOGIC, 0, 4);
-        assertStreamRejected(LOGIC, 1, -1);
+        assertStreamRejected("photons", 1, 4, 1);
+        assertStreamRejected(LOGIC, 0, 4, 1);
+        assertStreamRejected(LOGIC, 1, -1, 1);
+        assertStreamRejected(LOGIC, 1, 4, 0);
+        assertStreamRejected(LOGIC, 1, 4, 3);
     }
 
     /**
      * Builds the persisted JSON of one mask.
      *
-     * @param dieType       die type to write
-     * @param tierIndex     tier to write
-     * @param usesRemaining uses to write, or {@code null} to leave the field out
+     * @param dieType         die type to write
+     * @param tierIndex       tier to write
+     * @param usesRemaining   uses to write, or {@code null} to leave the field out
+     * @param shopGeneration  shop generation to write, or {@code null} to leave the field out
      * @return the JSON the codec is asked to read
      */
-    private static JsonObject fields(String dieType, int tierIndex, Integer usesRemaining) {
+    private static JsonObject fields(String dieType, int tierIndex, Integer usesRemaining, Integer shopGeneration) {
         JsonObject json = new JsonObject();
         json.addProperty("die_type", dieType);
         json.addProperty("tier_index", tierIndex);
         if (usesRemaining != null) {
             json.addProperty("uses_remaining", usesRemaining);
+        }
+        if (shopGeneration != null) {
+            json.addProperty("shop_generation", shopGeneration);
         }
         return json;
     }
@@ -184,18 +231,20 @@ class MaskDataCodecTest {
      * {@link MaskData} throws; a decoder that wrapped it would still be a
      * {@link RuntimeException}.</p>
      *
-     * @param dieType       die type to send
-     * @param tierIndex     tier to send
-     * @param usesRemaining uses to send
+     * @param dieType         die type to send
+     * @param tierIndex       tier to send
+     * @param usesRemaining   uses to send
+     * @param shopGeneration  shop generation to send
      */
-    private static void assertStreamRejected(String dieType, int tierIndex, int usesRemaining) {
+    private static void assertStreamRejected(String dieType, int tierIndex, int usesRemaining, int shopGeneration) {
         ByteBuf buffer = Unpooled.buffer();
         ByteBufCodecs.STRING_UTF8.encode(buffer, dieType);
         ByteBufCodecs.VAR_INT.encode(buffer, tierIndex);
         ByteBufCodecs.VAR_INT.encode(buffer, usesRemaining);
+        ByteBufCodecs.VAR_INT.encode(buffer, shopGeneration);
         try {
             assertThrows(RuntimeException.class, () -> MaskDataCodec.STREAM_CODEC.decode(buffer),
-                () -> "expected " + dieType + "/" + tierIndex + "/" + usesRemaining + " to be refused");
+                () -> "expected " + dieType + "/" + tierIndex + "/" + usesRemaining + "/" + shopGeneration + " to be refused");
         } finally {
             buffer.release();
         }

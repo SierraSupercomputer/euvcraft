@@ -9,12 +9,13 @@ import java.util.Objects;
  * carries a countdown of remaining uses. When no uses remain the mask is
  * "spent" and can no longer pattern wafers.
  *
- * @param dieType       canonical die type id, exactly one of {@link DieTypes#ALL}
- * @param tierIndex     1-based tier index the mask targets (no upper cap here;
- *                      registry existence is enforced by {@link MaskRules})
- * @param usesRemaining remaining uses, {@code >= 0}; zero means spent
+ * @param dieType         canonical die type id, exactly one of {@link DieTypes#ALL}
+ * @param tierIndex       1-based tier index the mask targets (no upper cap here;
+ *                        registry existence is enforced by {@link MaskRules})
+ * @param usesRemaining   remaining uses, {@code >= 0}; zero means spent
+ * @param shopGeneration  mask shop generation this mask was cut at (1 or 2)
  */
-public record MaskData(String dieType, int tierIndex, int usesRemaining) {
+public record MaskData(String dieType, int tierIndex, int usesRemaining, int shopGeneration) {
 
     public MaskData {
         Objects.requireNonNull(dieType, "dieType must not be null");
@@ -28,6 +29,17 @@ public record MaskData(String dieType, int tierIndex, int usesRemaining) {
         if (usesRemaining < 0) {
             throw new IllegalArgumentException("usesRemaining must be >= 0, got " + usesRemaining);
         }
+        if (shopGeneration != 1 && shopGeneration != 2) {
+            throw new IllegalArgumentException("shopGeneration must be 1 or 2, got " + shopGeneration);
+        }
+    }
+
+    /**
+     * Three-argument constructor for backwards compatibility with generation 1 masks.
+     * Defaults shopGeneration to 1.
+     */
+    public MaskData(String dieType, int tierIndex, int usesRemaining) {
+        this(dieType, tierIndex, usesRemaining, 1);
     }
 
     /**
@@ -46,6 +58,6 @@ public record MaskData(String dieType, int tierIndex, int usesRemaining) {
             throw new IllegalStateException(
                 "mask for die type '" + dieType + "' at tier " + tierIndex + " is spent");
         }
-        return new MaskData(dieType, tierIndex, usesRemaining - 1);
+        return new MaskData(dieType, tierIndex, usesRemaining - 1, shopGeneration);
     }
 }

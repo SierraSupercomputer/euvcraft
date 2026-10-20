@@ -45,13 +45,20 @@ public class SupportMachineMenu extends FabMachineMenu {
     public static final int WIRE_FORMED = 0;
     public static final int WIRE_WATER = 1;
     public static final int WIRE_WATER_CAPACITY = 2;
-    public static final int EXTRA_DATA_COUNT = 3;
+    // E-beam extra indices
+    public static final int WIRE_EBEAM_SELECTED = 3;
+    public static final int WIRE_EBEAM_RUNNING = 4;
+    public static final int WIRE_EBEAM_PAUSED = 5;
+    public static final int WIRE_EBEAM_DIE_TYPE = 6;
+    public static final int WIRE_EBEAM_TIER = 7;
+    public static final int EXTRA_DATA_COUNT = 8;
 
     // Slot coordinates per kind (relative to the 176x220 shell)
     private static final int IN_0_X = 62, IN_1_X = 80, OUT_A_X = 104, OUT_B_X = 122;
     private static final int SLOT_Y = 35;
 
     private final ContainerData extraData;
+    private final boolean serverSide;
 
     /** Server-side menu for a real controller; the kind comes from the actual block state. */
     public static SupportMachineMenu forMachine(int containerId, Inventory playerInventory,
@@ -84,15 +91,30 @@ public class SupportMachineMenu extends FabMachineMenu {
                                @Nullable SupportMachineBlockEntity machine, SupportMachineKind kind) {
         super(type, containerId, playerInventory, machine,
             kind.inputSlots(), machine == null ? kind.slotCount() : machine.getContainerSize());
+        this.serverSide = machine instanceof SupportMachineBlockEntity;
         this.extraData = machine == null ? new SimpleContainerData(EXTRA_DATA_COUNT) : new ContainerData() {
             @Override
             public int get(int index) {
-                return switch (index) {
-                    case WIRE_FORMED -> machine.isFormed() ? 1 : 0;
-                    case WIRE_WATER -> machine.waterAmount();
-                    case WIRE_WATER_CAPACITY -> machine.waterCapacity();
-                    default -> 0;
-                };
+                if (kind == SupportMachineKind.PURIFIER) {
+                    return switch (index) {
+                        case WIRE_FORMED -> machine.isFormed() ? 1 : 0;
+                        case WIRE_WATER -> machine.waterAmount();
+                        case WIRE_WATER_CAPACITY -> machine.waterCapacity();
+                        default -> 0;
+                    };
+                } else { // EBEAM
+                    return switch (index) {
+                        case WIRE_FORMED -> machine.isFormed() ? 1 : 0;
+                        case WIRE_WATER -> 0;
+                        case WIRE_WATER_CAPACITY -> 0;
+                        case WIRE_EBEAM_SELECTED -> machine.selectedDesign();
+                        case WIRE_EBEAM_RUNNING -> machine.isEbeamJobRunning() ? 1 : 0;
+                        case WIRE_EBEAM_PAUSED -> machine.isEbeamJobPaused() ? 1 : 0;
+                        case WIRE_EBEAM_DIE_TYPE -> dieTypeToInt(machine.selectedDieType());
+                        case WIRE_EBEAM_TIER -> machine.selectedTierIndex();
+                        default -> 0;
+                    };
+                }
             }
 
             @Override
@@ -132,6 +154,92 @@ public class SupportMachineMenu extends FabMachineMenu {
     /** Water capacity in mB; 0 on the e-beam shell. */
     public int waterCapacity() {
         return this.extraData.get(WIRE_WATER_CAPACITY);
+    }
+
+    // ---------------------------------------------------------------- e-beam accessors
+
+    /** Currently selected design index (0-6), or -1 if none. */
+    public int ebeamSelectedDesign() {
+        return this.extraData.get(WIRE_EBEAM_SELECTED);
+    }
+
+    /** Whether an e-beam job is running. */
+    public boolean ebeamJobRunning() {
+        return this.extraData.get(WIRE_EBEAM_RUNNING) == 1;
+    }
+
+    /** Whether the e-beam job is paused. */
+    public boolean ebeamJobPaused() {
+        return this.extraData.get(WIRE_EBEAM_PAUSED) == 1;
+    }
+
+    /** Die type int code for the selected design (for client display). */
+    public int ebeamSelectedDieType() {
+        return this.extraData.get(WIRE_EBEAM_DIE_TYPE);
+    }
+
+    /** Tier index for the selected design (for client display). */
+    public int ebeamSelectedTier() {
+        return this.extraData.get(WIRE_EBEAM_TIER);
+    }
+
+    /** Converts a canonical die type string to an int for network sync. */
+    private static int dieTypeToInt(@Nullable String dieType) {
+        if (dieType == null) return 0;
+        return switch (dieType) {
+            case "compute" -> 1;
+            case "logic" -> 2;
+            case "memory" -> 3;
+            case "nand" -> 4;
+            default -> 0;
+        };
+    }
+
+    /** Converts an int back to a canonical die type string for client display. */
+    public static @Nullable String intToDieType(int code) {
+        return switch (code) {
+            case 1 -> "compute";
+            case 2 -> "logic";
+            case 3 -> "memory";
+            case 4 -> "nand";
+            default -> null;
+        };
+    }
+
+    // ---------------------------------------------------------------- button handling (e-beam)
+
+    /** Button IDs for design selection (0-6). */
+    public static final int EBEAM_DESIGN_BUTTON_BASE = 0;
+    /** Button ID for WriteMask Start. */
+    public static final int EBEAM_START_BUTTON = 7;
+
+    @Override
+    public boolean clickMenuButton(Player player, int buttonId) {
+        if (kind() != SupportMachineKind.EBEAM) return false;
+        if (!(blockEntity instanceof SupportMachineBlockEntity machine)) return false;
+        if (!serverSide) return false;
+        if (!(player instanceof net.minecraft.server.level.ServerPlayer)) return false;
+        if (player.containerMenu != this) return false;
+        if (!stillValid(player)) return false;
+        if (!machine.isFormed()) return false; // reject unformed
+
+        double dx = player.getX() - (machine.getBlockPos().getX() + 0.5);
+        double dy = player.getY() - (machine.getBlockPos().getY() + 0.5);
+        double dz = player.getZ() - (machine.getBlockPos().getZ() + 0.5);
+        if (dx * dx + dy * dy + dz * dz > 64.0) return false; // 8^2 = 64
+
+        // Design selection buttons (0-6)
+        if (buttonId >= EBEAM_DESIGN_BUTTON_BASE && buttonId < EBEAM_START_BUTTON) {
+            int designIndex = buttonId - EBEAM_DESIGN_BUTTON_BASE;
+            return machine.selectDesign(designIndex);
+        }
+
+        // WriteMask Start button
+        if (buttonId == EBEAM_START_BUTTON) {
+            return machine.startEbeamJob();
+        }
+
+        return false;
     }
 
     @Override
