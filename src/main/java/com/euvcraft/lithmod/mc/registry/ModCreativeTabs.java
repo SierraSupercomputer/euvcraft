@@ -34,7 +34,7 @@ public final class ModCreativeTabs {
     /**
      * The single EUVCRAFT creative tab.
      *
-     * <p>Unified ordering (32 stacks): the exact sequence is declared here so the
+     * <p>Unified ordering: the exact sequence is declared here so the
      * presentation test can compare {@code tab.getDisplayItems()} against it.
      * Stale comments about creating multiple tabs to preserve obsolete count tests
      * have been removed.</p>
@@ -95,6 +95,17 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.LOGIC_CHIP_T2.get());
                 output.accept(ModItems.MEMORY_CHIP_T2.get());
                 output.accept(ModItems.CHIP_SCRAP.get());
+                // T3 additions retain the existing order above.
+                output.accept(ModItems.KRF_EXCIMER_LASER.get());
+                output.accept(ModItems.DUV_PROJECTION_LENS.get());
+                output.accept(ModItems.PRECISION_STEPPER_STAGE.get());
+                output.accept(ModItems.HEPA_FILTER.get());
+                output.accept(ModItems.LASER_INTERFEROMETER.get());
+                output.accept(ModItems.RESIST_T3.get());
+                output.accept(ModItems.LOGIC_CHIP_T3.get());
+                output.accept(ModItems.MEMORY_CHIP_T3.get());
+                output.accept(ModItems.COMPUTE_CHIP_T3.get());
+                output.accept(ModItems.NAND_CHIP_T3.get());
             })
             .build()
     );

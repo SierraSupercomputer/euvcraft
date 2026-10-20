@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "RGR",
+    "BLB",
+    "GSG"
+  ],
+  "key": {
+    "R": "minecraft:redstone",
+    "G": "minecraft:glowstone_dust",
+    "B": "minecraft:glass_bottle",
+    "L": "lithmod:logic_chip_t2",
+    "S": "lithmod:resist_t2"
+  },
+  "result": {
+    "id": "lithmod:resist_t3",
+    "count": 8
+  }
+}

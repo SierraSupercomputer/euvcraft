@@ -272,6 +272,24 @@ public final class ModItems {
         ITEMS.registerSimpleBlockItem("test_package",
             () -> com.euvcraft.lithmod.mc.machine.packaging.PackagingMachines.TEST_PACKAGE.get());
 
+    // T3 products and line components. Recipes remain in editable JSON.
+    public static final DeferredItem<Item> LOGIC_CHIP_T3 = ITEMS.registerSimpleItem("logic_chip_t3");
+    public static final DeferredItem<Item> MEMORY_CHIP_T3 = ITEMS.registerSimpleItem("memory_chip_t3");
+    public static final DeferredItem<Item> COMPUTE_CHIP_T3 = ITEMS.registerSimpleItem("compute_chip_t3");
+    public static final DeferredItem<Item> NAND_CHIP_T3 = ITEMS.registerSimpleItem("nand_chip_t3");
+    public static final DeferredItem<Item> RESIST_T3 = ITEMS.registerSimpleItem("resist_t3",
+        properties -> properties.component(ModDataComponents.RESIST_TIER, 3));
+    public static final DeferredItem<LineComponentItem> KRF_EXCIMER_LASER = ITEMS.registerItem("krf_excimer_laser",
+        properties -> new LineComponentItem(properties, "light_source", 3), properties -> properties.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> DUV_PROJECTION_LENS = ITEMS.registerItem("duv_projection_lens",
+        properties -> new LineComponentItem(properties, "optics", 3), properties -> properties.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> PRECISION_STEPPER_STAGE = ITEMS.registerItem("precision_stepper_stage",
+        properties -> new LineComponentItem(properties, "stage", 3), properties -> properties.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> HEPA_FILTER = ITEMS.registerItem("hepa_filter",
+        properties -> new LineComponentItem(properties, "cleanroom", 3), properties -> properties.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> LASER_INTERFEROMETER = ITEMS.registerItem("laser_interferometer",
+        properties -> new LineComponentItem(properties, "metrology", 3), properties -> properties.stacksTo(1));
+
     private ModItems() {
     }
 }

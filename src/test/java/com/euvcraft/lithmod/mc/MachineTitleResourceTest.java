@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 
 /**
  * JUnit resource test: the production machine definition ids seen in
- * {@code data/lithmod/machines} must be exactly the known five, and each must
+ * {@code data/lithmod/machines} must be exactly the known seven, and each must
  * have a non-blank {@code block.lithmod.<id>} title in the bundled en_us.json,
  * with the Process Cell controller titled exactly "Lithography Machine".
  * A missing machine definition or language resource fails, it is never skipped.
@@ -38,9 +38,10 @@ class MachineTitleResourceTest {
     /** The fixture machine, gated behind game-test fixtures and never production. */
     private static final String TEST_ONLY_ID = "test_machine";
 
-    /** The five production machine definition ids observed in data/lithmod/machines. */
+    /** The seven production machine definition ids observed in data/lithmod/machines. */
     private static final Set<String> PRODUCTION_IDS = Set.of(
-            "crystal_puller", "wafer_slicer", "pattern_generator", "test_package", "process_cell");
+            "crystal_puller", "wafer_slicer", "pattern_generator", "test_package", "process_cell",
+            "boule_purifier", "ebeam_mask_writer");
 
     @Test
     @DisplayName("every production machine definition has a non-blank block.lithmod.<id> title in en_us.json")
