@@ -846,8 +846,10 @@ public final class T3MaskWriterGameTests {
         helper.assertTrue(machine.isEbeamJobPaused(), "job did not pause on no power");
 
         // Resume with power
-        charge(helper, machine, fixtureCost(machine) * (RECIPE_TICKS / 3));
-        runMachine(machine, RECIPE_TICKS / 3 + 2);
+        int remaining = RECIPE_TICKS - machine.ebeamJobProgress();
+        charge(helper, machine, (long) fixtureCost(machine) * remaining);
+        runMachine(machine, remaining + 2);
+        helper.assertValueEqual(0L, machine.buffer().getAmountAsLong(), "resumed job charges only remaining whole ticks");
         helper.assertFalse(machine.outputSlot().isEmpty(), "job did not complete");
 
         // Exactly one mask output
@@ -862,59 +864,65 @@ public final class T3MaskWriterGameTests {
     // ------------------------------------------------------------------
 
     private static void saveLoadLiveJsonReload(GameTestHelper helper) {
-        ServerLevel level = helper.getLevel();
         placeEbeam(helper, MACHINE);
         SupportMachineBlockEntity machine = ebeamAt(helper, MACHINE);
-        if (machine == null) {
-            helper.fail("no e-beam block entity at " + MACHINE);
-            return;
-        }
-        machine.revalidate();
-        helper.assertTrue(machine.isFormed(), "multiblock did not form");
-
-        loadFixture(helper, machine, REDSTONE_ID);
-        charge(helper, machine, fixtureCost(machine) * RECIPE_TICKS);
-
+        helper.assertTrue(machine != null && machine.isFormed(), "actual E-beam forms");
         ServerPlayer player = connect(helper.getLevel());
         SupportMachineMenu menu = createMenu(machine, player);
-
-        menu.clickMenuButton(player, SupportMachineMenu.EBEAM_DESIGN_BUTTON_BASE + 0);
-        menu.clickMenuButton(player, SupportMachineMenu.EBEAM_START_BUTTON);
-        helper.assertTrue(machine.isEbeamJobRunning(), "job not running");
-
-        // Run halfway
-        int paid = RECIPE_TICKS / 2;
-        runMachine(machine, paid);
-        helper.assertValueEqual(paid, machine.ebeamJobProgress(), "job progress not at halfway");
-        long energyAfterPaid = machine.buffer().getAmountAsLong();
-
-        // Save/load cycle
-        CompoundTag tag = saveTag(level, machine);
-        helper.assertTrue(tag.contains("ebeamJob"), "saved tag has no ebeamJob node");
-        wipe(machine);
-        loadTag(level, machine, tag);
-
-        helper.assertValueEqual(paid, machine.ebeamJobProgress(), "save/load lost progress");
-        helper.assertValueEqual(RECIPE_TICKS, machine.ebeamJobDuration(), "save/load lost duration");
-        helper.assertValueEqual(fixtureCost(machine), machine.ebeamJobDuration() > 0 ? 2000 : 0, "save/load lost energy per tick");
-        helper.assertValueEqual(energyAfterPaid, machine.buffer().getAmountAsLong(), "save/load lost energy");
-        helper.assertValueEqual(1, machine.slot(SupportMachineBlockEntity.SLOT_IN_0).getCount(), "save/load lost blank mask");
-        helper.assertTrue(machine.slot(SupportMachineBlockEntity.SLOT_IN_1).getCount() >= 32, "save/load lost redstone");
-
-        // Simulate live JSON reload (recipe still available)
-        SupportRecipeLoader.Registry registry = SupportRecipeLoader.getRegistry();
-        helper.assertTrue(registry != null && registry.hasMachine("ebeam_mask_writer"), "support recipes not loaded after reload");
-
-        // Resume and finish
-        runMachine(machine, RECIPE_TICKS - paid + 2);
-        helper.assertFalse(machine.outputSlot().isEmpty(), "job did not complete after reload");
-        helper.assertValueEqual(0L, machine.buffer().getAmountAsLong(), "job did not cost exact FE after reload");
-
-        // Verify output is GEN2
-        MaskData design = machine.outputSlot().get(ModDataComponents.MASK_DATA.get());
-        helper.assertTrue(design != null && design.shopGeneration() == 2, "output mask is not GEN2 after reload");
-
-        player.closeContainer();
+        var config = EUVCRAFTMod.config();
+        int previousUses = com.euvcraft.lithmod.mc.FabConfig.MASK_USES.get();
+        try {
+            var field = SupportRecipeLoader.class.getDeclaredField("resolved");
+            field.setAccessible(true);
+            Object previousRegistry = field.get(null);
+            try {
+                var first = new com.euvcraft.lithmod.mc.recipe.SupportRecipe("ebeam_mask_writer",
+                    com.euvcraft.lithmod.core.MachineIngredient.item(BLANK_MASK_ID, 1),
+                    com.euvcraft.lithmod.core.MachineIngredient.item(REDSTONE_ID, 1), MASK_ID, 1, 5, 3, 0);
+                var selected = new com.euvcraft.lithmod.mc.recipe.SupportRecipe("ebeam_mask_writer",
+                    com.euvcraft.lithmod.core.MachineIngredient.item(BLANK_MASK_ID, 2),
+                    com.euvcraft.lithmod.core.MachineIngredient.item(REDSTONE_ID, 5), MASK_ID, 1, 12, 7, 0);
+                field.set(null, SupportRecipeLoader.buildResolved(Map.of(
+                    Identifier.parse("lithmod:ebeam_logic_t1"), first,
+                    Identifier.parse("lithmod:ebeam_compute_t3"), selected)));
+                com.euvcraft.lithmod.mc.FabConfig.MASK_USES.set(3);
+                config.onConfigReload();
+                machine.setSlot(0, new ItemStack(ModItems.BLANK_MASK.get(), 2));
+                machine.setSlot(1, new ItemStack(Items.REDSTONE, 9));
+                machine.setStoredEnergy(84);
+                helper.assertTrue(menu.clickMenuButton(player, SupportMachineMenu.EBEAM_DESIGN_BUTTON_BASE + 5), "select compute T3");
+                helper.assertValueEqual(2, machine.ebeamBlankCost(), "selected recipe uses two blanks");
+                helper.assertTrue(menu.clickMenuButton(player, SupportMachineMenu.EBEAM_START_BUTTON), "start selected recipe");
+                runMachine(machine, 4);
+                helper.assertValueEqual(4, machine.ebeamJobProgress(), "four paid ticks before save");
+                CompoundTag saved = saveTag(helper.getLevel(), machine);
+                wipe(machine);
+                loadTag(helper.getLevel(), machine, saved);
+                helper.assertValueEqual(4, machine.ebeamJobProgress(), "reload retains paid progress");
+                field.set(null, SupportRecipeLoader.buildResolved(Map.of()));
+                com.euvcraft.lithmod.mc.FabConfig.MASK_USES.set(11);
+                config.onConfigReload();
+                runMachine(machine, 8);
+                MaskData result = machine.outputSlot().get(ModDataComponents.MASK_DATA.get());
+                helper.assertTrue(result != null, "accepted job completes after recipe removal");
+                helper.assertValueEqual(DieTypes.COMPUTE, result.dieType(), "selected design remains compute");
+                helper.assertValueEqual(3, result.tierIndex(), "selected tier remains T3");
+                helper.assertValueEqual(2, result.shopGeneration(), "output provenance is G2");
+                helper.assertValueEqual(3, result.usesRemaining(), "uses stay pinned at start across config reload");
+                helper.assertValueEqual(0L, machine.buffer().getAmountAsLong(), "selected twelve times seven FE paid exactly once");
+                helper.assertTrue(machine.slot(0).isEmpty(), "selected recipe consumes two blanks");
+                helper.assertValueEqual(4, machine.slot(1).getCount(), "selected recipe consumes five redstone");
+                helper.assertFalse(machine.startEbeamJob(), "removed recipe cannot start another job");
+            } finally {
+                field.set(null, previousRegistry);
+            }
+        } catch (ReflectiveOperationException failure) {
+            throw new AssertionError("E-beam reload fixture", failure);
+        } finally {
+            com.euvcraft.lithmod.mc.FabConfig.MASK_USES.set(previousUses);
+            config.onConfigReload();
+            player.closeContainer();
+        }
         helper.succeed();
     }
 
