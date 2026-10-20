@@ -47,7 +47,7 @@ public final class ModMultiblocks {
     public static final DeferredHolder<MenuType<?>, MenuType<ProcessCellMenu>> PROCESS_CELL_MENU_TYPE =
             MENU_TYPES.register("process_cell", () -> IMenuTypeExtension.create(ProcessCellMenu::new));
 
-    public static final DeferredHolder<MenuType<?>, MenuType<OperatingPanelMenu>> OPERATING_PANEL_MENU_TYPE =
+    public static final DeferredHolder<MenuType<?>, MenuType<ProcessCellMenu>> OPERATING_PANEL_MENU_TYPE =
             MENU_TYPES.register("operating_panel", () -> IMenuTypeExtension.create(OperatingPanelMenu::new));
 
     // ---------------------------------------------------------------- blocks

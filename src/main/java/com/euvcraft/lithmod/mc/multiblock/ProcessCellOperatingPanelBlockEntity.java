@@ -41,24 +41,17 @@ public class ProcessCellOperatingPanelBlockEntity extends ProcessCellMemberBlock
 
     @Override
     public Component getDisplayName() {
-        // Delegate to the controller if available, otherwise use a default
-        if (controller() != null) {
-            return controller().getDisplayName();
-        }
-        return Component.translatable("block.lithmod.process_cell_operating_panel");
+        return Component.translatable("block.lithmod.process_cell");
     }
 
+    /** Resolve the actual block below even while unformed; the ephemeral formed link is optional. */
     @Override
-    public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
-        // The extra data (core position) is sent via the packet from openMenu
-        // We need to send it ourselves since we're not using the standard openMenu(path)
-        // For now, we'll create the menu with the known core position (below this panel)
+    public @Nullable AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player) {
+        if (level == null || level != player.level()) return null;
         BlockPos corePos = worldPosition.below();
-        ProcessCellControllerBlockEntity controller = controller();
-        if (controller != null) {
-            return new OperatingPanelMenu(containerId, playerInventory, controller, corePos);
-        }
-        // Fallback: create client-side menu that will read corePos from buffer
-        return new OperatingPanelMenu(containerId, playerInventory, (FabMachineBlockEntity) null, corePos);
+        if (level.getBlockEntity(worldPosition) != this
+                || !(level.getBlockState(corePos).getBlock() instanceof ProcessCellControllerBlock)
+                || !(level.getBlockEntity(corePos) instanceof ProcessCellControllerBlockEntity core)) return null;
+        return new OperatingPanelMenu(containerId, inventory, core, corePos);
     }
 }
