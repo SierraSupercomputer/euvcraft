@@ -130,7 +130,7 @@ class PresentationResourceTest {
                 validated++;
             }
         }
-        assertEquals(22, validated, "Validated " + validated + " crafting files, expected 22");
+        assertEquals(23, validated, "Validated " + validated + " crafting files, expected 23");
     }
 
     /**
