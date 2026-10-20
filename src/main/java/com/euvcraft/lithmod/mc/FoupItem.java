@@ -1,29 +1,36 @@
 package com.euvcraft.lithmod.mc;
 
 import com.euvcraft.lithmod.mc.registry.ModDataComponents;
+import com.euvcraft.lithmod.mc.registry.ModItems;
 
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import org.jspecify.annotations.Nullable;
 
 /**
- * FOUP item that initializes a sealed lot when the component is absent.
+ * FOUP item lifecycle: initialize a missing lot and repair the creative-inventory
+ * client view.
  *
- * <p>Fresh crafted and given FOUPs currently lack {@link ModDataComponents#FOUP_CONTENTS} and are unusable.
- * This item hooks into the standard Item lifecycle to initialize an actual FOUP stack when
- * FOUP_CONTENTS is ABSENT; it uses {@link FoupItems#emptyFoup(Item)} to obtain a fresh UUID and
- * configured capacity and copies ONLY the generated component onto the original stack.
+ * <p>{@link FoupItems#initializeIfMissing(ItemStack)} gives crafted and /give FOUPs a
+ * fresh server lot when the component is absent. The second hook covers the one
+ * untrusted case the creative inventory creates: when a Creative player takes a FOUP,
+ * {@code ServerboundSetCreativeModeSlotPacket} places a client-view stack
+ * ({@link FoupContentsCodec#fromPublicView(int, int, int)}) on the server slot, with
+ * whatever capacity the network form carried. A registered FOUP stack of exactly one,
+ * held by a Creative owner, whose lot is an empty client view with no run spec, is
+ * repaired in place to a server empty lot: fresh lot id, configured capacity, same
+ * custom name, components and stack count.
  *
- * <p>Never replaces an existing component (trusted lot OR client-view); doesn't change
- * {@link FoupItems#trustedContentsOf(ItemStack)} reading/authority semantics. Avoids default
- * properties component or fixed UUID. Each separately initialized stack has fresh server identity.
- * Keeps other components/count.</p>
+ * <p>Everything else stays untouched: sealed lots (empty or filled), non-empty or
+ * over-stacked client views, Survival owners and non-player owners.
+ * {@link FoupItems#trustedContentsOf(ItemStack)} still discards every client view it
+ * is ever asked to trust.
  */
 public class FoupItem extends Item {
 
@@ -34,9 +41,7 @@ public class FoupItem extends Item {
     @Override
     public void inventoryTick(ItemStack stack, ServerLevel level, Entity owner, @Nullable EquipmentSlot slot) {
         super.inventoryTick(stack, level, owner, slot);
-        // Server-side only: initialize missing FOUP_CONTENTS for /give and similar
         FoupItems.initializeIfMissing(stack);
-        // Creative-mode fix: replace empty client-view lot with server-generated empty lot
         maybeReplaceCreativeEmptyClientView(stack, owner);
     }
 
@@ -47,76 +52,43 @@ public class FoupItem extends Item {
 
     @Override
     public void onCraftedPostProcess(ItemStack stack, Level level) {
-        // Only initialize on server; inherited onCraftedBy invokes this override
         if (level instanceof ServerLevel) {
             FoupItems.initializeIfMissing(stack);
         }
     }
 
     /**
-     * Replaces an empty client-view FOUP lot with a server-generated empty lot for Creative players.
+     * Replaces an empty client-view lot with a server empty lot for a Creative owner.
      *
-     * <p>When a Creative player receives a FOUP via the creative inventory or /give, the server
-     * receives a {@code ServerboundSetCreativeModeSlotPacket} containing a client-view-only stack.
-     * The packet handler replaces the server slot with this client-view stack when the player has
-     * infinite materials (Creative mode). This method detects that case and replaces the client-view
-     * lot with a proper server-generated empty lot (fresh UUID, configured capacity), preserving
-     * the custom name, other components, and stack count.</p>
+     * <p>All guards must pass: a ServerPlayer with {@code hasInfiniteMaterials()},
+     * a registered FOUP item, a stack of exactly one, a present client-view lot,
+     * no wafers and no run spec. Sealed lots, non-empty or over-stacked client
+     * views and Survival or non-player owners are never repaired.</p>
      *
-     * <p>Conditions (all must be true):
-     * <ul>
-     *   <li>Owner is a {@link ServerPlayer} with {@link ServerPlayer#hasInfiniteMaterials()} true</li>
-     *   <li>Stack is a registered FOUP item (Mk1 or Mk2)</li>
-     *   <li>Stack carries a {@link ModDataComponents#FOUP_CONTENTS} component</li>
-     *   <li>The lot is a client view ({@link FoupContentsCodec#isClientView})</li>
-     *   <li>The lot is empty (no wafers)</li>
-     *   <li>The lot has no run spec</li>
-     * </ul>
-     *
-     * <p>Sealed lots (empty or filled), non-empty client views, malformed overstack views,
-     * Survival/non-player owners, and non-FOUP items are all untouched.</p>
-     *
-     * @param stack the stack to potentially fix, not null
+     * @param stack the stack to potentially fix, never null
      * @param owner the entity holding the stack, may be null
      */
     private void maybeReplaceCreativeEmptyClientView(ItemStack stack, @Nullable Entity owner) {
-        // Only for ServerPlayer in Creative mode (hasInfiniteMaterials)
-        if (!(owner instanceof ServerPlayer player)) {
+        if (!(owner instanceof ServerPlayer player) || !player.hasInfiniteMaterials()) {
             return;
         }
-        if (!player.hasInfiniteMaterials()) {
-            return;
-        }
-
-        // Exact registered FOUP item guard (Mk1 or Mk2)
         Item item = stack.getItem();
-        if (!(item == com.euvcraft.lithmod.mc.registry.ModItems.FOUP_MK1.get()
-                || item == com.euvcraft.lithmod.mc.registry.ModItems.FOUP_MK2.get())) {
+        if (item != ModItems.FOUP_MK1.get() && item != ModItems.FOUP_MK2.get()) {
             return;
         }
-
-        // Must have FOUP_CONTENTS component
-        var contents = stack.get(com.euvcraft.lithmod.mc.registry.ModDataComponents.FOUP_CONTENTS.get());
-        if (contents == null) {
-            return; // initializeIfMissing already handled the absent case
-        }
-
-        // Must be a client-view lot
-        if (!com.euvcraft.lithmod.mc.FoupContentsCodec.isClientView(contents)) {
+        if (stack.getCount() != 1) {
             return;
         }
-
-        // Must be empty (no wafers) and have no run spec
-        if (!contents.isEmpty() || contents.run() != null) {
+        var contents = stack.get(ModDataComponents.FOUP_CONTENTS.get());
+        if (contents == null
+            || contents.run() != null
+            || !contents.isEmpty()
+            || !FoupContentsCodec.isClientView(contents)) {
             return;
         }
-
-        // All conditions met: replace with server-generated empty lot
-        // Uses configured capacity, fresh UUID, preserves custom name/other components/count
-        var fresh = com.euvcraft.lithmod.mc.FoupItems.emptyFoup(item);
-        var freshContents = fresh.get(com.euvcraft.lithmod.mc.registry.ModDataComponents.FOUP_CONTENTS.get());
-        if (freshContents != null) {
-            stack.set(com.euvcraft.lithmod.mc.registry.ModDataComponents.FOUP_CONTENTS.get(), freshContents);
+        var repaired = FoupItems.emptyFoup(item).get(ModDataComponents.FOUP_CONTENTS.get());
+        if (repaired != null) {
+            stack.set(ModDataComponents.FOUP_CONTENTS.get(), repaired);
         }
     }
 }

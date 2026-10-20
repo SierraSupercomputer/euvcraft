@@ -1,26 +1,29 @@
 package com.euvcraft.lithmod.mc.gametest;
 
 import com.euvcraft.lithmod.core.FoupContents;
-import com.euvcraft.lithmod.core.FoupPublicView;
 import com.euvcraft.lithmod.core.Wafer;
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.euvcraft.lithmod.mc.FoupContentsCodec;
 import com.euvcraft.lithmod.mc.FoupItems;
-import com.euvcraft.lithmod.mc.registry.ModDataComponents;
+import com.euvcraft.lithmod.mc.machine.silicon.SiliconMachines;
+import com.euvcraft.lithmod.mc.machine.silicon.WaferSlicerBlockEntity;
 import com.euvcraft.lithmod.mc.registry.ModItems;
+
 import com.mojang.authlib.GameProfile;
-import io.netty.buffer.ByteBuf;
+
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
+
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.FunctionGameTestInstance;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.gametest.framework.TestData;
 import net.minecraft.gametest.framework.TestEnvironmentDefinition;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.game.ServerboundSetCreativeModeSlotPacket;
@@ -29,37 +32,37 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.CommonListenerCookie;
-import net.minecraft.server.permissions.LevelBasedPermissionSet;
-import net.minecraft.server.permissions.PermissionLevel;
-import net.minecraft.server.permissions.PermissionSet;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.Rotation;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
+import net.neoforged.neoforge.network.registration.NetworkRegistry;
 import net.neoforged.neoforge.registries.DeferredRegister;
+
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
- * Game tests for the Creative FOUP client-polish fix (M1 client polish).
+ * Game tests for the Creative FOUP client-polish repair.
  *
- * <p>These tests exercise the actual creative inventory packet path:
- * {@link ServerboundSetCreativeModeSlotPacket} encode/decode via
- * {@link net.minecraft.network.RegistryFriendlyByteBuf} and
- * {@link ServerboundSetCreativeModeSlotPacket#STREAM_CODEC}, real
- * {@link Connection#handleSetCreativeModeSlot()}, then actual
- * {@link FoupItem#inventoryTick} and real {@link com.euvcraft.lithmod.mc.machine.silicon.WaferSlicerBlockEntity}
- * inputs/FE/serverTick completion.</p>
+ * <p>Every case drives the real path: an actual {@link ServerboundSetCreativeModeSlotPacket}
+ * encoded and decoded through its {@code STREAM_CODEC} on a
+ * {@link RegistryFriendlyByteBuf}, handled by the real Connection packet listener, then
+ * the repaired stack ticked through the real {@code FoupItem#inventoryTick} and, for the
+ * positive case, fed into a real {@link WaferSlicerBlockEntity} run.</p>
  *
- * <p>Test IDs begin with {@code client_polish_} and are registered only inside the existing
- * normal-fixture branch in {@link EUVCRAFTMod}.</p>
+ * <p>Three cases, registered only inside the existing normal-fixture branch in
+ * {@link EUVCRAFTMod}: the creative empty round trip (Mk1/Mk2 plus a real slicer run),
+ * the untrusted guards, and direct sealed-data preservation.</p>
  */
 public final class ClientPolishGameTests {
 
@@ -67,26 +70,20 @@ public final class ClientPolishGameTests {
 
     private static final String ENVIRONMENT_ID = "client_polish_default";
 
+    private static final String EMPTY_ROUND_TRIP = "client_polish_creative_empty_roundtrip";
+    private static final String UNTRUSTED_GUARDS = "client_polish_creative_untrusted_guards";
+    private static final String SEALED_PRESERVATION = "client_polish_creative_sealed_preservation";
+
+    /** Where the sliced machine is placed. */
+    private static final BlockPos SLICER = new BlockPos(1, 1, 1);
+
     private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS =
             DeferredRegister.create(Registries.TEST_FUNCTION, "lithmod");
 
     static {
-        // Positive cases: Creative empty client-view FOUP becomes server lot
-        FUNCTIONS.register("client_polish_creative_empty_mk1_stream_roundtrip", () -> ClientPolishGameTests::creativeEmptyMk1StreamRoundTrip);
-        FUNCTIONS.register("client_polish_creative_empty_mk2_stream_roundtrip", () -> ClientPolishGameTests::creativeEmptyMk2StreamRoundTrip);
-        FUNCTIONS.register("client_polish_creative_empty_repeat_hook_stable", () -> ClientPolishGameTests::creativeEmptyRepeatHookStable);
-        FUNCTIONS.register("client_polish_creative_empty_custom_name_preserved", () -> ClientPolishGameTests::creativeEmptyCustomNamePreserved);
-        FUNCTIONS.register("client_polish_creative_empty_slicer_accepts", () -> ClientPolishGameTests::creativeEmptySlicerAccepts);
-
-        // Negative cases: Survival/nonplayer unchanged, filled client-view cannot start slicer,
-        // sealed lot identity/wafer roll exact preserved, overstack refused
-        FUNCTIONS.register("client_polish_survival_empty_unchanged", () -> ClientPolishGameTests::survivalEmptyUnchanged);
-        FUNCTIONS.register("client_polish_nonplayer_empty_unchanged", () -> ClientPolishGameTests::nonplayerEmptyUnchanged);
-        FUNCTIONS.register("client_polish_filled_client_view_rejected_by_slicer", () -> ClientPolishGameTests::filledClientViewRejectedBySlicer);
-        FUNCTIONS.register("client_polish_filled_client_view_cannot_fabricate_wafers", () -> ClientPolishGameTests::filledClientViewCannotFabricateWafers);
-        FUNCTIONS.register("client_polish_sealed_lot_identity_preserved", () -> ClientPolishGameTests::sealedLotIdentityPreserved);
-        FUNCTIONS.register("client_polish_sealed_lot_wafer_roll_preserved", () -> ClientPolishGameTests::sealedLotWaferRollPreserved);
-        FUNCTIONS.register("client_polish_overstack_client_view_untouched", () -> ClientPolishGameTests::overstackClientViewUntouched);
+        FUNCTIONS.register(EMPTY_ROUND_TRIP, () -> ClientPolishGameTests::creativeEmptyRoundTrip);
+        FUNCTIONS.register(UNTRUSTED_GUARDS, () -> ClientPolishGameTests::untrustedGuards);
+        FUNCTIONS.register(SEALED_PRESERVATION, () -> ClientPolishGameTests::sealedPreservation);
     }
 
     private ClientPolishGameTests() {
@@ -103,20 +100,11 @@ public final class ClientPolishGameTests {
                 Identifier.fromNamespaceAndPath("lithmod", ENVIRONMENT_ID), new TestEnvironmentDefinition[0]);
         TestData<Holder<TestEnvironmentDefinition<?>>> data = new TestData<>(
                 environment, Level.OVERWORLD, Identifier.withDefaultNamespace("empty"),
-                400, 0, true, net.minecraft.world.level.block.Rotation.NONE, false, 1, 1, false, 0);
+                400, 0, true, Rotation.NONE, false, 1, 1, false, 0);
 
-        register(event, data, "client_polish_creative_empty_mk1_stream_roundtrip");
-        register(event, data, "client_polish_creative_empty_mk2_stream_roundtrip");
-        register(event, data, "client_polish_creative_empty_repeat_hook_stable");
-        register(event, data, "client_polish_creative_empty_custom_name_preserved");
-        register(event, data, "client_polish_creative_empty_slicer_accepts");
-        register(event, data, "client_polish_survival_empty_unchanged");
-        register(event, data, "client_polish_nonplayer_empty_unchanged");
-        register(event, data, "client_polish_filled_client_view_rejected_by_slicer");
-        register(event, data, "client_polish_filled_client_view_cannot_fabricate_wafers");
-        register(event, data, "client_polish_sealed_lot_identity_preserved");
-        register(event, data, "client_polish_sealed_lot_wafer_roll_preserved");
-        register(event, data, "client_polish_overstack_client_view_untouched");
+        register(event, data, EMPTY_ROUND_TRIP);
+        register(event, data, UNTRUSTED_GUARDS);
+        register(event, data, SEALED_PRESERVATION);
         LOGGER.info("Registered EUVCRAFT client polish game tests");
     }
 
@@ -132,570 +120,288 @@ public final class ClientPolishGameTests {
     // Helpers
     // ------------------------------------------------------------------------
 
-    private static ServerPlayer connectCreative(ServerLevel level, String name) {
+    private static ServerPlayer connect(ServerLevel level, GameType mode) {
         CommonListenerCookie cookie = CommonListenerCookie.createInitial(
-                new GameProfile(UUID.randomUUID(), name), false);
+                new GameProfile(UUID.randomUUID(), "client-polish-test"), false);
         ServerPlayer player = new ServerPlayer(level.getServer(), level, cookie.gameProfile(),
-                cookie.clientInformation()) {
-            @Override
-            public GameType gameMode() {
-                return GameType.CREATIVE;
-            }
-        };
+                cookie.clientInformation()) {};
         Connection connection = new Connection(PacketFlow.SERVERBOUND);
         new EmbeddedChannel(connection);
-        net.neoforged.neoforge.network.registration.NetworkRegistry.configureMockConnection(connection);
+        NetworkRegistry.configureMockConnection(connection);
         level.getServer().getPlayerList().placeNewPlayer(connection, player, cookie);
+        player.setGameMode(mode);
+        player.gameMode.setLevel(level);
         return player;
     }
 
-    private static ServerPlayer connectSurvival(ServerLevel level, String name) {
-        CommonListenerCookie cookie = CommonListenerCookie.createInitial(
-                new GameProfile(UUID.randomUUID(), name), false);
-        ServerPlayer player = new ServerPlayer(level.getServer(), level, cookie.gameProfile(),
-                cookie.clientInformation()) {
-            @Override
-            public GameType gameMode() {
-                return GameType.SURVIVAL;
-            }
-        };
-        Connection connection = new Connection(PacketFlow.SERVERBOUND);
-        new EmbeddedChannel(connection);
-        net.neoforged.neoforge.network.registration.NetworkRegistry.configureMockConnection(connection);
-        level.getServer().getPlayerList().placeNewPlayer(connection, player, cookie);
-        return player;
-    }
-
-    private static void cleanupPlayer(ServerLevel level, ServerPlayer player) {
-        if (player != null) {
-            player.closeContainer();
-            level.getServer().getPlayerList().remove(player);
-        }
-    }
-
-    private static ItemStack buildClientViewEmptyFOUP(Item item, int capacity, int waferCount, int lotLayer) {
-        // Build a client-view lot via the network codec (what the client sends)
-        FoupContents clientView = FoupContentsCodec.fromPublicView(capacity, waferCount, lotLayer);
-        ItemStack stack = new ItemStack(item);
-        stack.set(ModDataComponents.FOUP_CONTENTS.get(), clientView);
-        return stack;
-    }
-
-    private static ItemStack buildClientViewFilledFOUP(Item item, int capacity, int waferCount, int lotLayer) {
-        // Client view with wafers (still client view because rolls are NO_ROLLS)
-        FoupContents clientView = FoupContentsCodec.fromPublicView(capacity, waferCount, lotLayer);
-        ItemStack stack = new ItemStack(item);
-        stack.set(ModDataComponents.FOUP_CONTENTS.get(), clientView);
-        return stack;
-    }
-
-    private static ItemStack buildOverstackClientView(Item item, int capacity, int waferCount, int lotLayer) {
-        // Client view where waferCount > capacity (malformed)
-        FoupContents clientView = FoupContentsCodec.fromPublicView(capacity, waferCount, lotLayer);
-        ItemStack stack = new ItemStack(item);
-        stack.set(ModDataComponents.FOUP_CONTENTS.get(), clientView);
-        return stack;
-    }
-
-    private static ItemStack buildSealedEmptyFOUP(Item item, UUID lotId, int capacity) {
-        FoupContents sealed = FoupContents.empty(lotId, capacity);
-        ItemStack stack = new ItemStack(item);
-        stack.set(ModDataComponents.FOUP_CONTENTS.get(), sealed);
-        return stack;
-    }
-
-    private static ItemStack buildSealedFilledFOUP(Item item, UUID lotId, int capacity, int waferCount) {
-        List<Wafer> wafers = new ArrayList<>();
-        for (int i = 0; i < waferCount; i++) {
-            wafers.add(Wafer.unprocessed());
-        }
-        FoupContents sealed = new FoupContents(lotId, capacity, wafers);
-        ItemStack stack = new ItemStack(item);
-        stack.set(ModDataComponents.FOUP_CONTENTS.get(), sealed);
-        return stack;
-    }
-
-    private static void sendCreativeSlotPacket(Connection connection, ServerLevel level, int slot, ItemStack stack) {
-        // Use the actual STREAM_CODEC to encode the packet
-        // ServerboundSetCreativeModeSlotPacket carries: slot (short), stack (ItemStack), heldItem (boolean)
-        // We need to encode it properly via RegistryFriendlyByteBuf
-        ByteBuf buf = Unpooled.buffer();
+    /**
+     * Runs the real creative-slot packet: encodes it, decodes it again off the wire and
+     * hands the decoded packet to the real Connection packet listener (slot 36 is the
+     * valid server slot of inventory container slot 0).
+     */
+    private static void handleCreativeSlot(ServerPlayer player, ItemStack sent) {
+        ServerLevel level = player.level();
+        RegistryFriendlyByteBuf buf = new RegistryFriendlyByteBuf(Unpooled.buffer(), level.registryAccess());
         try {
-            var registries = level.registryAccess();
-            var friendlyBuf = net.minecraft.network.RegistryFriendlyByteBuf.create(buf, registries, PacketFlow.SERVERBOUND);
-            ServerboundSetCreativeModeSlotPacket.STREAM_CODEC.encode(friendlyBuf, new ServerboundSetCreativeModeSlotPacket(slot, stack, false));
-            connection.handleSetCreativeModeSlot(friendlyBuf);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to encode/send creative slot packet", e);
+            ServerboundSetCreativeModeSlotPacket.STREAM_CODEC.encode(buf,
+                    new ServerboundSetCreativeModeSlotPacket(36, sent));
+            ServerboundSetCreativeModeSlotPacket decoded = ServerboundSetCreativeModeSlotPacket.STREAM_CODEC.decode(buf);
+            player.connection.handleSetCreativeModeSlot(decoded);
         } finally {
             buf.release();
         }
     }
 
-    private static void runInventoryTick(ItemStack stack, ServerLevel level, ServerPlayer player) {
-        stack.getItem().inventoryTick(stack, level, player, null);
+    /**
+     * What a client reconstructs from the network form: encodes and decodes the packet
+     * without invoking the handler, and returns the decoded stack, whose lot is now the
+     * untrusted client view ({@code fromPublicView} is the codec's own reconstruction).
+     */
+    private static ItemStack deconstructedClientView(ServerLevel level, ItemStack sent) {
+        RegistryFriendlyByteBuf buf = new RegistryFriendlyByteBuf(Unpooled.buffer(), level.registryAccess());
+        try {
+            ServerboundSetCreativeModeSlotPacket.STREAM_CODEC.encode(buf,
+                    new ServerboundSetCreativeModeSlotPacket(36, sent));
+            ServerboundSetCreativeModeSlotPacket decoded = ServerboundSetCreativeModeSlotPacket.STREAM_CODEC.decode(buf);
+            return decoded.itemStack();
+        } finally {
+            buf.release();
+        }
+    }
+
+    private static void runInventoryTick(ItemStack stack, ServerLevel level, Entity owner) {
+        stack.getItem().inventoryTick(stack, level, owner, null);
+    }
+
+    private static void cleanupPlayer(ServerLevel level, ServerPlayer player) {
+        if (player != null) {
+            player.getInventory().clearContent();
+            player.closeContainer();
+            level.getServer().getPlayerList().remove(player);
+        }
+    }
+
+    /** Replaces the fixture position with a freshly placed slicer. */
+    private static void placeSlicer(GameTestHelper h, BlockPos relative) {
+        clearFixture(h, relative);
+        h.setBlock(relative, SiliconMachines.WAFER_SLICER.get());
+    }
+
+    /** Clears a fixture position: empty its container first, then set air. */
+    private static void clearFixture(GameTestHelper h, BlockPos relative) {
+        var be = h.getLevel().getBlockEntity(h.absolutePos(relative));
+        if (be instanceof net.minecraft.world.Container items) {
+            items.clearContent();
+        }
+        h.setBlock(relative, Blocks.AIR);
     }
 
     // ------------------------------------------------------------------------
-    // Positive cases
+    // Positive case: the creative empty round trip, Mk1 and Mk2, then a real slicer
     // ------------------------------------------------------------------------
 
-    /**
-     * Creative player receives empty client-view FOUP Mk1 via creative inventory packet.
-     * After inventoryTick, the FOUP must hold a fresh server-generated empty lot with
-     * non-placeholder identity and server-configured capacity.
-     */
-    private static void creativeEmptyMk1StreamRoundTrip(GameTestHelper h) {
+    private static void creativeEmptyRoundTrip(GameTestHelper h) {
         ServerLevel level = h.getLevel();
         ServerPlayer player = null;
         try {
-            player = connectCreative(level, "creative-mk1-test");
+            player = connect(level, GameType.CREATIVE);
             int configured = FoupItems.configuredCapacity();
+            Item[] foupTypes = {ModItems.FOUP_MK1.get(), ModItems.FOUP_MK2.get()};
+            int[] forged = {999, 888};
 
-            // Build what the client sends: empty client-view FOUP Mk1 with forged capacity (999)
-            ItemStack clientStack = buildClientViewEmptyFOUP(ModItems.FOUP_MK1.get(), 999, 0, FoupPublicView.EMPTY_LOT_LAYER);
-            h.assertTrue(FoupContentsCodec.isClientView(FoupItems.contentsOf(clientStack)), "Precondition: must be client view");
-            h.assertValueEqual(999, FoupItems.contentsOf(clientStack).capacity(), "Precondition: client forged capacity");
+            for (int i = 0; i < foupTypes.length; i++) {
+                Item mk = foupTypes[i];
+                String label = i == 0 ? "Mk1" : "Mk2";
 
-            // Send via actual packet path
-            var connection = player.connection;
-            sendCreativeSlotPacket(connection, level, 0, clientStack);
+                // The client sends a real sealed empty lot (forged capacity 999/888 and a custom name);
+                // the packet round trip is what turns it into the untrusted client view on the server.
+                ItemStack sent = FoupItems.with(mk, FoupContents.empty(UUID.randomUUID(), forged[i]));
+                sent.set(DataComponents.CUSTOM_NAME, Component.literal("creative-polish-foup"));
+                player.getInventory().setItem(0, ItemStack.EMPTY);
+                handleCreativeSlot(player, sent);
 
-            // The packet handler puts the stack in the player's inventory slot 0
-            ItemStack serverStack = player.getInventory().getItem(0);
-            h.assertTrue(serverStack.is(ModItems.FOUP_MK1.get()), "Server received FOUP Mk1");
+                ItemStack serverStack = player.getInventory().getItem(0);
+                h.assertTrue(serverStack.is(mk), label + ": the packet placed a real FOUP on the server");
+                h.assertValueEqual(1, serverStack.getCount(), label + ": count arrives as 1");
+                FoupContents clientView = FoupItems.contentsOf(serverStack);
+                h.assertTrue(clientView != null, label + ": the packet view carries a lot component");
+                h.assertTrue(FoupContentsCodec.isClientView(clientView), label + ": the server stack is initially the client view");
+                h.assertValueEqual(forged[i], clientView.capacity(), label + ": forged client capacity survives the wire");
+                h.assertTrue(clientView.lotId().equals(FoupContentsCodec.CLIENT_VIEW_LOT_ID), label + ": nil placeholder lot id");
 
-            // Run inventoryTick (this is where the fix applies)
-            runInventoryTick(serverStack, level, player);
+                // The repair hook tick.
+                runInventoryTick(serverStack, level, player);
+                FoupContents repaired = FoupItems.contentsOf(serverStack);
+                h.assertTrue(repaired != null && !FoupContentsCodec.isClientView(repaired), label + ": repaired to a sealed lot");
+                UUID repairedId = repaired.lotId();
+                h.assertFalse(repairedId.equals(FoupContentsCodec.CLIENT_VIEW_LOT_ID), label + ": fresh non-placeholder lot id");
+                h.assertValueEqual(configured, repaired.capacity(), label + ": server capacity, not the forged one");
+                h.assertTrue(repaired.isEmpty() && repaired.run() == null, label + ": still empty with no run spec");
+                h.assertTrue(serverStack.has(DataComponents.CUSTOM_NAME), label + ": custom name preserved");
+                h.assertTrue("creative-polish-foup".equals(serverStack.get(DataComponents.CUSTOM_NAME).getString()), label + ": custom name content preserved");
 
-            // Verify: fresh non-placeholder identity, server-configured capacity, empty
-            FoupContents after = FoupItems.contentsOf(serverStack);
-            h.assertTrue(after != null, "FOUP must have contents after inventoryTick");
-            h.assertTrue(!FoupContentsCodec.isClientView(after), "Must not be client view after fix");
-            h.assertTrue(!after.lotId().equals(FoupContentsCodec.CLIENT_VIEW_LOT_ID), "Must have fresh server UUID, not client view nil UUID");
-            h.assertValueEqual(configured, after.capacity(), "Capacity must be server configured, not client forged");
-            h.assertTrue(after.isEmpty(), "Lot must remain empty");
-            h.assertTrue(after.run() == null, "Run spec must be null");
+                // A repeated hook call must not repair (and re-roll) the lot again.
+                runInventoryTick(serverStack, level, player);
+                h.assertTrue(FoupItems.contentsOf(serverStack).lotId().equals(repairedId), label + ": repeated hook is stable");
+                h.assertTrue(WaferSlicerBlockEntity.acceptedFoup(serverStack) != null, label + ": the repaired FOUP is accepted as a machine input");
 
-            h.succeed();
-        } finally {
-            cleanupPlayer(level, player);
-        }
-    }
-
-    /**
-     * Same test for FOUP Mk2.
-     */
-    private static void creativeEmptyMk2StreamRoundTrip(GameTestHelper h) {
-        ServerLevel level = h.getLevel();
-        ServerPlayer player = null;
-        try {
-            player = connectCreative(level, "creative-mk2-test");
-            int configured = FoupItems.configuredCapacity();
-
-            ItemStack clientStack = buildClientViewEmptyFOUP(ModItems.FOUP_MK2.get(), 888, 0, FoupPublicView.EMPTY_LOT_LAYER);
-            h.assertTrue(FoupContentsCodec.isClientView(FoupItems.contentsOf(clientStack)), "Precondition: must be client view");
-
-            var connection = player.connection;
-            sendCreativeSlotPacket(connection, level, 0, clientStack);
-
-            ItemStack serverStack = player.getInventory().getItem(0);
-            h.assertTrue(serverStack.is(ModItems.FOUP_MK2.get()), "Server received FOUP Mk2");
-
-            runInventoryTick(serverStack, level, player);
-
-            FoupContents after = FoupItems.contentsOf(serverStack);
-            h.assertTrue(after != null, "FOUP must have contents after inventoryTick");
-            h.assertTrue(!FoupContentsCodec.isClientView(after), "Must not be client view after fix");
-            h.assertTrue(!after.lotId().equals(FoupContentsCodec.CLIENT_VIEW_LOT_ID), "Must have fresh server UUID");
-            h.assertValueEqual(configured, after.capacity(), "Capacity must be server configured");
-            h.assertTrue(after.isEmpty(), "Lot must remain empty");
-            h.assertTrue(after.run() == null, "Run spec must be null");
-
-            h.succeed();
-        } finally {
-            cleanupPlayer(level, player);
-        }
-    }
-
-    /**
-     * Repeated inventoryTick calls on the same stack must be stable (not replace the lot again).
-     */
-    private static void creativeEmptyRepeatHookStable(GameTestHelper h) {
-        ServerLevel level = h.getLevel();
-        ServerPlayer player = null;
-        try {
-            player = connectCreative(level, "creative-repeat-test");
-            int configured = FoupItems.configuredCapacity();
-
-            ItemStack clientStack = buildClientViewEmptyFOUP(ModItems.FOUP_MK1.get(), 777, 0, FoupPublicView.EMPTY_LOT_LAYER);
-            var connection = player.connection;
-            sendCreativeSlotPacket(connection, level, 0, clientStack);
-
-            ItemStack serverStack = player.getInventory().getItem(0);
-
-            // First inventoryTick
-            runInventoryTick(serverStack, level, player);
-            FoupContents afterFirst = FoupItems.contentsOf(serverStack);
-            h.assertTrue(afterFirst != null && !FoupContentsCodec.isClientView(afterFirst), "First tick must produce server lot");
-            UUID firstLotId = afterFirst.lotId();
-            h.assertValueEqual(configured, afterFirst.capacity(), "First tick capacity");
-
-            // Second inventoryTick
-            runInventoryTick(serverStack, level, player);
-            FoupContents afterSecond = FoupItems.contentsOf(serverStack);
-            h.assertTrue(afterSecond != null && !FoupContentsCodec.isClientView(afterSecond), "Second tick must keep server lot");
-            h.assertTrue(afterSecond.lotId().equals(firstLotId), "Lot identity must be stable across repeated ticks");
-            h.assertValueEqual(configured, afterSecond.capacity(), "Capacity must remain stable");
-
-            // Third inventoryTick (also via onCraftedPostProcess path)
-            serverStack.getItem().onCraftedPostProcess(serverStack, level);
-            FoupContents afterThird = FoupItems.contentsOf(serverStack);
-            h.assertTrue(afterThird.lotId().equals(firstLotId), "Lot identity stable after onCraftedPostProcess");
-
-            h.succeed();
-        } finally {
-            cleanupPlayer(level, player);
-        }
-    }
-
-    /**
-     * Custom name and other components must be preserved when the fix replaces the lot.
-     */
-    private static void creativeEmptyCustomNamePreserved(GameTestHelper h) {
-        ServerLevel level = h.getLevel();
-        ServerPlayer player = null;
-        try {
-            player = connectCreative(level, "creative-name-test");
-
-            ItemStack clientStack = buildClientViewEmptyFOUP(ModItems.FOUP_MK1.get(), 999, 0, FoupPublicView.EMPTY_LOT_LAYER);
-            // Add a custom name
-            clientStack.set(DataComponents.CUSTOM_NAME, Component.literal("My Special FOUP"));
-
-            var connection = player.connection;
-            sendCreativeSlotPacket(connection, level, 0, clientStack);
-
-            ItemStack serverStack = player.getInventory().getItem(0);
-            h.assertTrue(serverStack.has(DataComponents.CUSTOM_NAME), "Custom name must survive packet");
-
-            runInventoryTick(serverStack, level, player);
-
-            // Verify custom name preserved
-            h.assertTrue(serverStack.has(DataComponents.CUSTOM_NAME), "Custom name must be preserved after fix");
-            h.assertTrue(serverStack.get(DataComponents.CUSTOM_NAME).getString().equals("My Special FOUP"), "Custom name content preserved");
-
-            // Verify stack count preserved (should be 1)
-            h.assertValueEqual(1, serverStack.getCount(), "Stack count preserved");
-
-            h.succeed();
-        } finally {
-            cleanupPlayer(level, player);
-        }
-    }
-
-    /**
-     * The fixed FOUP must be accepted by the Wafer Slicer and complete a slice run.
-     */
-    private static void creativeEmptySlicerAccepts(GameTestHelper h) {
-        ServerLevel level = h.getLevel();
-        ServerPlayer player = null;
-        try {
-            player = connectCreative(level, "creative-slicer-test");
-            int configured = FoupItems.configuredCapacity();
-
-            // Place a Wafer Slicer
-            net.minecraft.core.BlockPos slicerPos = h.absolutePos(new net.minecraft.core.BlockPos(2, 1, 2));
-            h.setBlock(slicerPos, com.euvcraft.lithmod.mc.machine.silicon.SiliconMachines.WAFER_SLICER.get());
-            var slicerBE = (com.euvcraft.lithmod.mc.machine.silicon.WaferSlicerBlockEntity) level.getBlockEntity(slicerPos);
-            h.assertTrue(slicerBE != null, "Slicer block entity exists");
-            slicerBE.serverTick(); // Initialize definition
-
-            // Give player a boule and the fixed FOUP
-            player.getInventory().setItem(1, new ItemStack(com.euvcraft.lithmod.mc.registry.ModItems.SILICON_BOULE.get()));
-
-            ItemStack clientStack = buildClientViewEmptyFOUP(ModItems.FOUP_MK1.get(), 999, 0, FoupPublicView.EMPTY_LOT_LAYER);
-            var connection = player.connection;
-            sendCreativeSlotPacket(connection, level, 0, clientStack);
-
-            ItemStack serverStack = player.getInventory().getItem(0);
-            runInventoryTick(serverStack, level, player);
-
-            // Verify the fix applied
-            FoupContents after = FoupItems.contentsOf(serverStack);
-            h.assertTrue(after != null && !FoupContentsCodec.isClientView(after), "Fix must apply before slicer test");
-
-            // Manually insert into slicer slots (simulating player action)
-            slicerBE.slot(com.euvcraft.lithmod.mc.machine.silicon.WaferSlicerBlockEntity.BOULE_SLOT).set(player.getInventory().getItem(1).copy());
-            player.getInventory().setItem(1, ItemStack.EMPTY);
-            slicerBE.slot(com.euvcraft.lithmod.mc.machine.silicon.WaferSlicerBlockEntity.FOUP_SLOT).set(serverStack.copy());
-            player.getInventory().setItem(0, ItemStack.EMPTY);
-
-            // Give the slicer plenty of FE
-            slicerBE.buffer().insert(1000000, false);
-
-            // Run slicer ticks until complete
-            int maxTicks = 2000;
-            boolean completed = false;
-            for (int i = 0; i < maxTicks; i++) {
-                slicerBE.serverTick();
-                if (!slicerBE.isSlicing() && slicerBE.sliceProgress() == 0 && !slicerBE.slot(com.euvcraft.lithmod.mc.machine.silicon.WaferSlicerBlockEntity.OUTPUT_SLOT).isEmpty()) {
-                    completed = true;
-                    break;
+                // Real slicer end to end on the loaded data definition.
+                placeSlicer(h, SLICER);
+                WaferSlicerBlockEntity slicer = h.getLevel().getBlockEntity(h.absolutePos(SLICER)) instanceof WaferSlicerBlockEntity s ? s : null;
+                h.assertTrue(slicer != null && slicer.definition().isPresent(), label + ": a real slicer with a loaded definition");
+                h.assertTrue(slicer.sliceTicks() > 0 && slicer.energyPerTick() > 0, label + ": data-driven run parameters");
+                int perTick = slicer.energyPerTick();
+                int ticks = slicer.sliceTicks();
+                slicer.setSlot(WaferSlicerBlockEntity.BOULE_SLOT, new ItemStack(ModItems.SILICON_BOULE.get()));
+                slicer.setSlot(WaferSlicerBlockEntity.FOUP_SLOT, serverStack.copy());
+                slicer.setStoredEnergy(perTick * (ticks + 2));
+                long energyBefore = slicer.buffer().getAmountAsLong();
+                for (int tick = 0; tick < ticks + 5; tick++) {
+                    slicer.serverTick();
                 }
+                long spent = energyBefore - slicer.buffer().getAmountAsLong();
+                h.assertValueEqual(perTick * (long) ticks, spent, label + ": spends exactly per_tick x slice_ticks");
+                h.assertValueEqual(6000L, spent, label + ": the loaded 30 FE x 200 tick definition debits exactly 6000 FE");
+
+                ItemStack output = slicer.outputSlot();
+                h.assertFalse(output.isEmpty(), label + ": the slicer produced an output FOUP");
+                h.assertTrue(output.is(mk), label + ": the output is the same FOUP type");
+                FoupContents lot = FoupItems.trustedContentsOf(output);
+                h.assertTrue(!FoupContentsCodec.isClientView(lot), label + ": the output is a trusted sealed lot");
+                h.assertFalse(lot.lotId().equals(FoupContentsCodec.CLIENT_VIEW_LOT_ID) || lot.lotId().equals(repairedId), label + ": a fresh new lot id");
+                h.assertValueEqual(configured, lot.capacity(), label + ": the forged capacity never reached the output");
+                h.assertValueEqual(EUVCRAFTMod.settings().wafersPerBoule(), lot.size(), label + ": one boule's worth of wafers");
+                h.assertValueEqual(25, lot.size(), label + ": exactly 25 wafers per the loaded data");
+                h.assertTrue(lot.run() == null, label + ": a fresh slice carries no run spec");
+                for (Wafer wafer : lot.wafers()) {
+                    h.assertTrue(wafer.isUnprocessed(), label + ": every freshly sliced wafer is unprocessed");
+                }
+                h.assertTrue(slicer.slot(WaferSlicerBlockEntity.FOUP_SLOT).isEmpty(), label + ": the input FOUP was consumed");
+                h.assertTrue(slicer.slot(WaferSlicerBlockEntity.BOULE_SLOT).isEmpty(), label + ": exactly the one boule was consumed");
             }
-
-            h.assertTrue(completed, "Slicer must complete a run with the fixed FOUP");
-
-            // Verify output FOUP has wafers and is a sealed lot
-            ItemStack output = slicerBE.slot(com.euvcraft.lithmod.mc.machine.silicon.WaferSlicerBlockEntity.OUTPUT_SLOT);
-            h.assertTrue(output.is(ModItems.FOUP_MK1.get()), "Output is FOUP Mk1");
-            FoupContents outputContents = FoupItems.trustedContentsOf(output);
-            h.assertTrue(!FoupContentsCodec.isClientView(outputContents), "Output must be sealed lot");
-            h.assertTrue(outputContents.size() > 0, "Output must contain wafers");
-            h.assertValueEqual(configured, outputContents.capacity(), "Output capacity matches configured");
-            h.assertTrue(outputContents.run() == null, "Slicer output has no run spec");
-
             h.succeed();
         } finally {
-            cleanupPlayer(level, player);
+            try {
+                clearFixture(h, SLICER);
+            } finally {
+                cleanupPlayer(level, player);
+            }
         }
     }
 
     // ------------------------------------------------------------------------
-    // Negative cases
+    // Negative case: every untrusted shape the hook must refuse
     // ------------------------------------------------------------------------
 
-    /**
-     * Survival player with empty client-view FOUP: must NOT be replaced (initializeIfMissing handles absent, but client view stays).
-     */
-    private static void survivalEmptyUnchanged(GameTestHelper h) {
+    private static void untrustedGuards(GameTestHelper h) {
         ServerLevel level = h.getLevel();
-        ServerPlayer player = null;
+        ServerPlayer creative = null;
+        ServerPlayer survival = null;
         try {
-            player = connectSurvival(level, "survival-test");
+            creative = connect(level, GameType.CREATIVE);
+            survival = connect(level, GameType.SURVIVAL);
 
-            ItemStack clientStack = buildClientViewEmptyFOUP(ModItems.FOUP_MK1.get(), 999, 0, FoupPublicView.EMPTY_LOT_LAYER);
-            var connection = player.connection;
-            sendCreativeSlotPacket(connection, level, 0, clientStack);
+            // The shared empty client view, built through the real packet decode.
+            ItemStack emptyView = deconstructedClientView(level,
+                    FoupItems.with(ModItems.FOUP_MK1.get(), FoupContents.empty(UUID.randomUUID(), 999)));
+            h.assertTrue(FoupContentsCodec.isClientView(FoupItems.contentsOf(emptyView)), "the packet decode produced a client view");
+            h.assertFalse(FoupItems.hasSealedContents(emptyView), "the client view is not sealed");
 
-            ItemStack serverStack = player.getInventory().getItem(0);
-            runInventoryTick(serverStack, level, player);
+            // Survival: the creative-slot packet itself is refused, and a held empty client
+            // view stays a client view (its capacity stays the client's forged one).
+            handleCreativeSlot(survival, FoupItems.with(ModItems.FOUP_MK1.get(), FoupContents.empty(UUID.randomUUID(), 999)));
+            h.assertTrue(survival.getInventory().getItem(0).isEmpty(), "the packet handler refused the Survival player");
+            survival.getInventory().setItem(0, emptyView.copy());
+            ItemStack held = survival.getInventory().getItem(0);
+            runInventoryTick(held, level, survival);
+            FoupContents inSurvival = FoupItems.contentsOf(held);
+            h.assertTrue(inSurvival != null, "survival keeps a component (this is not a stale absence)");
+            h.assertTrue(FoupContentsCodec.isClientView(inSurvival), "survival: the empty client view stays a client view");
+            h.assertFalse(FoupItems.hasSealedContents(held), "survival: the client view never becomes sealed");
+            h.assertValueEqual(999, inSurvival.capacity(), "survival: the forged capacity is untouched by the hook");
 
-            // In Survival, the client-view lot should remain (initializeIfMissing only handles ABSENT component)
-            FoupContents after = FoupItems.contentsOf(serverStack);
-            h.assertTrue(after != null, "FOUP must have contents");
-            h.assertTrue(FoupContentsCodec.isClientView(after), "Survival: client view must remain untouched");
-            h.assertValueEqual(999, after.capacity(), "Survival: client forged capacity stays (but trustedContentsOf will discard)");
+            // Non-player owner: an ItemEntity holding an empty client view.
+            ItemStack dropped = emptyView.copy();
+            BlockPos dropPos = h.absolutePos(new BlockPos(1, 1, 1));
+            ItemEntity drop = new ItemEntity(level,
+                    dropPos.getX() + 0.5, dropPos.getY() + 1.0, dropPos.getZ() + 0.5, dropped);
+            runInventoryTick(dropped, level, drop);
+            FoupContents inDrop = FoupItems.contentsOf(dropped);
+            h.assertTrue(inDrop != null && FoupContentsCodec.isClientView(inDrop), "an ItemEntity owner never gets the repair");
+            h.assertFalse(FoupItems.hasSealedContents(dropped), "an ItemEntity owner's client view stays unsealed");
 
-            // But trustedContentsOf must still return fresh empty lot
-            FoupContents trusted = FoupItems.trustedContentsOf(serverStack);
-            h.assertTrue(trusted.isEmpty(), "Trusted read returns empty");
-            h.assertValueEqual(FoupItems.configuredCapacity(), trusted.capacity(), "Trusted read uses configured capacity");
-            h.assertTrue(!trusted.lotId().equals(FoupContentsCodec.CLIENT_VIEW_LOT_ID), "Trusted read has fresh UUID");
+            // Non-empty packet view: a real sealed lot with wafers round-trips into an
+            // untrusted view that the creative hook never repairs.
+            ItemStack sealedWafers = FoupItems.with(ModItems.FOUP_MK1.get(),
+                    new FoupContents(UUID.randomUUID(), 25, List.of(new Wafer(1, 0.37f, 0), new Wafer(2, 0.71f, 0))));
+            handleCreativeSlot(creative, sealedWafers);
+            ItemStack packed = creative.getInventory().getItem(0);
+            h.assertTrue(FoupItems.isClientView(packed), "a sealed lot with wafers arrives on the server as a client view");
+            FoupContents packedLot = FoupItems.contentsOf(packed);
+            h.assertTrue(packedLot != null && packedLot.size() == 2, "the packet view keeps the public wafer count");
+            h.assertFalse(packedLot.lotId().equals(FoupItems.contentsOf(sealedWafers).lotId()), "the private lot id is never preserved through the packet");
+            runInventoryTick(packed, level, creative);
+            h.assertTrue(FoupItems.isClientView(packed), "the creative hook does not repair a non-empty packet view");
+            h.assertTrue(FoupItems.contentsOf(packed).size() == 2, "the packet view keeps its wafer count through the hook");
+            h.assertTrue(WaferSlicerBlockEntity.acceptedFoup(packed) == null, "the untrusted packet view is never accepted by the slicer");
 
+            // Count 2 on an empty client view: a malformed lifecycle guard, built directly
+            // (the packet codec itself refuses an oversized stack, so it never went through it).
+            ItemStack two = emptyView.copyWithCount(2);
+            creative.getInventory().setItem(0, two);
+            ItemStack counted = creative.getInventory().getItem(0);
+            h.assertValueEqual(2, counted.getCount(), "precondition: a count-2 empty client view");
+            runInventoryTick(counted, level, creative);
+            h.assertValueEqual(2, counted.getCount(), "a count-2 client view is unchanged");
+            h.assertTrue(FoupItems.isClientView(counted), "a count-2 empty client view is not repaired");
+            h.assertFalse(FoupItems.hasSealedContents(counted), "a count-2 empty client view never becomes sealed");
             h.succeed();
         } finally {
-            cleanupPlayer(level, player);
+            cleanupPlayer(level, creative);
+            cleanupPlayer(level, survival);
         }
     }
 
-    /**
-     * Non-player entity (e.g., ItemEntity, hopper, etc.) with empty client-view FOUP: must NOT be replaced.
-     */
-    private static void nonplayerEmptyUnchanged(GameTestHelper h) {
-        ServerLevel level = h.getLevel();
+    // ------------------------------------------------------------------------
+    // Negative control: real sealed data survives the lifecycle untouched
+    // ------------------------------------------------------------------------
 
-        ItemStack clientStack = buildClientViewEmptyFOUP(ModItems.FOUP_MK1.get(), 999, 0, FoupPublicView.EMPTY_LOT_LAYER);
-        ItemEntity entity = new ItemEntity(level, 0.5, 0.5, 0.5, clientStack);
-
-        // Call inventoryTick with non-player owner
-        clientStack.getItem().inventoryTick(clientStack, level, entity, null);
-
-        FoupContents after = FoupItems.contentsOf(clientStack);
-        h.assertTrue(after != null, "FOUP must have contents");
-        h.assertTrue(FoupContentsCodec.isClientView(after), "Non-player: client view must remain untouched");
-        h.assertValueEqual(999, after.capacity(), "Non-player: client forged capacity stays");
-
-        h.succeed();
-    }
-
-    /**
-     * Creative player with filled client-view FOUP: must NOT be replaced, and must be rejected by slicer.
-     */
-    private static void filledClientViewRejectedBySlicer(GameTestHelper h) {
+    private static void sealedPreservation(GameTestHelper h) {
         ServerLevel level = h.getLevel();
         ServerPlayer player = null;
         try {
-            player = connectCreative(level, "creative-filled-test");
-            int configured = FoupItems.configuredCapacity();
+            player = connect(level, GameType.CREATIVE);
 
-            // Place a Wafer Slicer
-            net.minecraft.core.BlockPos slicerPos = h.absolutePos(new net.minecraft.core.BlockPos(2, 1, 2));
-            h.setBlock(slicerPos, com.euvcraft.lithmod.mc.machine.silicon.SiliconMachines.WAFER_SLICER.get());
-            var slicerBE = (com.euvcraft.lithmod.mc.machine.silicon.WaferSlicerBlockEntity) level.getBlockEntity(slicerPos);
-            h.assertTrue(slicerBE != null, "Slicer block entity exists");
-            slicerBE.serverTick();
-            slicerBE.buffer().insert(1000000, false);
+            // Sealed empty and filled lots, held DIRECTLY in the inventory: no packet round
+            // trip, which would destroy exactly the private values this controls on.
+            UUID emptyId = UUID.randomUUID();
+            UUID filledId = UUID.randomUUID();
+            ItemStack sealedEmpty = FoupItems.with(ModItems.FOUP_MK1.get(), FoupContents.empty(emptyId, 25));
+            ItemStack sealedFilled = FoupItems.with(ModItems.FOUP_MK2.get(),
+                    new FoupContents(filledId, 25, List.of(
+                            new Wafer(1, 0.37f, 0), new Wafer(2, 0.71f, 0), new Wafer(3, 0.91f, 0))));
+            player.getInventory().setItem(0, sealedEmpty);
+            player.getInventory().setItem(1, sealedFilled);
+            FoupContents storedEmpty = FoupItems.contentsOf(sealedEmpty);
+            FoupContents storedFilled = FoupItems.contentsOf(sealedFilled);
+            h.assertTrue(!FoupContentsCodec.isClientView(storedEmpty) && !FoupContentsCodec.isClientView(storedFilled), "both lots start sealed");
 
-            // Filled client-view FOUP (5 wafers)
-            ItemStack clientStack = buildClientViewFilledFOUP(ModItems.FOUP_MK1.get(), configured, 5, 1);
-            h.assertTrue(FoupContentsCodec.isClientView(FoupItems.contentsOf(clientStack)), "Precondition: client view");
-            h.assertValueEqual(5, FoupItems.contentsOf(clientStack).size(), "Precondition: 5 wafers");
+            runInventoryTick(player.getInventory().getItem(0), level, player);
+            runInventoryTick(player.getInventory().getItem(1), level, player);
 
-            var connection = player.connection;
-            sendCreativeSlotPacket(connection, level, 0, clientStack);
-
-            ItemStack serverStack = player.getInventory().getItem(0);
-            runInventoryTick(serverStack, level, player);
-
-            // Fix must NOT apply (filled client view)
-            FoupContents after = FoupItems.contentsOf(serverStack);
-            h.assertTrue(FoupContentsCodec.isClientView(after), "Filled client view must remain untouched by fix");
-            h.assertValueEqual(5, after.size(), "Wafer count unchanged");
-
-            // Insert into slicer - must be rejected
-            slicerBE.slot(com.euvcraft.lithmod.mc.machine.silicon.WaferSlicerBlockEntity.BOULE_SLOT).set(new ItemStack(com.euvcraft.lithmod.mc.registry.ModItems.SILICON_BOULE.get()));
-            slicerBE.slot(com.euvcraft.lithmod.mc.machine.silicon.WaferSlicerBlockEntity.FOUP_SLOT).set(serverStack.copy());
-            player.getInventory().setItem(0, ItemStack.EMPTY);
-
-            slicerBE.serverTick();
-            h.assertTrue(!slicerBE.isSlicing(), "Slicer must not start with filled client view");
-            h.assertTrue(slicerBE.slot(com.euvcraft.lithmod.mc.machine.silicon.WaferSlicerBlockEntity.FOUP_SLOT).is(ModItems.FOUP_MK1.get()), "FOUP must remain in input slot");
-
-            h.succeed();
-        } finally {
-            cleanupPlayer(level, player);
-        }
-    }
-
-    /**
-     * Filled client-view FOUP cannot fabricate wafers via trustedContentsOf.
-     */
-    private static void filledClientViewCannotFabricateWafers(GameTestHelper h) {
-        ServerLevel level = h.getLevel();
-        ServerPlayer player = null;
-        try {
-            player = connectCreative(level, "creative-filled-trusted-test");
-
-            ItemStack clientStack = buildClientViewFilledFOUP(ModItems.FOUP_MK1.get(), 25, 10, 1);
-            var connection = player.connection;
-            sendCreativeSlotPacket(connection, level, 0, clientStack);
-
-            ItemStack serverStack = player.getInventory().getItem(0);
-            runInventoryTick(serverStack, level, player);
-
-            // trustedContentsOf must discard the client view and return fresh empty lot
-            FoupContents trusted = FoupItems.trustedContentsOf(serverStack);
-            h.assertTrue(trusted.isEmpty(), "Trusted read of filled client view returns empty lot");
-            h.assertValueEqual(FoupItems.configuredCapacity(), trusted.capacity(), "Trusted read uses configured capacity");
-            h.assertTrue(!trusted.lotId().equals(FoupContentsCodec.CLIENT_VIEW_LOT_ID), "Trusted read has fresh UUID");
-
-            h.succeed();
-        } finally {
-            cleanupPlayer(level, player);
-        }
-    }
-
-    /**
-     * Sealed lot (server-generated) identity and wafer rolls must be exactly preserved.
-     */
-    private static void sealedLotIdentityPreserved(GameTestHelper h) {
-        ServerLevel level = h.getLevel();
-        ServerPlayer player = null;
-        try {
-            player = connectCreative(level, "creative-sealed-test");
-            int configured = FoupItems.configuredCapacity();
-            UUID originalLotId = UUID.randomUUID();
-
-            // Sealed empty lot
-            ItemStack sealedStack = buildSealedEmptyFOUP(ModItems.FOUP_MK1.get(), originalLotId, configured);
-            h.assertTrue(!FoupContentsCodec.isClientView(FoupItems.contentsOf(sealedStack)), "Precondition: sealed lot");
-
-            var connection = player.connection;
-            sendCreativeSlotPacket(connection, level, 0, sealedStack);
-
-            ItemStack serverStack = player.getInventory().getItem(0);
-            runInventoryTick(serverStack, level, player);
-
-            FoupContents after = FoupItems.contentsOf(serverStack);
-            h.assertTrue(after.lotId().equals(originalLotId), "Sealed lot identity exactly preserved");
-            h.assertValueEqual(configured, after.capacity(), "Sealed lot capacity preserved");
-            h.assertTrue(after.isEmpty(), "Sealed empty lot remains empty");
-
-            h.succeed();
-        } finally {
-            cleanupPlayer(level, player);
-        }
-    }
-
-    /**
-     * Sealed lot with wafers: wafer rolls exactly preserved.
-     */
-    private static void sealedLotWaferRollPreserved(GameTestHelper h) {
-        ServerLevel level = h.getLevel();
-        ServerPlayer player = null;
-        try {
-            player = connectCreative(level, "creative-sealed-filled-test");
-            int configured = FoupItems.configuredCapacity();
-            UUID originalLotId = UUID.randomUUID();
-
-            // Sealed lot with 3 wafers with specific rolls
-            List<Wafer> wafers = List.of(
-                    new Wafer(0, 0.123f, 0),
-                    new Wafer(0, 0.456f, 0),
-                    new Wafer(0, 0.789f, 0)
-            );
-            FoupContents sealed = new FoupContents(originalLotId, configured, wafers);
-            ItemStack sealedStack = new ItemStack(ModItems.FOUP_MK1.get());
-            sealedStack.set(ModDataComponents.FOUP_CONTENTS.get(), sealed);
-
-            var connection = player.connection;
-            sendCreativeSlotPacket(connection, level, 0, sealedStack);
-
-            ItemStack serverStack = player.getInventory().getItem(0);
-            runInventoryTick(serverStack, level, player);
-
-            FoupContents after = FoupItems.contentsOf(serverStack);
-            h.assertTrue(after.lotId().equals(originalLotId), "Lot identity preserved");
-            h.assertValueEqual(3, after.size(), "Wafer count preserved");
-            h.assertTrue(after.wafers().get(0).cumulativeRoll() == 0.123f, "Wafer 0 roll preserved");
-            h.assertTrue(after.wafers().get(1).cumulativeRoll() == 0.456f, "Wafer 1 roll preserved");
-            h.assertTrue(after.wafers().get(2).cumulativeRoll() == 0.789f, "Wafer 2 roll preserved");
-
-            h.succeed();
-        } finally {
-            cleanupPlayer(level, player);
-        }
-    }
-
-    /**
-     * Overstack client view (waferCount > capacity): must remain untouched.
-     */
-    private static void overstackClientViewUntouched(GameTestHelper h) {
-        ServerLevel level = h.getLevel();
-        ServerPlayer player = null;
-        try {
-            player = connectCreative(level, "creative-overstack-test");
-
-            // Client view with waferCount > capacity (malformed)
-            ItemStack clientStack = buildOverstackClientView(ModItems.FOUP_MK1.get(), 10, 25, 0);
-            h.assertTrue(FoupContentsCodec.isClientView(FoupItems.contentsOf(clientStack)), "Precondition: client view");
-            FoupContents before = FoupItems.contentsOf(clientStack);
-            h.assertValueEqual(10, before.capacity(), "Precondition: capacity 10");
-            h.assertValueEqual(10, before.size(), "Precondition: clamped to 10 wafers by fromPublicView");
-
-            var connection = player.connection;
-            sendCreativeSlotPacket(connection, level, 0, clientStack);
-
-            ItemStack serverStack = player.getInventory().getItem(0);
-            runInventoryTick(serverStack, level, player);
-
-            // Must remain untouched (not replaced by fix because it's not empty)
-            FoupContents after = FoupItems.contentsOf(serverStack);
-            h.assertTrue(FoupContentsCodec.isClientView(after), "Overstack client view must remain untouched");
-            h.assertValueEqual(10, after.capacity(), "Capacity unchanged");
-            h.assertValueEqual(10, after.size(), "Wafer count unchanged (clamped)");
-
+            FoupContents nowEmpty = FoupItems.contentsOf(sealedEmpty);
+            FoupContents nowFilled = FoupItems.contentsOf(sealedFilled);
+            h.assertTrue(nowEmpty == storedEmpty, "the sealed empty lot keeps its component identity");
+            h.assertTrue(nowFilled == storedFilled, "the sealed filled lot keeps its component identity");
+            h.assertTrue(nowEmpty.isEmpty() && nowEmpty.lotLayer() == 0, "the sealed empty lot stays empty at layer 0");
+            h.assertTrue(nowEmpty.lotId().equals(emptyId), "the sealed empty lot keeps its server uuid");
+            h.assertTrue(nowFilled.lotId().equals(filledId), "the sealed filled lot keeps its server uuid");
+            h.assertValueEqual(3, nowFilled.size(), "the sealed filled lot keeps every wafer");
+            h.assertValueEqual(1, nowFilled.lotLayer(), "the sealed filled lot keeps its lowest layer");
+            h.assertTrue(nowFilled.wafers().get(0).cumulativeRoll() == 0.37f, "hidden roll 0 survives the tick");
+            h.assertTrue(nowFilled.wafers().get(1).cumulativeRoll() == 0.71f, "hidden roll 1 survives the tick");
+            h.assertTrue(nowFilled.wafers().get(2).cumulativeRoll() == 0.91f, "hidden roll 2 survives the tick");
+            h.assertFalse(FoupContentsCodec.isClientView(nowEmpty) || FoupContentsCodec.isClientView(nowFilled), "both sealed lots stay server-trusted");
             h.succeed();
         } finally {
             cleanupPlayer(level, player);
