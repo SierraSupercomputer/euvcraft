@@ -35,6 +35,7 @@ import com.euvcraft.lithmod.mc.gametest.ProcessCellGameTests;
 import com.euvcraft.lithmod.mc.gametest.PresentationGameTests;
 import com.euvcraft.lithmod.mc.gametest.SiliconGameTests;
 import com.euvcraft.lithmod.mc.gametest.ClientPolishGameTests;
+import com.euvcraft.lithmod.mc.gametest.PlacementAndTitleGameTests;
 import com.euvcraft.lithmod.mc.machine.mask.MaskMachines;
 import com.euvcraft.lithmod.mc.machine.mask.MaskTooltipAppenders;
 import com.euvcraft.lithmod.mc.machine.packaging.PackagingMachines;
@@ -88,6 +89,7 @@ modEventBus.addListener(ComponentTooltipAppenders::register);
             M1ReloadGameTests.register(modEventBus);
             M1DebugGameTests.register(modEventBus);
             ClientPolishGameTests.register(modEventBus);
+            PlacementAndTitleGameTests.register(modEventBus);
         } else if (GameTestFixtures.shippingProbeEnabled()) {
             M1ShippingGameTests.register(modEventBus);
         }

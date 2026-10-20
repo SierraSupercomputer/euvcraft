@@ -5,6 +5,7 @@
   "itemGroup.lithmod.line_components": "EUVCRAFT Line Components",
   "itemGroup.lithmod.silicon_chain": "EUVCRAFT Silicon Chain",
   "itemGroup.lithmod.masks": "EUVCRAFT Masks",
+  "block.lithmod.process_cell": "Lithography Machine",
   "item.lithmod.process_cell_controller": "Process Cell Controller",
   "item.lithmod.process_cell_casing": "Process Cell Casing",
   "item.lithmod.test_machine": "Test Machine",
