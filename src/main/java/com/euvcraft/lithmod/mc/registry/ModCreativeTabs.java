@@ -34,7 +34,7 @@ public final class ModCreativeTabs {
     /**
      * The single EUVCRAFT creative tab.
      *
-     * <p>Unified ordering (32 stacks): the exact sequence is declared here so the
+     * <p>Unified ordering: the exact sequence is declared here so the
      * presentation test can compare {@code tab.getDisplayItems()} against it.
      * Stale comments about creating multiple tabs to preserve obsolete count tests
      * have been removed.</p>
@@ -57,12 +57,19 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.PROCESS_CELL_CASING.get());
                 output.accept(ModItems.PROCESS_CELL_POWER_PORT.get());
                 output.accept(ModItems.PROCESS_CELL_OPERATING_PANEL.get());
+                // T3 support multiblocks (appended after the Process Cell blocks)
+                output.accept(ModItems.BOULE_PURIFIER.get());
+                output.accept(ModItems.E_BEAM_MASK_WRITER.get());
+                output.accept(ModItems.SUPPORT_CASING.get());
+                output.accept(ModItems.SUPPORT_POWER_PORT.get());
                 // FOUP variants via FoupItems.emptyFoup (real sealed lots)
                 output.accept(FoupItems.emptyFoup(ModItems.FOUP_MK1.get()));
                 output.accept(FoupItems.emptyFoup(ModItems.FOUP_MK2.get()));
                 // Silicon feedstock and boule
                 output.accept(ModItems.SILICON.get());
                 output.accept(ModItems.SILICON_BOULE.get());
+                // Pure boule (appended after the ordinary boule; production is the purifier)
+                output.accept(ModItems.PURE_SILICON_BOULE.get());
                 // Blank mask + three sample patterned masks
                 output.accept(ModItems.BLANK_MASK.get());
                 output.accept(sampleMask(DieTypes.LOGIC, 1));
@@ -88,6 +95,17 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.LOGIC_CHIP_T2.get());
                 output.accept(ModItems.MEMORY_CHIP_T2.get());
                 output.accept(ModItems.CHIP_SCRAP.get());
+                // T3 additions retain the existing order above.
+                output.accept(ModItems.KRF_EXCIMER_LASER.get());
+                output.accept(ModItems.DUV_PROJECTION_LENS.get());
+                output.accept(ModItems.PRECISION_STEPPER_STAGE.get());
+                output.accept(ModItems.HEPA_FILTER.get());
+                output.accept(ModItems.LASER_INTERFEROMETER.get());
+                output.accept(ModItems.RESIST_T3.get());
+                output.accept(ModItems.LOGIC_CHIP_T3.get());
+                output.accept(ModItems.MEMORY_CHIP_T3.get());
+                output.accept(ModItems.COMPUTE_CHIP_T3.get());
+                output.accept(ModItems.NAND_CHIP_T3.get());
             })
             .build()
     );

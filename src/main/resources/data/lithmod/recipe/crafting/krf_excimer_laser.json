@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " A ",
+    "CLC",
+    " D "
+  ],
+  "key": {
+    "A": "lithmod:i_line_lamp",
+    "C": "minecraft:gold_ingot",
+    "L": "lithmod:logic_chip_t2",
+    "D": "minecraft:diamond"
+  },
+  "result": {
+    "id": "lithmod:krf_excimer_laser",
+    "count": 1
+  }
+}

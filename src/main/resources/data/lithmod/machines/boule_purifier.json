@@ -1,0 +1,10 @@
+{
+  "id": "boule_purifier",
+  "energy_capacity": 100000,
+  "max_receive": 10000,
+  "energy_per_tick": 80,
+  "per_tier_energy_per_tick": {},
+  "params": {
+    "water_capacity": 16000
+  }
+}

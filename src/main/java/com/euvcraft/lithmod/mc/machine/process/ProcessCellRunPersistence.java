@@ -2,6 +2,7 @@ package com.euvcraft.lithmod.mc.machine.process;
 
 import com.euvcraft.lithmod.core.DefaultStatRules;
 import com.euvcraft.lithmod.core.FoupContents;
+import com.euvcraft.lithmod.core.WaferSubstrate;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.datafixers.util.Pair;
 import com.euvcraft.lithmod.core.DieTypes;
@@ -70,12 +71,26 @@ public final class ProcessCellRunPersistence {
             List<ItemStack> components,
             ItemStack resistTemplate,
             UUID lotId,
-            ItemStack foupTemplate
+            ItemStack foupTemplate,
+            WaferSubstrate grade
     ) {
 
         private static final List<String> COMPONENT_KINDS = List.of(
                 "light_source", "optics", "stage", "cleanroom", "metrology"
         );
+
+        /**
+         * Legacy 14-arg constructor for T1/T2 save compatibility: delegates to ORDINARY grade.
+         * @deprecated Use the 15-arg constructor with explicit grade.
+         */
+        @Deprecated
+        public Contract(Tier tier, String dieType, int usesRemaining, int layerTicks,
+                        int resistPerLayer, int energyPerTick, LineStats lineStats, List<Tier> tiers,
+                        Map<String, List<Integer>> requiredGenerations, ItemStack mask, List<ItemStack> components,
+                        ItemStack resistTemplate, UUID lotId, ItemStack foupTemplate) {
+            this(tier, dieType, usesRemaining, layerTicks, resistPerLayer, energyPerTick, lineStats, tiers,
+                    requiredGenerations, mask, components, resistTemplate, lotId, foupTemplate, WaferSubstrate.ORDINARY);
+        }
 
         /**
          * Validated constructor with defensive copies and strict validation.
@@ -91,10 +106,11 @@ public final class ProcessCellRunPersistence {
             Objects.requireNonNull(resistTemplate, "resistTemplate must not be null");
             Objects.requireNonNull(lotId, "lotId must not be null");
             Objects.requireNonNull(foupTemplate, "foupTemplate must not be null");
+            Objects.requireNonNull(grade, "grade must not be null");
 
-            // Validate tier index (M1 playable: 1 or 2)
-            if (tier.index() < 1 || tier.index() > 2) {
-                throw new IllegalArgumentException("tier index must be 1 or 2, got " + tier.index());
+            // Validate tier index (M1 playable: 1, 2, or 3)
+            if (tier.index() < 1 || tier.index() > 3) {
+                throw new IllegalArgumentException("tier index must be 1, 2, or 3, got " + tier.index());
             }
 
             // Validate die type
@@ -231,22 +247,18 @@ public final class ProcessCellRunPersistence {
             }
             foupTemplate = foupTemplate.copy(); // defensive copy singleton
 
-            // Validate GenerationMatrix builds and unmetLines is empty for M1 G1 map
-            GenerationMatrix matrix;
-            try {
-                matrix = GenerationMatrix.build(tierRegistry, requiredGenerations, "Contract.requiredGenerations");
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("requiredGenerations invalid: " + e.getMessage());
+            if (tier.index() == 3 && (grade.generation() < 2 || maskData.shopGeneration() < 2)) {
+                throw new IllegalArgumentException("T3 requires pure wafers and a generation-2 mask");
             }
-            Map<String, Integer> m1G1Map = Map.of(
-                    SupportLines.SUBSTRATE, 1,
-                    SupportLines.MASK_SHOP, 1,
-                    SupportLines.DEPOSITION_ETCH, 1,
-                    SupportLines.UTILITIES, 1,
-                    SupportLines.TEST_PACKAGING, 1
-            );
-            if (!matrix.unmetLines(m1G1Map, tier).isEmpty()) {
-                throw new IllegalArgumentException("M1 G1 map does not satisfy requiredGenerations for tier " + tier.id());
+            GenerationMatrix matrix = GenerationMatrix.build(tierRegistry, requiredGenerations, "Contract.requiredGenerations");
+            Map<String, Integer> installed = Map.of(
+                SupportLines.SUBSTRATE, grade.generation(),
+                SupportLines.MASK_SHOP, maskData.shopGeneration(),
+                SupportLines.DEPOSITION_ETCH, 1,
+                SupportLines.UTILITIES, 1,
+                SupportLines.TEST_PACKAGING, 1);
+            if (!matrix.unmetLines(installed, tier).isEmpty()) {
+                throw new IllegalArgumentException("Frozen installed generations do not satisfy the accepted tier");
             }
 
             // Validate five components via LineLoadoutReader and DefaultStatRules against stored lineStats
@@ -295,6 +307,10 @@ public final class ProcessCellRunPersistence {
             if (!lot.lotId().equals(this.lotId)) {
                 throw new IllegalArgumentException("lot UUID mismatch: contract=" + this.lotId + ", lot=" + lot.lotId());
             }
+            // Every restored lot must retain its accepted substrate grade.
+            if (!lot.grade().equals(this.grade)) {
+                throw new IllegalArgumentException("lot grade mismatch: contract=" + this.grade + ", lot=" + lot.grade());
+            }
 
             // Reconstruct TierRegistry from saved tiers
             TierRegistry tierRegistry = TierRegistry.build(this.tiers, "Contract.request.tiers");
@@ -308,26 +324,26 @@ public final class ProcessCellRunPersistence {
                     .layerTicksOverrides(Map.of(this.tier.id(), this.layerTicks))
                     .build();
 
-            // Build installed generations map (all 5 lines at G1 for M1)
-            Map<String, Integer> installedGenerations = Map.of(
-                    SupportLines.SUBSTRATE, 1,
-                    SupportLines.MASK_SHOP, 1,
-                    SupportLines.DEPOSITION_ETCH, 1,
-                    SupportLines.UTILITIES, 1,
-                    SupportLines.TEST_PACKAGING, 1
-            );
-
-            // Reconstruct mask data from frozen mask stack
+            // Build installed generations map from frozen grade and mask shopGeneration
             MaskData maskData = this.mask.get(ModDataComponents.MASK_DATA.get());
             if (maskData == null) {
                 throw new IllegalArgumentException("frozen mask missing MASK_DATA");
             }
+            Map<String, Integer> installedGenerations = Map.of(
+                SupportLines.SUBSTRATE, this.grade.generation(),
+                SupportLines.MASK_SHOP, maskData.shopGeneration(),
+                SupportLines.DEPOSITION_ETCH, 1,
+                SupportLines.UTILITIES, 1,
+                SupportLines.TEST_PACKAGING, 1);
+
+            // Compute cores: T3 compute uses core count 1, others null
+            Integer cores = (tier.index() == 3 && DieTypes.COMPUTE.equals(dieType)) ? 1 : null;
 
             return new ProcessRunRequest(
                     lot,
                     this.dieType,
                     this.tier,
-                    null, // cores: null for M1
+                    cores,
                     maskData.usesRemaining(), // positive accepted uses
                     this.lineStats, // saved LineStats
                     true, // lineCanRunTier (already validated in constructor)
@@ -386,7 +402,7 @@ public final class ProcessCellRunPersistence {
     private record ContractFields(Tier tier, String dieType, int usesRemaining, int layerTicks,
         int resistPerLayer, int energyPerTick, LineStats lineStats, List<Tier> tiers,
         Map<String,List<Integer>> requiredGenerations, ItemStack mask, List<ItemStack> components,
-        ItemStack resistTemplate, String lotId, ItemStack foupTemplate) {}
+        ItemStack resistTemplate, String lotId, ItemStack foupTemplate, String grade) {}
     private static final Codec<Contract> CONTRACT_CODEC = RecordCodecBuilder.<ContractFields>create(i -> i.group(
         TierCodec.CODEC.fieldOf("tier").forGetter(ContractFields::tier),
         Codec.STRING.fieldOf("dieType").forGetter(ContractFields::dieType),
@@ -401,13 +417,15 @@ public final class ProcessCellRunPersistence {
         ItemStack.CODEC.listOf().fieldOf("components").forGetter(ContractFields::components),
         ItemStack.CODEC.fieldOf("resistTemplate").forGetter(ContractFields::resistTemplate),
         Codec.STRING.fieldOf("lotId").forGetter(ContractFields::lotId),
-        ItemStack.CODEC.fieldOf("foupTemplate").forGetter(ContractFields::foupTemplate)
+        ItemStack.CODEC.fieldOf("foupTemplate").forGetter(ContractFields::foupTemplate),
+        Codec.STRING.optionalFieldOf("grade", "ordinary").forGetter(ContractFields::grade)
     ).apply(i, ContractFields::new)).flatXmap(f -> validated(() -> new Contract(f.tier(), f.dieType(),
         f.usesRemaining(), f.layerTicks(), f.resistPerLayer(), f.energyPerTick(), f.lineStats(), f.tiers(),
-        f.requiredGenerations(), f.mask(), f.components(), f.resistTemplate(), UUID.fromString(f.lotId()), f.foupTemplate())),
+        f.requiredGenerations(), f.mask(), f.components(), f.resistTemplate(), UUID.fromString(f.lotId()), f.foupTemplate(),
+        WaferSubstrate.fromIdOrThrow(f.grade))),
         c -> DataResult.success(new ContractFields(c.tier(), c.dieType(), c.usesRemaining(), c.layerTicks(),
             c.resistPerLayer(), c.energyPerTick(), c.lineStats(), c.tiers(), c.requiredGenerations(), c.mask(),
-            c.components(), c.resistTemplate(), c.lotId().toString(), c.foupTemplate())));
+            c.components(), c.resistTemplate(), c.lotId().toString(), c.foupTemplate(), c.grade().id())));
 
     private record SavedFields(Contract contract, ProcessRun.Snapshot snapshot) {}
     private static final Codec<Saved> SAVED_CODEC = RecordCodecBuilder.<SavedFields>create(i -> i.group(

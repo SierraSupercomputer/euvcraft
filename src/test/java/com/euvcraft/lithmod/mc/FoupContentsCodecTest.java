@@ -16,6 +16,7 @@ import com.euvcraft.lithmod.core.FoupContents;
 import com.euvcraft.lithmod.core.FoupPublicView;
 import com.euvcraft.lithmod.core.FabSettings;
 import com.euvcraft.lithmod.core.Wafer;
+import com.euvcraft.lithmod.core.WaferSubstrate;
 
 import com.mojang.serialization.DataResult;
 
@@ -56,6 +57,10 @@ class FoupContentsCodecTest {
         return new FoupContents(LOT, capacity, wafers(count, layer));
     }
 
+    private static FoupContents lot(int capacity, int count, int layer, WaferSubstrate grade) {
+        return FoupContents.of(LOT, capacity, wafers(count, layer), grade);
+    }
+
     private static FoupContents encodeDecode(FoupContents original) {
         DataResult<Tag> encoded = FoupContentsCodec.CODEC.encodeStart(NbtOps.INSTANCE, original);
         assertTrue(encoded.result().isPresent(), "encoding failed: " + encoded.error());
@@ -74,6 +79,7 @@ class FoupContentsCodecTest {
         assertEquals(original.lotId(), decoded.lotId());
         assertEquals(original.capacity(), decoded.capacity());
         assertEquals(original.wafers(), decoded.wafers());
+        assertEquals(WaferSubstrate.ORDINARY, decoded.grade());
         for (int i = 0; i < original.size(); i++) {
             assertTrue(original.wafers().get(i).cumulativeRoll() == decoded.wafers().get(i).cumulativeRoll(),
                 "roll " + i + " changed: " + original.wafers().get(i).cumulativeRoll()
@@ -91,10 +97,11 @@ class FoupContentsCodecTest {
             new Wafer(90, 0.9999999f, 0)));
 
         assertEquals(original.wafers(), encodeDecode(original).wafers());
+        assertEquals(WaferSubstrate.ORDINARY, encodeDecode(original).grade());
     }
 
     @Test
-    @DisplayName("the persistent form is three NBT int arrays plus the lot id and capacity")
+    @DisplayName("the persistent form is three NBT int arrays plus the lot id, capacity and optional grade")
     void persistentFormShape() {
         CompoundTag tag = (CompoundTag) FoupContentsCodec.CODEC
             .encodeStart(NbtOps.INSTANCE, lot(25, 25, 12))
@@ -107,10 +114,13 @@ class FoupContentsCodecTest {
         assertEquals(25, ((IntArrayTag) tag.get(FoupContentsCodec.KEY_FLAGS)).getAsIntArray().length,
             "flags is not a 25 entry array");
         assertEquals(25, ((IntTag) tag.get(FoupContentsCodec.KEY_CAPACITY)).value());
+        // Grade field is optional and omitted when ORDINARY (default)
+        assertTrue(!tag.contains(FoupContentsCodec.KEY_GRADE) || tag.getString(FoupContentsCodec.KEY_GRADE).equals("ordinary"),
+            "grade field should be absent or ordinary for default lot");
     }
 
     @Test
-    @DisplayName("the network codec keeps count, capacity and lot layer")
+    @DisplayName("the network codec keeps count, capacity, lot layer and grade")
     void networkCodecKeepsThePublicView() {
         FoupContents original = lot(25, 25, 7);
         FoupPublicView sent = original.publicView();
@@ -122,6 +132,7 @@ class FoupContentsCodecTest {
         assertEquals(sent.capacity(), received.capacity());
         assertEquals(sent.waferCount(), received.size());
         assertEquals(sent.lotLayer(), received.lotLayer());
+        assertEquals(sent.grade(), received.grade());
         assertEquals(sent, received.publicView());
     }
 
@@ -144,6 +155,7 @@ class FoupContentsCodecTest {
             "the network form takes " + bytes + " bytes for " + original.size() + " wafers");
         assertTrue(FoupContentsCodec.isClientView(received),
             "a decoded lot is not recognisable as a client view");
+        assertEquals(WaferSubstrate.ORDINARY, received.grade());
     }
 
     @Test
@@ -180,6 +192,7 @@ class FoupContentsCodecTest {
 
         assertEquals(once.wafers(), twice.wafers());
         assertEquals(first.readableBytes(), second.readableBytes());
+        assertEquals(WaferSubstrate.ORDINARY, twice.grade());
     }
 
     @Test
@@ -192,7 +205,7 @@ class FoupContentsCodecTest {
         FoupContentsCodec.STREAM_CODEC.encode(buffer, empty);
         FoupContents received = FoupContentsCodec.STREAM_CODEC.decode(buffer);
 
-        assertEquals(new FoupPublicView(25, 0, 0), received.publicView());
+        assertEquals(new FoupPublicView(25, 0, 0, WaferSubstrate.ORDINARY), received.publicView());
     }
 
     @Test
@@ -203,9 +216,11 @@ class FoupContentsCodecTest {
         assertEquals(1, clamped.capacity());
         assertEquals(1, clamped.size());
         assertEquals(Wafer.UNPROCESSED_LAYER, clamped.lotLayer());
+        assertEquals(WaferSubstrate.ORDINARY, clamped.grade());
 
         FoupContents negative = FoupContentsCodec.fromPublicView(25, -3, 4);
         assertEquals(0, negative.size());
+        assertEquals(WaferSubstrate.ORDINARY, negative.grade());
     }
 
     @Test
@@ -258,7 +273,35 @@ class FoupContentsCodecTest {
     }
 
     @Test
-    @DisplayName("encoded sizes: 25 wafers and 64 wafers, stored and on the wire")
+    @DisplayName("persistent codec preserves explicit PURE grade")
+    void persistentCodecPreservesPureGrade() {
+        FoupContents original = lot(25, 10, 3, WaferSubstrate.PURE);
+        FoupContents decoded = encodeDecode(original);
+
+        assertEquals(WaferSubstrate.PURE, decoded.grade());
+        assertEquals(original.wafers(), decoded.wafers());
+    }
+
+    @Test
+    @DisplayName("persistent form includes grade field when PURE")
+    void persistentFormIncludesGradeWhenPure() {
+        CompoundTag tag = (CompoundTag) FoupContentsCodec.CODEC
+            .encodeStart(NbtOps.INSTANCE, lot(25, 10, 3, WaferSubstrate.PURE))
+            .result().orElseThrow();
+
+        assertTrue(tag.contains(FoupContentsCodec.KEY_GRADE), "grade field missing for PURE lot");
+        assertEquals("pure", tag.getString(FoupContentsCodec.KEY_GRADE).orElseThrow());
+    }
+
+    @Test
+    @DisplayName("legacy fromPublicView(int,int,int) defaults grade to ORDINARY")
+    void legacyFromPublicViewDefaultsGrade() {
+        FoupContents decoded = FoupContentsCodec.fromPublicView(25, 10, 3);
+        assertEquals(WaferSubstrate.ORDINARY, decoded.grade());
+    }
+
+    @Test
+    @DisplayName("encoded sizes: 25 wafers and 64 wafers, stored and on the wire with grade")
     void encodedSizes() {
         for (int wafers : new int[] {25, 64}) {
             FoupContents contents = new FoupContents(LOT, wafers, FoupContentsCodecTest.wafers(wafers, 3));

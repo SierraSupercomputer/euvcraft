@@ -215,16 +215,30 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         }
         var registry = TierDataLoader.getRegistry();
         Tier tier = registry.byIndex(mask.tierIndex()).orElse(null);
-        if (tier == null || tier.index() > 2) { lastRefusal = RefusalReason.NO_MASK; return; }
+        if (tier == null || tier.index() > 3) { lastRefusal = RefusalReason.NO_MASK; return; }
         LineLoadout loadout = LineLoadoutReader.read(slot(SLOT_LIGHT_SOURCE), slot(SLOT_OPTICS),
             slot(SLOT_STAGE), slot(SLOT_CLEANROOM), slot(SLOT_METROLOGY), slot(SLOT_RESIST), mask.tierIndex());
         DefaultStatRules rules = new DefaultStatRules(registry);
         FabSettings settings = EUVCRAFTMod.settings();
         GenerationMatrix matrix = SupportLineDataLoader.getMatrix();
-        ProcessRunRequest request = new ProcessRunRequest(lot, mask.dieType(), tier, null,
+
+        // Derive actual installed generations for T3 admission:
+        // SUBSTRATE from trusted lot's wafer grade, MASK_SHOP from mask shopGeneration, other three lines at G1 for M1
+        int substrateGen = lot.grade().generation();
+        int maskShopGen = mask.shopGeneration();
+        Map<String, Integer> installedGenerations = Map.of(
+            SupportLines.SUBSTRATE, substrateGen,
+            SupportLines.MASK_SHOP, maskShopGen,
+            SupportLines.DEPOSITION_ETCH, 1,
+            SupportLines.UTILITIES, 1,
+            SupportLines.TEST_PACKAGING, 1
+        );
+
+        Integer cores = (tier.index() == 3 && DieTypes.COMPUTE.equals(mask.dieType())) ? 1 : null;
+        ProcessRunRequest request = new ProcessRunRequest(lot, mask.dieType(), tier, cores,
             mask.usesRemaining(), rules.stats(loadout.toLineComponents(), tier.index()),
             rules.canRunTier(loadout.toLineComponents(), tier.index()),
-            DieRulesDataLoader.getRules().canMake(mask.dieType(), tier), M1_STUB_GENERATIONS,
+            DieRulesDataLoader.getRules().canMake(mask.dieType(), tier), installedGenerations,
             matrix, settings, definition().orElseThrow().energyPerTick(tier, settings));
         ProcessStartResult result = ProcessRun.start(request);
         if (result instanceof RefusalReason refusal) { lastRefusal = refusal; return; }
@@ -238,7 +252,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         try {
             contract = new Contract(tier, mask.dieType(), mask.usesRemaining(), tier.layerTicks(settings),
                 settings.resistPerLayer(), request.energyPerTick(), request.lineStats(), registry.all(),
-                required, maskStack.copy(), components, slot(SLOT_RESIST).copyWithCount(1), lot.lotId(), carrier);
+                required, maskStack.copy(), components, slot(SLOT_RESIST).copyWithCount(1), lot.lotId(), carrier, lot.grade());
             run = (ProcessRun) result;
             lastRefusal = null;
             setChanged();
@@ -354,7 +368,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         if (!(level instanceof ServerLevel server) || contract == null || !inputsMatch()
                 || !Objects.equals(lot, trustedLot())) throw new IllegalStateException("Run inputs changed");
         FoupContents updated = FabYieldService.applyLayerStep(server, lot, contract.tier(),
-            contract.dieType(), null, layer, defectFactor);
+            contract.dieType(), DieTypes.COMPUTE.equals(contract.dieType()) ? 1 : null, layer, defectFactor);
         ItemStack carrier = slot(SLOT_FOUP).copy();
         ItemStack sealed = FoupItems.with(carrier.getItem(), updated);
         carrier.set(ModDataComponents.FOUP_CONTENTS.get(), sealed.get(ModDataComponents.FOUP_CONTENTS.get()));

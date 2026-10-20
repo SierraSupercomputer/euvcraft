@@ -1,0 +1,7 @@
+# T3 lithography admission
+
+The native Process Cell admits at most T3. Installed substrate generation comes from the trusted FOUP grade, and mask-shop generation comes from the actual mask. The other support lines remain G1; the M1 stub constant was not globally raised. T3 requires pure substrate and a G2 mask. All four T3 designs are registered and package into their corresponding plain stackable chip items. Compute has one fixed core until the separate T6 choice feature.
+
+The frozen private contract captures grade, mask, component/resist templates, tier data, support requirements and paid schedule. Legacy constructors/saves default ordinary grade. Explicit unknown grades, mismatched lot grades and invalid T3 ordinary/G1 contracts fail closed. Restored runs use captured requirements and generation values for every tier. Core processing rejects a layer operation that changes substrate grade.
+
+Actual source tests at `1bdd94f1a1fdabc768464ca25e9053749fd160bf` ran six complete pure-wafer scenarios: T1 logic and T2 memory on G1 masks, then T3 logic, memory, compute and NAND on G2 masks, through processing and packaging. Additional cases verify refusals, changed support requirements, same-ID grade tampering and real NBT codec compatibility/rejections. The complete gate passed 750 units and all 895 server cases, including all 225 project IDs. See [source verification](T3_acceptance.md) for limitations and receipt names.

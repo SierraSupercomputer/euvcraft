@@ -89,8 +89,9 @@ public final class ProcessRun implements ProcessStartResult {
         FoupContents next = environment.applyLayer(lot, currentLayer, request.lineStats().defectFactor());
         if (next == null || next.lotLayer() != currentLayer || !next.lotId().equals(lot.lotId())
                 || next.capacity() != lot.capacity() || next.size() != lot.size()
-                || next.run() == null || !next.run().matches(request.tier(), request.dieType(), request.cores())) {
-            throw new IllegalStateException("applyLayer returned a different lot or did not apply the requested layer");
+                || next.run() == null || !next.run().matches(request.tier(), request.dieType(), request.cores())
+                || !next.grade().equals(lot.grade())) {
+            throw new IllegalStateException("applyLayer returned a different lot, did not apply the requested layer, or changed the wafer grade");
         }
         lot = next;
         events.add(ProcessRunEvent.layerCompleted(currentLayer));

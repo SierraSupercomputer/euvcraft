@@ -24,7 +24,7 @@ import net.neoforged.neoforge.registries.DeferredItem;
  * type: one line per new chip, no change here and no change at the call sites. Chips
  * that do not exist have no entry, so they answer empty rather than throwing, which is
  * what a die type that is not available yet (memory at T1) or not implemented yet
- * (compute, NAND) gets.</p>
+ * (T4 and later) gets.</p>
  *
  * <p>This lives in the mc package because an answer is an {@link Item}, and core stays
  * free of Minecraft imports. Nothing here reads tier data: a tier index is all a
@@ -51,7 +51,11 @@ public final class ChipCatalog {
     private static final List<Entry> ENTRIES = List.of(
         new Entry(new Design(DieTypes.LOGIC, 1), ModItems.LOGIC_CHIP_T1),
         new Entry(new Design(DieTypes.LOGIC, 2), ModItems.LOGIC_CHIP_T2),
-        new Entry(new Design(DieTypes.MEMORY, 2), ModItems.MEMORY_CHIP_T2));
+        new Entry(new Design(DieTypes.MEMORY, 2), ModItems.MEMORY_CHIP_T2),
+        new Entry(new Design(DieTypes.LOGIC, 3), ModItems.LOGIC_CHIP_T3),
+        new Entry(new Design(DieTypes.MEMORY, 3), ModItems.MEMORY_CHIP_T3),
+        new Entry(new Design(DieTypes.COMPUTE, 3), ModItems.COMPUTE_CHIP_T3),
+        new Entry(new Design(DieTypes.NAND, 3), ModItems.NAND_CHIP_T3));
 
     private static volatile Tables tables;
 

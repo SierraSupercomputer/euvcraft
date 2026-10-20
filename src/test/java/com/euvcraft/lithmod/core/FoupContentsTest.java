@@ -224,8 +224,14 @@ class FoupContentsTest {
             FoupContents lot = FoupContents.empty(LOT, 25).withWafers(List.of(wafer(3, 0.42f), wafer(6, 0.13f)));
             FoupPublicView view = lot.publicView();
 
-            assertEquals(FoupPublicView.class.getRecordComponents().length, 3);
-            assertEquals("FoupPublicView[capacity=25, waferCount=2, lotLayer=3]", view.toString());
+            assertEquals(4, FoupPublicView.class.getRecordComponents().length);
+            assertEquals(List.of("capacity", "waferCount", "lotLayer", "grade"),
+                java.util.Arrays.stream(FoupPublicView.class.getRecordComponents())
+                    .map(java.lang.reflect.RecordComponent::getName).toList());
+            assertEquals(List.of(int.class, int.class, int.class, WaferSubstrate.class),
+                java.util.Arrays.stream(FoupPublicView.class.getRecordComponents())
+                    .map(java.lang.reflect.RecordComponent::getType).toList());
+            assertEquals("FoupPublicView[capacity=25, waferCount=2, lotLayer=3, grade=ORDINARY]", view.toString());
             assertTrue(!view.toString().contains("0.42"), "a roll leaked into " + view);
         }
 

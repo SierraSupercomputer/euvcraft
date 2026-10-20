@@ -15,19 +15,34 @@ class MaskDataTest {
             assertEquals(type, mask.dieType());
             assertEquals(1, mask.tierIndex());
             assertEquals(1, mask.usesRemaining());
+            assertEquals(1, mask.shopGeneration());
             assertFalse(mask.isSpent());
         }
     }
 
     @Test
+    void threeArgConstructorDefaultsGenerationToOne() {
+        MaskData mask = new MaskData("logic", 2, 5);
+        assertEquals(1, mask.shopGeneration());
+    }
+
+    @Test
+    void fourArgConstructorSetsGeneration() {
+        MaskData mask = new MaskData("logic", 2, 5, 2);
+        assertEquals(2, mask.shopGeneration());
+    }
+
+    @Test
     void rejectsNullDieType() {
         assertThrows(NullPointerException.class, () -> new MaskData(null, 1, 1));
+        assertThrows(NullPointerException.class, () -> new MaskData(null, 1, 1, 1));
     }
 
     @Test
     void rejectsUnknownDieType() {
         assertThrows(IllegalArgumentException.class, () -> new MaskData("quantum", 1, 1));
         assertThrows(IllegalArgumentException.class, () -> new MaskData("", 1, 1));
+        assertThrows(IllegalArgumentException.class, () -> new MaskData("quantum", 1, 1, 1));
     }
 
     @Test
@@ -38,6 +53,13 @@ class MaskDataTest {
         assertThrows(IllegalArgumentException.class, () -> new MaskData("Logic", 1, 1));
         assertThrows(IllegalArgumentException.class, () -> new MaskData(" memory", 1, 1));
         assertThrows(IllegalArgumentException.class, () -> new MaskData("nand ", 1, 1));
+    }
+
+    @Test
+    void rejectsInvalidShopGeneration() {
+        assertThrows(IllegalArgumentException.class, () -> new MaskData("logic", 1, 1, 0));
+        assertThrows(IllegalArgumentException.class, () -> new MaskData("logic", 1, 1, 3));
+        assertThrows(IllegalArgumentException.class, () -> new MaskData("logic", 1, 1, -1));
     }
 
     @Test
@@ -84,7 +106,16 @@ class MaskDataTest {
         assertNotSame(start, afterOne);
         assertEquals(start.dieType(), afterOne.dieType());
         assertEquals(start.tierIndex(), afterOne.tierIndex());
+        assertEquals(start.shopGeneration(), afterOne.shopGeneration());
         assertEquals(1, afterOne.usesRemaining());
+    }
+
+    @Test
+    void consumeUsePreservesGeneration() {
+        MaskData gen1 = new MaskData("logic", 1, 3, 1);
+        MaskData gen2 = new MaskData("logic", 1, 3, 2);
+        assertEquals(1, gen1.consumeUse().shopGeneration());
+        assertEquals(2, gen2.consumeUse().shopGeneration());
     }
 
     @Test

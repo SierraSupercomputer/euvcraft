@@ -194,8 +194,10 @@ public class PatternGeneratorBlockEntity extends FabMachineBlockEntity {
         if (design == null) {
             return product;
         }
+        // Pattern Generator is a GEN1 machine: always stamp GEN1 regardless of what
+        // the recipe's template component says. The e-beam is the GEN2 machine.
         product.set(ModDataComponents.MASK_DATA.get(), new MaskData(design.dieType(),
-            design.tierIndex(), Math.max(0, EUVCRAFTMod.settings().maskUses())));
+            design.tierIndex(), Math.max(0, EUVCRAFTMod.settings().maskUses()), 1));
         return product;
     }
 

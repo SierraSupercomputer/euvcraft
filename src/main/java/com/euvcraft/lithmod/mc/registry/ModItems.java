@@ -77,6 +77,17 @@ public final class ModItems {
      */
     public static final DeferredItem<Item> SILICON_BOULE = ITEMS.registerSimpleItem("silicon_boule");
 
+    /**
+     * A purified single-crystal boule.
+     *
+     * <p>The product of the Boule Purifier: one ordinary boule plus the purifier's
+     * data-driven water cost becomes one pure boule. It is a plain item with no
+     * hidden data — the grade it stands for is the item itself, and only the Wafer
+     * Slicer reads it, to stamp {@link com.euvcraft.lithmod.core.WaferSubstrate#PURE}
+     * onto the lot it slices. No crafting recipe produces it; on purpose.</p>
+     */
+    public static final DeferredItem<Item> PURE_SILICON_BOULE = ITEMS.registerSimpleItem("pure_silicon_boule");
+
     /** Photoresist for node tier 1 lithography. */
     public static final DeferredItem<Item> RESIST_T1 =
         ITEMS.registerSimpleItem("resist_t1", properties -> properties.component(ModDataComponents.RESIST_TIER, 1));
@@ -179,6 +190,30 @@ public final class ModItems {
             () -> ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get());
 
     /**
+     * The four T3 support-multiblock block items.
+     *
+     * <p>Same rule as every block item above: the {@code .get()} call sits inside a lambda and the
+     * blocks come from {@link com.euvcraft.lithmod.mc.multiblock.support.SupportMachines}, which is
+     * the support foundation's own registry class. The two controller items name the machine kinds;
+     * the casing and port items name the shared member blocks that never alias Process Cell blocks.</p>
+     */
+    public static final DeferredItem<BlockItem> BOULE_PURIFIER =
+        ITEMS.registerSimpleBlockItem("boule_purifier",
+            () -> com.euvcraft.lithmod.mc.multiblock.support.SupportMachines.BOULE_PURIFIER.get());
+
+    public static final DeferredItem<BlockItem> E_BEAM_MASK_WRITER =
+        ITEMS.registerSimpleBlockItem("ebeam_mask_writer",
+            () -> com.euvcraft.lithmod.mc.multiblock.support.SupportMachines.E_BEAM_MASK_WRITER.get());
+
+    public static final DeferredItem<BlockItem> SUPPORT_CASING =
+        ITEMS.registerSimpleBlockItem("support_casing",
+            () -> com.euvcraft.lithmod.mc.multiblock.support.SupportMachines.SUPPORT_CASING.get());
+
+    public static final DeferredItem<BlockItem> SUPPORT_POWER_PORT =
+        ITEMS.registerSimpleBlockItem("support_power_port",
+            () -> com.euvcraft.lithmod.mc.multiblock.support.SupportMachines.SUPPORT_POWER_PORT.get());
+
+    /**
      * The test-only machine's block item.
      *
      * <p>Added by M1-02c. Without a block item the machine cannot drop itself at all, so a
@@ -236,6 +271,24 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> TEST_PACKAGE =
         ITEMS.registerSimpleBlockItem("test_package",
             () -> com.euvcraft.lithmod.mc.machine.packaging.PackagingMachines.TEST_PACKAGE.get());
+
+    // T3 products and line components. Recipes remain in editable JSON.
+    public static final DeferredItem<Item> LOGIC_CHIP_T3 = ITEMS.registerSimpleItem("logic_chip_t3");
+    public static final DeferredItem<Item> MEMORY_CHIP_T3 = ITEMS.registerSimpleItem("memory_chip_t3");
+    public static final DeferredItem<Item> COMPUTE_CHIP_T3 = ITEMS.registerSimpleItem("compute_chip_t3");
+    public static final DeferredItem<Item> NAND_CHIP_T3 = ITEMS.registerSimpleItem("nand_chip_t3");
+    public static final DeferredItem<Item> RESIST_T3 = ITEMS.registerSimpleItem("resist_t3",
+        properties -> properties.component(ModDataComponents.RESIST_TIER, 3));
+    public static final DeferredItem<LineComponentItem> KRF_EXCIMER_LASER = ITEMS.registerItem("krf_excimer_laser",
+        properties -> new LineComponentItem(properties, "light_source", 3), properties -> properties.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> DUV_PROJECTION_LENS = ITEMS.registerItem("duv_projection_lens",
+        properties -> new LineComponentItem(properties, "optics", 3), properties -> properties.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> PRECISION_STEPPER_STAGE = ITEMS.registerItem("precision_stepper_stage",
+        properties -> new LineComponentItem(properties, "stage", 3), properties -> properties.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> HEPA_FILTER = ITEMS.registerItem("hepa_filter",
+        properties -> new LineComponentItem(properties, "cleanroom", 3), properties -> properties.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> LASER_INTERFEROMETER = ITEMS.registerItem("laser_interferometer",
+        properties -> new LineComponentItem(properties, "metrology", 3), properties -> properties.stacksTo(1));
 
     private ModItems() {
     }

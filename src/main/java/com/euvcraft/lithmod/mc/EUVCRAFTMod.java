@@ -18,6 +18,7 @@ import com.euvcraft.lithmod.mc.data.SupportLineDataLoader;
 import com.euvcraft.lithmod.mc.data.DieRulesDataLoader;
 import com.euvcraft.lithmod.mc.data.MachineDefinitionLoader;
 import com.euvcraft.lithmod.mc.data.MachineRecipeLoader;
+import com.euvcraft.lithmod.mc.data.SupportRecipeLoader;
 import com.euvcraft.lithmod.mc.registry.ModCreativeTabs;
 import com.euvcraft.lithmod.mc.registry.ModDataComponents;
 import com.euvcraft.lithmod.mc.registry.ModItems;
@@ -36,12 +37,17 @@ import com.euvcraft.lithmod.mc.gametest.PresentationGameTests;
 import com.euvcraft.lithmod.mc.gametest.SiliconGameTests;
 import com.euvcraft.lithmod.mc.gametest.ClientPolishGameTests;
 import com.euvcraft.lithmod.mc.gametest.PlacementAndTitleGameTests;
+import com.euvcraft.lithmod.mc.gametest.SupportMultiblockGameTests;
+import com.euvcraft.lithmod.mc.gametest.T3ContentGameTests;
+import com.euvcraft.lithmod.mc.gametest.T3PurificationGameTests;
+import com.euvcraft.lithmod.mc.gametest.T3MaskWriterGameTests;
 import com.euvcraft.lithmod.mc.machine.mask.MaskMachines;
 import com.euvcraft.lithmod.mc.machine.mask.MaskTooltipAppenders;
 import com.euvcraft.lithmod.mc.machine.packaging.PackagingMachines;
 import com.euvcraft.lithmod.mc.machine.silicon.SiliconMachines;
 import com.euvcraft.lithmod.mc.machine.test.ModMachines;
 import com.euvcraft.lithmod.mc.multiblock.ModMultiblocks;
+import com.euvcraft.lithmod.mc.multiblock.support.SupportMachines;
 
 @Mod(EUVCRAFTMod.MODID)
 public class EUVCRAFTMod {
@@ -59,6 +65,7 @@ public class EUVCRAFTMod {
         MaskMachines.register(modEventBus);
         PackagingMachines.register(modEventBus);
         ModMultiblocks.register(modEventBus);
+        SupportMachines.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(FoupTooltipAppenders::register);
@@ -90,6 +97,10 @@ modEventBus.addListener(ComponentTooltipAppenders::register);
             M1DebugGameTests.register(modEventBus);
             ClientPolishGameTests.register(modEventBus);
             PlacementAndTitleGameTests.register(modEventBus);
+            SupportMultiblockGameTests.register(modEventBus);
+            T3ContentGameTests.register(modEventBus);
+            T3PurificationGameTests.register(modEventBus);
+            T3MaskWriterGameTests.register(modEventBus);
         } else if (GameTestFixtures.shippingProbeEnabled()) {
             M1ShippingGameTests.register(modEventBus);
         }
@@ -111,6 +122,7 @@ modEventBus.addListener(ComponentTooltipAppenders::register);
         NeoForge.EVENT_BUS.register(DieRulesDataLoader.class);
         NeoForge.EVENT_BUS.register(MachineDefinitionLoader.class);
         NeoForge.EVENT_BUS.register(MachineRecipeLoader.class);
+        NeoForge.EVENT_BUS.register(SupportRecipeLoader.class);
 
         LOGGER.info("EUVCRAFT mod loading...");
     }

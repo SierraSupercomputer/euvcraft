@@ -25,6 +25,10 @@ import java.util.UUID;
  * "not started" means: a fresh lot has none, and a lot that has been through at least
  * one layer always has one.</p>
  *
+ * <p>Every lot carries a {@link WaferSubstrate} grade (ORDINARY or PURE) that is set
+ * when the lot is created and preserved through every mutation. Existing saved lots
+ * without a grade are treated as ORDINARY.</p>
+ *
  * <p>This record has no Minecraft or NeoForge dependencies.</p>
  *
  * @param lotId    server-assigned identifier of the sealed lot
@@ -32,8 +36,9 @@ import java.util.UUID;
  * @param wafers   wafers in the lot, in slot order, at most {@code capacity} entries
  * @param run      the parameters the lot was processed under, or {@code null} when it
  *                 has not been started
+ * @param grade    the wafer substrate grade of this lot, never null
  */
-public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec run) {
+public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec run, WaferSubstrate grade) {
 
     /**
      * Creates a lot that has not been started, which is the common case for a fresh FOUP.
@@ -47,7 +52,42 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
      *                                  more wafers than its capacity
      */
     public FoupContents(UUID lotId, int capacity, List<Wafer> wafers) {
-        this(lotId, capacity, wafers, null);
+        this(lotId, capacity, wafers, null, WaferSubstrate.ORDINARY);
+    }
+
+    /**
+     * Legacy constructor that creates a lot with a run spec but default ORDINARY grade.
+     * Kept for source compatibility.
+     *
+     * @param lotId    server-assigned identifier of the sealed lot
+     * @param capacity maximum number of wafers this lot holds, {@code >= 1}
+     * @param wafers   wafers in the lot, in slot order, at most {@code capacity} entries
+     * @param run      the run spec, or {@code null} when not started
+     * @throws NullPointerException     if {@code lotId} or {@code wafers} is null, or
+     *                                  the wafer list holds a null entry
+     * @throws IllegalArgumentException if the capacity is below one or the lot holds
+     *                                  more wafers than its capacity
+     */
+    public FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec run) {
+        this(lotId, capacity, wafers, run, WaferSubstrate.ORDINARY);
+    }
+
+    /**
+     * Creates a lot that has not been started, with an explicit substrate grade.
+     * Static factory to avoid ambiguity with the legacy 4-arg (RunSpec) constructor.
+     *
+     * @param lotId    server-assigned identifier of the sealed lot
+     * @param capacity maximum number of wafers this lot holds, {@code >= 1}
+     * @param wafers   wafers in the lot, in slot order, at most {@code capacity} entries
+     * @param grade    the wafer substrate grade, not null
+     * @return a new lot with the given grade, no run spec
+     * @throws NullPointerException     if {@code lotId}, {@code wafers} or {@code grade} is null, or
+     *                                  the wafer list holds a null entry
+     * @throws IllegalArgumentException if the capacity is below one or the lot holds
+     *                                  more wafers than its capacity
+     */
+    public static FoupContents of(UUID lotId, int capacity, List<Wafer> wafers, WaferSubstrate grade) {
+        return new FoupContents(lotId, capacity, wafers, null, grade);
     }
 
     /**
@@ -61,6 +101,7 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
     public FoupContents {
         Objects.requireNonNull(lotId, "lotId must not be null");
         Objects.requireNonNull(wafers, "wafers must not be null");
+        Objects.requireNonNull(grade, "grade must not be null");
         if (capacity < 1) {
             throw new IllegalArgumentException("capacity must be >= 1, got " + capacity);
         }
@@ -72,14 +113,27 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
     }
 
     /**
-     * Creates an empty lot.
+     * Creates an empty lot with ordinary substrate.
      *
      * @param lotId    server-assigned identifier of the sealed lot
      * @param capacity maximum number of wafers the lot holds
      * @return a lot with no wafers in it
      */
     public static FoupContents empty(UUID lotId, int capacity) {
-        return new FoupContents(lotId, capacity, List.of());
+        return new FoupContents(lotId, capacity, List.of(), null, WaferSubstrate.ORDINARY);
+    }
+
+    /**
+     * Creates an empty lot with the given substrate grade.
+     *
+     * @param lotId    server-assigned identifier of the sealed lot
+     * @param capacity maximum number of wafers the lot holds
+     * @param grade    the wafer substrate grade, not null
+     * @return a lot with no wafers in it
+     */
+    public static FoupContents empty(UUID lotId, int capacity, WaferSubstrate grade) {
+        Objects.requireNonNull(grade, "grade must not be null");
+        return new FoupContents(lotId, capacity, List.of(), null, grade);
     }
 
     /**
@@ -113,7 +167,7 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
      * Returns a copy of this lot with one more wafer appended.
      *
      * @param wafer the wafer to add, not null
-     * @return a new lot with the wafer appended, carrying the same run spec
+     * @return a new lot with the wafer appended, carrying the same run spec and grade
      * @throws IllegalStateException if the lot is already full
      */
     public FoupContents withWafer(Wafer wafer) {
@@ -123,14 +177,14 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
         }
         List<Wafer> grown = new ArrayList<>(this.wafers);
         grown.add(wafer);
-        return new FoupContents(this.lotId, this.capacity, grown, this.run);
+        return new FoupContents(this.lotId, this.capacity, grown, this.run, this.grade);
     }
 
     /**
      * Returns a copy of this lot with the given wafers appended.
      *
      * @param newWafers the wafers to add, no null entries
-     * @return a new lot with the wafers appended, carrying the same run spec
+     * @return a new lot with the wafers appended, carrying the same run spec and grade
      * @throws IllegalStateException if the result would exceed the capacity
      */
     public FoupContents withWafers(List<Wafer> newWafers) {
@@ -141,14 +195,14 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
         }
         List<Wafer> grown = new ArrayList<>(this.wafers);
         grown.addAll(newWafers);
-        return new FoupContents(this.lotId, this.capacity, grown, this.run);
+        return new FoupContents(this.lotId, this.capacity, grown, this.run, this.grade);
     }
 
     /**
      * Returns a copy of this lot without the wafer at the given slot.
      *
      * @param index slot to clear, {@code 0 <= index < size()}
-     * @return a new lot with that wafer removed, carrying the same run spec
+     * @return a new lot with that wafer removed, carrying the same run spec and grade
      * @throws IndexOutOfBoundsException if the index is not a slot of this lot
      */
     public FoupContents withoutWaferAt(int index) {
@@ -158,7 +212,7 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
         }
         List<Wafer> shrunk = new ArrayList<>(this.wafers);
         shrunk.remove(index);
-        return new FoupContents(this.lotId, this.capacity, shrunk, this.run);
+        return new FoupContents(this.lotId, this.capacity, shrunk, this.run, this.grade);
     }
 
     /**
@@ -179,10 +233,10 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
      * not what has happened to it.</p>
      *
      * @param run the run spec to store, or {@code null} to clear it
-     * @return a new lot with the spec attached
+     * @return a new lot with the spec attached, preserving the grade
      */
     public FoupContents withRun(RunSpec run) {
-        return new FoupContents(this.lotId, this.capacity, this.wafers, run);
+        return new FoupContents(this.lotId, this.capacity, this.wafers, run, this.grade);
     }
 
     /**
@@ -202,14 +256,14 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
     /**
      * Returns everything about this lot that may leave the server.
      *
-     * <p>The result carries the capacity, the wafer count and the lot layer. It never
-     * carries a {@link Wafer#cumulativeRoll()} or a {@link Wafer#flags()} value, and
-     * neither can be recovered from it.</p>
+     * <p>The result carries the capacity, the wafer count, the lot layer and the
+     * wafer substrate grade. It never carries a {@link Wafer#cumulativeRoll()} or a
+     * {@link Wafer#flags()} value, and neither can be recovered from it.</p>
      *
      * @return the client-safe view of this lot
      */
     public FoupPublicView publicView() {
-        return new FoupPublicView(this.capacity, this.wafers.size(), lotLayer());
+        return new FoupPublicView(this.capacity, this.wafers.size(), lotLayer(), this.grade);
     }
 
     /**
@@ -222,6 +276,6 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
     public String toString() {
         FoupPublicView view = publicView();
         return "FoupContents[lot=" + this.lotId + ", capacity=" + view.capacity()
-            + ", wafers=" + view.waferCount() + ", layer=" + view.lotLayer() + "]";
+            + ", wafers=" + view.waferCount() + ", layer=" + view.lotLayer() + ", grade=" + view.grade().id() + "]";
     }
 }

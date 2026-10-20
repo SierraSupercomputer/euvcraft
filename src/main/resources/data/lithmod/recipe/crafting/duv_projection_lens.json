@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " A ",
+    "CLC",
+    " D "
+  ],
+  "key": {
+    "A": "lithmod:reduction_lens",
+    "C": "minecraft:glass",
+    "L": "lithmod:logic_chip_t2",
+    "D": "minecraft:diamond"
+  },
+  "result": {
+    "id": "lithmod:duv_projection_lens",
+    "count": 1
+  }
+}
