@@ -506,14 +506,14 @@ public final class ProcessCellGameTests {
             ItemStack lightBefore = cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE).copy();
             lowerMenu.setCarried(ItemStack.EMPTY);
             lowerMenu.clicked(0, 0, ContainerInput.PICKUP, player); // Lower visible 0 = LIGHT_SOURCE
-            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE).getItem(), lightBefore),
+            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE), lightBefore),
                 "LIGHT_SOURCE must be retained after PICKUP with empty cursor");
             h.assertTrue(lowerMenu.getCarried().isEmpty(), "cursor must remain empty after PICKUP on locked equipment slot");
 
             // quickMoveStack(player, 0) empty and LIGHT_SOURCE retained
             ItemStack qmResult = lowerMenu.quickMoveStack(player, 0);
             h.assertTrue(qmResult.isEmpty(), "quickMoveStack on locked lower slot returns empty");
-            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE).getItem(), lightBefore),
+            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE), lightBefore),
                 "LIGHT_SOURCE retained after quickMoveStack");
 
             // Set player hotbar via lower menu hotbar slot
@@ -521,20 +521,20 @@ public final class ProcessCellGameTests {
             lowerMenu.slots.get(lowerFirstHotbar).set(replacementLight);
             // clicked(0, 0, SWAP) assert LIGHT_SOURCE retained/hotbar stone
             lowerMenu.clicked(0, 0, ContainerInput.SWAP, player);
-            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE).getItem(), lightBefore),
+            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE), lightBefore),
                 "LIGHT_SOURCE retained after SWAP");
             h.assertTrue(ItemStack.isSameItemSameComponents(lowerMenu.slots.get(lowerFirstHotbar).getItem(), replacementLight),
                 "valid replacement LIGHT_SOURCE stays in hotbar after rejected SWAP");
 
             // clicked(0, 0, THROW) must not remove LIGHT_SOURCE
             lowerMenu.clicked(0, 0, ContainerInput.THROW, player);
-            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE).getItem(), lightBefore),
+            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE), lightBefore),
                 "LIGHT_SOURCE retained after THROW");
             h.assertTrue(lowerMenu.getCarried().isEmpty(), "cursor empty after THROW on locked slot");
 
             // clicked(0, 2, CLONE) must not duplicate LIGHT_SOURCE (creative middle-click)
             lowerMenu.clicked(0, 2, ContainerInput.CLONE, player);
-            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE).getItem(), lightBefore),
+            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE), lightBefore),
                 "LIGHT_SOURCE retained after CLONE");
             h.assertTrue(lowerMenu.getCarried().isEmpty(), "CLONE must leave the cursor empty in locked state");
 
@@ -561,7 +561,7 @@ public final class ProcessCellGameTests {
             foupUuid = FoupItems.trustedContentsOf(foupBefore).lotId();
             upperMenu.setCarried(ItemStack.EMPTY);
             upperMenu.clicked(0, 0, ContainerInput.PICKUP, player); // Upper visible 0 = FOUP
-            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP).getItem(), foupBefore),
+            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP), foupBefore),
                 "FOUP must be retained after PICKUP with empty cursor (upper)");
             h.assertValueEqual(foupUuid, FoupItems.trustedContentsOf(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP)).lotId(),
                 "FOUP lot UUID unchanged");
@@ -570,7 +570,7 @@ public final class ProcessCellGameTests {
             // quickMoveStack(player, 0) empty and FOUP retained
             qmResult = upperMenu.quickMoveStack(player, 0);
             h.assertTrue(qmResult.isEmpty(), "quickMoveStack on locked FOUP returns empty");
-            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP).getItem(), foupBefore),
+            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP), foupBefore),
                 "FOUP retained after quickMoveStack");
 
             // Set player hotbar via upper menu hotbar slot
@@ -579,20 +579,20 @@ public final class ProcessCellGameTests {
             upperMenu.slots.get(upperFirstHotbar).set(replacementFoup);
             // clicked(0, 0, SWAP) assert FOUP retained/hotbar stone
             upperMenu.clicked(0, 0, ContainerInput.SWAP, player);
-            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP).getItem(), foupBefore),
+            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP), foupBefore),
                 "FOUP retained after SWAP (upper)");
             h.assertTrue(ItemStack.isSameItemSameComponents(upperMenu.slots.get(upperFirstHotbar).getItem(), replacementFoup),
                 "valid replacement FOUP stays in hotbar after rejected SWAP (upper)");
 
             // clicked(0, 0, THROW) must not remove FOUP
             upperMenu.clicked(0, 0, ContainerInput.THROW, player);
-            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP).getItem(), foupBefore),
+            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP), foupBefore),
                 "FOUP retained after THROW (upper)");
             h.assertTrue(upperMenu.getCarried().isEmpty(), "cursor empty after THROW on locked FOUP (upper)");
 
             // clicked(0, 2, CLONE) must not duplicate FOUP (creative middle-click)
             upperMenu.clicked(0, 2, ContainerInput.CLONE, player);
-            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP).getItem(), foupBefore),
+            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP), foupBefore),
                 "FOUP retained after CLONE (upper)");
             h.assertTrue(upperMenu.getCarried().isEmpty(), "CLONE must leave the cursor empty in locked state (upper)");
 
@@ -1166,29 +1166,30 @@ public final class ProcessCellGameTests {
 
             // Verify shared inventory: change equipment via lower visible 0 (underlying 3 = LIGHT_SOURCE),
             // assert cell.slot(3) changes and upper FOUP (underlying 0) unchanged
+            ItemStack retainedFoup = cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP).copy();
             ItemStack newLight = new ItemStack(ModItems.I_LINE_LAMP.get());
             lowerMenu.slots.get(0).set(newLight.copy());
-            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE).getItem(), newLight),
+            h.assertTrue(ItemStack.matches(cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE), newLight),
                 "cell underlying slot 3 (LIGHT_SOURCE) changed via lower visible 0");
-            h.assertTrue(ItemStack.isSameItemSameComponents(upperMenu.slots.get(0).getItem(), cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP).getItem()),
+            h.assertTrue(ItemStack.matches(retainedFoup, upperMenu.slots.get(0).getItem()),
                 "upper FOUP (underlying 0) unchanged after lower equipment change");
 
             // Change FOUP/resist via upper, assert cell.slot(0/2) changes while lower equipment retained
             ItemStack newFoup = FoupItems.with(ModItems.FOUP_MK2.get(),
                 new FoupContents(UUID.randomUUID(), 2, List.of(new Wafer(0, 1.0f, 0))));
             upperMenu.slots.get(0).set(newFoup.copy());
-            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP).getItem(), newFoup),
+            h.assertTrue(ItemStack.matches(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP), newFoup),
                 "cell underlying slot 0 (FOUP) changed via upper visible 0");
             // Lower equipment (visible 0 = underlying 3) should be unchanged
-            h.assertTrue(ItemStack.isSameItemSameComponents(lowerMenu.slots.get(0).getItem(), cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE).getItem()),
+            h.assertTrue(ItemStack.matches(newLight, lowerMenu.slots.get(0).getItem()),
                 "lower equipment retained after upper FOUP change");
 
             ItemStack newResist = new ItemStack(ModItems.RESIST_T2.get(), 10);
             upperMenu.slots.get(2).set(newResist.copy());
-            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_RESIST).getItem(), newResist),
+            h.assertTrue(ItemStack.matches(cell.slot(ProcessCellControllerBlockEntity.SLOT_RESIST), newResist),
                 "cell underlying slot 2 (RESIST) changed via upper visible 2");
             // Lower equipment (visible 0 = underlying 3) should still be unchanged
-            h.assertTrue(ItemStack.isSameItemSameComponents(lowerMenu.slots.get(0).getItem(), cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE).getItem()),
+            h.assertTrue(ItemStack.matches(newLight, lowerMenu.slots.get(0).getItem()),
                 "lower equipment retained after upper resist change");
         });
         h.succeed();
@@ -1691,7 +1692,7 @@ public final class ProcessCellGameTests {
             cell.revalidate();
             h.assertTrue(cell.isFormed(), "cell reformed after panel restored");
             // Initial 4 ticks + 1 pause tick = 5 paid. Need 31 more to reach 36 total (12 layers * 3 ticks)
-            tick(cell, 31); // Complete remaining 11 layers (32 ticks total after the pause tick = 36 total paid)
+            tick(cell, 32); // Complete remaining 11 layers (32 ticks total after the pause tick = 36 total paid)
             completed(h, f, 12, DieTypes.MEMORY);
             h.assertValueEqual(40, resist(cell), "exact resist after completion (12 layers * 2 = 24 used, 64-24=40)");
             h.assertValueEqual(10000L - 36L * f.cost(), cell.buffer().getAmountAsLong(), "exact energy after completion (36 paid ticks)");
@@ -1844,11 +1845,12 @@ public final class ProcessCellGameTests {
 
             // Upper menu is operating panel
             h.assertTrue(upperMenu.isOperatingPanel(), "upper menu is operating panel");
-            h.assertTrue(upperMenu.blockEntity == cell, "upper menu blockEntity is the controller");
+            h.assertTrue(upperMenu.corePos().equals(cell.getBlockPos()), "upper menu tracks the real controller position");
 
             // Modify via upper visible slot, see via cell directly
             ProcessCellMenu lowerMenu = new ProcessCellMenu(8, player.getInventory(), cell);
-            upperMenu.slots.get(0).set(new ItemStack(Items.DIRT)); // FOUP slot (upper visible 0 = underlying 0)
+            ItemStack retainedLight = lowerMenu.slots.get(0).getItem().copy();
+            upperMenu.slots.get(0).set(new ItemStack(Items.DIRT)); // Direct backing-write ownership probe
             h.assertTrue(lowerMenu.slots.get(ProcessCellControllerBlockEntity.SLOT_FOUP).getItem().is(Items.DIRT),
                 "lower menu sees change made via upper menu (same inventory, underlying FOUP slot)");
 
