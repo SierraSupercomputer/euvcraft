@@ -28,11 +28,11 @@ import org.jspecify.annotations.Nullable;
 public class ProcessCellCasingBlock extends BaseEntityBlock {
 
     /** True while this casing is part of a formed cell. */
-    public static final BooleanProperty FORMED = BooleanProperty.create("formed");
+    public static final BooleanProperty FORMED = ProcessCellVisualProperties.FORMED;
     /** Visual part index 0..11 for formed members, 0 when unformed. */
-    public static final IntegerProperty PART = IntegerProperty.create("part", 0, 11);
+    public static final IntegerProperty PART = ProcessCellVisualProperties.PART;
     /** Horizontal facing of the cell this member belongs to. */
-    public static final Property<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final Property<Direction> FACING = ProcessCellVisualProperties.FACING;
 
     public ProcessCellCasingBlock(BlockBehaviour.Properties properties) {
         super(properties);

@@ -42,11 +42,11 @@ import org.jspecify.annotations.Nullable;
 public class ProcessCellControllerBlock extends BaseEntityBlock {
 
     /** Which way the cell looks. The structure extends along the opposite side. */
-    public static final Property<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final Property<Direction> FACING = ProcessCellVisualProperties.FACING;
     /** True while all twelve cells of the cell are in place. */
-    public static final BooleanProperty FORMED = BooleanProperty.create("formed");
+    public static final BooleanProperty FORMED = ProcessCellVisualProperties.FORMED;
     /** Visual part index 0..11 for formed members, 0 when unformed. */
-    public static final IntegerProperty PART = IntegerProperty.create("part", 0, 11);
+    public static final IntegerProperty PART = ProcessCellVisualProperties.PART;
 
     public ProcessCellControllerBlock(BlockBehaviour.Properties properties) {
         super(properties);
