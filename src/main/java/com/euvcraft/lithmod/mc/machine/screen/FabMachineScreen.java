@@ -112,8 +112,9 @@ public abstract class FabMachineScreen<M extends FabMachineMenu> extends Abstrac
      * Panel spans the full menu image area.
      */
     private void drawPanelBackground(GuiGraphicsExtractor graphics) {
-        int x = 0;
-        int y = 0;
+        // Background extraction runs before the container's label/slot pose translation.
+        int x = this.leftPos;
+        int y = this.topPos;
         int w = this.imageWidth;
         int h = this.imageHeight;
 
@@ -138,8 +139,8 @@ public abstract class FabMachineScreen<M extends FabMachineMenu> extends Abstrac
             if (!slot.isActive()) {
                 continue;
             }
-            int sx = slot.x - 1; // 18x18 well centered on 16x16 slot -> inset by 1
-            int sy = slot.y - 1;
+            int sx = this.leftPos + slot.x - 1;
+            int sy = this.topPos + slot.y - 1;
             graphics.fill(sx, sy, sx + 18, sy + 18, SLOT_WELL_COLOR);
             // Subtle inner bevel for depth
             graphics.fill(sx, sy, sx + 18, sy + 1, PANEL_BEVEL_LIGHT);
