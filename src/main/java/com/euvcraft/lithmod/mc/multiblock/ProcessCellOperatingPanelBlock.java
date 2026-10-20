@@ -16,7 +16,10 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jspecify.annotations.Nullable;
 
@@ -38,15 +41,22 @@ public class ProcessCellOperatingPanelBlock extends BaseEntityBlock {
 
     /** True while this panel is part of a formed cell. */
     public static final BooleanProperty FORMED = BooleanProperty.create("formed");
+    /** Visual part index 0..11 for formed members, 0 when unformed. */
+    public static final IntegerProperty PART = IntegerProperty.create("part", 0, 11);
+    /** Horizontal facing of the cell this member belongs to. */
+    public static final Property<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     public ProcessCellOperatingPanelBlock(BlockBehaviour.Properties properties) {
         super(properties);
-        this.registerDefaultState(this.stateDefinition.any().setValue(FORMED, Boolean.FALSE));
+        this.registerDefaultState(this.stateDefinition.any()
+            .setValue(FORMED, Boolean.FALSE)
+            .setValue(PART, Integer.valueOf(0))
+            .setValue(FACING, Direction.NORTH));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FORMED);
+        builder.add(FORMED, PART, FACING);
     }
 
     @Override
@@ -68,7 +78,10 @@ public class ProcessCellOperatingPanelBlock extends BaseEntityBlock {
             facing = context.getHorizontalDirection().getOpposite();
         }
 
-        return defaultBlockState().setValue(FORMED, Boolean.FALSE);
+        return defaultBlockState()
+            .setValue(FORMED, Boolean.FALSE)
+            .setValue(FACING, facing)
+            .setValue(PART, Integer.valueOf(0));
     }
 
     @Override

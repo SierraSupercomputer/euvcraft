@@ -147,14 +147,41 @@ class StructureMatcherTest {
     /**
      * A complete, valid box built on the wrong side of the controller: the whole box is one full
      * length in front of the controller's face instead of behind it.
+     * Contains all 12 kinds: controller at front face (u0, v0, 0), operating panel above at (u0, v0+1, 0),
+     * power ports at back face (d = length-1), and casing elsewhere.
      */
     private static Function<MultiblockPos, BlockKind> worldBuiltInFront(MultiblockPos controller,
             MultiblockDirection facing, int u0, int v0) {
         Map<MultiblockPos, BlockKind> blocks = new HashMap<>();
-        blocks.put(controller, BlockKind.CONTROLLER);
-        MultiblockPos shift = backVector(facing).multiply(-SHAPE.length());
-        for (MultiblockPos cell : expectedCells(controller, facing, u0, v0)) {
-            blocks.putIfAbsent(cell.add(shift), BlockKind.CASING);
+        // The box extends along facing (opposite of back) for length cells
+        // Origin is at controller + facing (one step in front of controller)
+        MultiblockPos origin = controller.add(facingVector(facing));
+        for (int u = 0; u < SHAPE.width(); u++) {
+            for (int v = 0; v < SHAPE.height(); v++) {
+                for (int d = 0; d < SHAPE.length(); d++) {
+                    MultiblockPos pos = origin
+                            .add(rightVector(facing).multiply(u))
+                            .add(UP.multiply(v))
+                            .add(facingVector(facing).multiply(d));
+                    // Controller at front face (u0, v0, 0)
+                    if (u == u0 && v == v0 && d == 0) {
+                        blocks.put(pos, BlockKind.CONTROLLER);
+                    }
+                    // Operating panel directly above controller at (u0, v0+1, 0)
+                    else if (u == u0 && v == v0 + 1 && d == 0 && v0 + 1 < SHAPE.height()) {
+                        blocks.put(pos, BlockKind.OPERATING_PANEL);
+                    }
+                    // Power ports at back face (d = length-1)
+                    else if ((u == PORT_A.u() && v == PORT_A.v() && d == PORT_A.d())
+                            || (u == PORT_B.u() && v == PORT_B.v() && d == PORT_B.d())) {
+                        blocks.put(pos, BlockKind.POWER_PORT);
+                    }
+                    // Everything else is casing
+                    else {
+                        blocks.put(pos, BlockKind.CASING);
+                    }
+                }
+            }
         }
         return pos -> blocks.getOrDefault(pos, BlockKind.OTHER);
     }

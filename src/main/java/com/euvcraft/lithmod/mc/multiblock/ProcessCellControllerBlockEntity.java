@@ -408,8 +408,8 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
             this.members.clear();
             this.members.addAll(nextMembers);
 
-            updateMembers(previous);
-            updateMembers(members());
+            updateMembers(previous, facing, false);
+            updateMembers(members(), facing, nowFormed);
             setChanged();
             this.formationChanges++;
 
@@ -420,41 +420,78 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
             }
         } else if (this.formed) {
             // The membership is unchanged, but a member's own block state can still have been reset
-            // by an edit that replaced the block, which clears FORMED. updateMembers only writes a
+            // by an edit that replaced the block, which clears FORMED/PART/FACING. updateMembers only writes a
             // state that differs, so re-running it here repairs the flags without counting as a
             // transition and without firing the hooks again.
-            updateMembers(members());
+            updateMembers(members(), facing, true);
         }
     }
 
-    /** Flags or unflags every listed member and rewires its controller link. */
-    private void updateMembers(List<BlockPos> positions) {
+    /** Flags or unflags every listed member and rewires its controller link with PART and FACING. */
+    private void updateMembers(List<BlockPos> positions, Direction facing, boolean formed) {
         if (level == null) {
             return;
         }
-        for (BlockPos pos : positions) {
+        for (int i = 0; i < positions.size(); i++) {
+            BlockPos pos = positions.get(i);
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof ProcessCellMemberBlockEntity member) {
-                member.attach(this, this.formed);
+                // Only attach if this member still belongs to us (not claimed by another controller)
+                if (formed) {
+                    member.attach(this, true, i, facing);
+                } else {
+                    // Unforming: only detach if still owned by us
+                    if (member.controller() == this) {
+                        member.attach(null, false, 0, null);
+                    }
+                }
             }
             BlockState state = level.getBlockState(pos);
             // Only write a state that actually differs. Writing unconditionally would notify the
             // neighbours, whose neighborChanged handler calls straight back into revalidate().
             if (state.getBlock() instanceof ProcessCellCasingBlock) {
-                if (state.getValue(ProcessCellCasingBlock.FORMED) != this.formed) {
-                    level.setBlock(pos, state.setValue(ProcessCellCasingBlock.FORMED, this.formed), 3);
+                boolean curFormed = state.getValue(ProcessCellCasingBlock.FORMED);
+                int curPart = state.getValue(ProcessCellCasingBlock.PART);
+                Direction curFacing = state.getValue(ProcessCellCasingBlock.FACING);
+                int newPart = formed ? positions.indexOf(pos) : 0;
+                Direction newFacing = formed ? facing : Direction.NORTH;
+                if (curFormed != formed || curPart != newPart || curFacing != newFacing) {
+                    level.setBlock(pos, state
+                        .setValue(ProcessCellCasingBlock.FORMED, formed)
+                        .setValue(ProcessCellCasingBlock.PART, newPart)
+                        .setValue(ProcessCellCasingBlock.FACING, newFacing), 3);
                 }
             } else if (state.getBlock() instanceof ProcessCellPowerPortBlock) {
-                if (state.getValue(ProcessCellPowerPortBlock.FORMED) != this.formed) {
-                    level.setBlock(pos, state.setValue(ProcessCellPowerPortBlock.FORMED, this.formed), 3);
+                boolean curFormed = state.getValue(ProcessCellPowerPortBlock.FORMED);
+                int curPart = state.getValue(ProcessCellPowerPortBlock.PART);
+                Direction curFacing = state.getValue(ProcessCellPowerPortBlock.FACING);
+                int newPart = formed ? positions.indexOf(pos) : 0;
+                Direction newFacing = formed ? facing : Direction.NORTH;
+                if (curFormed != formed || curPart != newPart || curFacing != newFacing) {
+                    level.setBlock(pos, state
+                        .setValue(ProcessCellPowerPortBlock.FORMED, formed)
+                        .setValue(ProcessCellPowerPortBlock.PART, newPart)
+                        .setValue(ProcessCellPowerPortBlock.FACING, newFacing), 3);
                 }
             } else if (state.getBlock() instanceof ProcessCellOperatingPanelBlock) {
-                if (state.getValue(ProcessCellOperatingPanelBlock.FORMED) != this.formed) {
-                    level.setBlock(pos, state.setValue(ProcessCellOperatingPanelBlock.FORMED, this.formed), 3);
+                boolean curFormed = state.getValue(ProcessCellOperatingPanelBlock.FORMED);
+                int curPart = state.getValue(ProcessCellOperatingPanelBlock.PART);
+                Direction curFacing = state.getValue(ProcessCellOperatingPanelBlock.FACING);
+                int newPart = formed ? positions.indexOf(pos) : 0;
+                Direction newFacing = formed ? facing : Direction.NORTH;
+                if (curFormed != formed || curPart != newPart || curFacing != newFacing) {
+                    level.setBlock(pos, state
+                        .setValue(ProcessCellOperatingPanelBlock.FORMED, formed)
+                        .setValue(ProcessCellOperatingPanelBlock.PART, newPart)
+                        .setValue(ProcessCellOperatingPanelBlock.FACING, newFacing), 3);
                 }
             } else if (state.getBlock() instanceof ProcessCellControllerBlock) {
-                if (state.getValue(ProcessCellControllerBlock.FORMED) != this.formed) {
-                    level.setBlock(pos, state.setValue(ProcessCellControllerBlock.FORMED, this.formed), 3);
+                boolean curFormed = state.getValue(ProcessCellControllerBlock.FORMED);
+                int curPart = state.getValue(ProcessCellControllerBlock.PART);
+                if (curFormed != formed || curPart != (formed ? positions.indexOf(pos) : 0)) {
+                    level.setBlock(pos, state
+                        .setValue(ProcessCellControllerBlock.FORMED, formed)
+                        .setValue(ProcessCellControllerBlock.PART, formed ? positions.indexOf(pos) : 0), 3);
                 }
             }
         }
