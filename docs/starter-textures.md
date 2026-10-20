@@ -4,11 +4,12 @@ Deterministic, editable 16×16 starter art for all M1 production items and block
 Generated from a single manifest using only Node built-ins — no external services,
 no image libraries, no subprocesses.
 
-Provenance: all layout/motif concepts (FOUP canister, boule, mask grid, resist bottle,
-lens, stage, filter, microscope, controller wafer face, port bolt) come from the
-original hand-authored MVP manifest; the invalid fixed-width glyph patterns were
-replaced with integer draw recipes. No client render is claimed — assets are
-validated by resource tests and the owner's manual walkthrough.
+Provenance: free Nemotron authored the initial manifest; free GLM replaced invalid
+glyph patterns with integer draw recipes. The coordinator corrected validation,
+generated the PNGs and inspected the atlas. These are original project starter
+motifs (FOUP, boule, masks, resist, optics and machines), with no external sprites
+or image-generation API. Resource tests validate the files; actual post-change
+Minecraft rendering still needs the owner's client recheck.
 
 ---
 

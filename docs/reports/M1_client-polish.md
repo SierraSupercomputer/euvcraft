@@ -42,6 +42,16 @@ Beam's focused UI review initially treated an RGB `Style.withColor` value as an 
 Installed tooltip source showed the separate opaque `-1` draw color; the same reviewer withdrew that
 finding and approved. That focused approval is supplemental to final whole-task reviews.
 
+The next full run passed 524 units but failed one of 813 server cases: the legacy multiblock asset
+test only accepted vanilla textures and `cube_all`. A separate immutable task,
+`euvcraft-m1-asset-test-compatibility`, narrowly repaired its resolution helpers. They now require
+actual local PNGs, or actual vanilla jar entries, and verify allowed `cube_all`/`orientable` parent
+JSONs in that jar. Existing IDs, assertions and gameplay test bodies remain. Its free Nemotron
+draft is embedded for the same final reviews and candidate verification; the original task scope
+was not widened. Replacing the controller front reference with a nonexistent local texture caused
+the sole selected server case to fail. Its test source stayed unchanged, and the exact original
+model/tree was restored in a new commit. The control's fault/restoration commits and XML remain.
+
 ## Editable art
 
 Free Nemotron and GLM authored recipes and generator code; the coordinator repaired boundary
@@ -61,9 +71,17 @@ actual Minecraft rendering.
 
 ## Final gates and limitations
 
-The complete source unit/core/jar/server regression is in progress. Measured counts, two fresh
-independent whole-task reviews, a separately tested merge candidate and integration remain pending
-at report authoring time. The coordinator will reconcile results before freezing this report.
+Source `fb345451d8afe0e5934f8f5394fc3aeb11125019` passed 524 units in 77 classes, core-import and
+release-jar checks, all 143 project server IDs and all 813 distinct server cases. There were no
+failures, errors, unit skips or optional server skips. All 140 earlier project IDs remain, plus
+the three listed Creative cases. Fresh mod/test compilation used `--no-build-cache`; only three
+hash-verified Minecraft/NeoForge dependency jars were reused. No dependency edits or selective
+rerun hid an outcome. The two earlier failed checks and their logs/XML remain preserved.
+All 24 coordinator Node tests also pass.
+
+Two fresh independent whole-task reviews, the separately tested merge candidate and integration
+remain pending at report authoring time. Final exact heads, verdicts and candidate results belong
+in [M1_client-polish_acceptance.md](M1_client-polish_acceptance.md) after acceptance.
 
 The owner still needs to restart and inspect post-change screens, formed/unformed cues and a fresh
 empty Creative FOUP. No actual post-change client render is claimed. There was no paid inference,
