@@ -1,6 +1,8 @@
 package com.euvcraft.lithmod.mc.multiblock.support;
 
 import com.euvcraft.lithmod.core.WaterTank;
+import com.euvcraft.lithmod.core.DieTypes;
+import com.euvcraft.lithmod.core.MaskData;
 import com.euvcraft.lithmod.core.multiblock.BlockKind;
 import com.euvcraft.lithmod.core.multiblock.MatchResult;
 import com.euvcraft.lithmod.core.multiblock.MultiblockDirection;
@@ -216,7 +218,8 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
      */
     @Override
     public void serverTick() {
-        if (!(level instanceof net.minecraft.server.level.ServerLevel)) return;
+        if (!(level instanceof net.minecraft.server.level.ServerLevel) || isRemoved()
+                || level.getBlockEntity(worldPosition) != this) return;
         refreshDefinition();
         syncWaterCapacity();
         if (needsValidation || ++ticksSinceValidation >= REVALIDATE_INTERVAL) {
@@ -546,14 +549,12 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
         }
 
         // Consume exact inputs: 1 blank + JSON redstone count
-        blankIn.shrink(1);
+        blankIn.shrink(pinned.blankCount);
         if (blankIn.isEmpty()) clearSlot(SLOT_IN_0);
         redstoneIn.shrink(pinned.redstoneCount);
         if (redstoneIn.isEmpty()) clearSlot(SLOT_IN_1);
 
-        // Create GEN2 mask with configured uses (read at completion time)
-        int configuredUses = EUVCRAFTMod.settings().maskUses();
-        MaskData maskData = new MaskData(pinned.dieType, pinned.tierIndex, Math.max(0, configuredUses), 2);
+        MaskData maskData = new MaskData(pinned.dieType, pinned.tierIndex, pinned.uses, 2);
         ItemStack product = new ItemStack(pinned.outputItem);
         product.set(com.euvcraft.lithmod.mc.registry.ModDataComponents.MASK_DATA.get(), maskData);
 
@@ -595,7 +596,8 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
         net.minecraft.world.item.Item outputItem,
         int outputCount,
         String dieType,
-        int tierIndex
+        int tierIndex,
+        int uses
     ) { }
 
     // ---------------------------------------------------------------- e-beam menu actions
@@ -620,46 +622,23 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
      * @return true if the job was started
      */
     public boolean startEbeamJob() {
-        if (kind() != SupportMachineKind.EBEAM) return false;
-        if (this.ebeamJobRunning) return false; // repeated Start while busy rejects
-        if (!this.formed) return false; // cannot start while unformed
-        if (this.selectedDesign < 0 || this.selectedDesign >= EBEAM_DESIGNS.length) return false; // bad ID
-
-        SupportRecipeLoader.Registry registry = SupportRecipeLoader.getRegistry();
-        if (registry == null) return false;
-        String recipeId = "ebeam_" + EBEAM_DESIGNS[this.selectedDesign];
-        SupportRecipeLoader.Resolved recipe = registry.forMachine("ebeam_mask_writer").stream()
-            .filter(r -> r.recipe().machine().equals("ebeam_mask_writer")
-                && r.recipe().input().id().equals("lithmod:blank_mask")
-                && r.recipe().secondary() != null
-                && r.recipe().secondary().id().equals("minecraft:redstone"))
-            .findFirst()
-            .orElse(null);
-        if (recipe == null) return false; // missing data fail closed
-
-        // Validate current inputs match pinned recipe
-        ItemStack blankIn = slot(SLOT_IN_0);
-        ItemStack redstoneIn = slot(SLOT_IN_1);
-        if (!blankIn.is(recipe.inputItem()) || blankIn.getCount() < recipe.recipe().input().count()) return false;
-        if (!redstoneIn.is(recipe.secondary().id()) || redstoneIn.getCount() < recipe.recipe().secondary().count()) return false;
-        if (!canAcceptInto(SLOT_IN_0 + 2, recipe.outputItem(), recipe.recipe().outputCount())) return false;
-
-        // Pin exact snapshot
-        this.ebeamJob = new EbeamJobSnapshot(
-            recipe.recipe().duration(),
-            recipe.recipe().energyPerTick(),
-            recipe.recipe().input().count(),
-            recipe.recipe().secondary().count(),
-            recipe.inputItem(),
-            net.minecraft.world.item.Items.REDSTONE, // redstone item
-            recipe.outputItem(),
-            recipe.recipe().outputCount(),
-            EBEAM_DIE_TYPES[this.selectedDesign],
-            EBEAM_TIER_INDICES[this.selectedDesign]
-        );
-        this.ebeamJobRunning = true;
-        this.ebeamJobPaused = false;
-        this.ebeamJobProgress = 0;
+        if (!(level instanceof net.minecraft.server.level.ServerLevel) || isRemoved()
+                || level.getBlockEntity(worldPosition) != this || kind() != SupportMachineKind.EBEAM
+                || ebeamJobRunning || !formed) return false;
+        SupportRecipeLoader.Resolved resolved = selectedEbeamRecipe(selectedDesign);
+        if (resolved == null) return false;
+        SupportRecipe recipe = resolved.recipe();
+        if (!slot(0).is(resolved.inputItem()) || slot(0).getCount() < recipe.input().count()
+                || !slot(1).is(Items.REDSTONE) || slot(1).getCount() < recipe.secondary().count()
+                || !canAcceptInto(2, resolved.outputItem(), 1)) return false;
+        int uses = EUVCRAFTMod.settings().maskUses();
+        if (uses <= 0) return false;
+        ebeamJob = new EbeamJobSnapshot(recipe.duration(), recipe.energyPerTick(), recipe.input().count(),
+            recipe.secondary().count(), resolved.inputItem(), Items.REDSTONE, resolved.outputItem(), 1,
+            EBEAM_DIE_TYPES[selectedDesign], EBEAM_TIER_INDICES[selectedDesign], uses);
+        ebeamJobRunning = true;
+        ebeamJobPaused = false;
+        ebeamJobProgress = 0;
         setChanged();
         return true;
     }
@@ -716,15 +695,51 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
 
     /** Whether the given design index has a valid loaded recipe. */
     public boolean ebeamDesignAvailable(int designIndex) {
-        if (designIndex < 0 || designIndex >= EBEAM_DESIGNS.length) return false;
+        return selectedEbeamRecipe(designIndex) != null;
+    }
+
+    private @Nullable SupportRecipeLoader.Resolved selectedEbeamRecipe(int index) {
+        if (index < 0 || index >= EBEAM_DESIGNS.length) return null;
         SupportRecipeLoader.Registry registry = SupportRecipeLoader.getRegistry();
-        if (registry == null) return false;
-        String design = EBEAM_DESIGNS[designIndex];
-        return registry.forMachine("ebeam_mask_writer").stream()
-            .anyMatch(r -> r.recipe().machine().equals("ebeam_mask_writer")
-                && r.recipe().input().id().equals("lithmod:blank_mask")
-                && r.recipe().secondary() != null
-                && r.recipe().secondary().id().equals("minecraft:redstone"));
+        if (registry == null) return null;
+        return registry.byId(Identifier.fromNamespaceAndPath("lithmod", "ebeam_" + EBEAM_DESIGNS[index]))
+            .filter(r -> r.recipe().machine().equals("ebeam_mask_writer")).orElse(null);
+    }
+
+    public int ebeamAvailability() {
+        int bits = 0;
+        for (int i = 0; i < EBEAM_DESIGNS.length; i++) if (ebeamDesignAvailable(i)) bits |= 1 << i;
+        return bits;
+    }
+
+    public int ebeamBlankCost() {
+        if (ebeamJobRunning && ebeamJob != null) return ebeamJob.blankCount();
+        var recipe = selectedEbeamRecipe(selectedDesign);
+        return recipe == null ? 0 : recipe.recipe().input().count();
+    }
+
+    public int ebeamRedstoneCost() {
+        if (ebeamJobRunning && ebeamJob != null) return ebeamJob.redstoneCount();
+        var recipe = selectedEbeamRecipe(selectedDesign);
+        return recipe == null ? 0 : recipe.recipe().secondary().count();
+    }
+
+    public int ebeamRecipeTicks() {
+        if (ebeamJobRunning && ebeamJob != null) return ebeamJob.duration();
+        var recipe = selectedEbeamRecipe(selectedDesign);
+        return recipe == null ? 0 : recipe.recipe().duration();
+    }
+
+    public int ebeamEnergyCost() {
+        if (ebeamJobRunning && ebeamJob != null) return ebeamJob.energyPerTick();
+        var recipe = selectedEbeamRecipe(selectedDesign);
+        return recipe == null ? 0 : recipe.recipe().energyPerTick();
+    }
+
+    private static int designIndex(String dieType, int tier) {
+        for (int i = 0; i < EBEAM_DESIGNS.length; i++)
+            if (EBEAM_DIE_TYPES[i].equals(dieType) && EBEAM_TIER_INDICES[i] == tier) return i;
+        return -1;
     }
 
     // ---------------------------------------------------------------- capability lens
@@ -933,6 +948,8 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
             }
         }
         restorePurifierJob(input.childOrEmpty("purifierJob"));
+        int savedSelection = input.getInt("selectedDesign").orElse(-1);
+        this.selectedDesign = savedSelection >= -1 && savedSelection < EBEAM_DESIGNS.length ? savedSelection : -1;
         restoreEbeamJob(input.childOrEmpty("ebeamJob"));
         publishData();
     }
@@ -953,6 +970,64 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
      * design. That is the fail-closed answer to a hand-edited tag: the job is dropped, no cost
      * arrives from nowhere, and the machine is simply idle until real inputs start a fresh job.</p>
      */
+    private void restorePurifierJob(ValueInput state) {
+        if (!state.getBooleanOr("running", false)) {
+            return;
+        }
+        Integer duration = state.getInt("duration").orElse(null);
+        Integer energyPerTick = state.getInt("energy_per_tick").orElse(null);
+        Integer waterMb = state.getInt("water_mb").orElse(null);
+        Integer outputCount = state.getInt("output_count").orElse(null);
+        Integer inputCount = state.getInt("input_count").orElse(null);
+        Integer progress = state.getInt("progress").orElse(null);
+        Integer waterPinned = state.getInt("water_pinned").orElse(null);
+        Item outputItem = itemFrom(state.getString("output_item").orElse(null));
+        Item inputItem = itemFrom(state.getString("input_item").orElse(null));
+
+        boolean valid = duration != null && energyPerTick != null && waterMb != null
+            && outputCount != null && inputCount != null && progress != null && waterPinned != null
+            && duration > 0 && energyPerTick > 0 && waterMb > 0 && outputCount > 0 && inputCount > 0
+            && progress >= 0 && progress < duration;
+        if (valid) {
+            valid = kind() == SupportMachineKind.PURIFIER
+                && outputItem == com.euvcraft.lithmod.mc.registry.ModItems.PURE_SILICON_BOULE.get()
+                && inputItem == com.euvcraft.lithmod.mc.registry.ModItems.SILICON_BOULE.get()
+                && duration <= SupportRecipe.MAX_DURATION_TICKS
+                && energyPerTick <= SupportRecipe.MAX_ENERGY_PER_TICK
+                && waterMb <= WaterTank.MAX_CAPACITY
+                && waterPinned >= waterMb && waterPinned <= WaterTank.MAX_CAPACITY
+                && inputCount <= new ItemStack(inputItem).getMaxStackSize()
+                && outputCount <= new ItemStack(outputItem).getMaxStackSize();
+        }
+        if (!valid) {
+            EUVCRAFTMod.LOGGER.warn(
+                "EUVCRAFT dropped a malformed saved purifier job; the machine stays idle");
+            return;
+        }
+        this.job = new JobSnapshot(duration, energyPerTick, waterMb, outputItem, outputCount,
+            inputItem, inputCount, waterPinned);
+        this.jobRunning = true;
+        this.jobProgress = progress;
+    }
+
+    private void savePurifierJob(ValueOutput output) {
+        if (!this.jobRunning || this.job == null) {
+            return;
+        }
+        ValueOutput state = output.child("purifierJob");
+        state.putBoolean("running", true);
+        state.putInt("progress", this.jobProgress);
+        JobSnapshot pinned = this.job;
+        state.putInt("duration", pinned.duration());
+        state.putInt("energy_per_tick", pinned.energyPerTick());
+        state.putInt("water_mb", pinned.waterMb());
+        state.putString("output_item", BuiltInRegistries.ITEM.getKey(pinned.outputItem()).toString());
+        state.putInt("output_count", pinned.outputCount());
+        state.putString("input_item", BuiltInRegistries.ITEM.getKey(pinned.inputItem()).toString());
+        state.putInt("input_count", pinned.inputCount());
+        state.putInt("water_pinned", pinned.waterPinned());
+    }
+
     private void restoreEbeamJob(ValueInput state) {
         if (!state.getBooleanOr("running", false)) {
             return;
@@ -965,20 +1040,20 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
         Integer progress = state.getInt("progress").orElse(null);
         String dieType = state.getString("die_type").orElse(null);
         Integer tierIndex = state.getInt("tier_index").orElse(null);
+        Integer uses = state.getInt("uses").orElse(null);
         Item blankItem = itemFrom(state.getString("blank_item").orElse(null));
         Item redstoneItem = itemFrom(state.getString("redstone_item").orElse(null));
         Item outputItem = itemFrom(state.getString("output_item").orElse(null));
 
         boolean valid = duration != null && energyPerTick != null && blankCount != null
             && redstoneCount != null && outputCount != null && progress != null
-            && dieType != null && tierIndex != null && blankItem != null && redstoneItem != null
+            && dieType != null && tierIndex != null && uses != null && uses > 0 && blankItem != null && redstoneItem != null
             && outputItem != null
             && duration > 0 && energyPerTick > 0 && blankCount > 0 && redstoneCount > 0
             && outputCount > 0 && progress >= 0 && progress < duration;
         if (valid) {
             valid = kind() == SupportMachineKind.EBEAM
-                && DieTypes.ALL.contains(dieType)
-                && tierIndex >= 1
+                && designIndex(dieType, tierIndex) >= 0
                 && blankItem == com.euvcraft.lithmod.mc.registry.ModItems.BLANK_MASK.get()
                 && redstoneItem == net.minecraft.world.item.Items.REDSTONE
                 && outputItem == com.euvcraft.lithmod.mc.registry.ModItems.MASK.get()
@@ -994,10 +1069,10 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
             return;
         }
         this.ebeamJob = new EbeamJobSnapshot(duration, energyPerTick, blankCount, redstoneCount,
-            blankItem, redstoneItem, outputItem, outputCount, dieType, tierIndex);
+            blankItem, redstoneItem, outputItem, outputCount, dieType, tierIndex, uses);
         this.ebeamJobRunning = true;
         this.ebeamJobProgress = progress;
-        // selectedDesign is not restored from save — the job pins its design, not the UI selection
+        this.selectedDesign = designIndex(dieType, tierIndex); // active snapshot owns the display
     }
 
     /** Writes the pinned e-beam job, if one is running, into its own save child. */
@@ -1016,6 +1091,7 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
         state.putInt("output_count", pinned.outputCount());
         state.putString("die_type", pinned.dieType());
         state.putInt("tier_index", pinned.tierIndex());
+        state.putInt("uses", pinned.uses());
         state.putString("blank_item", BuiltInRegistries.ITEM.getKey(pinned.blankItem()).toString());
         state.putString("redstone_item", BuiltInRegistries.ITEM.getKey(pinned.redstoneItem()).toString());
         state.putString("output_item", BuiltInRegistries.ITEM.getKey(pinned.outputItem()).toString());
@@ -1043,6 +1119,7 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
             output.putInt("supportWaterAmount", this.water.amount());
         }
         savePurifierJob(output);
+        output.putInt("selectedDesign", this.selectedDesign);
         saveEbeamJob(output);
         // Capacity is definition data, not saved.
     }

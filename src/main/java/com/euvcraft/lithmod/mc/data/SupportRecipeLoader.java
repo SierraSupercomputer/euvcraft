@@ -75,6 +75,18 @@ public final class SupportRecipeLoader
             new SupportRecipeLoader());
     }
 
+    @Override
+    protected void apply(Map<Identifier, SupportRecipe> prepared,
+            net.minecraft.server.packs.resources.ResourceManager resources,
+            net.minecraft.util.profiling.ProfilerFiller profiler) {
+        if (prepared.isEmpty()) {
+            this.current = buildCurrent(Map.of(), "empty support recipe reload");
+            EUVCRAFTMod.LOGGER.warn("No support recipes loaded; new support jobs are disabled");
+            return;
+        }
+        super.apply(prepared, resources, profiler);
+    }
+
     private static Registry buildCurrent(Map<Identifier, SupportRecipe> entries, String source) {
         Registry built = buildResolved(entries);
         resolved = built;
@@ -120,7 +132,7 @@ public final class SupportRecipeLoader
                 itemOf(recipe.secondary().id(), "secondary", fileId);
             }
             byMachine.computeIfAbsent(recipe.machine(), key -> new ArrayList<>())
-                .add(new Resolved(recipe, inputItem, outputItem));
+                .add(new Resolved(fileId, recipe, inputItem, outputItem));
             count++;
         }
 
@@ -142,7 +154,7 @@ public final class SupportRecipeLoader
     }
 
     /** A recipe whose ids have been resolved against the live item registry. */
-    public record Resolved(SupportRecipe recipe, Item inputItem, Item outputItem) {
+    public record Resolved(Identifier id, SupportRecipe recipe, Item inputItem, Item outputItem) {
         public Resolved {
             Objects.requireNonNull(recipe, "recipe must not be null");
             Objects.requireNonNull(inputItem, "inputItem must not be null");
@@ -168,6 +180,10 @@ public final class SupportRecipeLoader
         }
 
         /** Every resolved recipe for {@code machineId}, in a stable order. */
+        public Optional<Resolved> byId(Identifier id) {
+            return all().stream().filter(r -> r.id().equals(id)).findFirst();
+        }
+
         public List<Resolved> forMachine(String machineId) {
             return this.byMachine.getOrDefault(machineId, List.of());
         }

@@ -7,6 +7,7 @@ import com.euvcraft.lithmod.mc.registry.ModItems;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.SimpleContainerData;
@@ -51,7 +52,12 @@ public class SupportMachineMenu extends FabMachineMenu {
     public static final int WIRE_EBEAM_PAUSED = 5;
     public static final int WIRE_EBEAM_DIE_TYPE = 6;
     public static final int WIRE_EBEAM_TIER = 7;
-    public static final int EXTRA_DATA_COUNT = 8;
+    public static final int WIRE_EBEAM_AVAILABLE = 8;
+    public static final int WIRE_EBEAM_BLANK = 9;
+    public static final int WIRE_EBEAM_REDSTONE = 10;
+    public static final int WIRE_EBEAM_TICKS = 11;
+    public static final int WIRE_EBEAM_FE = 12;
+    public static final int EXTRA_DATA_COUNT = 13;
 
     // Slot coordinates per kind (relative to the 176x220 shell)
     private static final int IN_0_X = 62, IN_1_X = 80, OUT_A_X = 104, OUT_B_X = 122;
@@ -112,6 +118,11 @@ public class SupportMachineMenu extends FabMachineMenu {
                         case WIRE_EBEAM_PAUSED -> machine.isEbeamJobPaused() ? 1 : 0;
                         case WIRE_EBEAM_DIE_TYPE -> dieTypeToInt(machine.selectedDieType());
                         case WIRE_EBEAM_TIER -> machine.selectedTierIndex();
+                        case WIRE_EBEAM_AVAILABLE -> machine.ebeamAvailability();
+                        case WIRE_EBEAM_BLANK -> machine.ebeamBlankCost();
+                        case WIRE_EBEAM_REDSTONE -> machine.ebeamRedstoneCost();
+                        case WIRE_EBEAM_TICKS -> machine.ebeamRecipeTicks();
+                        case WIRE_EBEAM_FE -> machine.ebeamEnergyCost();
                         default -> 0;
                     };
                 }
@@ -181,6 +192,15 @@ public class SupportMachineMenu extends FabMachineMenu {
     /** Tier index for the selected design (for client display). */
     public int ebeamSelectedTier() {
         return this.extraData.get(WIRE_EBEAM_TIER);
+    }
+
+    public boolean ebeamDesignAvailable(int index) {
+        return index >= 0 && index < 7 && (extraData.get(WIRE_EBEAM_AVAILABLE) & (1 << index)) != 0;
+    }
+    public int ebeamBlankCost() { return extraData.get(WIRE_EBEAM_BLANK); }
+    public int ebeamRedstoneCost() { return extraData.get(WIRE_EBEAM_REDSTONE); }
+    public long ebeamTotalEnergy() {
+        return (long) extraData.get(WIRE_EBEAM_TICKS) * extraData.get(WIRE_EBEAM_FE);
     }
 
     /** Converts a canonical die type string to an int for network sync. */

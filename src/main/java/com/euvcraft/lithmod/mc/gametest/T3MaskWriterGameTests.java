@@ -2,6 +2,9 @@ package com.euvcraft.lithmod.mc.gametest;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import java.util.Map;
 
 import com.euvcraft.lithmod.core.DieTypes;
@@ -33,6 +36,11 @@ import com.euvcraft.lithmod.mc.registry.ModDataComponents;
 import com.euvcraft.lithmod.mc.registry.ModItems;
 
 import com.mojang.authlib.GameProfile;
+import java.util.UUID;
+import net.minecraft.world.level.GameType;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.PacketFlow;
+import io.netty.channel.embedded.EmbeddedChannel;
 
 import io.netty.buffer.Unpooled;
 
@@ -309,13 +317,26 @@ public final class T3MaskWriterGameTests {
     }
 
     private static ServerPlayer connect(ServerLevel level) {
-        GameProfile profile = new GameProfile(java.util.UUID.randomUUID(), "TestPlayer");
-        ServerPlayer player = new ServerPlayer(level.getServer(), level, profile, CommonListenerCookie.createDefault());
+        CommonListenerCookie cookie = CommonListenerCookie.createInitial(
+            new GameProfile(UUID.randomUUID(), "t3-test"), false);
+        ServerPlayer player = new ServerPlayer(level.getServer(), level, cookie.gameProfile(),
+            cookie.clientInformation()) {
+            @Override
+            public GameType gameMode() {
+                return GameType.CREATIVE;
+            }
+        };
+        Connection connection = new Connection(PacketFlow.SERVERBOUND);
+        new EmbeddedChannel(connection);
+        level.getServer().getPlayerList().placeNewPlayer(connection, player, cookie);
         return player;
     }
 
     private static SupportMachineMenu createMenu(SupportMachineBlockEntity machine, ServerPlayer player) {
-        return new SupportMachineMenu(SupportMachines.SUPPORT_EBEAM_MENU.get(), 1, player.getInventory(), machine, SupportMachineKind.EBEAM);
+        SupportMachineMenu menu = SupportMachineMenu.forMachine(1, player.getInventory(), machine);
+        player.containerMenu = menu;
+        player.setPos(machine.getBlockPos().getX() + 0.5, machine.getBlockPos().getY() + 0.5, machine.getBlockPos().getZ() + 0.5);
+        return menu;
     }
 
     // ------------------------------------------------------------------
@@ -375,14 +396,14 @@ public final class T3MaskWriterGameTests {
         // Select design via menu button
         boolean selected = menu.clickMenuButton(player, SupportMachineMenu.EBEAM_DESIGN_BUTTON_BASE + index);
         helper.assertTrue(selected, "design selection failed for " + designName);
-        helper.assertEquals(index, machine.selectedDesign(), "server did not store selected design");
-        helper.assertEquals(dieType, machine.selectedDieType(), "server did not store die type");
-        helper.assertEquals(tier, machine.selectedTierIndex(), "server did not store tier index");
+        helper.assertValueEqual(index, machine.selectedDesign(), "server did not store selected design");
+        helper.assertValueEqual(dieType, machine.selectedDieType(), "server did not store die type");
+        helper.assertValueEqual(tier, machine.selectedTierIndex(), "server did not store tier index");
 
         // Menu sync
-        helper.assertEquals(index, menu.ebeamSelectedDesign(), "menu did not sync selected design");
-        helper.assertEquals(dieType, SupportMachineMenu.intToDieType(menu.ebeamSelectedDieType()), "menu did not sync die type");
-        helper.assertEquals(tier, menu.ebeamSelectedTier(), "menu did not sync tier index");
+        helper.assertValueEqual(index, menu.ebeamSelectedDesign(), "menu did not sync selected design");
+        helper.assertValueEqual(dieType, SupportMachineMenu.intToDieType(menu.ebeamSelectedDieType()), "menu did not sync die type");
+        helper.assertValueEqual(tier, menu.ebeamSelectedTier(), "menu did not sync tier index");
 
         player.closeContainer();
     }
@@ -452,7 +473,7 @@ public final class T3MaskWriterGameTests {
         boolean started = menu.clickMenuButton(player, SupportMachineMenu.EBEAM_START_BUTTON);
         helper.assertTrue(started, "job start failed");
         helper.assertTrue(machine.isEbeamJobRunning(), "job not running after start");
-        helper.assertEquals(designIndex, machine.selectedDesign(), "selected design changed after start");
+        helper.assertValueEqual(designIndex, machine.selectedDesign(), "selected design changed after start");
 
         // Run to completion
         runUntilOutput(machine, RECIPE_TICKS + 5);
@@ -461,23 +482,23 @@ public final class T3MaskWriterGameTests {
         ItemStack product = machine.outputSlot();
         helper.assertFalse(product.isEmpty(), "e-beam produced nothing for " + dieType + " at tier " + tierIndex);
         helper.assertTrue(product.getItem() == ModItems.MASK.get(), "product is " + product.getItem() + " rather than a lithmod mask");
-        helper.assertEquals(1, product.getCount(), "recipe produced wrong number of masks");
+        helper.assertValueEqual(1, product.getCount(), "recipe produced wrong number of masks");
 
         MaskData design = product.get(ModDataComponents.MASK_DATA.get());
         helper.assertTrue(design != null, "finished mask carries no mask_data component");
         if (design != null) {
-            helper.assertEquals(tierIndex, design.tierIndex(), "finished mask names another node tier");
-            helper.assertEquals(dieType, design.dieType(), "finished mask names die type " + design.dieType() + " rather than " + dieType);
-            helper.assertEquals(configuredUses, design.usesRemaining(), "finished mask does not carry configured exposure count");
-            helper.assertEquals(2, design.shopGeneration(), "finished mask is not GEN 2");
+            helper.assertValueEqual(tierIndex, design.tierIndex(), "finished mask names another node tier");
+            helper.assertValueEqual(dieType, design.dieType(), "finished mask names die type " + design.dieType() + " rather than " + dieType);
+            helper.assertValueEqual(configuredUses, design.usesRemaining(), "finished mask does not carry configured exposure count");
+            helper.assertValueEqual(2, design.shopGeneration(), "finished mask is not GEN 2");
             helper.assertFalse(design.isSpent(), "freshly cut mask handed out an already spent one");
         }
 
         // Verify inputs consumed exactly once
         helper.assertTrue(machine.slot(SupportMachineBlockEntity.SLOT_IN_0).isEmpty(), "blank mask was not consumed");
-        helper.assertEquals(32, machine.slot(SupportMachineBlockEntity.SLOT_IN_1).getCount(), "redstone count wrong after consumption");
+        helper.assertValueEqual(32, machine.slot(SupportMachineBlockEntity.SLOT_IN_1).getCount(), "redstone count wrong after consumption");
         helper.assertFalse(machine.isEbeamJobRunning(), "job did not finish");
-        helper.assertEquals(0L, machine.buffer().getAmountAsLong(), "machine was charged more than recipe cost");
+        helper.assertValueEqual(0L, machine.buffer().getAmountAsLong(), "machine was charged more than recipe cost");
 
         LOGGER.info("[T3] {}: {} mask for die {} at tier {} carrying {} uses GEN{}",
             designName(designIndex), product.getItem(), dieType, tierIndex, configuredUses, design != null ? design.shopGeneration() : -1);
@@ -586,7 +607,7 @@ public final class T3MaskWriterGameTests {
 
         ServerPlayer player = connect(helper.getLevel());
         // Wrong menu type for e-beam
-        SupportMachineMenu menu = new SupportMachineMenu(SupportMachines.SUPPORT_PURIFIER_MENU.get(), 1, player.getInventory(), machine, SupportMachineKind.PURIFIER);
+        SupportMachineMenu menu = SupportMachineMenu.clientPurifier(1, player.getInventory(), null);
         menu.clickMenuButton(player, SupportMachineMenu.EBEAM_DESIGN_BUTTON_BASE + 0);
         boolean started = menu.clickMenuButton(player, SupportMachineMenu.EBEAM_START_BUTTON);
         helper.assertFalse(started, "job started with wrong menu type");
@@ -623,7 +644,7 @@ public final class T3MaskWriterGameTests {
         // Try to select different design while busy
         boolean selected = menu.clickMenuButton(player, SupportMachineMenu.EBEAM_DESIGN_BUTTON_BASE + 1);
         helper.assertFalse(selected, "design selection succeeded while busy");
-        helper.assertEquals(0, machine.selectedDesign(), "selected design changed while busy");
+        helper.assertValueEqual(0, machine.selectedDesign(), "selected design changed while busy");
 
         player.closeContainer();
         helper.succeed();
@@ -653,7 +674,7 @@ public final class T3MaskWriterGameTests {
         // Try to start again while busy
         boolean started = menu.clickMenuButton(player, SupportMachineMenu.EBEAM_START_BUTTON);
         helper.assertFalse(started, "second start succeeded while busy");
-        helper.assertEquals(0, machine.ebeamJobProgress(), "job progress reset by second start");
+        helper.assertValueEqual(0, machine.ebeamJobProgress(), "job progress reset by second start");
 
         player.closeContainer();
         helper.succeed();
@@ -695,15 +716,15 @@ public final class T3MaskWriterGameTests {
         // Continue running - should pause
         runMachine(machine, RECIPE_TICKS / 2 + 2);
         helper.assertTrue(machine.isEbeamJobPaused(), "job did not pause on full output");
-        helper.assertEquals(RECIPE_TICKS / 2, machine.ebeamJobProgress(), "job progress advanced while paused");
+        helper.assertValueEqual(RECIPE_TICKS / 2, machine.ebeamJobProgress(), "job progress advanced while paused");
         long energyBefore = machine.buffer().getAmountAsLong();
-        helper.assertEquals(energyBefore, machine.buffer().getAmountAsLong(), "energy consumed while paused");
+        helper.assertValueEqual(energyBefore, machine.buffer().getAmountAsLong(), "energy consumed while paused");
 
         // Clear output - should resume
         machine.clearSlot(SupportMachineBlockEntity.SLOT_IN_0 + 2);
         runMachine(machine, RECIPE_TICKS / 2 + 2);
         helper.assertFalse(machine.outputSlot().isEmpty(), "job did not complete after resume");
-        helper.assertEquals(0L, machine.buffer().getAmountAsLong(), "job did not cost exact FE after resume");
+        helper.assertValueEqual(0L, machine.buffer().getAmountAsLong(), "job did not cost exact FE after resume");
 
         // Verify output is GEN2
         MaskData design = machine.outputSlot().get(ModDataComponents.MASK_DATA.get());
@@ -743,14 +764,14 @@ public final class T3MaskWriterGameTests {
         // Continue running - should pause
         runMachine(machine, RECIPE_TICKS / 2 + 2);
         helper.assertTrue(machine.isEbeamJobPaused(), "job did not pause on no power");
-        helper.assertEquals(RECIPE_TICKS / 2, machine.ebeamJobProgress(), "job progress advanced while paused");
-        helper.assertEquals(0L, machine.buffer().getAmountAsLong(), "energy changed while paused");
+        helper.assertValueEqual(RECIPE_TICKS / 2, machine.ebeamJobProgress(), "job progress advanced while paused");
+        helper.assertValueEqual(0L, machine.buffer().getAmountAsLong(), "energy changed while paused");
 
         // Restore power - should resume
         charge(helper, machine, fixtureCost(machine) * (RECIPE_TICKS / 2));
         runMachine(machine, RECIPE_TICKS / 2 + 2);
         helper.assertFalse(machine.outputSlot().isEmpty(), "job did not complete after resume");
-        helper.assertEquals(0L, machine.buffer().getAmountAsLong(), "job did not cost exact FE after resume");
+        helper.assertValueEqual(0L, machine.buffer().getAmountAsLong(), "job did not cost exact FE after resume");
 
         // Verify output is GEN2
         MaskData design = machine.outputSlot().get(ModDataComponents.MASK_DATA.get());
@@ -800,7 +821,7 @@ public final class T3MaskWriterGameTests {
         helper.assertFalse(machine.outputSlot().isEmpty(), "job did not complete");
 
         // Exactly one mask output
-        helper.assertEquals(1, machine.outputSlot().getCount(), "output count is not 1");
+        helper.assertValueEqual(1, machine.outputSlot().getCount(), "output count is not 1");
 
         player.closeContainer();
         helper.succeed();
@@ -834,7 +855,7 @@ public final class T3MaskWriterGameTests {
         // Run halfway
         int paid = RECIPE_TICKS / 2;
         runMachine(machine, paid);
-        helper.assertEquals(paid, machine.ebeamJobProgress(), "job progress not at halfway");
+        helper.assertValueEqual(paid, machine.ebeamJobProgress(), "job progress not at halfway");
         long energyAfterPaid = machine.buffer().getAmountAsLong();
 
         // Save/load cycle
@@ -843,11 +864,11 @@ public final class T3MaskWriterGameTests {
         wipe(machine);
         loadTag(level, machine, tag);
 
-        helper.assertEquals(paid, machine.ebeamJobProgress(), "save/load lost progress");
-        helper.assertEquals(RECIPE_TICKS, machine.ebeamJobDuration(), "save/load lost duration");
-        helper.assertEquals(fixtureCost(machine), machine.ebeamJobDuration() > 0 ? 2000 : 0, "save/load lost energy per tick");
-        helper.assertEquals(energyAfterPaid, machine.buffer().getAmountAsLong(), "save/load lost energy");
-        helper.assertEquals(1, machine.slot(SupportMachineBlockEntity.SLOT_IN_0).getCount(), "save/load lost blank mask");
+        helper.assertValueEqual(paid, machine.ebeamJobProgress(), "save/load lost progress");
+        helper.assertValueEqual(RECIPE_TICKS, machine.ebeamJobDuration(), "save/load lost duration");
+        helper.assertValueEqual(fixtureCost(machine), machine.ebeamJobDuration() > 0 ? 2000 : 0, "save/load lost energy per tick");
+        helper.assertValueEqual(energyAfterPaid, machine.buffer().getAmountAsLong(), "save/load lost energy");
+        helper.assertValueEqual(1, machine.slot(SupportMachineBlockEntity.SLOT_IN_0).getCount(), "save/load lost blank mask");
         helper.assertTrue(machine.slot(SupportMachineBlockEntity.SLOT_IN_1).getCount() >= 32, "save/load lost redstone");
 
         // Simulate live JSON reload (recipe still available)
@@ -857,7 +878,7 @@ public final class T3MaskWriterGameTests {
         // Resume and finish
         runMachine(machine, RECIPE_TICKS - paid + 2);
         helper.assertFalse(machine.outputSlot().isEmpty(), "job did not complete after reload");
-        helper.assertEquals(0L, machine.buffer().getAmountAsLong(), "job did not cost exact FE after reload");
+        helper.assertValueEqual(0L, machine.buffer().getAmountAsLong(), "job did not cost exact FE after reload");
 
         // Verify output is GEN2
         MaskData design = machine.outputSlot().get(ModDataComponents.MASK_DATA.get());
@@ -893,7 +914,7 @@ public final class T3MaskWriterGameTests {
             menu.clickMenuButton(player, SupportMachineMenu.EBEAM_START_BUTTON);
             runUntilOutput(machine, RECIPE_TICKS + 5);
 
-            helper.assertEquals(i + 1, machine.outputSlot().getCount(), "output count wrong after completion " + (i + 1));
+            helper.assertValueEqual(i + 1, machine.outputSlot().getCount(), "output count wrong after completion " + (i + 1));
             MaskData design = machine.outputSlot().get(ModDataComponents.MASK_DATA.get());
             helper.assertTrue(design != null && design.shopGeneration() == 2, "mask " + (i + 1) + " is not GEN2");
         }
@@ -925,7 +946,7 @@ public final class T3MaskWriterGameTests {
 
         // Corrupt the save tag
         CompoundTag tag = saveTag(level, machine);
-        CompoundTag ebeamTag = tag.getCompound("ebeamJob");
+        CompoundTag ebeamTag = tag.getCompound("ebeamJob").orElseThrow();
         ebeamTag.putInt("duration", -1); // invalid
 
         wipe(machine);
@@ -933,7 +954,7 @@ public final class T3MaskWriterGameTests {
 
         // Job should be cancelled, items preserved
         helper.assertFalse(machine.isEbeamJobRunning(), "corrupted save loaded as running job");
-        helper.assertEquals(1, machine.slot(SupportMachineBlockEntity.SLOT_IN_0).getCount(), "blank mask lost on invalid save");
+        helper.assertValueEqual(1, machine.slot(SupportMachineBlockEntity.SLOT_IN_0).getCount(), "blank mask lost on invalid save");
         helper.assertTrue(machine.slot(SupportMachineBlockEntity.SLOT_IN_1).getCount() >= 32, "redstone lost on invalid save");
 
         player.closeContainer();
@@ -966,7 +987,7 @@ public final class T3MaskWriterGameTests {
         machine.serverTick();
 
         helper.assertFalse(machine.isEbeamJobRunning(), "job kept running after blank mask removed");
-        helper.assertEquals(energyBefore, machine.buffer().getAmountAsLong(), "energy consumed on tamper tick");
+        helper.assertValueEqual(energyBefore, machine.buffer().getAmountAsLong(), "energy consumed on tamper tick");
         helper.assertTrue(machine.outputSlot().isEmpty(), "output produced after tamper");
 
         // Items preserved (blank was already removed by tamper, redstone intact)
@@ -982,7 +1003,7 @@ public final class T3MaskWriterGameTests {
 
         // Create a GEN1 mask via legacy 3-arg constructor
         MaskData gen1Mask = new MaskData(DieTypes.LOGIC, 1, 4); // 3 args -> generation 1
-        helper.assertEquals(1, gen1Mask.shopGeneration(), "3-arg constructor did not default to generation 1");
+        helper.assertValueEqual(1, gen1Mask.shopGeneration(), "3-arg constructor did not default to generation 1");
 
         ItemStack stack = new ItemStack(ModItems.MASK.get());
         stack.set(ModDataComponents.MASK_DATA.get(), gen1Mask);
@@ -998,11 +1019,11 @@ public final class T3MaskWriterGameTests {
 
         helper.assertTrue(ItemStack.isSameItemSameComponents(stack, reloaded.get(1)), "GEN1 mask round-trip failed");
         MaskData reloadedDesign = reloaded.get(1).get(ModDataComponents.MASK_DATA.get());
-        helper.assertEquals(1, reloadedDesign.shopGeneration(), "GEN1 mask generation not preserved");
+        helper.assertValueEqual(1, reloadedDesign.shopGeneration(), "GEN1 mask generation not preserved");
 
         // consumeUse preserves generation
         MaskData consumed = reloadedDesign.consumeUse();
-        helper.assertEquals(1, consumed.shopGeneration(), "consumeUse did not preserve GEN1 generation");
+        helper.assertValueEqual(1, consumed.shopGeneration(), "consumeUse did not preserve GEN1 generation");
 
         helper.succeed();
     }
@@ -1034,7 +1055,7 @@ public final class T3MaskWriterGameTests {
         runUntilOutput(machine, RECIPE_TICKS + 5);
 
         MaskData design = machine.outputSlot().get(ModDataComponents.MASK_DATA.get());
-        helper.assertEquals(2, design.shopGeneration(), "e-beam must produce GEN2 masks");
+        helper.assertValueEqual(2, design.shopGeneration(), "e-beam must produce GEN2 masks");
 
         player.closeContainer();
         helper.succeed();
@@ -1046,7 +1067,7 @@ public final class T3MaskWriterGameTests {
 
     private static CompoundTag saveTag(ServerLevel level, SupportMachineBlockEntity machine) {
         TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, level.registryAccess());
-        machine.saveAdditional(output);
+        machine.saveWithId(output);
         return output.buildResult();
     }
 
@@ -1056,6 +1077,6 @@ public final class T3MaskWriterGameTests {
     }
 
     private static void loadTag(ServerLevel level, SupportMachineBlockEntity machine, CompoundTag tag) {
-        machine.loadAdditional(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), tag));
+        machine.loadWithComponents(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), tag));
     }
 }

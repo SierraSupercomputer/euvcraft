@@ -68,6 +68,10 @@ public record SupportRecipe(
         Objects.requireNonNull(input, "input must not be null");
         Objects.requireNonNull(outputItem, "outputItem must not be null");
 
+        if (input.isTag() || (secondary != null && secondary.isTag()))
+            throw new IllegalArgumentException("Support recipes require exact item ingredients");
+        if (input.count() > 64 || outputCount > 64 || (secondary != null && secondary.count() > 64))
+            throw new IllegalArgumentException("Support recipe counts must fit their item slots");
         if (machine.isBlank()) {
             throw new IllegalArgumentException("machine must not be blank");
         }
@@ -111,6 +115,10 @@ public record SupportRecipe(
                 throw new IllegalArgumentException("boule_purifier recipes take no secondary ingredient");
             }
         } else {
+            if (!"lithmod:blank_mask".equals(input.id()) || secondary == null
+                    || !"minecraft:redstone".equals(secondary.id())
+                    || !"lithmod:mask".equals(outputItem) || outputCount != 1)
+                throw new IllegalArgumentException("E-beam recipes require blank masks and redstone and output one mask");
             if (waterMb != 0) {
                 throw new IllegalArgumentException(
                     "ebeam_mask_writer recipes take no water, got water_mb=" + waterMb);

@@ -148,7 +148,6 @@
   "status.lithmod.ebeam.no_recipe": "No recipe loaded",
   "status.lithmod.ebeam.output_full": "Output full",
   "status.lithmod.ebeam.no_power": "Insufficient power",
-  "item.lithmod.pure_silicon_boule": "Pure Silicon Boule",
   "item.lithmod.logic_chip_t3": "T3 Logic Chip",
   "item.lithmod.memory_chip_t3": "T3 Memory Chip",
   "item.lithmod.compute_chip_t3": "T3 Compute Chip",
@@ -158,5 +157,10 @@
   "item.lithmod.precision_stepper_stage": "Precision Stepper Stage",
   "item.lithmod.hepa_filter": "HEPA Filter",
   "item.lithmod.laser_interferometer": "Laser Interferometer",
-  "item.lithmod.resist_t3": "T3 Photoresist"
+  "item.lithmod.resist_t3": "T3 Photoresist",
+  "label.lithmod.ebeam.design": "%s T%s",
+  "label.lithmod.ebeam.ingredients": "Blank: %s  Redstone: %s",
+  "label.lithmod.ebeam.unavailable": "Recipe unavailable",
+  "label.lithmod.ebeam.running": "Writing mask",
+  "label.lithmod.ebeam.paused": "Writing paused"
 }
