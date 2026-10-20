@@ -49,7 +49,7 @@ public class ProcessCellScreen extends FabMachineScreen<ProcessCellMenu> {
     private static final int FOOTER_DESIGN_Y = 188;
     private static final int FOOTER_FORMED_Y = 198;
     /** Role subtitle Y position relative to topPos. */
-    private static final int SUBTITLE_Y = 26;
+    private static final int SUBTITLE_Y = 57;
     /** Abort button bounds relative to top-left. */
     private static final int ABORT_BTN_X = 8;
     private static final int ABORT_BTN_Y = 212;
@@ -137,7 +137,7 @@ public class ProcessCellScreen extends FabMachineScreen<ProcessCellMenu> {
     protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         super.extractLabels(graphics, mouseX, mouseY);
 
-        // Role subtitle at y=26
+        // Free row below machine slots; keep clear of the FE label at y=19.
         drawCenteredSubtitle(graphics, this.roleSubtitle, SUBTITLE_Y);
 
         // Footer status line at y=168

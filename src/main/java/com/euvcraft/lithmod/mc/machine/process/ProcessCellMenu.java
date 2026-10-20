@@ -333,7 +333,7 @@ public class ProcessCellMenu extends FabMachineMenu {
     public boolean canDragTo(Slot slot) {
         // Creative drag-fill may still operate on the player's own inventory, but must
         // never create additional resist in a locked machine input.
-        return !(inputsLocked() && observedQuickcraftType == QUICKCRAFT_TYPE_CLONE
+        return !(isOperatingPanel() && inputsLocked() && observedQuickcraftType == QUICKCRAFT_TYPE_CLONE
                 && slot == slots.get(ProcessCellControllerBlockEntity.SLOT_RESIST))
             && super.canDragTo(slot);
     }
