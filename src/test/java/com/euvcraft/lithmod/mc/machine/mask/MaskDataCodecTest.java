@@ -67,7 +67,7 @@ class MaskDataCodecTest {
 
         JsonElement encodedElement = MaskDataCodec.CODEC.encodeStart(JsonOps.INSTANCE, data).result().orElseThrow();
         JsonObject json = encodedElement.getAsJsonObject();
-        assertEquals(1, json.get("shop_generation").getAsInt());
+        assertTrue(!json.has("shop_generation"), "default generation is omitted by the optional codec");
 
         MaskData decoded = MaskDataCodec.CODEC.parse(JsonOps.INSTANCE, json).result().orElseThrow();
         assertEquals(data, decoded);
