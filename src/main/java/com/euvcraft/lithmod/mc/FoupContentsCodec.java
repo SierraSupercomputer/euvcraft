@@ -11,6 +11,7 @@ import com.euvcraft.lithmod.core.Wafer;
 import com.euvcraft.lithmod.core.WaferPacking;
 import com.euvcraft.lithmod.core.WaferSubstrate;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import io.netty.buffer.ByteBuf;
@@ -92,7 +93,14 @@ public final class FoupContentsCodec {
      */
     private static final Codec<int[]> INT_ARRAY = Codec.INT_STREAM.xmap(IntStream::toArray, IntStream::of);
 
-    /** Persistent form: everything, rolls, flags, the optional run spec and the optional grade included. */
+    /** Unknown explicit grades produce a normal codec error; only absent legacy fields default. */
+    private static final Codec<WaferSubstrate> GRADE_CODEC = Codec.STRING.comapFlatMap(id -> {
+        WaferSubstrate grade = WaferSubstrate.fromId(id);
+        return grade == null ? DataResult.error(() -> "Unknown wafer substrate grade: " + id)
+            : DataResult.success(grade);
+    }, WaferSubstrate::id);
+
+    /** Persistent private state plus a backwards-compatible public substrate field. */
     public static final Codec<FoupContents> CODEC = RecordCodecBuilder.create(instance -> instance.group(
         UUIDUtil.CODEC.fieldOf(KEY_LOT).forGetter(FoupContents::lotId),
         Codec.INT.fieldOf(KEY_CAPACITY).forGetter(FoupContents::capacity),
@@ -100,18 +108,11 @@ public final class FoupContentsCodec {
         INT_ARRAY.fieldOf(KEY_ROLLS).forGetter(contents -> WaferPacking.packRollBits(contents.wafers())),
         INT_ARRAY.fieldOf(KEY_FLAGS).forGetter(contents -> WaferPacking.packFlags(contents.wafers())),
         RunSpecCodec.CODEC.optionalFieldOf(KEY_RUN_SPEC).forGetter(c -> java.util.Optional.ofNullable(c.run())),
-        Codec.STRING.optionalFieldOf(KEY_GRADE).forGetter(c -> java.util.Optional.ofNullable(c.grade().id()))
-    ).apply(instance, (lotId, capacity, layers, rollBits, flags, runSpec, gradeOpt) -> {
-        WaferSubstrate grade;
-        if (gradeOpt.isPresent()) {
-            grade = WaferSubstrate.fromIdOrThrow(gradeOpt.get());
-        } else {
-            grade = WaferSubstrate.ORDINARY;
-        }
-        return new FoupContents(lotId, capacity,
+        GRADE_CODEC.optionalFieldOf(KEY_GRADE, WaferSubstrate.ORDINARY).forGetter(FoupContents::grade)
+    ).apply(instance, (lotId, capacity, layers, rollBits, flags, runSpec, grade) ->
+        new FoupContents(lotId, capacity,
             WaferPacking.unpack(layers, WaferPacking.unpackRollBits(rollBits), flags),
-            runSpec.orElse(null), grade);
-    }));
+            runSpec.orElse(null), grade)));
 
     /**
      * Network form: the public view only including the wafer substrate grade.
@@ -181,7 +182,7 @@ public final class FoupContentsCodec {
         for (int i = 0; i < safeCount; i++) {
             placeholders.add(new Wafer(safeLayer, CLIENT_VIEW_ROLL, Wafer.NO_FLAGS));
         }
-        return new FoupContents(CLIENT_VIEW_LOT_ID, safeCapacity, placeholders, safeGrade);
+        return new FoupContents(CLIENT_VIEW_LOT_ID, safeCapacity, placeholders, null, safeGrade);
     }
 
     /**

@@ -120,7 +120,7 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
      * @return a lot with no wafers in it
      */
     public static FoupContents empty(UUID lotId, int capacity) {
-        return new FoupContents(lotId, capacity, List.of(), WaferSubstrate.ORDINARY);
+        return new FoupContents(lotId, capacity, List.of(), null, WaferSubstrate.ORDINARY);
     }
 
     /**
@@ -133,7 +133,7 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
      */
     public static FoupContents empty(UUID lotId, int capacity, WaferSubstrate grade) {
         Objects.requireNonNull(grade, "grade must not be null");
-        return new FoupContents(lotId, capacity, List.of(), grade);
+        return new FoupContents(lotId, capacity, List.of(), null, grade);
     }
 
     /**

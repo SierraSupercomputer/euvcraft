@@ -1,5 +1,7 @@
 package com.euvcraft.lithmod.core;
 
+import java.util.Objects;
+
 /**
  * The part of a {@link FoupContents} that is safe to hand to anybody.
  *
