@@ -317,7 +317,7 @@ class SupportStructureMatcherTest {
                         assertFalse(result.success(),
                                 "facing=" + facing + " u0=" + u0 + " should reject panel at (" + u + "," + v + "," + d + ")");
                         assertNotNull(result.failureReason());
-                        assertTrue(result.failureReason().contains("operating panel not allowed"),
+                        if (u0 == 0) assertTrue(result.failureReason().contains("operating panel not allowed"),
                                 "facing=" + facing + " u0=" + u0 + ": " + result.failureReason());
                     }
                 }

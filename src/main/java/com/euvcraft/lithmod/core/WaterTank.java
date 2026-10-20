@@ -20,7 +20,7 @@ public final class WaterTank {
     /** Maximum allowed capacity and amount (1 million mB = 1000 buckets). */
     public static final int MAX_CAPACITY = 1_000_000;
 
-    private final int capacity;
+    private int capacity;
     private int amount;
 
     /**
@@ -110,7 +110,7 @@ public final class WaterTank {
         if (fillAmount == 0) {
             return true;
         }
-        if (amount + fillAmount > capacity) {
+        if (fillAmount > Math.max(0, capacity - amount)) {
             return false;
         }
         if (!simulate) {
@@ -159,6 +159,7 @@ public final class WaterTank {
         }
         // Capacity changes but amount is preserved (even if above new capacity)
         // No mutation of amount here; fill operations will respect the new capacity
+        this.capacity = newCapacity;
     }
 
     /**

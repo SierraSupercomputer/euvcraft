@@ -360,4 +360,13 @@ class WaterTankTest {
         assertThrows(IllegalArgumentException.class, () -> new WaterTank(0, 0));
         assertThrows(IllegalArgumentException.class, () -> new WaterTank(MAX + 1, 0));
     }
+    @Test
+    void exactFillCannotOverflowFromNearCapacity() {
+        WaterTank tank = new WaterTank(WaterTank.MAX_CAPACITY, WaterTank.MAX_CAPACITY - 1);
+        assertFalse(tank.fillExact(Integer.MAX_VALUE, true));
+        assertFalse(tank.fillExact(Integer.MAX_VALUE, false));
+        assertEquals(WaterTank.MAX_CAPACITY - 1, tank.amount());
+        assertTrue(tank.fillExact(1, false));
+        assertEquals(WaterTank.MAX_CAPACITY, tank.amount());
+    }
 }
