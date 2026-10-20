@@ -448,6 +448,10 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
                 if (state.getValue(ProcessCellPowerPortBlock.FORMED) != this.formed) {
                     level.setBlock(pos, state.setValue(ProcessCellPowerPortBlock.FORMED, this.formed), 3);
                 }
+            } else if (state.getBlock() instanceof ProcessCellOperatingPanelBlock) {
+                if (state.getValue(ProcessCellOperatingPanelBlock.FORMED) != this.formed) {
+                    level.setBlock(pos, state.setValue(ProcessCellOperatingPanelBlock.FORMED, this.formed), 3);
+                }
             } else if (state.getBlock() instanceof ProcessCellControllerBlock) {
                 if (state.getValue(ProcessCellControllerBlock.FORMED) != this.formed) {
                     level.setBlock(pos, state.setValue(ProcessCellControllerBlock.FORMED, this.formed), 3);
@@ -476,6 +480,12 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
                 return BlockKind.OTHER;
             }
             return BlockKind.CONTROLLER;
+        }
+        if (blockEntity instanceof ProcessCellOperatingPanelBlockEntity panel) {
+            if (panel.isMemberOfFormedCell() && panel.controller() != this) {
+                return BlockKind.OTHER;
+            }
+            return BlockKind.OPERATING_PANEL;
         }
         if (blockEntity instanceof ProcessCellMemberBlockEntity member) {
             if (member.isMemberOfFormedCell() && member.controller() != this) {

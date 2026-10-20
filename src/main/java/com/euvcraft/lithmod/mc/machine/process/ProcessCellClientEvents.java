@@ -26,5 +26,6 @@ public final class ProcessCellClientEvents {
     @SubscribeEvent
     public static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(ModMultiblocks.PROCESS_CELL_MENU_TYPE.get(), ProcessCellScreen::new);
+        event.register(ModMultiblocks.OPERATING_PANEL_MENU_TYPE.get(), ProcessCellScreen::new);
     }
 }
