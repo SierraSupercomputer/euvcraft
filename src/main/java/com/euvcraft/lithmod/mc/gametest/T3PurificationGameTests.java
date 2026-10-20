@@ -441,7 +441,7 @@ public final class T3PurificationGameTests {
 
         // Keep the controller alive and break one casing: bucket exchange must be formation-gated.
         purifier.clearContent();
-        tank.drain(tank.amount(), false);
+        tank.drainExact(tank.amount(), false);
         helper.getLevel().removeBlock(cellsOf(helper.absolutePos(CELL), Direction.NORTH).get(11), false);
         purifier.revalidate();
         helper.assertFalse(purifier.isFormed(), "broken casing unforms the existing controller");
