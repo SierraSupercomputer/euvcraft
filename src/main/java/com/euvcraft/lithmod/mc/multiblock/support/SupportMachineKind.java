@@ -61,6 +61,29 @@ public enum SupportMachineKind {
      * only and must never fabricate a kind for a block that is not one of the two registered
      * controllers.</p>
      */
+    /**
+     * The kind whose {@link #id()} matches, or null for an unknown id.
+     *
+     * <p>Case-sensitive, because only our own data pack writes these ids. Pure lookup:
+     * this method touches no registry, so it is safe in unit tests and in the recipe
+     * record's constructor.</p>
+     *
+     * @param id the machine id to look up, may be null
+     * @return the matching kind, or {@code null}
+     */
+    public static @Nullable SupportMachineKind ofMachine(String id) {
+        if (id == null) {
+            return null;
+        }
+        if (PURIFIER.id.equals(id)) {
+            return PURIFIER;
+        }
+        if (EBEAM.id.equals(id)) {
+            return EBEAM;
+        }
+        return null;
+    }
+
     public static @Nullable SupportMachineKind of(BlockState state) {
         if (state.getBlock() == SupportMachines.BOULE_PURIFIER.get()) {
             return PURIFIER;

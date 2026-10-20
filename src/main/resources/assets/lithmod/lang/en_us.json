@@ -25,6 +25,7 @@
   "item.lithmod.mask": "Photomask",
   "item.lithmod.silicon": "Silicon",
   "item.lithmod.silicon_boule": "Silicon Boule",
+  "item.lithmod.pure_silicon_boule": "Pure Silicon Boule",
   "item.lithmod.crystal_puller": "Crystal Puller",
   "item.lithmod.wafer_slicer": "Wafer Slicer",
   "item.lithmod.pattern_generator": "Pattern Generator",

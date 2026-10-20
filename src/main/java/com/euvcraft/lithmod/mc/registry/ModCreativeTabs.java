@@ -68,6 +68,8 @@ public final class ModCreativeTabs {
                 // Silicon feedstock and boule
                 output.accept(ModItems.SILICON.get());
                 output.accept(ModItems.SILICON_BOULE.get());
+                // Pure boule (appended after the ordinary boule; production is the purifier)
+                output.accept(ModItems.PURE_SILICON_BOULE.get());
                 // Blank mask + three sample patterned masks
                 output.accept(ModItems.BLANK_MASK.get());
                 output.accept(sampleMask(DieTypes.LOGIC, 1));

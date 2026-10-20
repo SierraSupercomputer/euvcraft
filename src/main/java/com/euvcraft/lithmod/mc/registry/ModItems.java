@@ -77,6 +77,17 @@ public final class ModItems {
      */
     public static final DeferredItem<Item> SILICON_BOULE = ITEMS.registerSimpleItem("silicon_boule");
 
+    /**
+     * A purified single-crystal boule.
+     *
+     * <p>The product of the Boule Purifier: one ordinary boule plus the purifier's
+     * data-driven water cost becomes one pure boule. It is a plain item with no
+     * hidden data — the grade it stands for is the item itself, and only the Wafer
+     * Slicer reads it, to stamp {@link com.euvcraft.lithmod.core.WaferSubstrate#PURE}
+     * onto the lot it slices. No crafting recipe produces it; on purpose.</p>
+     */
+    public static final DeferredItem<Item> PURE_SILICON_BOULE = ITEMS.registerSimpleItem("pure_silicon_boule");
+
     /** Photoresist for node tier 1 lithography. */
     public static final DeferredItem<Item> RESIST_T1 =
         ITEMS.registerSimpleItem("resist_t1", properties -> properties.component(ModDataComponents.RESIST_TIER, 1));

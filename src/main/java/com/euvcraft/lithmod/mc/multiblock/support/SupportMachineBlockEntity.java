@@ -6,18 +6,24 @@ import com.euvcraft.lithmod.core.multiblock.MatchResult;
 import com.euvcraft.lithmod.core.multiblock.MultiblockDirection;
 import com.euvcraft.lithmod.core.multiblock.MultiblockPos;
 import com.euvcraft.lithmod.core.multiblock.SupportStructureMatcher;
+import com.euvcraft.lithmod.mc.EUVCRAFTMod;
+import com.euvcraft.lithmod.mc.data.SupportRecipeLoader;
 import com.euvcraft.lithmod.mc.multiblock.EnergyBufferProvider;
 import com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
-import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -56,10 +62,18 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
     public static final int SLOT_IN_0 = 0;
     public static final int SLOT_IN_1 = 1;
 
-    /** Purifier's water tank starts at 16000 mB; the definition param may resize it. */
+    /** Purifier output slot that receives the drained, now-empty bucket. */
+    public static final int SLOT_EMPTY_BUCKET_OUT = 2;
+    /** Purifier output slot that receives the pure boule. */
+    public static final int SLOT_PURE_BOULE_OUT = 3;
+
+    /** Purifier water tank capacity in mB before any definition resize; the tank starts EMPTY. */
     public static final int DEFAULT_WATER_CAPACITY_MB = 16_000;
     /** Purifier definition param: water tank capacity in mB. */
     public static final String PARAM_WATER_CAPACITY = "water_capacity";
+
+    /** One water bucket into the tank is always an exact 1000 mB transaction. */
+    public static final int BUCKET_WATER_MB = 1_000;
 
     /** The twelve positions of the current, or last, formation. */
     private final Set<BlockPos> members = new LinkedHashSet<>();
@@ -73,12 +87,26 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
     private @Nullable WaterTank water;
     private int formationChanges;
 
+    // ---------------------------------------------------------------- purifier job state
+    // Purchased only for kind() == PURIFIER. The e-beam leaves all of it untouched until its
+    // own job phase exists; nothing here seeks e-beam recipes.
+
+    /** Whether a purifier job is in progress. */
+    private boolean jobRunning;
+    /** Started but stopped for want of energy, an unformed cell or a full output. */
+    private boolean jobPaused;
+    /** Ticks completed on the job in progress. */
+    private int jobProgress;
+    /** The recipe the current job is pinned to, with the exact input counts it started under. */
+    private @Nullable JobSnapshot job;
+
     public SupportMachineBlockEntity(BlockPos pos, BlockState state) {
         super(SupportMachines.SUPPORT_CONTROLLER_BE.get(), pos, state,
             kind(state).inputSlots(), kind(state).outputSlots());
         if (kind() == SupportMachineKind.PURIFIER) {
-            // Initial 16000 mB; refreshDefinition (already run by the base constructor) resizes the
-            // capacity from the definition param. Amount is preserved when capacity changes.
+            // Starts EMPTY with 16000 mB of capacity; refreshDefinition (already run by the base
+            // constructor) resizes the capacity from the definition param. The amount is preserved
+            // when the capacity changes, and it starts at zero here — no free water.
             this.water = new WaterTank(DEFAULT_WATER_CAPACITY_MB);
         }
     }
@@ -147,11 +175,17 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
     // ---------------------------------------------------------------- ticking
 
     /**
-     * Foundation tick: definition, formation, public data. Never the recipe runner.
+     * The job phase: bucket exchange, then the purifier's own run. Never the recipe runner.
      *
      * <p>The energy numbers live in the base {@link FabMachineBlockEntity#serverTick()} path, which
-     * is deliberately not called: a support machine has no jobs in this milestone, so there is
-     * nothing to spend FE on yet and the runner must not adopt a recipe the owner never accepted.</p>
+     * is deliberately not called here: it would run the generic {@code MachineRecipeRunner} over
+     * the machine_recipes registry, whose recipes cannot pin their own water cost and duration.
+     * The purifier owns its own job loop over {@code data/lithmod/support_recipes} instead, and
+     * the runner object inherited from the base class stays at rest forever — a support machine
+     * must never silently start an owner-less recipe.</p>
+     *
+     * <p>A job runs only while the cell is formed: an unformed cell with a stored pause keeps
+     * its progress and never charges FE, and reforming resumes it.</p>
      */
     @Override
     public void serverTick() {
@@ -162,15 +196,252 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
             needsValidation = false;
             revalidate();
         }
+        if (kind() == SupportMachineKind.PURIFIER) {
+            tryBucketRefill();
+            tickPurifierJob();
+        }
         publishData();
     }
 
-    /** Publishes the public menu values; progress stays zero until the job phase exists. */
+    /** Publishes the public menu values, including the purifier job's progress. */
     private void publishData() {
         data().set(FabMachineBlockEntity.DATA_ENERGY, buffer().getAmountAsInt());
         data().set(FabMachineBlockEntity.DATA_CAPACITY, buffer().getCapacityAsInt());
-        data().set(FabMachineBlockEntity.DATA_PROGRESS, 0);
-        data().set(FabMachineBlockEntity.DATA_TICKS, 0);
+        // A pinned job keeps its own duration even if the loaded data changed under it, so
+        // DATA_TICKS is what the job actually runs against, never the registry's word.
+        data().set(FabMachineBlockEntity.DATA_PROGRESS, this.jobRunning ? this.jobProgress : 0);
+        data().set(FabMachineBlockEntity.DATA_TICKS,
+            this.jobRunning && this.job != null ? this.job.duration() : 0);
+    }
+
+    // ---------------------------------------------------------------- bucket exchange
+
+    /**
+     * One full water bucket becomes exactly 1000 mB of tank water plus exactly one empty
+     * bucket in the empty-bucket output slot, all or nothing.
+     *
+     * <p>This is the bucket adapter; the tank itself never knows an item exists. The whole
+     * exchange runs as a simulation first and commits only when every part of it fits: the
+     * tank must have room for the full 1000 mB and slot 2 must take exactly one empty
+     * bucket. Anything else — a partial bucket in the slot (any non-water-bucket stack),
+     * a full tank, a blocked output — changes nothing and preserves both the inventory and
+     * the tank.</p>
+     *
+     * <p>Gated on formation as the routine consistent choice: an unformed cell exchanges
+     * nothing, so a work bench someone re-equipped mid-repair cannot quietly fill the tank.
+     * Filling and draining the tank through {@link WaterTank} are independent of this path,
+     * so future pipes can adapt without touching this code, and there is deliberately no
+     * fluid and no item capability registered behind it.</p>
+     */
+    private void tryBucketRefill() {
+        if (!this.formed || this.water == null) {
+            return;
+        }
+        ItemStack in = slot(SLOT_IN_1);
+        if (!in.is(Items.WATER_BUCKET)) {
+            return;
+        }
+
+        ItemStack out = slot(SLOT_EMPTY_BUCKET_OUT);
+        boolean outputCanAccept = out.isEmpty()
+            || (out.is(Items.BUCKET) && out.getCount() < out.getMaxStackSize());
+        if (!this.water.fillExact(BUCKET_WATER_MB, true) || !outputCanAccept) {
+            return;
+        }
+
+        // Commit once, after the simulation agreed to all of it.
+        this.water.fillExact(BUCKET_WATER_MB, false);
+        ItemStack newEmpty = out.isEmpty()
+            ? new ItemStack(Items.BUCKET)
+            : out.copyWithCount(out.getCount() + 1);
+        setSlot(SLOT_EMPTY_BUCKET_OUT, newEmpty);
+        clearSlot(SLOT_IN_1);
+    }
+
+    // ---------------------------------------------------------------- purifier job loop
+
+    /**
+     * One tick of the purifier's job loop: start a run when everything conspires, or advance
+     * the pinned run.
+     *
+     * <p>A job may start only when the cell is formed, at least one valid recipe is loaded
+     * for {@code boule_purifier}, the boule slot holds the recipe's resolved input, the tank
+     * holds the recipe's water cost, and the pure-boule output slot can take the products.
+     * The moment those hold, the recipe's duration, per-tick cost, water cost and output are
+     * pinned into a snapshot, so a data reload mid-run can never retroactively change what
+     * the running job costs or produces.</p>
+     */
+    private void tickPurifierJob() {
+        if (this.jobRunning) {
+            advanceJob();
+        } else if (this.formed) {
+            maybeStartJob();
+        }
+    }
+
+    /** Starts a job if every precondition holds; pins the recipe and the exact input state. */
+    private void maybeStartJob() {
+        SupportRecipeLoader.Registry registry = SupportRecipeLoader.getRegistry();
+        SupportRecipeLoader.Resolved recipe = registry == null ? null : registry.firstFor(kind().id()).orElse(null);
+        if (recipe == null || !isFormed()) {
+            return;
+        }
+
+        ItemStack bouleIn = slot(SLOT_IN_0);
+        boolean inputPresent = bouleIn.is(recipe.inputItem()) && bouleIn.getCount() >= recipe.recipe().input().count();
+        boolean waterAvailable = this.water != null && this.water.amount() >= recipe.recipe().waterMb();
+        boolean outputRoom = canAcceptInto(SLOT_PURE_BOULE_OUT, recipe.outputItem(), recipe.recipe().outputCount());
+        if (!inputPresent || !waterAvailable || !outputRoom) {
+            return;
+        }
+
+        // Pin recipe and exact inputs: this job's numbers come from this snapshot and from
+        // nothing else until the job commits or is cancelled.
+        this.job = new JobSnapshot(recipe.recipe().duration(), recipe.recipe().energyPerTick(),
+            recipe.recipe().waterMb(), recipe.outputItem(), recipe.recipe().outputCount(),
+            recipe.inputItem(), bouleIn.getCount(), this.water.amount());
+        this.jobRunning = true;
+        this.jobPaused = false;
+        this.jobProgress = 0;
+        setChanged();
+    }
+
+    /**
+     * One tick of a run in progress; mirrors the runner's pause rules with the purifier's
+     * own cancellation rule.
+     *
+     * <p>Order matters and is the whole of the conservation rule: formation first, because
+     * an unformed cell never charges; then tampering, which drops the run without a refund
+     * because progress already paid for is progress spent; then the output slot, so a full
+     * output pauses with its progress intact; then the energy. The output room is checked
+     * once more immediately before the commit, because that is the tick it gets written.</p>
+     */
+    private void advanceJob() {
+        JobSnapshot pinned = this.job;
+        if (pinned == null) {
+            // Defensive: a running job always pins a snapshot. Fail closed rather than run free.
+            resetJob();
+            return;
+        }
+        if (!this.formed) {
+            this.jobPaused = true;
+            return;
+        }
+        if (inputTampered(pinned)) {
+            // No FE refund: whatever the tamperer already made the machine draw is spent.
+            resetJob();
+            return;
+        }
+        if (!canAcceptInto(SLOT_PURE_BOULE_OUT, pinned.outputItem, pinned.outputCount)) {
+            this.jobPaused = true;
+            return;
+        }
+        if (this.energySource().draw(pinned.energyPerTick) < pinned.energyPerTick) {
+            this.jobPaused = true;
+            return;
+        }
+
+        this.jobPaused = false;
+        this.jobProgress++;
+        if (this.jobProgress < pinned.duration) {
+            return;
+        }
+        completeJob(pinned);
+    }
+
+    /**
+     * Writes the product and only then consumes the inputs, exactly once.
+     *
+     * <p>Both the input and the water are re-checked here, because this is the tick the
+     * machine pays for and the tick it hands out a pure boule on: a tamper between the check
+     * at the top of {@link #advanceJob} and now cancels the run and consumes nothing. The
+     * committed water comes from the snapshot, not from the registry, so a reload mid-run is
+     * what the player paid for, not today's price.</p>
+     */
+    private void completeJob(JobSnapshot pinned) {
+        ItemStack bouleIn = slot(SLOT_IN_0);
+        if (!this.formed || inputTampered(pinned) || this.water == null
+                || !canAcceptInto(SLOT_PURE_BOULE_OUT, pinned.outputItem, pinned.outputCount)) {
+            resetJob();
+            return;
+        }
+
+        if (!this.water.drainExact(pinned.waterMb, false)) {
+            // Defensive: the tamper check above pins the amount; this cannot normally fail.
+            resetJob();
+            return;
+        }
+        bouleIn.shrink(1);
+        if (bouleIn.isEmpty()) {
+            clearSlot(SLOT_IN_0);
+        }
+        ItemStack existing = slot(SLOT_PURE_BOULE_OUT);
+        ItemStack product = existing.isEmpty()
+            ? new ItemStack(pinned.outputItem)
+            : existing.copyWithCount(existing.getCount() + 1);
+        setSlot(SLOT_PURE_BOULE_OUT, product);
+        setChanged();
+        resetJob();
+    }
+
+    /** Whether the pinned exact input state is no longer what the job started under. */
+    private boolean inputTampered(JobSnapshot pinned) {
+        if (this.water == null || this.water.amount() != pinned.waterPinned) {
+            return true;
+        }
+        ItemStack bouleIn = slot(SLOT_IN_0);
+        return !bouleIn.is(pinned.inputItem) || bouleIn.getCount() != pinned.inputCount;
+    }
+
+    /** Drops the job in progress and its progress; nothing is refunded. */
+    private void resetJob() {
+        this.jobRunning = false;
+        this.jobPaused = false;
+        this.jobProgress = 0;
+        this.job = null;
+        setChanged();
+    }
+
+    /** Whether {@code count} of {@code item} fits into the output slot at {@code index}. */
+    private boolean canAcceptInto(int index, net.minecraft.world.item.Item item, int count) {
+        ItemStack existing = slot(index);
+        if (existing.isEmpty()) {
+            return true;
+        }
+        return existing.is(item) && existing.getCount() + count <= Math.min(
+            existing.getMaxStackSize(), getMaxStackSize());
+    }
+
+    /** One pinned purifier job: the recipe's numbers and the exact input state at start. */
+    private record JobSnapshot(
+        int duration,
+        int energyPerTick,
+        int waterMb,
+        net.minecraft.world.item.Item outputItem,
+        int outputCount,
+        net.minecraft.world.item.Item inputItem,
+        int inputCount,
+        int waterPinned
+    ) { }
+
+    /** Whether a purifier job is in progress right now. */
+    public boolean isJobRunning() {
+        return this.jobRunning;
+    }
+
+    /** Started but stopped for want of energy, an unformed cell or a full output. */
+    public boolean isJobPaused() {
+        return this.jobPaused;
+    }
+
+    /** Ticks completed on the job in progress. */
+    public int jobProgress() {
+        return this.jobProgress;
+    }
+
+    /** Ticks the job in progress needs; zero when idle. */
+    public int jobDuration() {
+        return this.jobRunning && this.job != null ? this.job.duration() : 0;
     }
 
     // ---------------------------------------------------------------- capability lens
@@ -351,6 +622,12 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
         this.formed = input.getInt("formed").orElse(0) != 0;
         this.failureReason = input.getString("failureReason").orElse("");
         this.needsValidation = true;
+        // Stale job state is cleared before anything is restored, because this can run on an
+        // existing block entity that was already mid-job.
+        this.jobRunning = false;
+        this.jobPaused = false;
+        this.jobProgress = 0;
+        this.job = null;
         // The base load path already ran refreshDefinition; apply the definition's water capacity
         // before restoring the persisted amount, so a valid save round-trips capacity and amount.
         syncWaterCapacity();
@@ -367,7 +644,87 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
                 this.water = new WaterTank(this.water.capacity(), amount);
             }
         }
+        restorePurifierJob(input.childOrEmpty("purifierJob"));
         publishData();
+    }
+
+    /**
+     * Restores a pinned purifier job from its own save child.
+     *
+     * <p>Every number the job will ever spend is in the save: the recipe's duration, per-tick
+     * cost, water cost, output item and count, plus the exact input state the run started
+     * under. Nothing is re-read from the current recipes registry, so a reload that changes the
+     * recipe definition can never retroactively change the cost, the length, the water or the
+     * output of a job that is already running — the player finishes what they paid to start.</p>
+     *
+     * <p>The save is rejected wholesale when anything in it is not a plausible running job:
+     * a missing or negative field, a progress count at or past the duration (a running job can
+     * never be saved in the tick it committed), an unknown output or input item. That is the
+     * fail-closed answer to a hand-edited tag: the job is dropped, no cost arrives from
+     * nowhere, and the machine is simply idle until real inputs start a fresh job.</p>
+     */
+    private void restorePurifierJob(ValueInput state) {
+        if (!state.getBooleanOr("running", false)) {
+            return;
+        }
+        Integer duration = state.getInt("duration").orElse(null);
+        Integer energyPerTick = state.getInt("energy_per_tick").orElse(null);
+        Integer waterMb = state.getInt("water_mb").orElse(null);
+        Integer outputCount = state.getInt("output_count").orElse(null);
+        Integer inputCount = state.getInt("input_count").orElse(null);
+        Integer progress = state.getInt("progress").orElse(null);
+        Integer waterPinned = state.getInt("water_pinned").orElse(null);
+        Item outputItem = itemFrom(state.getString("output_item").orElse(null));
+        Item inputItem = itemFrom(state.getString("input_item").orElse(null));
+
+        boolean valid = duration != null && energyPerTick != null && waterMb != null
+            && outputCount != null && inputCount != null && progress != null && waterPinned != null
+            && duration > 0 && energyPerTick > 0 && waterMb > 0 && outputCount > 0 && inputCount > 0
+            && progress >= 0 && progress < duration;
+        if (valid) {
+            valid = outputItem != null && inputItem != null;
+        }
+        if (!valid) {
+            EUVCRAFTMod.LOGGER.warn(
+                "EUVCRAFT dropped a malformed saved purifier job; the machine stays idle");
+            return;
+        }
+        this.job = new JobSnapshot(duration, energyPerTick, waterMb, outputItem, outputCount,
+            inputItem, inputCount, waterPinned);
+        this.jobRunning = true;
+        this.jobProgress = progress;
+    }
+
+    /** Writes the pinned job, if one is running, into its own save child. */
+    private void savePurifierJob(ValueOutput output) {
+        if (!this.jobRunning || this.job == null) {
+            return;
+        }
+        ValueOutput state = output.child("purifierJob");
+        state.putBoolean("running", true);
+        state.putInt("progress", this.jobProgress);
+        JobSnapshot pinned = this.job;
+        state.putInt("duration", pinned.duration());
+        state.putInt("energy_per_tick", pinned.energyPerTick());
+        state.putInt("water_mb", pinned.waterMb());
+        state.putString("output_item", BuiltInRegistries.ITEM.getKey(pinned.outputItem()).toString());
+        state.putInt("output_count", pinned.outputCount());
+        state.putString("input_item", BuiltInRegistries.ITEM.getKey(pinned.inputItem()).toString());
+        state.putInt("input_count", pinned.inputCount());
+        state.putInt("water_pinned", pinned.waterPinned());
+    }
+
+    /** A registered item from its saved id, or null when the id is absent or unknown. */
+    private static @Nullable Item itemFrom(@Nullable String savedId) {
+        if (savedId == null || savedId.isBlank()) {
+            return null;
+        }
+        Identifier parsed = Identifier.tryParse(savedId);
+        if (parsed == null) {
+            return null;
+        }
+        Item item = BuiltInRegistries.ITEM.getValue(parsed);
+        return item == null || item == Items.AIR ? null : item;
     }
 
     @Override
@@ -378,6 +735,7 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
         if (this.water != null) {
             output.putInt("supportWaterAmount", this.water.amount());
         }
+        savePurifierJob(output);
         // Capacity is definition data, not saved.
     }
 

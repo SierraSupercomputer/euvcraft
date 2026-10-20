@@ -6,6 +6,9 @@ import com.euvcraft.lithmod.mc.machine.FabMachineMenu;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Menu for the Wafer Slicer: boule in, empty FOUP in, FOUP out.
@@ -48,10 +51,36 @@ public class WaferSlicerMenu extends FabMachineMenu {
             INPUT_SLOTS, INVENTORY_SIZE);
     }
 
+    /**
+     * The menu-side boule rule: an ordinary boule or, since now, a pure one — the two items
+     * {@link WaferSlicerBlockEntity#acceptsBouleItem(ItemStack)} accepts on the server, so
+     * what the slot predicts and what the tick runs agree.
+     *
+     * <p>Defined here rather than in the pre-purifier {@code BouleSlot}, whose rule is the
+     * ordinary-boule-only validation the older tests pin; this menu is the one in use and
+     * states its own rule explicitly.</p>
+     */
+    private static final class EitherGradeBouleSlot extends Slot {
+
+        EitherGradeBouleSlot(Container container, int index, int x, int y) {
+            super(container, index, x, y);
+        }
+
+        @Override
+        public boolean mayPlace(ItemStack stack) {
+            return WaferSlicerBlockEntity.acceptsBouleItem(stack);
+        }
+
+        @Override
+        public boolean mayPickup(@Nullable net.minecraft.world.entity.player.Player player) {
+            return true;
+        }
+    }
+
     @Override
     protected void addMachineSlots() {
         Container slots = machineSlots();
-        addCustomSlot(new BouleSlot(slots, WaferSlicerBlockEntity.BOULE_SLOT,
+        addCustomSlot(new EitherGradeBouleSlot(slots, WaferSlicerBlockEntity.BOULE_SLOT,
             MACHINE_SLOT_X - 18, MACHINE_SLOT_Y));
         addCustomSlot(new EmptyFoupSlot(slots, WaferSlicerBlockEntity.FOUP_SLOT,
             MACHINE_SLOT_X, MACHINE_SLOT_Y));

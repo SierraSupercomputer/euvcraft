@@ -5,6 +5,7 @@ import com.euvcraft.lithmod.core.FoupPublicView;
 import com.euvcraft.lithmod.core.MachineDefinition;
 import com.euvcraft.lithmod.core.Wafer;
 import com.euvcraft.lithmod.core.WaferSlicing;
+import com.euvcraft.lithmod.core.WaferSubstrate;
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.euvcraft.lithmod.mc.FoupContentsCodec;
 import com.euvcraft.lithmod.mc.FoupItems;
@@ -48,8 +49,10 @@ import java.util.UUID;
  * fails closed rather than running on a made-up number, and the stored FE it already holds
  * is kept for the day the definition comes back.</p>
  *
- * <p>Lots produced here carry no substrate generation and no run spec: the lot has not been
- * through a process step, and M1 has nowhere to record where a boule was grown.</p>
+ * <p>Lots produced here carry the substrate grade of the boule they were sliced from, frozen
+ * at job start, and no run spec: the lot has not been through a process step. An ordinary
+ * boule stamps {@code ORDINARY} exactly as before; a pure boule from the Boule Purifier
+ * stamps {@code PURE}.</p>
  */
 public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
 
@@ -72,6 +75,11 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
     private boolean paused;
     private int progress;
     private int ticks;
+    /**
+     * The boule item the run in progress was started with, pinned at start so the output lot's
+     * grade depends on the boule at job start and on nothing that happens after; null when idle.
+     */
+    private @Nullable Item slicingBouleItem;
 
     public WaferSlicerBlockEntity(BlockPos pos, BlockState state) {
         super(SiliconMachines.WAFER_SLICER_BE.get(), pos, state, 2, 1);
@@ -85,6 +93,24 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
     // ------------------------------------------------------------------
     // Input validation: the trusted read for gameplay, the public one for the slot
     // ------------------------------------------------------------------
+
+    /**
+     * The substrate grade of a boule item. {@code PURE} for the pure boule, everything else
+     * {@code ORDINARY} (which is what "fail closed" cannot mean here: an unknown item is
+     * refused upstream, so only the two boule items ever reach this).
+     */
+    public static WaferSubstrate gradeOf(Item bouleItem) {
+        return bouleItem == pureBouleItem() ? WaferSubstrate.PURE : WaferSubstrate.ORDINARY;
+    }
+
+    /**
+     * Items this machine accepts in {@link #BOULE_SLOT}: ordinary boules and, since now, pure
+     * ones produced by the Boule Purifier. Both slice with the same timing, energy and yield;
+     * the only thing the grade changes is the grade stamped onto the produced lot.
+     */
+    public static boolean acceptsBouleItem(ItemStack stack) {
+        return stack.is(bouleItem()) || stack.is(pureBouleItem());
+    }
 
     /**
      * Reads a stack as a lot the slicer is willing to fill, through the trusted read.
@@ -196,6 +222,10 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
                 return;
             }
             slicing = true;
+            // Pin the boule the run started under: the output lot's grade is this boule's
+            // grade, decided once here, never re-read from the slot and never taken from the
+            // empty FOUP carrier.
+            this.slicingBouleItem = slot(BOULE_SLOT).getItem();
             progress = 0;
             ticks = sliceTicks;
         }
@@ -214,7 +244,7 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
 
     /** Whether the boule and the FOUP this machine is slicing are both still there. */
     private boolean inputsValid() {
-        return slot(BOULE_SLOT).is(bouleItem())
+        return acceptsBouleItem(slot(BOULE_SLOT))
             && acceptedFoup(slot(FOUP_SLOT)) != null;
     }
 
@@ -228,6 +258,12 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
      */
     private void advance(int perTick) {
         if (!inputsValid()) {
+            resetSlice();
+            return;
+        }
+        if (isBouleTampered()) {
+            // A swapped-in boule of the other grade (or any other item) cancels the run
+            // before any FE is drawn for it.
             resetSlice();
             return;
         }
@@ -249,6 +285,15 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
     }
 
     /**
+     * Whether the boule the run started under is no longer what is in the slot: a different
+     * item means the player swapped grades mid-run, which cancels the run the same way a
+     * removed boule does.
+     */
+    private boolean isBouleTampered() {
+        return this.slicingBouleItem != null && !slot(BOULE_SLOT).is(this.slicingBouleItem);
+    }
+
+    /**
      * Writes the product and only then consumes the inputs.
      *
      * <p>The order matters: if the product could not be written, the boule and the FOUP
@@ -259,18 +304,26 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
      */
     private void complete() {
         ItemStack foupIn = slot(FOUP_SLOT);
+        ItemStack bouleStack = slot(BOULE_SLOT);
         FoupContents input = acceptedFoup(foupIn);
-        if (input == null || !slot(BOULE_SLOT).is(bouleItem()) || !outputSlot().isEmpty()) {
+        if (input == null || !acceptsBouleItem(bouleStack) || isBouleTampered()
+                || !outputSlot().isEmpty()) {
             resetSlice();
             return;
         }
 
-        int waferCount = WaferSlicing.wafersFor(EUVCRAFTMod.settings(), input.capacity());
+        // The grade is the pinned boule's grade — frozen at job start, never re-derived from
+        // the slot and never taken from the empty FOUP carrier: an ordinary carrier fed a pure
+        // boule produces a PURE lot, and a crafted pure carrier fed an ordinary boule an
+        // ORDINARY one.
+        WaferSubstrate grade = gradeOf(this.slicingBouleItem != null
+            ? this.slicingBouleItem : bouleStack.getItem());
+        int waferCount = WaferSlicing.wafersFor(EUVCRAFTMod.settings(), input.capacity(), grade);
         List<Wafer> wafers = new ArrayList<>(waferCount);
         for (int wafer = 0; wafer < waferCount; wafer++) {
             wafers.add(Wafer.unprocessed());
         }
-        FoupContents produced = new FoupContents(UUID.randomUUID(), input.capacity(), wafers);
+        FoupContents produced = FoupContents.of(UUID.randomUUID(), input.capacity(), wafers, grade);
 
         giveOutput(FoupItems.with(foupIn.getItem(), produced));
 
@@ -297,6 +350,7 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
         this.paused = false;
         this.progress = 0;
         this.ticks = 0;
+        this.slicingBouleItem = null;
     }
 
     // ------------------------------------------------------------------
@@ -365,6 +419,11 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
         return ModItems.SILICON_BOULE.get();
     }
 
+    /** The pure boule this machine also accepts, whose lots come out {@code PURE}. */
+    public static Item pureBouleItem() {
+        return ModItems.PURE_SILICON_BOULE.get();
+    }
+
     // ------------------------------------------------------------------
     // Persistence
     // ------------------------------------------------------------------
@@ -376,6 +435,8 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
         state.putBoolean("slicing", this.slicing);
         state.putInt("progress", this.progress);
         state.putInt("ticks", this.ticks);
+        state.putString("bouleGrade",
+            gradeOf(this.slicingBouleItem != null ? this.slicingBouleItem : bouleItem()).id());
     }
 
     /**
@@ -405,6 +466,22 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
         boolean savedSlicing = state.getBooleanOr("slicing", false);
         int savedProgress = state.getIntOr("progress", 0);
         int savedTicks = state.getIntOr("ticks", 0);
+        // The grade the run was started under. Saves written before the pure-boule milestone
+        // have no field and stay ORDINARY — legacy jobs are never auto-upgraded. An explicitly
+        // unknown id is not trusted and drops the run, fail closed, because a saved grade this
+        // mod never wrote can only have come from a hand-edited tag.
+        WaferSubstrate savedGrade;
+        try {
+            savedGrade = WaferSubstrate.fromIdOrThrow(
+                state.getString("bouleGrade").orElse(null));
+        } catch (IllegalArgumentException malformed) {
+            resetSlice();
+            if (savedSlicing) {
+                EUVCRAFTMod.LOGGER.warn("EUVCRAFT dropped a slicer run saved with an unknown boule grade");
+            }
+            syncSlicerData();
+            return;
+        }
 
         MachineDefinition definition = definition().orElse(null);
         int sliceTicks = definition == null ? 0 : definition.param(SLICE_TICKS_PARAM).orElse(0);
@@ -412,6 +489,12 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
         if (savedSlicing && definition != null && sliceTicks > 0
                 && savedTicks > 0 && savedProgress >= 0 && savedProgress < savedTicks) {
             this.slicing = true;
+            // The pinned boule is restored from the saved grade, so the run still finishes
+            // into a lot of the grade it started under even if the slot's stack was saved with
+            // it and the grade field is the only authority (it is — the stack round-trips
+            // through the inventory, and the grade check below refuses a tampered swap).
+            this.slicingBouleItem = savedGrade == WaferSubstrate.PURE
+                ? pureBouleItem() : bouleItem();
             this.progress = savedProgress;
             this.ticks = savedTicks;
         } else {
