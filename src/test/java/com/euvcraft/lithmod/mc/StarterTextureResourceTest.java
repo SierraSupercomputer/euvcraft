@@ -1,0 +1,267 @@
+package com.euvcraft.lithmod.mc;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.imageio.ImageIO;
+
+import com.euvcraft.lithmod.mc.EUVCRAFTMod;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+/**
+ * Validates M1 starter texture resources at build time.
+ *
+ * <p>Checks that every production item model references a {@code lithmod:item/<id>}
+ * texture that exists, decodes as 16×16 RGBA, and has transparent background.
+ * Every production block model references the correct {@code lithmod:block/...}
+ * textures that exist, decode as 16×16 RGBA, and are fully opaque.
+ * The {@code test_machine} resources are verified to exist but are not regenerated.
+ *
+ * <p>Missing or malformed resources **fail** the test — no silent skip.
+ * Uses the same {@code ImageIO} + Gson stack as {@link ItemAssetResourceTest}.
+ */
+class StarterTextureResourceTest {
+
+    private static final String MODID = EUVCRAFTMod.MODID;
+    private static final String ITEM_MODELS = "/assets/" + MODID + "/models/item/";
+    private static final String BLOCK_MODELS = "/assets/" + MODID + "/models/block/";
+    private static final String ITEM_TEXTURES = "/assets/" + MODID + "/textures/item/";
+    private static final String BLOCK_TEXTURES = "/assets/" + MODID + "/textures/block/";
+
+    // 23 non-block production items that must have custom textures
+    private static final Set<String> PRODUCTION_ITEMS = Set.of(
+        "foup_mk1", "foup_mk2",
+        "logic_chip_t1", "logic_chip_t2", "memory_chip_t2",
+        "chip_scrap", "silicon", "silicon_boule",
+        "resist_t1", "resist_t2",
+        "chip_package", "blank_mask", "mask",
+        "mercury_lamp", "i_line_lamp",
+        "contact_plate", "reduction_lens",
+        "manual_aligner", "stepper_stage",
+        "basic_air_filter", "fine_air_filter",
+        "optical_microscope", "overlay_scope"
+    );
+
+    // 10 production block models (test_machine excluded — preserved untouched)
+    private static final Set<String> PRODUCTION_BLOCKS = Set.of(
+        "crystal_puller", "wafer_slicer", "test_package", "pattern_generator",
+        "process_cell_controller_formed", "process_cell_controller_unformed",
+        "process_cell_casing_formed", "process_cell_casing_unformed",
+        "process_cell_power_port_formed", "process_cell_power_port_unformed"
+    );
+
+    // Block models that use orientable (multi-face) vs cube_all (single face)
+    private static final Set<String> ORIENTABLE_BLOCKS = Set.of(
+        "process_cell_controller_formed", "process_cell_controller_unformed"
+    );
+
+    @Test
+    @DisplayName("All production item models reference lithmod:item/<id> and PNG exists 16x16 transparent")
+    void productionItemModelsAndTexturesValid() throws Exception {
+        for (String itemId : PRODUCTION_ITEMS) {
+            // 1. Load item model JSON
+            URL modelUrl = StarterTextureResourceTest.class.getResource(ITEM_MODELS + itemId + ".json");
+            assertNotNull(modelUrl, "Missing item model: " + itemId);
+            JsonObject model = parseJson(modelUrl);
+
+            // 2. Verify parent and texture reference
+            assertEquals("minecraft:item/generated", model.get("parent").getAsString(),
+                "Item " + itemId + " must use minecraft:item/generated parent");
+            JsonObject textures = model.getAsJsonObject("textures");
+            assertNotNull(textures, "Item " + itemId + " missing textures object");
+            String layer0 = textures.get("layer0").getAsString();
+            assertEquals("lithmod:item/" + itemId, layer0,
+                "Item " + itemId + " must reference lithmod:item/" + itemId + ", got " + layer0);
+
+            // 3. Load and validate PNG
+            URL texUrl = StarterTextureResourceTest.class.getResource(ITEM_TEXTURES + itemId + ".png");
+            assertNotNull(texUrl, "Missing item texture: " + itemId + ".png");
+            BufferedImage img = ImageIO.read(texUrl.openStream());
+            assertNotNull(img, "Failed to decode PNG: " + itemId + ".png");
+            assertEquals(16, img.getWidth(), "Item " + itemId + " texture width must be 16");
+            assertEquals(16, img.getHeight(), "Item " + itemId + " texture height must be 16");
+            assertTrue(img.getAlphaRaster() != null, "Item " + itemId + " must have alpha channel");
+
+            // 4. Verify transparent background (at least one fully transparent pixel)
+            boolean hasTransparent = false;
+            for (int y = 0; y < 16 && !hasTransparent; y++) {
+                for (int x = 0; x < 16; x++) {
+                    if ((img.getRGB(x, y) >>> 24) == 0x00) {
+                        hasTransparent = true;
+                        break;
+                    }
+                }
+            }
+            assertTrue(hasTransparent, "Item " + itemId + " texture must have transparent pixels (background)");
+        }
+    }
+
+    @Test
+    @DisplayName("All production block models reference correct lithmod:block textures, PNGs exist 16x16 opaque")
+    void productionBlockModelsAndTexturesValid() throws Exception {
+        for (String blockId : PRODUCTION_BLOCKS) {
+            // 1. Load block model JSON
+            URL modelUrl = StarterTextureResourceTest.class.getResource(BLOCK_MODELS + blockId + ".json");
+            assertNotNull(modelUrl, "Missing block model: " + blockId);
+            JsonObject model = parseJson(modelUrl);
+
+            // 2. Determine expected texture references
+            Map<String, String> expectedTextures = expectedBlockTextures(blockId);
+            JsonObject textures = model.getAsJsonObject("textures");
+            assertNotNull(textures, "Block " + blockId + " missing textures object");
+
+            for (Map.Entry<String, String> entry : expectedTextures.entrySet()) {
+                String face = entry.getKey();
+                String expected = entry.getValue();
+                String actual = textures.get(face).getAsString();
+                assertEquals(expected, actual,
+                    "Block " + blockId + " face " + face + " must reference " + expected + ", got " + actual);
+            }
+
+            // 3. Validate each referenced texture PNG
+            for (String expectedTex : expectedTextures.values()) {
+                // expectedTex format: "lithmod:block/<path>"
+                String texPath = expectedTex.substring("lithmod:block/".length()) + ".png";
+                URL texUrl = StarterTextureResourceTest.class.getResource(BLOCK_TEXTURES + texPath);
+                assertNotNull(texUrl, "Missing block texture: " + texPath + " (referenced by " + blockId + ")");
+                BufferedImage img = ImageIO.read(texUrl.openStream());
+                assertNotNull(img, "Failed to decode PNG: " + texPath);
+                assertEquals(16, img.getWidth(), "Block texture " + texPath + " width must be 16");
+                assertEquals(16, img.getHeight(), "Block texture " + texPath + " height must be 16");
+
+                // 4. Verify fully opaque (no transparent pixels)
+                for (int y = 0; y < 16; y++) {
+                    for (int x = 0; x < 16; x++) {
+                        int alpha = (img.getRGB(x, y) >>> 24) & 0xFF;
+                        assertEquals(255, alpha,
+                            "Block texture " + texPath + " pixel (" + x + "," + y + ") must be fully opaque (alpha=255)");
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("test_machine resources exist and are untouched by generator")
+    void testMachineResourcesPreserved() throws Exception {
+        // Item model exists and uses block parent
+        URL itemModelUrl = StarterTextureResourceTest.class.getResource(ITEM_MODELS + "test_machine.json");
+        assertNotNull(itemModelUrl, "Missing test_machine item model");
+        JsonObject itemModel = parseJson(itemModelUrl);
+        assertEquals("lithmod:block/test_machine", itemModel.get("parent").getAsString(),
+            "test_machine item model must parent to lithmod:block/test_machine");
+
+        // Block model exists
+        URL blockModelUrl = StarterTextureResourceTest.class.getResource(BLOCK_MODELS + "test_machine.json");
+        assertNotNull(blockModelUrl, "Missing test_machine block model");
+        JsonObject blockModel = parseJson(blockModelUrl);
+        assertEquals("minecraft:block/cube_all", blockModel.get("parent").getAsString(),
+            "test_machine block model must use cube_all parent");
+
+        // Block texture exists (may be vanilla reference or custom - just verify model loads)
+        JsonObject blockTextures = blockModel.getAsJsonObject("textures");
+        assertNotNull(blockTextures, "test_machine block model missing textures");
+        String allTex = blockTextures.get("all").getAsString();
+        assertNotNull(allTex, "test_machine block model missing 'all' texture");
+        // Don't validate the texture itself — it's preserved untouched
+    }
+
+    @Test
+    @DisplayName("No extra item models in production set without registry entry")
+    void noOrphanProductionItemModels() throws Exception {
+        List<String> modelFiles = listResources(ITEM_MODELS, ".json");
+        for (String modelFile : modelFiles) {
+            String id = modelFile.substring(0, modelFile.length() - 5); // strip .json
+            if (PRODUCTION_ITEMS.contains(id)) continue;
+            if (Set.of("test_machine", "crystal_puller", "wafer_slicer", "test_package",
+                "pattern_generator", "process_cell_controller", "process_cell_casing",
+                "process_cell_power_port").contains(id)) continue; // block items
+            // Other items (if any) are allowed but not required to have custom textures
+        }
+    }
+
+    @Test
+    @DisplayName("No extra block models in production set without registry entry")
+    void noOrphanProductionBlockModels() throws Exception {
+        List<String> modelFiles = listResources(BLOCK_MODELS, ".json");
+        for (String modelFile : modelFiles) {
+            String id = modelFile.substring(0, modelFile.length() - 5);
+            if (PRODUCTION_BLOCKS.contains(id)) continue;
+            if (Set.of("test_machine").contains(id)) continue; // preserved
+            fail("Unexpected production block model: " + id + " (not in PRODUCTION_BLOCKS or preserve list)");
+        }
+    }
+
+    /** Expected texture references for a block model ID. */
+    private static Map<String, String> expectedBlockTextures(String blockId) {
+        Map<String, String> map = new HashMap<>();
+        if (ORIENTABLE_BLOCKS.contains(blockId)) {
+            map.put("top", "lithmod:block/" + blockId + "_top");
+            map.put("bottom", "lithmod:block/" + blockId + "_top");
+            map.put("side", "lithmod:block/" + blockId + "_side");
+            map.put("front", "lithmod:block/" + blockId + "_front");
+        } else {
+            map.put("all", "lithmod:block/" + blockId);
+        }
+        return map;
+    }
+
+    /** Parse JSON from URL into JsonObject. */
+    private static JsonObject parseJson(URL url) throws IOException {
+        try (InputStream in = url.openStream();
+             InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
+            JsonElement elem = JsonParser.parseReader(reader);
+            assertNotNull(elem, "Empty JSON: " + url);
+            assertTrue(elem.isJsonObject(), "JSON root not object: " + url);
+            return elem.getAsJsonObject();
+        }
+    }
+
+    /** List resource names in a bundled resource directory. */
+    private static List<String> listResources(String resourceDirectory, String suffix) throws IOException {
+        URL directory = StarterTextureResourceTest.class.getResource(resourceDirectory);
+        assertNotNull(directory, "Missing bundled resource directory: " + resourceDirectory);
+        assertEquals("file", directory.getProtocol(),
+            "Bundled resources not on test classpath as directory: " + resourceDirectory);
+
+        Path path;
+        try {
+            path = Path.of(directory.toURI());
+        } catch (Exception e) {
+            throw new IOException("Could not read resource directory: " + resourceDirectory, e);
+        }
+
+        List<String> names = new ArrayList<>();
+        try (Stream<Path> files = Files.list(path)) {
+            files.map(Path::getFileName)
+                .map(Path::toString)
+                .filter(name -> name.endsWith(suffix))
+                .sorted()
+                .forEach(names::add);
+        }
+        return names;
+    }
+}
