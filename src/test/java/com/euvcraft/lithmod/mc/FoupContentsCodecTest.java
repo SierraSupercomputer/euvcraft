@@ -290,7 +290,7 @@ class FoupContentsCodecTest {
             .result().orElseThrow();
 
         assertTrue(tag.contains(FoupContentsCodec.KEY_GRADE), "grade field missing for PURE lot");
-        assertEquals("pure", tag.getString(FoupContentsCodec.KEY_GRADE));
+        assertEquals("pure", tag.getString(FoupContentsCodec.KEY_GRADE).orElseThrow());
     }
 
     @Test

@@ -217,7 +217,7 @@ class FoupSubstrateCodecTest {
     }
 
     @Test
-    @DisplayName("untrusted placeholder: trustedContentsOf still rejects client view")
+    @DisplayName("pure public placeholder retains its untrusted client-view marker")
     void untrustedPlaceholderStillRejected() {
         FoupContents clientView = FoupContentsCodec.fromPublicView(25, 25, 4, "pure");
         assertTrue(FoupContentsCodec.isClientView(clientView));
@@ -251,9 +251,11 @@ class FoupSubstrateCodecTest {
         FoupContentsCodec.STREAM_CODEC.encode(bufOrdinary, ordinary);
         FoupContentsCodec.STREAM_CODEC.encode(bufPure, pure);
 
-        // Pure grade string is longer than ordinary
-        assertTrue(bufPure.readableBytes() > bufOrdinary.readableBytes());
+        // Three one-byte counts plus length-prefixed approved grade string.
+        assertEquals(12, bufOrdinary.readableBytes());
+        assertEquals(8, bufPure.readableBytes());
         // But the difference should be small (just the string length difference)
-        assertTrue(bufPure.readableBytes() - bufOrdinary.readableBytes() < 10);
+        assertEquals("ordinary".length() - "pure".length(),
+            bufOrdinary.readableBytes() - bufPure.readableBytes());
     }
 }
