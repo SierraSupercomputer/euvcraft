@@ -157,10 +157,10 @@ public final class T3PurificationGameTests {
     /** Unit vector along the cell's depth, written out from the core structure definition. */
     private static int[] backVector(Direction facing) {
         return switch (facing) {
-            case EAST -> new int[] { 1, 0, 0 };
-            case WEST -> new int[] { -1, 0, 0 };
-            case SOUTH -> new int[] { 0, 0, 1 };
-            default -> new int[] { 0, 0, -1 };
+            case EAST -> new int[] { -1, 0, 0 };
+            case WEST -> new int[] { 1, 0, 0 };
+            case SOUTH -> new int[] { 0, 0, -1 };
+            default -> new int[] { 0, 0, 1 };
         };
     }
 

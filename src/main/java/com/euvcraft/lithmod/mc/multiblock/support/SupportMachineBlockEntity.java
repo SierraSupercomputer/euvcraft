@@ -244,7 +244,7 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
 
         ItemStack out = slot(SLOT_EMPTY_BUCKET_OUT);
         boolean outputCanAccept = out.isEmpty()
-            || (out.is(Items.BUCKET) && out.getCount() < out.getMaxStackSize());
+            || (ItemStack.isSameItemSameComponents(out, new ItemStack(Items.BUCKET)) && out.getCount() < out.getMaxStackSize());
         if (!this.water.fillExact(BUCKET_WATER_MB, true) || !outputCanAccept) {
             return;
         }
@@ -255,7 +255,9 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
             ? new ItemStack(Items.BUCKET)
             : out.copyWithCount(out.getCount() + 1);
         setSlot(SLOT_EMPTY_BUCKET_OUT, newEmpty);
-        clearSlot(SLOT_IN_1);
+        in.shrink(1);
+        if (in.isEmpty()) clearSlot(SLOT_IN_1);
+        setChanged();
     }
 
     // ---------------------------------------------------------------- purifier job loop
@@ -299,7 +301,7 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
         // nothing else until the job commits or is cancelled.
         this.job = new JobSnapshot(recipe.recipe().duration(), recipe.recipe().energyPerTick(),
             recipe.recipe().waterMb(), recipe.outputItem(), recipe.recipe().outputCount(),
-            recipe.inputItem(), bouleIn.getCount(), this.water.amount());
+            recipe.inputItem(), recipe.recipe().input().count(), this.water.amount());
         this.jobRunning = true;
         this.jobPaused = false;
         this.jobProgress = 0;
@@ -371,14 +373,14 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
             resetJob();
             return;
         }
-        bouleIn.shrink(1);
+        bouleIn.shrink(pinned.inputCount);
         if (bouleIn.isEmpty()) {
             clearSlot(SLOT_IN_0);
         }
         ItemStack existing = slot(SLOT_PURE_BOULE_OUT);
         ItemStack product = existing.isEmpty()
-            ? new ItemStack(pinned.outputItem)
-            : existing.copyWithCount(existing.getCount() + 1);
+            ? new ItemStack(pinned.outputItem, pinned.outputCount)
+            : existing.copyWithCount(existing.getCount() + pinned.outputCount);
         setSlot(SLOT_PURE_BOULE_OUT, product);
         setChanged();
         resetJob();
@@ -386,11 +388,11 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
 
     /** Whether the pinned exact input state is no longer what the job started under. */
     private boolean inputTampered(JobSnapshot pinned) {
-        if (this.water == null || this.water.amount() != pinned.waterPinned) {
+        if (this.water == null || this.water.amount() < pinned.waterMb) {
             return true;
         }
         ItemStack bouleIn = slot(SLOT_IN_0);
-        return !bouleIn.is(pinned.inputItem) || bouleIn.getCount() != pinned.inputCount;
+        return !bouleIn.is(pinned.inputItem) || bouleIn.getCount() < pinned.inputCount;
     }
 
     /** Drops the job in progress and its progress; nothing is refunded. */
@@ -405,10 +407,11 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
     /** Whether {@code count} of {@code item} fits into the output slot at {@code index}. */
     private boolean canAcceptInto(int index, net.minecraft.world.item.Item item, int count) {
         ItemStack existing = slot(index);
+        if (count < 1 || count > Math.min(new ItemStack(item).getMaxStackSize(), getMaxStackSize())) return false;
         if (existing.isEmpty()) {
             return true;
         }
-        return existing.is(item) && existing.getCount() + count <= Math.min(
+        return ItemStack.isSameItemSameComponents(existing, new ItemStack(item)) && existing.getCount() + count <= Math.min(
             existing.getMaxStackSize(), getMaxStackSize());
     }
 
@@ -682,7 +685,15 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
             && duration > 0 && energyPerTick > 0 && waterMb > 0 && outputCount > 0 && inputCount > 0
             && progress >= 0 && progress < duration;
         if (valid) {
-            valid = outputItem != null && inputItem != null;
+            valid = kind() == SupportMachineKind.PURIFIER
+                && outputItem == com.euvcraft.lithmod.mc.registry.ModItems.PURE_SILICON_BOULE.get()
+                && inputItem == com.euvcraft.lithmod.mc.registry.ModItems.SILICON_BOULE.get()
+                && duration <= SupportRecipe.MAX_DURATION_TICKS
+                && energyPerTick <= SupportRecipe.MAX_ENERGY_PER_TICK
+                && waterMb <= WaterTank.MAX_CAPACITY
+                && waterPinned >= waterMb && waterPinned <= WaterTank.MAX_CAPACITY
+                && inputCount <= new ItemStack(inputItem).getMaxStackSize()
+                && outputCount <= new ItemStack(outputItem).getMaxStackSize();
         }
         if (!valid) {
             EUVCRAFTMod.LOGGER.warn(
