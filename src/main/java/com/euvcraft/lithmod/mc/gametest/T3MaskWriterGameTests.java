@@ -116,7 +116,7 @@ import org.slf4j.Logger;
 public final class T3MaskWriterGameTests {
 
     private static final Logger LOGGER = EUVCRAFTMod.LOGGER;
-    private static final String ENVIRONMENT_ID = "support_multiblock";
+    private static final String ENVIRONMENT_ID = "t3_mask_writer";
 
     /** The seven designs the e-beam mask writer is expected to cut. */
     private static final String[] DESIGNS = {

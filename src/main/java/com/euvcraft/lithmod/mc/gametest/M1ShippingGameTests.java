@@ -4,6 +4,7 @@ import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.euvcraft.lithmod.mc.GameTestFixtures;
 import com.euvcraft.lithmod.mc.data.MachineDefinitionLoader;
 import com.euvcraft.lithmod.mc.data.MachineRecipeLoader;
+import com.euvcraft.lithmod.mc.data.SupportRecipeLoader;
 
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -55,14 +56,19 @@ public final class M1ShippingGameTests {
         Identifier.parse("lithmod:crystal_puller"),
         Identifier.parse("lithmod:wafer_slicer"),
         Identifier.parse("lithmod:pattern_generator"),
-        Identifier.parse("lithmod:test_package"));
+        Identifier.parse("lithmod:test_package"),
+        Identifier.parse("lithmod:boule_purifier"),
+        Identifier.parse("lithmod:ebeam_mask_writer"),
+        Identifier.parse("lithmod:support_casing"),
+        Identifier.parse("lithmod:support_power_port"));
     private static final List<Identifier> PRODUCTION_ITEMS = List.of(
         Identifier.parse("lithmod:foup_mk1"),
         Identifier.parse("lithmod:silicon"),
         Identifier.parse("lithmod:test_package"));
     /** Machine definitions loaded when fixtures are off (test_machine excluded). */
     private static final List<String> PRODUCTION_DEFINITIONS = List.of(
-        "crystal_puller", "wafer_slicer", "pattern_generator", "test_package", "process_cell");
+        "crystal_puller", "wafer_slicer", "pattern_generator", "test_package", "process_cell",
+        "boule_purifier", "ebeam_mask_writer");
     /** Machine recipe machines loaded when fixtures are off (test_machine excluded). */
     private static final List<String> PRODUCTION_RECIPE_MACHINES = List.of(
         "crystal_puller", "pattern_generator");
@@ -117,7 +123,7 @@ public final class M1ShippingGameTests {
         if (definitions != null) {
             helper.assertTrue(definitions.byId("test_machine").isEmpty(),
                 "test_machine definition must be absent when fixtures are off");
-            helper.assertValueEqual(5, definitions.size(),
+            helper.assertValueEqual(7, definitions.size(),
                 "production machine definition inventory when fixtures are off");
             for (String machineId : PRODUCTION_DEFINITIONS) {
                 helper.assertTrue(definitions.byId(machineId).isPresent(),
@@ -141,6 +147,10 @@ public final class M1ShippingGameTests {
                 "production machine recipe inventory when fixtures are off");
         }
 
+        SupportRecipeLoader.Registry support = SupportRecipeLoader.getRegistry();
+        helper.assertValueEqual(8, support.size(), "shipping support recipe inventory");
+        helper.assertValueEqual(1, support.forMachine("boule_purifier").size(), "shipping purifier recipe");
+        helper.assertValueEqual(7, support.forMachine("ebeam_mask_writer").size(), "shipping mask designs");
         assertCreativeAbsence(helper);
     }
 
