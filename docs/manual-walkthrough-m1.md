@@ -57,6 +57,16 @@ automation. Do not use GameTest fixture flags for a normal client launch.
    /give @s lithmod:chip_package 64
    /give @s lithmod:resist_t1 64
    /give @s lithmod:resist_t2 64
+   /give @s lithmod:mercury_lamp 1
+   /give @s lithmod:contact_plate 1
+   /give @s lithmod:manual_aligner 1
+   /give @s lithmod:basic_air_filter 1
+   /give @s lithmod:optical_microscope 1
+   /give @s lithmod:i_line_lamp 1
+   /give @s lithmod:reduction_lens 1
+   /give @s lithmod:stepper_stage 1
+   /give @s lithmod:fine_air_filter 1
+   /give @s lithmod:overlay_scope 1
    ```
    **Pass:** four standalone machines, one controller, one power port, ten casings, two FOUPs
    and all listed consumables are in the inventory.
@@ -81,7 +91,8 @@ automation. Do not use GameTest fixture flags for a normal client launch.
    slot 0 and one given FOUP in slot 1. Aim at the slicer and run `/debug fab energy`.
    **Pass:** after about 10 s slot 2 holds a FOUP whose tooltip reads `25/25` wafers, layer `0`.
    The input carrier is consumed and the returned lot is a new server-verified identity.
-9. Repeat step 8 with the second boule group and second FOUP.
+9. Repeat step 7 with the other 4 silicon to make the second boule, then repeat step 8 with
+   that boule and the second FOUP.
    **Pass:** two independent 25-wafer lots exist, each `25/25` at layer `0`.
 
 ## 5. Pattern Generator: make both masks
@@ -99,7 +110,7 @@ automation. Do not use GameTest fixture flags for a normal client launch.
 12. The cell is exactly 12 blocks: 1 controller, 1 power port, 10 casings. It is two 6-block
     layers, each 3 rows of 2 columns. Stand on the side the controller's front face points
     toward; the cell extends away from you. **FRONT** is the front-face plane and **BACK** is
-    three blocks behind it. Build the bottom layer first:
+    two blocks behind it (three rows including FRONT). Build the bottom layer first:
     ```text
     BOTTOM   FRONT    [Controller] [Casing]
              MIDDLE   [Power Port] [Casing]
@@ -145,9 +156,10 @@ automation. Do not use GameTest fixture flags for a normal client launch.
     resist; finished layers are retained. Add more of the **same exact** resist item (same item
     and components) while running or paused. **Pass:** the run resumes. Swaps to a different
     resist or removal of the accepted resist are locked; the 12-layer T2 total is 12 resist.
-20. Run the full T2 lot: 12 layers, 100 ticks/layer, 40 FE/tick, 48000 FE, about 60 s.
-    **Pass:** layer `12/12`, FOUP `25/25`, T2 mask drops from 4 to 3 uses, and resist is
-    consumed once per layer.
+20. Before allowing all 12 layers to finish, perform steps 21-23. Keep only one layer's resist
+    available at a time so the next layer pauses while you prepare each check. An uninterrupted
+    T2 lot needs 12 resist and 48000 FE; aborting a partly paid layer can require extra resist
+    and FE, with no refund. Keep the remaining supply for that check.
 21. Mid-run persistence: during a layer, save and quit to title, then re-enter the same world.
     **Pass:** the same layer count and stored FE return, the run resumes, and no extra resist or
     energy is refunded. Repeat once while paused for resist if desired.
@@ -159,6 +171,11 @@ automation. Do not use GameTest fixture flags for a normal client launch.
     **Pass:** partial work and any paid resist are cancelled without refund, finished layers
     remain, and the machine stays stopped. Remove the FOUP, then reinsert it. **Pass:**
     unfinished layers resume.
+
+    After all three checks, add enough matching resist and refill FE if needed. Let the lot
+    complete: 12 layers, 100 ticks/layer, 40 FE/tick, about 60 s of uninterrupted work.
+    **Pass:** layer `12/12`, FOUP `25/25`, and the T2 mask drops from 4 to 3 uses only when
+    the lot completes. Abort and pauses can increase elapsed time and total paid resources.
 
 ## 9. Test and Package: two chip batches
 
