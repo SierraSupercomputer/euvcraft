@@ -560,6 +560,8 @@ public final class T3ContentGameTests {
                 packaging.setSlot(TestPackageBlockEntity.PACKAGE_SLOT, new ItemStack(ModItems.CHIP_PACKAGE.get(), 64));
                 packaging.setSlot(TestPackageBlockEntity.FOUP_SLOT, processedFoup.copy());
 
+                packaging.setStoredEnergy(packaging.buffer().getCapacityAsInt());
+
                 // Run packaging
                 int totalTicks = waferCount * ticksPerWafer;
                 for (int tick = 0; tick < totalTicks + 20; tick++) {
@@ -734,19 +736,32 @@ public final class T3ContentGameTests {
         helper.assertTrue(cell.processState() == ProcessState.RUNNING, "must be running");
 
         // Save the frozen requiredGenerations from contract
-        Map<String, List<Integer>> frozenRequired = new HashMap<>(cell.contract.requiredGenerations());
+        Map<String, List<Integer>> frozenRequired = new HashMap<>(privateField(cell, "contract", ProcessCellRunPersistence.Contract.class).requiredGenerations());
 
-        // Now change the live matrix to something that would NOT admit T3
-        // We can't easily change the live matrix from a game test, but we can verify
-        // the contract's requiredGenerations is what's used for restoration
-        // This is already validated by t3FrozenContractSaveLoad test
-
-        // Verify the contract's requiredGenerations is independent of live matrix
-        GenerationMatrix liveMatrix = SupportLineDataLoader.getMatrix();
-        GenerationMatrix frozenMatrix = GenerationMatrix.build(
-            TierDataLoader.getRegistry(), frozenRequired, "frozen");
-        helper.assertTrue(!frozenMatrix.equals(liveMatrix) || frozenMatrix.equals(liveMatrix),
-            "frozen matrix is captured at admission time");
+        var contract = privateField(cell, "contract", ProcessCellRunPersistence.Contract.class);
+        List<Integer> stronger = new ArrayList<>(frozenRequired.get(SupportLines.SUBSTRATE));
+        stronger.set(2, 3);
+        Map<String, List<Integer>> changed = new HashMap<>(frozenRequired);
+        changed.put(SupportLines.SUBSTRATE, List.copyOf(stronger));
+        GenerationMatrix changedMatrix = GenerationMatrix.build(TierDataLoader.getRegistry(), changed, "T3 reload fixture");
+        try {
+            var field = SupportLineDataLoader.class.getDeclaredField("currentMatrix");
+            field.setAccessible(true);
+            Object previous = field.get(null);
+            try {
+                field.set(null, changedMatrix);
+                var lot = FoupItems.trustedContentsOf(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP));
+                var request = contract.request(lot);
+                helper.assertFalse(SupportLineDataLoader.getMatrix().unmetLines(request.installedGenerations(), request.tier()).isEmpty(),
+                    "new live matrix would refuse this lot");
+                helper.assertTrue(request.generationMatrix().unmetLines(request.installedGenerations(), request.tier()).isEmpty(),
+                    "frozen contract retains accepted requirements");
+            } finally {
+                field.set(null, previous);
+            }
+        } catch (ReflectiveOperationException failure) {
+            throw new AssertionError("T3 matrix reload fixture", failure);
+        }
 
         helper.succeed();
     }
@@ -858,7 +873,7 @@ public final class T3ContentGameTests {
             );
             helper.fail("T3 contract with ORDINARY grade should have thrown");
         } catch (IllegalArgumentException e) {
-            helper.assertTrue(e.getMessage().contains("PURE substrate"), "T3 must require PURE substrate");
+            helper.assertTrue(e.getMessage().contains("pure wafers"), "T3 must require PURE substrate");
         }
 
         // Test 3: T3 contract with PURE grade but G1 mask should fail
@@ -881,7 +896,7 @@ public final class T3ContentGameTests {
             );
             helper.fail("T3 contract with G1 mask should have thrown");
         } catch (IllegalArgumentException e) {
-            helper.assertTrue(e.getMessage().contains("mask shop generation 2"), "T3 must require G2 mask");
+            helper.assertTrue(e.getMessage().contains("generation-2 mask"), "T3 must require G2 mask");
         }
 
         helper.succeed();
