@@ -34,8 +34,8 @@ public class PatternGeneratorScreen extends FabMachineScreen<PatternGeneratorMen
     private static final int STATUS_Y = 72;
     /** Right margin of the refusal line, the same margin the base screen's labels use. */
     private static final int STATUS_MARGIN = 8;
-    /** A warm red, so a refusal never reads as a normal label. */
-    private static final int STATUS_COLOR = 0xD05050;
+    /** A warm red, so a refusal never reads as a normal label (opaque). */
+    private static final int STATUS_COLOR = 0xFFD05050;
 
     public PatternGeneratorScreen(PatternGeneratorMenu menu, Inventory playerInventory,
                                   Component title) {

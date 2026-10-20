@@ -37,8 +37,8 @@ public class TestPackageScreen extends FabMachineScreen<TestPackageMenu> {
     private static final int STATE_Y = 6;
     /** The wafer count's row, shared with the base screen's inventory label and to its right. */
     private static final int COUNT_Y = 72;
-    /** A neutral grey for both lines, matching the base screen's own labels. */
-    private static final int LABEL_COLOR = 0x404040;
+    /** A neutral grey for both lines, matching the base screen's own labels (opaque). */
+    private static final int LABEL_COLOR = 0xFF404040;
 
     public TestPackageScreen(TestPackageMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title, IMAGE_WIDTH, IMAGE_HEIGHT);

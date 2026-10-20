@@ -53,8 +53,8 @@ public class ProcessCellScreen extends FabMachineScreen<ProcessCellMenu> {
     private static final int ABORT_BTN_Y = 212;
     private static final int ABORT_BTN_WIDTH = 160;
     private static final int ABORT_BTN_HEIGHT = 20;
-    /** Label color (neutral grey matching base screen). */
-    private static final int LABEL_COLOR = 0x404040;
+    /** Label color (neutral grey matching base screen, opaque). */
+    private static final int LABEL_COLOR = 0xFF404040;
     /** Maximum text width for footer lines. */
     private static final int MAX_TEXT_WIDTH = 160;
 
