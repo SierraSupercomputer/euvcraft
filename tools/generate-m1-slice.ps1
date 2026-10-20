@@ -337,8 +337,8 @@ foreach ($rFile in $machineRecipeNames) {
 if ($fixtureRecipeCount -ne 2) {
     Fail "expected the two '$fixtureMachineId' fixture recipes to be payload-gated, found $fixtureRecipeCount"
 }
-if (($totalRecipes - $fixtureRecipeCount) -ne 28) {
-    Fail 'production recipe count is not 28'
+if (($totalRecipes - $fixtureRecipeCount) -ne 29) {
+    Fail 'production recipe count is not 29'
 }
 
 # ---- loader directory strings + codec sources (derived from tracked source) --
