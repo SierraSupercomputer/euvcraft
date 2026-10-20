@@ -86,7 +86,7 @@ class FoupSubstrateCodecTest {
     void persistentCodecDefaultsMissingGrade() {
         // Manually create NBT without grade field
         CompoundTag tag = new CompoundTag();
-        tag.putUUID(FoupContentsCodec.KEY_LOT, LOT);
+        tag.put(FoupContentsCodec.KEY_LOT, net.minecraft.core.UUIDUtil.CODEC.encodeStart(NbtOps.INSTANCE, LOT).getOrThrow());
         tag.putInt(FoupContentsCodec.KEY_CAPACITY, 25);
         tag.putIntArray(FoupContentsCodec.KEY_LAYERS, new int[] {1, 2, 3});
         tag.putIntArray(FoupContentsCodec.KEY_ROLLS, new int[] {
@@ -107,7 +107,7 @@ class FoupSubstrateCodecTest {
     @DisplayName("persistent codec rejects invalid explicit grade")
     void persistentCodecRejectsInvalidGrade() {
         CompoundTag tag = new CompoundTag();
-        tag.putUUID(FoupContentsCodec.KEY_LOT, LOT);
+        tag.put(FoupContentsCodec.KEY_LOT, net.minecraft.core.UUIDUtil.CODEC.encodeStart(NbtOps.INSTANCE, LOT).getOrThrow());
         tag.putInt(FoupContentsCodec.KEY_CAPACITY, 25);
         tag.putIntArray(FoupContentsCodec.KEY_LAYERS, new int[] {1});
         tag.putIntArray(FoupContentsCodec.KEY_ROLLS, new int[] {Float.floatToRawIntBits(0.9f)});
@@ -140,10 +140,10 @@ class FoupSubstrateCodecTest {
     void networkCodecClampsInvalidGrade() {
         // Manually encode with invalid grade string
         ByteBuf buffer = Unpooled.buffer();
-        buffer.writeVarInt(25); // capacity
-        buffer.writeVarInt(10); // waferCount
-        buffer.writeVarInt(3);  // lotLayer
-        buffer.writeCharSequence("invalid_grade", io.netty.util.CharsetUtil.UTF_8); // grade
+        net.minecraft.network.codec.ByteBufCodecs.VAR_INT.encode(buffer, 25); // capacity
+        net.minecraft.network.codec.ByteBufCodecs.VAR_INT.encode(buffer, 10); // waferCount
+        net.minecraft.network.codec.ByteBufCodecs.VAR_INT.encode(buffer, 3);  // lotLayer
+        net.minecraft.network.codec.ByteBufCodecs.STRING_UTF8.encode(buffer, "invalid_grade"); // grade
 
         FoupContents received = FoupContentsCodec.STREAM_CODEC.decode(buffer);
         assertEquals(WaferSubstrate.ORDINARY, received.grade());

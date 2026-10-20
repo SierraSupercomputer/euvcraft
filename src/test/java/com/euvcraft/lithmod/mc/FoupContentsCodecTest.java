@@ -58,7 +58,7 @@ class FoupContentsCodecTest {
     }
 
     private static FoupContents lot(int capacity, int count, int layer, WaferSubstrate grade) {
-        return new FoupContents(LOT, capacity, wafers(count, layer), grade);
+        return FoupContents.of(LOT, capacity, wafers(count, layer), grade);
     }
 
     private static FoupContents encodeDecode(FoupContents original) {
