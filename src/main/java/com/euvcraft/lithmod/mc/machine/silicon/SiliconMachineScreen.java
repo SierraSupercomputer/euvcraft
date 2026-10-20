@@ -46,6 +46,6 @@ public abstract class SiliconMachineScreen<M extends FabMachineMenu> extends Fab
 
     @Override
     protected int progressBarY() {
-        return 52;
+        return 54;
     }
 }

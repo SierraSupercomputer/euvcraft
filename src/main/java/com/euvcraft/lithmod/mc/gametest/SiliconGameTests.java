@@ -111,6 +111,7 @@ public final class SiliconGameTests {
     private static final String SLICER_LOT_SIZE = "wafer_slicer_lot_size_follows_the_foup_capacity";
     private static final String SLICER_MENU = "wafer_slicer_menu_layout_and_shift_click";
     private static final String SLICER_FOUP_BOUNDARY = "wafer_slicer_foup_slot_client_boundary";
+    private static final String MENU_LAYOUT = "silicon_menu_layout_nonoverlap_and_coords";
     private static final String ENERGY_FOLLOWS_DATA = "silicon_energy_follows_machine_definitions";
     private static final String FAIL_CLOSED = "silicon_machines_fail_closed_without_a_definition";
     private static final String RESUMES_SAME_RECIPE = "crystal_puller_resumes_only_the_same_recipe";
@@ -139,6 +140,7 @@ public final class SiliconGameTests {
         FUNCTIONS.register(SLICER_LOT_SIZE, () -> SiliconGameTests::slicerLotSizeFollowsCapacity);
         FUNCTIONS.register(SLICER_MENU, () -> SiliconGameTests::slicerMenuLayoutAndShiftClick);
         FUNCTIONS.register(SLICER_FOUP_BOUNDARY, () -> SiliconGameTests::slicerFoupSlotBoundary);
+        FUNCTIONS.register(MENU_LAYOUT, () -> SiliconGameTests::menuLayoutNonoverlapAndCoords);
         FUNCTIONS.register(ENERGY_FOLLOWS_DATA, () -> SiliconGameTests::energyFollowsDefinitions);
         FUNCTIONS.register(FAIL_CLOSED, () -> SiliconGameTests::machinesFailClosedWithoutDefinition);
         FUNCTIONS.register(RESUMES_SAME_RECIPE, () -> SiliconGameTests::pullerResumesOnlyTheSameRecipe);
@@ -172,6 +174,7 @@ public final class SiliconGameTests {
         register(event, data, SLICER_LOT_SIZE);
         register(event, data, SLICER_MENU);
         register(event, data, SLICER_FOUP_BOUNDARY);
+        register(event, data, MENU_LAYOUT);
         register(event, data, ENERGY_FOLLOWS_DATA);
         register(event, data, FAIL_CLOSED);
         register(event, data, RESUMES_SAME_RECIPE);
@@ -1355,6 +1358,192 @@ public final class SiliconGameTests {
             + "every client view is refused by the server");
 
         player.closeContainer();
+        helper.succeed();
+    }
+
+    // ------------------------------------------------------------------
+    // 13b. Menu layout: non-overlap of machine wells and player inventory,
+    //      client/server coordinate agreement for BOTH silicon menus
+    // ------------------------------------------------------------------
+
+    private static void menuLayoutNonoverlapAndCoords(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+
+        // Shared bar rectangles (from SiliconMachineScreen)
+        int pbX1 = 78, pbY1 = 54, pbX2 = 78 + 24 - 1, pbY2 = 54 + 16 - 1;
+        int ebX1 = 12, ebY1 = 18, ebX2 = 12 + 12 - 1, ebY2 = 18 + 52 - 1;
+
+        // --- Crystal Puller ---
+        helper.setBlock(MACHINE, SiliconMachines.CRYSTAL_PULLER.get());
+        FabMachineBlockEntity pullerBE = pullerAt(helper, MACHINE);
+        helper.assertTrue(pullerBE != null, "no crystal puller block entity");
+        if (pullerBE == null) {
+            return;
+        }
+
+        ServerPlayer player = connect(level);
+        com.euvcraft.lithmod.mc.machine.silicon.CrystalPullerMenu pullerMenu =
+                new com.euvcraft.lithmod.mc.machine.silicon.CrystalPullerMenu(1, player.getInventory(), pullerBE);
+
+        // Client menu via registered MenuType
+        Identifier pullerMenuId = Identifier.fromNamespaceAndPath("lithmod", "crystal_puller");
+        var pullerMenuType = net.minecraft.core.registries.BuiltInRegistries.MENU.getValue(pullerMenuId);
+        helper.assertTrue(pullerMenuType == SiliconMachines.CRYSTAL_PULLER_MENU.get(),
+                "lithmod:crystal_puller menu type is not registered to the expected MenuType");
+        RegistryFriendlyByteBuf pullerBuffer =
+                new RegistryFriendlyByteBuf(Unpooled.buffer(), level.registryAccess());
+        AbstractContainerMenu pullerClientMenu = pullerMenuType.create(2, player.getInventory(), pullerBuffer);
+        helper.assertTrue(pullerClientMenu instanceof com.euvcraft.lithmod.mc.machine.silicon.CrystalPullerMenu,
+                "the registered MenuType factory did not return a CrystalPullerMenu");
+
+        // Slot count: 2 machine + 36 player
+        helper.assertValueEqual(38, pullerMenu.slots.size(), "crystal puller server menu has unexpected slot count");
+        helper.assertValueEqual(pullerMenu.slots.size(), pullerClientMenu.slots.size(),
+                "crystal puller client/server slot count disagrees");
+
+        // Client/server coordinate agreement for ALL slots
+        for (int i = 0; i < pullerMenu.slots.size(); i++) {
+            Slot sServer = pullerMenu.slots.get(i);
+            Slot sClient = pullerClientMenu.slots.get(i);
+            helper.assertValueEqual(sServer.x, sClient.x,
+                    "crystal puller client/server x differs at slot " + i);
+            helper.assertValueEqual(sServer.y, sClient.y,
+                    "crystal puller client/server y differs at slot " + i);
+            helper.assertValueEqual(sServer.index, sClient.index,
+                    "crystal puller client/server index differs at slot " + i);
+        }
+
+        // Non-overlap: machine slot wells vs player inventory wells (18x18 each, centered on slot)
+        // Machine slots: input at (80,35), output at (104,35) -> wells at x-1..x+17, y-1..y+17
+        // Player inventory starts at INVENTORY_Y=84 (first row), HOTBAR_Y=142
+        int pullerMachineSlotCount = CrystalPullerBlockEntity.OUTPUT_SLOT + 1; // 2
+        for (int i = 0; i < pullerMachineSlotCount; i++) {
+            Slot ms = pullerMenu.slots.get(i);
+            int mx1 = ms.x - 1, my1 = ms.y - 1, mx2 = ms.x + 17, my2 = ms.y + 17;
+            // Check against 3 rows of player inventory (27 slots) + hotbar (9 slots)
+            for (int p = machineSlotCount; p < pullerMenu.slots.size(); p++) {
+                Slot ps = pullerMenu.slots.get(p);
+                int px1 = ps.x - 1, py1 = ps.y - 1, px2 = ps.x + 17, py2 = ps.y + 17;
+                boolean overlap = !(mx2 < px1 || px2 < mx1 || my2 < py1 || py2 < my1);
+                helper.assertFalse(overlap,
+                        "crystal puller machine slot " + i + " well overlaps player slot " + p);
+            }
+        }
+
+        // Progress bar rect (from SiliconMachineScreen) vs machine slot wells
+        // progressBarX=78, progressBarY=54, width=24, height=16
+        for (int i = 0; i < pullerMachineSlotCount; i++) {
+            Slot ms = pullerMenu.slots.get(i);
+            int mx1 = ms.x - 1, my1 = ms.y - 1, mx2 = ms.x + 17, my2 = ms.y + 17;
+            boolean overlap = !(mx2 < pbX1 || pbX2 < mx1 || my2 < pbY1 || pbY2 < my1);
+            helper.assertFalse(overlap,
+                    "crystal puller machine slot " + i + " well overlaps progress bar");
+        }
+
+        // Energy bar rect vs machine slot wells
+        // energyBarX=12, energyBarY=18, width=12, height=52
+        for (int i = 0; i < pullerMachineSlotCount; i++) {
+            Slot ms = pullerMenu.slots.get(i);
+            int mx1 = ms.x - 1, my1 = ms.y - 1, mx2 = ms.x + 17, my2 = ms.y + 17;
+            boolean overlap = !(mx2 < ebX1 || ebX2 < mx1 || my2 < ebY1 || ebY2 < my1);
+            helper.assertFalse(overlap,
+                    "crystal puller machine slot " + i + " well overlaps energy bar");
+        }
+
+        player.closeContainer();
+
+        // --- Wafer Slicer ---
+        placeSlicer(helper, SECOND);
+        WaferSlicerBlockEntity slicerBE = slicerAt(helper, SECOND);
+        helper.assertTrue(slicerBE != null, "no wafer slicer block entity");
+        if (slicerBE == null) {
+            return;
+        }
+
+        WaferSlicerMenu slicerMenu = new WaferSlicerMenu(3, player.getInventory(), slicerBE);
+
+        Identifier slicerMenuId = Identifier.fromNamespaceAndPath("lithmod", "wafer_slicer");
+        var slicerMenuType = net.minecraft.core.registries.BuiltInRegistries.MENU.getValue(slicerMenuId);
+        helper.assertTrue(slicerMenuType == SiliconMachines.WAFER_SLICER_MENU.get(),
+                "lithmod:wafer_slicer menu type is not registered to the expected MenuType");
+        RegistryFriendlyByteBuf slicerBuffer =
+                new RegistryFriendlyByteBuf(Unpooled.buffer(), level.registryAccess());
+        AbstractContainerMenu slicerClientMenu = slicerMenuType.create(4, player.getInventory(), slicerBuffer);
+        helper.assertTrue(slicerClientMenu instanceof WaferSlicerMenu,
+                "the registered MenuType factory did not return a WaferSlicerMenu");
+
+        // Slot count: 3 machine + 36 player
+        helper.assertValueEqual(39, slicerMenu.slots.size(), "wafer slicer server menu has unexpected slot count");
+        helper.assertValueEqual(slicerMenu.slots.size(), slicerClientMenu.slots.size(),
+                "wafer slicer client/server slot count disagrees");
+
+        // Client/server coordinate agreement for ALL slots
+        for (int i = 0; i < slicerMenu.slots.size(); i++) {
+            Slot sServer = slicerMenu.slots.get(i);
+            Slot sClient = slicerClientMenu.slots.get(i);
+            helper.assertValueEqual(sServer.x, sClient.x,
+                    "wafer slicer client/server x differs at slot " + i);
+            helper.assertValueEqual(sServer.y, sClient.y,
+                    "wafer slicer client/server y differs at slot " + i);
+            helper.assertValueEqual(sServer.index, sClient.index,
+                    "wafer slicer client/server index differs at slot " + i);
+        }
+
+        // Non-overlap: machine slot wells vs player inventory wells
+        int slicerMachineSlotCount = WaferSlicerBlockEntity.OUTPUT_SLOT + 1; // 3
+        for (int i = 0; i < slicerMachineSlotCount; i++) {
+            Slot ms = slicerMenu.slots.get(i);
+            int mx1 = ms.x - 1, my1 = ms.y - 1, mx2 = ms.x + 17, my2 = ms.y + 17;
+            for (int p = slicerMachineSlotCount; p < slicerMenu.slots.size(); p++) {
+                Slot ps = slicerMenu.slots.get(p);
+                int px1 = ps.x - 1, py1 = ps.y - 1, px2 = ps.x + 17, py2 = ps.y + 17;
+                boolean overlap = !(mx2 < px1 || px2 < mx1 || my2 < py1 || py2 < my1);
+                helper.assertFalse(overlap,
+                        "wafer slicer machine slot " + i + " well overlaps player slot " + p);
+            }
+        }
+
+        // Progress bar vs machine slot wells
+        for (int i = 0; i < slicerMachineSlotCount; i++) {
+            Slot ms = slicerMenu.slots.get(i);
+            int mx1 = ms.x - 1, my1 = ms.y - 1, mx2 = ms.x + 17, my2 = ms.y + 17;
+            boolean overlap = !(mx2 < pbX1 || pbX2 < mx1 || my2 < pbY1 || pbY2 < my1);
+            helper.assertFalse(overlap,
+                    "wafer slicer machine slot " + i + " well overlaps progress bar");
+        }
+
+        // Energy bar vs machine slot wells
+        for (int i = 0; i < slicerMachineSlotCount; i++) {
+            Slot ms = slicerMenu.slots.get(i);
+            int mx1 = ms.x - 1, my1 = ms.y - 1, mx2 = ms.x + 17, my2 = ms.y + 17;
+            boolean overlap = !(mx2 < ebX1 || ebX2 < mx1 || my2 < ebY1 || ebY2 < my1);
+            helper.assertFalse(overlap,
+                    "wafer slicer machine slot " + i + " well overlaps energy bar");
+        }
+
+        // Verify specific expected coordinates for the new layout
+        // Crystal Puller: input(80,35), output(104,35)
+        Slot pullerInput = pullerMenu.slots.get(CrystalPullerBlockEntity.INPUT_SLOT);
+        Slot pullerOutput = pullerMenu.slots.get(CrystalPullerBlockEntity.OUTPUT_SLOT);
+        helper.assertValueEqual(80, pullerInput.x, "crystal puller input x");
+        helper.assertValueEqual(35, pullerInput.y, "crystal puller input y");
+        helper.assertValueEqual(104, pullerOutput.x, "crystal puller output x");
+        helper.assertValueEqual(35, pullerOutput.y, "crystal puller output y");
+
+        // Wafer Slicer: boule(62,35), foup(80,35), output(104,35)
+        Slot slicerBoule = slicerMenu.slots.get(WaferSlicerBlockEntity.BOULE_SLOT);
+        Slot slicerFoup = slicerMenu.slots.get(WaferSlicerBlockEntity.FOUP_SLOT);
+        Slot slicerOutput = slicerMenu.slots.get(WaferSlicerBlockEntity.OUTPUT_SLOT);
+        helper.assertValueEqual(62, slicerBoule.x, "wafer slicer boule x");
+        helper.assertValueEqual(35, slicerBoule.y, "wafer slicer boule y");
+        helper.assertValueEqual(80, slicerFoup.x, "wafer slicer foup x");
+        helper.assertValueEqual(35, slicerFoup.y, "wafer slicer foup y");
+        helper.assertValueEqual(104, slicerOutput.x, "wafer slicer output x");
+        helper.assertValueEqual(35, slicerOutput.y, "wafer slicer output y");
+
+        LOGGER.info("[M1-04] silicon_menu_layout_nonoverlap_and_coords: both menus verified for "
+                + "non-overlap and client/server coordinate agreement");
+
         helper.succeed();
     }
 
