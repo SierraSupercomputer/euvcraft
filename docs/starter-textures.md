@@ -222,7 +222,8 @@ resource tests). Missing sources fail, never skip:
 - Formed/unformed sibling models reference disjoint texture sets, and
   controller fronts / casing / port pixel data actually differ per state
   (amber-unformed vs green-formed cue is verified, not assumed).
-- Seven regenerable block-item models keep `lithmod:block/<id>` parents.
+- Seven block-item models reference existing local block models. Process Cell inventory items
+  use their `_unformed` variants; the four standalone machines use their base models.
 
 Run with: `./gradlew test --tests StarterTextureResourceTest`
 
