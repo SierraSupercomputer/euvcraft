@@ -9,7 +9,7 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
   - com.euvcraft.lithmod.core.multiblock (6 files)
   - com.euvcraft.lithmod.mc (21 files)
   - com.euvcraft.lithmod.mc.data (12 files)
-  - com.euvcraft.lithmod.mc.gametest (19 files)
+  - com.euvcraft.lithmod.mc.gametest (20 files)
   - com.euvcraft.lithmod.mc.machine (4 files)
   - com.euvcraft.lithmod.mc.machine.client (1 files)
   - com.euvcraft.lithmod.mc.machine.mask (9 files)
