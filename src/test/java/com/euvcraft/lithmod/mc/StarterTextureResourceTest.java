@@ -212,7 +212,7 @@ class StarterTextureResourceTest {
     }
 
     @Test
-    @DisplayName("Seven regenerable block item models keep lithmod:block/<id> parents")
+    @DisplayName("Seven block item models reference existing production block models")
     void blockItemModelsParentToBlockModels() throws Exception {
         List<String> blockItems = List.of(
             "crystal_puller", "wafer_slicer", "test_package", "pattern_generator",
@@ -221,8 +221,11 @@ class StarterTextureResourceTest {
             URL modelUrl = StarterTextureResourceTest.class.getResource(ITEM_MODELS + id + ".json");
             assertNotNull(modelUrl, "Missing block item model: " + id);
             JsonObject model = parseJson(modelUrl);
-            assertEquals("lithmod:block/" + id, model.get("parent").getAsString(),
-                "Block item model " + id + " must parent to lithmod:block/" + id);
+            String blockModelId = id.startsWith("process_cell_") ? id + "_unformed" : id;
+            assertEquals("lithmod:block/" + blockModelId, model.get("parent").getAsString(),
+                "Block item model " + id + " must reference its default block model");
+            assertNotNull(StarterTextureResourceTest.class.getResource(BLOCK_MODELS + blockModelId + ".json"),
+                "Missing inherited block model: " + blockModelId);
         }
     }
 
