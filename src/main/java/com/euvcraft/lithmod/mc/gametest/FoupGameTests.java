@@ -3,12 +3,15 @@ package com.euvcraft.lithmod.mc.gametest;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
 import com.euvcraft.lithmod.core.FoupContents;
 import com.euvcraft.lithmod.core.FoupPublicView;
 import com.euvcraft.lithmod.core.Wafer;
+import com.euvcraft.lithmod.core.WaferSubstrate;
+import com.euvcraft.lithmod.core.RunSpec;
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.euvcraft.lithmod.mc.FoupContentsCodec;
 import com.euvcraft.lithmod.mc.FoupDebugCommand;
@@ -96,6 +99,8 @@ public final class FoupGameTests {
         FUNCTIONS.register("foup_ender_chest_round_trip", () -> FoupGameTests::enderChestRoundTrip);
         FUNCTIONS.register("foup_hopper_transfer", () -> FoupGameTests::hopperTransfer);
         FUNCTIONS.register("foup_shift_click_move", () -> FoupGameTests::shiftClickMove);
+        FUNCTIONS.register("foup_substrate_persistence", () -> FoupGameTests::substratePersistence);
+        FUNCTIONS.register("foup_substrate_public_trust", () -> FoupGameTests::substratePublicTrust);
     }
 
     private FoupGameTests() {
@@ -125,6 +130,8 @@ public final class FoupGameTests {
         register(event, data, "foup_ender_chest_round_trip");
         register(event, data, "foup_hopper_transfer");
         register(event, data, "foup_shift_click_move");
+        register(event, data, "foup_substrate_persistence");
+        register(event, data, "foup_substrate_public_trust");
         LOGGER.info("Registered EUVCRAFT foup game tests");
     }
 
@@ -830,6 +837,67 @@ public final class FoupGameTests {
         assertSameContents(helper, "a stack that was shift-clicked from chest back to inventory", contents,
             FoupItems.contentsOf(backInInv));
 
+        helper.succeed();
+    }
+
+    private static FoupContents pureSubstrateLot(UUID id, float roll, int flags, RunSpec run) {
+        return new FoupContents(id, 25, List.of(new Wafer(3, roll, flags)), run, WaferSubstrate.PURE);
+    }
+
+    private static void substratePersistence(GameTestHelper helper) {
+        FoupContents pure = pureSubstrateLot(LOT, 0.42f, Wafer.NO_FLAGS,
+            new RunSpec("logic", 3, 0, 0.9, 24));
+        ItemStack stack = FoupItems.with(ModItems.FOUP_MK1.get(), pure);
+        helper.assertTrue(pure.equals(FoupItems.trustedContentsOf(stack)), "real pure lot was not trusted");
+        ItemStack restored = roundTrip(helper, helper.getLevel(), stack);
+        if (restored == null) return;
+        helper.assertTrue(pure.equals(FoupItems.trustedContentsOf(restored)),
+            "actual ItemStack persistent roundtrip lost pure grade or private state");
+        CompoundTag legacy = (CompoundTag) FoupContentsCodec.CODEC.encodeStart(NbtOps.INSTANCE, pure).getOrThrow();
+        legacy.remove(FoupContentsCodec.KEY_GRADE);
+        FoupContents old = FoupContentsCodec.CODEC.parse(NbtOps.INSTANCE, legacy).getOrThrow();
+        helper.assertTrue(old.grade() == WaferSubstrate.ORDINARY, "legacy lot was silently upgraded");
+        helper.assertTrue(old.wafers().equals(pure.wafers()) && old.run().equals(pure.run()),
+            "legacy grade default altered private state");
+        legacy.putString(FoupContentsCodec.KEY_GRADE, "invalid_substrate");
+        helper.assertTrue(FoupContentsCodec.CODEC.parse(NbtOps.INSTANCE, legacy).error().isPresent(),
+            "invalid explicit substrate was accepted");
+        helper.succeed();
+    }
+
+    private static void substratePublicTrust(GameTestHelper helper) {
+        FoupContents first = pureSubstrateLot(LOT, 0.42f, Wafer.NO_FLAGS,
+            new RunSpec("logic", 3, 0, 0.9, 24));
+        FoupContents second = pureSubstrateLot(UUID.fromString("00000000-0000-4000-8000-0000000000f9"),
+            0.13f, 1, new RunSpec("memory", 2, 0, 0.8, 12));
+        ByteBuf a = Unpooled.buffer();
+        ByteBuf b = Unpooled.buffer();
+        try {
+            FoupContentsCodec.STREAM_CODEC.encode(a, first);
+            FoupContentsCodec.STREAM_CODEC.encode(b, second);
+            helper.assertTrue(java.util.Arrays.equals(io.netty.buffer.ByteBufUtil.getBytes(a),
+                io.netty.buffer.ByteBufUtil.getBytes(b)), "private lot/run values affected public packet");
+            FoupContents view = FoupContentsCodec.STREAM_CODEC.decode(a);
+            helper.assertTrue(view.grade() == WaferSubstrate.PURE && view.publicView().equals(first.publicView()),
+                "network projection lost approved pure substrate information");
+            helper.assertTrue(FoupContentsCodec.isClientView(view) && view.run() == null,
+                "public reconstruction gained private authority or a run contract");
+            for (Wafer wafer : view.wafers()) {
+                helper.assertTrue(wafer.cumulativeRoll() == FoupContentsCodec.CLIENT_VIEW_ROLL
+                    && wafer.flags() == Wafer.NO_FLAGS, "private wafer values reached public reconstruction");
+            }
+            FoupContents replacement = FoupItems.trustedContentsOf(FoupItems.with(ModItems.FOUP_MK1.get(), view));
+            helper.assertTrue(replacement != null && replacement.isEmpty() && replacement.run() == null
+                && replacement.grade() == WaferSubstrate.ORDINARY
+                && replacement.capacity() == FoupItems.configuredCapacity()
+                && !FoupContentsCodec.isClientView(replacement),
+                "actual trustedContentsOf failed to replace pure client wafers with a fresh ordinary empty lot");
+            helper.assertTrue(first.equals(FoupItems.trustedContentsOf(FoupItems.with(ModItems.FOUP_MK1.get(), first))),
+                "trust boundary rejected a real pure server lot");
+        } finally {
+            a.release();
+            b.release();
+        }
         helper.succeed();
     }
 }

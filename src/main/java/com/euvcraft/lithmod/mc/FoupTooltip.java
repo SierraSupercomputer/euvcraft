@@ -14,10 +14,12 @@ import net.minecraft.world.item.component.TooltipProvider;
 /**
  * Renders the FOUP tooltip from a {@link FoupPublicView}.
  *
- * <p>The tooltip shows exactly two numbers: how many wafers the lot holds and the
- * lowest layer it has reached. It can show nothing else, because it is built from the
- * public view: the hidden {@link com.euvcraft.lithmod.core.Wafer#cumulativeRoll()}
- * and {@link com.euvcraft.lithmod.core.Wafer#flags()} values are not in that record
+ * <p>The tooltip shows the wafer count, capacity, lot layer, and wafer substrate
+ * type. An empty lot says "Empty (not pure wafers)". A non-empty lot shows
+ * "Ordinary silicon" or "Pure silicon" along with unprocessed/processed progress
+ * wording. It can show nothing else, because it is built from the public view:
+ * the hidden {@link com.euvcraft.lithmod.core.Wafer#cumulativeRoll()} and
+ * {@link com.euvcraft.lithmod.core.Wafer#flags()} values are not in that record
  * and are not sent to the client in the first place.</p>
  *
  * <p>This lives in the mc package rather than in core because
@@ -35,5 +37,22 @@ record FoupTooltip(FoupPublicView view) implements TooltipProvider {
             .withStyle(ChatFormatting.GRAY));
         consumer.accept(Component.translatable("tooltip.lithmod.foup.layer", this.view.lotLayer())
             .withStyle(ChatFormatting.GRAY));
+        if (this.view.isEmpty()) {
+            consumer.accept(Component.translatable("tooltip.lithmod.foup.empty")
+                .withStyle(ChatFormatting.GRAY));
+        } else {
+            String substrateKey = this.view.grade() == com.euvcraft.lithmod.core.WaferSubstrate.PURE
+                ? "tooltip.lithmod.foup.substrate.pure"
+                : "tooltip.lithmod.foup.substrate.ordinary";
+            consumer.accept(Component.translatable(substrateKey)
+                .withStyle(ChatFormatting.GRAY));
+            if (this.view.lotLayer() == 0) {
+                consumer.accept(Component.translatable("tooltip.lithmod.foup.unprocessed")
+                    .withStyle(ChatFormatting.DARK_GRAY));
+            } else if (this.view.lotLayer() > 0) {
+                consumer.accept(Component.translatable("tooltip.lithmod.foup.processed", this.view.lotLayer())
+                    .withStyle(ChatFormatting.DARK_GRAY));
+            }
+        }
     }
 }

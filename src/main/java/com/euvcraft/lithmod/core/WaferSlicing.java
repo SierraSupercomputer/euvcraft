@@ -22,6 +22,9 @@ import java.util.Objects;
  * never be non-positive, and a second bound would only be a second place for the same number
  * to be changed.</p>
  *
+ * <p>The legacy API defaults to {@link WaferSubstrate#ORDINARY} substrate. An overload
+ * accepting an explicit {@link WaferSubstrate} is provided for the new pure wafer path.</p>
+ *
  * <p>This class has no Minecraft or NeoForge dependencies.</p>
  */
 public final class WaferSlicing {
@@ -32,6 +35,8 @@ public final class WaferSlicing {
     /**
      * How many wafers one boule puts into a FOUP of the given capacity.
      *
+     * <p>Uses {@link WaferSubstrate#ORDINARY} substrate (legacy behavior).</p>
+     *
      * @param settings the fab settings holding {@code wafersPerBoule}, not null
      * @param capacity the capacity stored in the target FOUP, {@code >= 1}
      * @return {@code min(wafersPerBoule, capacity)}, never below one
@@ -39,7 +44,23 @@ public final class WaferSlicing {
      * @throws IllegalArgumentException if {@code capacity} is below one
      */
     public static int wafersFor(FabSettings settings, int capacity) {
+        return wafersFor(settings, capacity, WaferSubstrate.ORDINARY);
+    }
+
+    /**
+     * How many wafers one boule puts into a FOUP of the given capacity, with an explicit
+     * substrate grade.
+     *
+     * @param settings the fab settings holding {@code wafersPerBoule}, not null
+     * @param capacity the capacity stored in the target FOUP, {@code >= 1}
+     * @param grade    the wafer substrate grade, not null
+     * @return {@code min(wafersPerBoule, capacity)}, never below one
+     * @throws NullPointerException     if {@code settings} or {@code grade} is null
+     * @throws IllegalArgumentException if {@code capacity} is below one
+     */
+    public static int wafersFor(FabSettings settings, int capacity, WaferSubstrate grade) {
         Objects.requireNonNull(settings, "settings must not be null");
+        Objects.requireNonNull(grade, "grade must not be null");
         if (capacity < 1) {
             throw new IllegalArgumentException("capacity must be >= 1, got " + capacity);
         }
