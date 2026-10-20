@@ -7,6 +7,7 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.Slot;
 
 import java.util.List;
 
@@ -49,8 +50,18 @@ public abstract class FabMachineScreen<M extends FabMachineMenu> extends Abstrac
     private static final int ENERGY_BAR_FILL_COLOR = 0xFF00FF88;
     private static final int PROGRESS_BAR_EMPTY_COLOR = 0xFF1A1A2E;
     private static final int PROGRESS_BAR_FILL_COLOR = 0xFFFFD700;
-    private static final int ENERGY_TEXT_COLOR = 0x404040;
+    /** Opaque dark grey matching vanilla container labels (0xFF404040). */
+    private static final int ENERGY_TEXT_COLOR = 0xFF404040;
     private static final int TOOLTIP_COLOR = 0xF0F0F0;
+
+    /** Light neutral panel fill. */
+    private static final int PANEL_FILL = 0xFFD0D0D0;
+    /** Panel bevel highlight (top/left). */
+    private static final int PANEL_BEVEL_LIGHT = 0xFFEEEEEE;
+    /** Panel bevel shadow (bottom/right). */
+    private static final int PANEL_BEVEL_DARK = 0xFF9E9E9E;
+    /** Slot well background color (subtle inset). */
+    private static final int SLOT_WELL_COLOR = 0xFFB0B0B0;
 
     protected FabMachineScreen(M menu, Inventory playerInventory, Component title,
                                int imageWidth, int imageHeight) {
@@ -86,11 +97,56 @@ public abstract class FabMachineScreen<M extends FabMachineMenu> extends Abstrac
     @Override
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractBackground(graphics, mouseX, mouseY, partialTick);
+        drawPanelBackground(graphics);
+        drawSlotWells(graphics);
         if (hasEnergyBar()) {
             drawEnergyBar(graphics);
         }
         if (hasProgressBar()) {
             drawProgressBar(graphics);
+        }
+    }
+
+    /**
+     * Draws a simple light neutral opaque beveled panel behind slots and bars.
+     * Panel spans the full menu image area.
+     */
+    private void drawPanelBackground(GuiGraphicsExtractor graphics) {
+        // Background extraction runs before the container's label/slot pose translation.
+        int x = this.leftPos;
+        int y = this.topPos;
+        int w = this.imageWidth;
+        int h = this.imageHeight;
+
+        // Main fill
+        graphics.fill(x, y, x + w, y + h, PANEL_FILL);
+
+        // Bevel: top and left highlight
+        graphics.fill(x, y, x + w, y + 1, PANEL_BEVEL_LIGHT);
+        graphics.fill(x, y, x + 1, y + h, PANEL_BEVEL_LIGHT);
+
+        // Bevel: bottom and right shadow
+        graphics.fill(x, y + h - 1, x + w, y + h, PANEL_BEVEL_DARK);
+        graphics.fill(x + w - 1, y, x + w, y + h, PANEL_BEVEL_DARK);
+    }
+
+    /**
+     * Draws 18x18 slot wells centered on each active slot's coordinates.
+     * Covers all machine and player inventory slots.
+     */
+    private void drawSlotWells(GuiGraphicsExtractor graphics) {
+        for (Slot slot : this.menu.slots) {
+            if (!slot.isActive()) {
+                continue;
+            }
+            int sx = this.leftPos + slot.x - 1;
+            int sy = this.topPos + slot.y - 1;
+            graphics.fill(sx, sy, sx + 18, sy + 18, SLOT_WELL_COLOR);
+            // Subtle inner bevel for depth
+            graphics.fill(sx, sy, sx + 18, sy + 1, PANEL_BEVEL_LIGHT);
+            graphics.fill(sx, sy, sx + 1, sy + 18, PANEL_BEVEL_LIGHT);
+            graphics.fill(sx, sy + 17, sx + 18, sy + 18, PANEL_BEVEL_DARK);
+            graphics.fill(sx + 17, sy, sx + 18, sy + 18, PANEL_BEVEL_DARK);
         }
     }
 

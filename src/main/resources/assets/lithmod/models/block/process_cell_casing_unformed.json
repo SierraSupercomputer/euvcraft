@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/cube_all",
   "textures": {
-    "all": "minecraft:block/stone"
+    "all": "lithmod:block/process_cell_casing_unformed"
   }
 }

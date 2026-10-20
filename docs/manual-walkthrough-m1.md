@@ -1,7 +1,9 @@
 # M1 Owner Walkthrough (Manual, Single-Player)
 
-Status: **owner execution pending**. This is a manual checklist, not evidence that any step was
-run. It covers a single-player Creative world with cheats, using the already-confirmed local
+Status: **the owner passed the pre-polish Survival walkthrough**, including power pause/resume,
+mask use/depletion and sections 7–11. The earlier Process Cell startup issue was corrected assembly;
+initial layer-0 rolls of 1 were expected. Post-polish rendering and Creative interaction need rechecking.
+This checklist covers a single-player world with cheats, using the already-confirmed local
 early-window workaround. Multiplayer, dedicated-server and automated client execution are out of
 scope. Use the shipped defaults below; a config override can change them, and an accepted run
 keeps the values frozen when it started.
@@ -16,6 +18,15 @@ keeps the values frozen when it started.
 
 Keep every item transfer manual. This checklist does not test hoppers, pipes, cables or fluid
 automation. Do not use GameTest fixture flags for a normal client launch.
+
+### Creative FOUP behavior (updated)
+- A fresh empty FOUP taken from the Creative inventory is a **client-view placeholder** without
+  server wafer data. After a server inventory tick (hold it briefly in the player inventory
+  before inserting), the server initializes a fresh empty lot (`0/25`, layer `0`, new hidden
+  UUID). The Slicer then accepts it and writes the new lot identity.
+- Filled FOUP copies taken from Creative **do not retain hidden server wafer data** and remain
+  rejected by the Slicer. Use `/give` carriers for reliable walkthrough lots.
+- Survival `/give` remains a reliable walkthrough path.
 
 ## 1. Launch and enable the debug command
 
@@ -254,15 +265,22 @@ automation. Do not use GameTest fixture flags for a normal client launch.
 
 ### Known limitations
 
-- Full manual execution is **owner pending**; no client, test or render execution is claimed.
+- The pre-polish Survival checklist passed by owner report; actual post-polish rendering and
+  Creative interaction remain owner pending.
 - Single-player only, using the confirmed local early-window workaround. Multiplayer and
   dedicated-server behavior are unverified.
 - The normal FOUP UI exposes wafer count, capacity and lowest layer. Hidden lot UUIDs and
   per-wafer rolls cannot be verified in the UI; server-side identity is not visible proof.
-- A Creative-inventory FOUP may be a client-view placeholder and is refused by the Slicer. Use
-  the `/give` carrier.
+- Hold a fresh empty Creative FOUP briefly in player inventory so its server inventory tick can
+  initialize it before insertion. Filled Creative copies remain untrusted; use actual Survival lots.
 - Passing counts and chip/scrap totals are lot-dependent; no exact pass count is promised.
 - The abort control's actual label and timing must be read in the client; no older label or
   instant cancellation is asserted.
 - Timings are nominal at 20 TPS. Config overrides, lag and accepted frozen runs can change them.
 - The step 28 model scan is a spot-check only; no automated rendering test is claimed.
+- **Starter textures**: see [starter-textures.md](starter-textures.md) for the deterministic
+  generator manifest, palette/shape recipes, preview atlas and resource test scope. Direct PNG
+  edits are overwritten on regeneration; the manifest is the single source of truth.
+- **Client recheck pending**: formed/unformed visible amber/green textures and Process Cell
+  status labels must be checked in the rendered client. This is distinct
+  from automated resource tests which validate asset existence and alpha-channel correctness.

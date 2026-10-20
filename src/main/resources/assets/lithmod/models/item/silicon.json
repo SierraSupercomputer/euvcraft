@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "minecraft:item/sand"
+    "layer0": "lithmod:item/silicon"
   }
 }

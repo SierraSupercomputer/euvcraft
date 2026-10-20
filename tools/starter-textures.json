@@ -1,0 +1,568 @@
+{
+  "$comment": "EUVCRAFT M1 starter texture manifest (schema v2). Primary editable source: draw each 16x16 sprite with integer rect/frame/dot/line ops that reference palette color slots. The generator validates colors, coordinates and bounds, then rasterizes; direct PNG edits are overwritten on regeneration.",
+  "version": 2,
+  "palette": {
+    "STEEL": {
+      "outline": "#2A2A2A", "dark": "#4A4A4A", "mid": "#6A6A6A",
+      "light": "#8A8A8A", "accent": "#AAAAAA", "trim": "#CACACA"
+    },
+    "FOUP": {
+      "outline": "#2A2A2A", "dark": "#4A4A4A", "mid": "#6A6A6A",
+      "light": "#8A8A8A", "accent": "#AAAAAA", "trim": "#CACACA"
+    },
+    "CHIP_T1": {
+      "outline": "#4D3A1A", "dark": "#7A5A2A", "mid": "#A87A3A",
+      "light": "#D69A6A", "accent": "#E8B89A", "trim": "#FFD8C8"
+    },
+    "CHIP_T2": {
+      "outline": "#1A3E6B", "dark": "#2A5A9B", "mid": "#3A7DC9",
+      "light": "#6AA8E8", "accent": "#9AD0F5", "trim": "#C8E8FF"
+    },
+    "CHIP_MEM": {
+      "outline": "#3A1A4D", "dark": "#5A2A7A", "mid": "#7A3AA8",
+      "light": "#9A5AD6", "accent": "#B87AE8", "trim": "#D89AFF"
+    },
+    "SCRAP": {
+      "outline": "#4D4D4D", "dark": "#6A6A6A", "mid": "#8A8A8A",
+      "light": "#AAAAAA", "accent": "#CACACA", "trim": "#E8E8E8"
+    },
+    "SILICON": {
+      "outline": "#3A3A3A", "dark": "#5A5A5A", "mid": "#7A7A7A",
+      "light": "#9A9A9A", "accent": "#BABABA", "trim": "#DADADA"
+    },
+    "BOULE": {
+      "outline": "#2A1A4D", "dark": "#4A2A7A", "mid": "#6A3AA8",
+      "light": "#8A5AD6", "accent": "#A87AE8", "trim": "#C89AFF"
+    },
+    "RESIST_T1": {
+      "outline": "#4D3A1A", "dark": "#7A5A2A", "mid": "#A87A3A",
+      "light": "#D69A6A", "accent": "#E8B89A", "trim": "#FFD8C8"
+    },
+    "RESIST_T2": {
+      "outline": "#1A4D3A", "dark": "#2A7A5A", "mid": "#3AA87A",
+      "light": "#6AD69A", "accent": "#9AE8B8", "trim": "#C8FFD8"
+    },
+    "PACKAGE": {
+      "outline": "#4D4D3A", "dark": "#7A7A5A", "mid": "#A8A87A",
+      "light": "#D6D69A", "accent": "#E8E8B8", "trim": "#FFFFD8"
+    },
+    "MASK": {
+      "outline": "#1A4D4D", "dark": "#2A7A7A", "mid": "#3AA8A8",
+      "light": "#6AD6D6", "accent": "#9AE8E8", "trim": "#C8FFFF"
+    },
+    "LAMP_T1": {
+      "outline": "#4D3A1A", "dark": "#7A5A2A", "mid": "#A8874A",
+      "light": "#D6B87A", "glow": "#FFE8A0", "trim": "#FFF6D0"
+    },
+    "LAMP_T2": {
+      "outline": "#1A3A4D", "dark": "#2A5A7A", "mid": "#4A87B0",
+      "light": "#7AB0D8", "glow": "#9AE8FF", "trim": "#E0F6FF"
+    },
+    "LENS_T2": {
+      "outline": "#1A2A4D", "dark": "#2A4A7A", "mid": "#3A6AA8",
+      "light": "#5A8AD6", "accent": "#7AACE8", "trim": "#9ACEFF"
+    },
+    "STAGE_T1": {
+      "outline": "#4D3A1A", "dark": "#7A5A2A", "mid": "#A87A3A",
+      "light": "#D69A6A", "accent": "#E8B89A", "trim": "#FFD8C8"
+    },
+    "STAGE_T2": {
+      "outline": "#1A4D3A", "dark": "#2A7A5A", "mid": "#3AA87A",
+      "light": "#6AD69A", "accent": "#9AE8B8", "trim": "#C8FFD8"
+    },
+    "FILTER_T1": {
+      "outline": "#3A4D3A", "dark": "#5A7A5A", "mid": "#7AA87A",
+      "light": "#9AD69A", "accent": "#B8E8B8", "trim": "#D8FFD8"
+    },
+    "FILTER_T2": {
+      "outline": "#1A4D4D", "dark": "#2A7A7A", "mid": "#3AA8A8",
+      "light": "#6AD6D6", "accent": "#9AE8E8", "trim": "#C8FFFF"
+    },
+    "SCOPE_T1": {
+      "outline": "#4D2A3A", "dark": "#7A4A5A", "mid": "#A86A7A",
+      "light": "#D68A9A", "accent": "#E8AAB8", "trim": "#FFCAD8"
+    },
+    "SCOPE_T2": {
+      "outline": "#3A1A4D", "dark": "#5A2A7A", "mid": "#7A3AA8",
+      "light": "#9A5AD6", "accent": "#B87AE8", "trim": "#D89AFF"
+    },
+    "CASING_FORMED": {
+      "outline": "#143314", "dark": "#1D4A1D", "mid": "#2E7A2E",
+      "light": "#4FB04F", "accent": "#8AE08A", "trim": "#B8E8B8"
+    },
+    "CASING_UNFORMED": {
+      "outline": "#3A2E1A", "dark": "#5A4626", "mid": "#7A6236",
+      "light": "#A8874A", "accent": "#C8A86A", "trim": "#E8D0A0"
+    },
+    "CTRL_FRONT_FORMED": {
+      "outline": "#14142A", "panel": "#3A3A7A", "panelLight": "#6A6AD6",
+      "wafer": "#9A9A9A", "waferLight": "#E8E8E8", "status": "#3ECC3E"
+    },
+    "CTRL_FRONT_UNFORMED": {
+      "outline": "#403218", "panel": "#6A5232", "panelLight": "#8A7448",
+      "wafer": "#9A9A9A", "waferLight": "#E0E0E0", "status": "#E8A83A"
+    },
+    "PORT_FORMED": {
+      "outline": "#143314", "dark": "#1D4A1D", "mid": "#2E7A2E",
+      "light": "#4FB04F", "bolt": "#E8C84A", "rim": "#FFF2A8"
+    },
+    "PORT_UNFORMED": {
+      "outline": "#403218", "dark": "#5A4626", "mid": "#7A6236",
+      "light": "#A8874A", "bolt": "#F0C43A", "rim": "#FFE98A"
+    },
+    "PULLER": {
+      "outline": "#2A2A2A", "dark": "#4A4A4A", "mid": "#6A6A6A",
+      "light": "#8A8A8A", "crystal": "#3AA8A8", "glow": "#6AD6D6"
+    },
+    "SLICER": {
+      "outline": "#2A2A2A", "dark": "#4A4A4A", "mid": "#6A6A6A",
+      "light": "#8A8A8A", "blade": "#B8C4CC", "wafer": "#3A7AA8"
+    },
+    "PATTERN": {
+      "outline": "#2A2A2A", "dark": "#3A2A4D", "mid": "#5A3A7A",
+      "light": "#7A5AA8", "grid": "#9A7AD6", "trim": "#D8C8FF"
+    },
+    "TESTPKG": {
+      "outline": "#2A2A2A", "dark": "#4A4A4A", "mid": "#6A6A6A",
+      "light": "#8A8A8A", "accent": "#A89A5A", "trim": "#E8E0A0"
+    }
+  },
+  "shapes": {
+    "foup": [
+      ["line", "outline", 3, 2, 12, 2],
+      ["dot", "outline", 3, 3],
+      ["dot", "outline", 12, 3],
+      ["frame", "outline", 3, 4, 10, 10],
+      ["rect", "mid", 4, 5, 8, 8],
+      ["rect", "light", 4, 5, 8, 1],
+      ["rect", "dark", 4, 11, 8, 2],
+      ["line", "dark", 6, 6, 6, 10],
+      ["line", "dark", 8, 6, 8, 10],
+      ["line", "dark", 10, 6, 10, 10],
+      ["rect", "trim", 5, 12, 6, 1]
+    ],
+    "foup2": [
+      ["line", "outline", 3, 2, 12, 2],
+      ["dot", "outline", 3, 3],
+      ["dot", "outline", 12, 3],
+      ["frame", "outline", 3, 4, 10, 10],
+      ["rect", "mid", 4, 5, 8, 8],
+      ["rect", "light", 4, 5, 8, 1],
+      ["rect", "dark", 4, 11, 8, 2],
+      ["line", "dark", 6, 6, 6, 10],
+      ["line", "dark", 8, 6, 8, 10],
+      ["line", "dark", 10, 6, 10, 10],
+      ["dot", "accent", 6, 7],
+      ["dot", "accent", 8, 7],
+      ["dot", "accent", 10, 7],
+      ["dot", "accent", 6, 10],
+      ["dot", "accent", 8, 10],
+      ["dot", "accent", 10, 10]
+    ],
+    "chip": [
+      ["rect", "outline", 5, 2, 2, 1],
+      ["rect", "outline", 9, 2, 2, 1],
+      ["rect", "outline", 5, 13, 2, 1],
+      ["rect", "outline", 9, 13, 2, 1],
+      ["frame", "outline", 3, 3, 10, 10],
+      ["rect", "mid", 4, 4, 8, 8],
+      ["rect", "light", 4, 4, 8, 1],
+      ["rect", "dark", 4, 11, 8, 1],
+      ["rect", "dark", 6, 6, 4, 4],
+      ["rect", "accent", 7, 7, 2, 2],
+      ["dot", "light", 5, 6],
+      ["dot", "light", 10, 9]
+    ],
+    "chip_mem": [
+      ["rect", "outline", 5, 2, 2, 1],
+      ["rect", "outline", 9, 2, 2, 1],
+      ["rect", "outline", 5, 13, 2, 1],
+      ["rect", "outline", 9, 13, 2, 1],
+      ["frame", "outline", 3, 3, 10, 10],
+      ["rect", "mid", 4, 4, 8, 8],
+      ["rect", "light", 4, 4, 8, 1],
+      ["rect", "dark", 4, 11, 8, 1],
+      ["rect", "dark", 5, 6, 6, 5],
+      ["rect", "trim", 6, 7, 1, 3],
+      ["rect", "trim", 9, 7, 1, 3],
+      ["rect", "accent", 7, 6, 2, 1]
+    ],
+    "scrap": [
+      ["frame", "outline", 4, 5, 8, 6],
+      ["rect", "mid", 5, 6, 6, 4],
+      ["rect", "light", 5, 6, 6, 1],
+      ["rect", "dark", 7, 8, 4, 2],
+      ["frame", "outline", 10, 11, 4, 3],
+      ["rect", "mid", 11, 12, 2, 1],
+      ["dot", "accent", 12, 4],
+      ["dot", "dark", 3, 10],
+      ["dot", "dark", 3, 11]
+    ],
+    "crystal": [
+      ["rect", "outline", 5, 3, 6, 2],
+      ["frame", "outline", 4, 5, 8, 8],
+      ["rect", "mid", 5, 6, 6, 6],
+      ["rect", "light", 5, 6, 6, 1],
+      ["line", "dark", 5, 9, 10, 6],
+      ["line", "light", 6, 10, 9, 11],
+      ["rect", "dark", 5, 11, 6, 1],
+      ["dot", "trim", 7, 7],
+      ["dot", "trim", 9, 10]
+    ],
+    "boule": [
+      ["rect", "dark", 6, 1, 4, 1],
+      ["rect", "mid", 6, 2, 4, 1],
+      ["dot", "trim", 7, 2],
+      ["frame", "outline", 5, 3, 6, 11],
+      ["rect", "mid", 6, 4, 4, 9],
+      ["rect", "light", 6, 4, 1, 9],
+      ["rect", "dark", 9, 4, 1, 9],
+      ["rect", "dark", 6, 8, 4, 1],
+      ["rect", "dark", 6, 14, 4, 1]
+    ],
+    "bottle": [
+      ["rect", "outline", 6, 0, 4, 2],
+      ["rect", "mid", 7, 2, 2, 2],
+      ["frame", "outline", 4, 4, 8, 10],
+      ["rect", "mid", 5, 5, 6, 8],
+      ["rect", "trim", 5, 5, 6, 2],
+      ["rect", "accent", 5, 8, 6, 5],
+      ["dot", "light", 6, 10]
+    ],
+    "package": [
+      ["dot", "outline", 5, 2],
+      ["dot", "outline", 8, 2],
+      ["dot", "outline", 11, 2],
+      ["dot", "outline", 5, 12],
+      ["dot", "outline", 8, 12],
+      ["dot", "outline", 11, 12],
+      ["frame", "outline", 3, 3, 10, 9],
+      ["rect", "mid", 4, 4, 8, 7],
+      ["rect", "light", 4, 4, 8, 1],
+      ["rect", "dark", 4, 10, 8, 1],
+      ["rect", "accent", 4, 6, 8, 1],
+      ["dot", "trim", 6, 8],
+      ["dot", "trim", 9, 8]
+    ],
+    "plate": [
+      ["frame", "outline", 2, 4, 12, 9],
+      ["rect", "mid", 3, 5, 10, 7],
+      ["rect", "light", 3, 5, 10, 1],
+      ["rect", "dark", 3, 10, 10, 1],
+      ["rect", "trim", 6, 7, 4, 2],
+      ["dot", "dark", 4, 6],
+      ["dot", "dark", 11, 6]
+    ],
+    "maskgrid": [
+      ["frame", "outline", 2, 4, 12, 9],
+      ["rect", "mid", 3, 5, 10, 7],
+      ["rect", "light", 3, 5, 10, 1],
+      ["rect", "dark", 3, 10, 10, 1],
+      ["line", "accent", 5, 6, 5, 9],
+      ["line", "accent", 6, 7, 10, 7],
+      ["line", "accent", 11, 6, 11, 9],
+      ["dot", "trim", 7, 5],
+      ["dot", "trim", 9, 10]
+    ],
+    "lamp": [
+      ["rect", "outline", 1, 7, 3, 2],
+      ["rect", "outline", 12, 7, 3, 2],
+      ["frame", "outline", 4, 5, 8, 6],
+      ["rect", "mid", 5, 6, 6, 3],
+      ["rect", "glow", 6, 7, 4, 2],
+      ["dot", "trim", 5, 6],
+      ["dot", "trim", 10, 9]
+    ],
+    "contact": [
+      ["frame", "outline", 3, 3, 10, 10],
+      ["rect", "mid", 4, 4, 8, 8],
+      ["rect", "light", 4, 4, 8, 1],
+      ["rect", "dark", 4, 11, 8, 1],
+      ["dot", "outline", 6, 6],
+      ["dot", "outline", 9, 6],
+      ["dot", "outline", 6, 9],
+      ["dot", "outline", 9, 9]
+    ],
+    "lens": [
+      ["rect", "outline", 1, 5, 2, 5],
+      ["rect", "outline", 13, 5, 2, 5],
+      ["frame", "outline", 3, 3, 10, 10],
+      ["rect", "mid", 4, 4, 8, 8],
+      ["frame", "light", 5, 5, 6, 6],
+      ["rect", "accent", 7, 7, 2, 2],
+      ["rect", "dark", 4, 11, 8, 1],
+      ["dot", "trim", 5, 5],
+      ["dot", "trim", 6, 5]
+    ],
+    "stage": [
+      ["rect", "outline", 7, 4, 2, 6],
+      ["rect", "light", 8, 5, 1, 4],
+      ["frame", "outline", 4, 2, 8, 3],
+      ["rect", "mid", 5, 3, 6, 1],
+      ["frame", "outline", 2, 10, 12, 3],
+      ["rect", "mid", 3, 11, 10, 1],
+      ["rect", "trim", 5, 9, 3, 1],
+      ["dot", "accent", 3, 9],
+      ["dot", "accent", 12, 9]
+    ],
+    "filter": [
+      ["frame", "outline", 3, 2, 10, 12],
+      ["rect", "mid", 4, 3, 8, 10],
+      ["rect", "light", 4, 3, 8, 1],
+      ["line", "light", 5, 4, 5, 12],
+      ["line", "dark", 7, 4, 7, 12],
+      ["line", "light", 9, 4, 9, 12],
+      ["line", "dark", 11, 4, 11, 12]
+    ],
+    "scope": [
+      ["rect", "outline", 7, 0, 2, 2],
+      ["rect", "outline", 6, 2, 4, 6],
+      ["rect", "mid", 7, 3, 2, 4],
+      ["rect", "dark", 6, 8, 4, 1],
+      ["frame", "outline", 4, 9, 5, 2],
+      ["rect", "mid", 5, 10, 3, 1],
+      ["frame", "outline", 3, 11, 10, 2],
+      ["rect", "mid", 4, 12, 8, 1],
+      ["dot", "accent", 11, 8],
+      ["dot", "accent", 12, 10]
+    ],
+    "tile": [
+      ["rect", "outline", 0, 0, 16, 16],
+      ["rect", "mid", 1, 1, 14, 14],
+      ["rect", "light", 1, 1, 14, 1],
+      ["rect", "dark", 1, 14, 14, 1],
+      ["rect", "light", 1, 1, 1, 14],
+      ["rect", "dark", 14, 1, 1, 14],
+      ["dot", "accent", 3, 3],
+      ["dot", "accent", 12, 3],
+      ["dot", "accent", 3, 12],
+      ["dot", "accent", 12, 12]
+    ],
+    "ctrl_side": [
+      ["rect", "outline", 0, 0, 16, 16],
+      ["rect", "mid", 1, 1, 14, 14],
+      ["rect", "light", 1, 1, 14, 1],
+      ["rect", "dark", 1, 14, 14, 1],
+      ["rect", "light", 1, 1, 1, 14],
+      ["rect", "dark", 14, 1, 1, 14],
+      ["line", "dark", 4, 4, 4, 11],
+      ["line", "dark", 6, 4, 6, 11],
+      ["line", "dark", 10, 4, 10, 11],
+      ["line", "dark", 12, 4, 12, 11],
+      ["rect", "light", 2, 7, 2, 1]
+    ],
+    "ctrl_top": [
+      ["rect", "outline", 0, 0, 16, 16],
+      ["rect", "mid", 1, 1, 14, 14],
+      ["rect", "light", 1, 1, 14, 1],
+      ["rect", "dark", 1, 14, 14, 1],
+      ["rect", "light", 1, 1, 1, 14],
+      ["rect", "dark", 14, 1, 1, 14],
+      ["frame", "outline", 5, 5, 6, 6],
+      ["rect", "accent", 6, 6, 4, 4],
+      ["dot", "trim", 6, 6],
+      ["dot", "trim", 9, 6],
+      ["dot", "trim", 6, 9],
+      ["dot", "trim", 9, 9]
+    ],
+    "ctrl_front": [
+      ["rect", "outline", 0, 0, 16, 16],
+      ["rect", "panel", 1, 1, 14, 14],
+      ["rect", "panelLight", 1, 1, 14, 1],
+      ["rect", "panelLight", 1, 1, 1, 14],
+      ["rect", "outline", 3, 2, 10, 9],
+      ["rect", "wafer", 4, 3, 8, 7],
+      ["rect", "waferLight", 4, 3, 8, 1],
+      ["line", "waferLight", 7, 4, 7, 9],
+      ["line", "waferLight", 9, 4, 9, 9],
+      ["line", "waferLight", 5, 6, 10, 6],
+      ["frame", "outline", 2, 12, 12, 2],
+      ["rect", "status", 3, 12, 10, 2],
+      ["dot", "outline", 5, 12],
+      ["dot", "outline", 8, 12],
+      ["dot", "outline", 11, 12]
+    ],
+    "port": [
+      ["rect", "outline", 0, 0, 16, 16],
+      ["rect", "mid", 1, 1, 14, 14],
+      ["rect", "light", 1, 1, 14, 1],
+      ["rect", "dark", 1, 14, 14, 1],
+      ["rect", "light", 1, 1, 1, 14],
+      ["rect", "dark", 14, 1, 1, 14],
+      ["rect", "dark", 5, 2, 6, 2],
+      ["rect", "dark", 5, 12, 6, 2],
+      ["line", "bolt", 9, 4, 7, 7],
+      ["line", "bolt", 7, 7, 10, 7],
+      ["line", "bolt", 10, 7, 8, 10],
+      ["dot", "light", 4, 4],
+      ["dot", "light", 12, 4],
+      ["dot", "light", 4, 11],
+      ["dot", "light", 12, 11]
+    ],
+    "puller": [
+      ["rect", "outline", 0, 0, 16, 16],
+      ["rect", "mid", 1, 1, 14, 14],
+      ["rect", "light", 1, 1, 14, 1],
+      ["rect", "dark", 1, 14, 14, 1],
+      ["rect", "light", 1, 1, 1, 14],
+      ["rect", "dark", 14, 1, 1, 14],
+      ["rect", "outline", 3, 3, 10, 10],
+      ["rect", "crystal", 4, 4, 8, 8],
+      ["rect", "glow", 6, 6, 4, 3],
+      ["line", "dark", 7, 4, 7, 6],
+      ["dot", "glow", 6, 10],
+      ["dot", "glow", 10, 10],
+      ["rect", "dark", 4, 12, 8, 1]
+    ],
+    "slicer": [
+      ["rect", "outline", 0, 0, 16, 16],
+      ["rect", "mid", 1, 1, 14, 14],
+      ["rect", "light", 1, 1, 14, 1],
+      ["rect", "dark", 1, 14, 14, 1],
+      ["rect", "light", 1, 1, 1, 14],
+      ["rect", "dark", 14, 1, 1, 14],
+      ["rect", "outline", 2, 5, 12, 5],
+      ["rect", "dark", 3, 6, 10, 3],
+      ["rect", "blade", 3, 8, 10, 1],
+      ["rect", "wafer", 5, 10, 6, 2],
+      ["dot", "light", 4, 4],
+      ["dot", "light", 12, 4]
+    ],
+    "patterncell": [
+      ["rect", "outline", 0, 0, 16, 16],
+      ["rect", "mid", 1, 1, 14, 14],
+      ["rect", "light", 1, 1, 14, 1],
+      ["rect", "dark", 1, 14, 14, 1],
+      ["rect", "light", 1, 1, 1, 14],
+      ["rect", "dark", 14, 1, 1, 14],
+      ["line", "grid", 4, 1, 4, 14],
+      ["line", "grid", 8, 1, 8, 14],
+      ["line", "grid", 12, 1, 12, 14],
+      ["line", "grid", 1, 4, 14, 4],
+      ["line", "grid", 1, 8, 14, 8],
+      ["line", "grid", 1, 12, 14, 12],
+      ["dot", "trim", 2, 2],
+      ["dot", "trim", 13, 2],
+      ["dot", "trim", 2, 13],
+      ["dot", "trim", 13, 13]
+    ],
+    "testpkg": [
+      ["rect", "outline", 0, 0, 16, 16],
+      ["rect", "mid", 1, 1, 14, 14],
+      ["rect", "light", 1, 1, 14, 1],
+      ["rect", "dark", 1, 14, 14, 1],
+      ["rect", "light", 1, 1, 1, 14],
+      ["rect", "dark", 14, 1, 1, 14],
+      ["frame", "outline", 3, 3, 10, 10],
+      ["rect", "accent", 4, 4, 8, 8],
+      ["line", "dark", 4, 7, 11, 7],
+      ["line", "dark", 7, 4, 7, 11],
+      ["dot", "trim", 5, 5],
+      ["dot", "trim", 10, 5],
+      ["dot", "trim", 5, 10],
+      ["dot", "trim", 10, 10]
+    ]
+  },
+  "items": {
+    "foup_mk1": { "palette": "FOUP", "shape": "foup", "note": "FOUP Mk1 canister with top handle and slot window" },
+    "foup_mk2": { "palette": "FOUP", "shape": "foup2", "note": "FOUP Mk2 canister, same body with wafer dots" },
+    "logic_chip_t1": { "palette": "CHIP_T1", "shape": "chip", "note": "T1 logic die, amber package with word pins" },
+    "logic_chip_t2": { "palette": "CHIP_T2", "shape": "chip", "note": "T2 logic die, same die geometry in blue" },
+    "memory_chip_t2": { "palette": "CHIP_MEM", "shape": "chip_mem", "note": "T2 memory die with dense cell bars" },
+    "chip_scrap": { "palette": "SCRAP", "shape": "scrap", "note": "Irregular grey chip shards" },
+    "silicon": { "palette": "SILICON", "shape": "crystal", "note": "Polycrystalline silicon nugget" },
+    "silicon_boule": { "palette": "BOULE", "shape": "boule", "note": "Single-crystal boule with seed cap" },
+    "resist_t1": { "palette": "RESIST_T1", "shape": "bottle", "note": "T1 photoresist bottle" },
+    "resist_t2": { "palette": "RESIST_T2", "shape": "bottle", "note": "T2 photoresist bottle, same geometry in teal" },
+    "chip_package": { "palette": "PACKAGE", "shape": "package", "note": "Chip packaging tray with pin grid" },
+    "blank_mask": { "palette": "SCRAP", "shape": "plate", "note": "Blank photomask plate" },
+    "mask": { "palette": "MASK", "shape": "maskgrid", "note": "Exposed photomask with circuit traces" },
+    "mercury_lamp": { "palette": "LAMP_T1", "shape": "lamp", "note": "T1 mercury lamp glow tube" },
+    "i_line_lamp": { "palette": "LAMP_T2", "shape": "lamp", "note": "T2 i-line lamp, same tube in cyan" },
+    "contact_plate": { "palette": "STEEL", "shape": "contact", "note": "T1 contact plate with dot grid" },
+    "reduction_lens": { "palette": "LENS_T2", "shape": "lens", "note": "T2 reduction lens barrel with flanges" },
+    "manual_aligner": { "palette": "STAGE_T1", "shape": "stage", "note": "T1 manual aligner stage with knobs" },
+    "stepper_stage": { "palette": "STAGE_T2", "shape": "stage", "note": "T2 stepper stage, same geometry in teal" },
+    "basic_air_filter": { "palette": "FILTER_T1", "shape": "filter", "note": "T1 cleanroom filter pleats" },
+    "fine_air_filter": { "palette": "FILTER_T2", "shape": "filter", "note": "T2 dense filter, same pleats in teal" },
+    "optical_microscope": { "palette": "SCOPE_T1", "shape": "scope", "note": "T1 metrology scope silhouette" },
+    "overlay_scope": { "palette": "SCOPE_T2", "shape": "scope", "note": "T2 overlay scope, same silhouette in violet" }
+  },
+  "blocks": {
+    "crystal_puller": {
+      "faces": {
+        "all": { "palette": "PULLER", "shape": "puller", "note": "Crystal chamber in steel frame with glowing seed rod" }
+      }
+    },
+    "wafer_slicer": {
+      "faces": {
+        "all": { "palette": "SLICER", "shape": "slicer", "note": "Steel body with horizontal blade slot and wafer bay" }
+      }
+    },
+    "test_package": {
+      "faces": {
+        "all": { "palette": "TESTPKG", "shape": "testpkg", "note": "Chip test banks in steel casing" }
+      }
+    },
+    "pattern_generator": {
+      "faces": {
+        "all": { "palette": "PATTERN", "shape": "patterncell", "note": "Purple mask grid over steel body" }
+      }
+    },
+    "process_cell_controller_formed": {
+      "faces": {
+        "side": { "palette": "CASING_FORMED", "shape": "ctrl_side", "note": "Formed controller side, green metal with vents" },
+        "top": { "palette": "CASING_FORMED", "shape": "ctrl_top", "note": "Formed controller top with wafer inset" },
+        "front": { "palette": "CTRL_FRONT_FORMED", "shape": "ctrl_front", "note": "Front wafer panel with green status bar" }
+      }
+    },
+    "process_cell_controller_unformed": {
+      "faces": {
+        "side": { "palette": "CASING_UNFORMED", "shape": "ctrl_side", "note": "Unformed controller side, amber steel with vents" },
+        "top": { "palette": "CASING_UNFORMED", "shape": "ctrl_top", "note": "Unformed controller top with wafer inset" },
+        "front": { "palette": "CTRL_FRONT_UNFORMED", "shape": "ctrl_front", "note": "Front panel with amber status bar" }
+      }
+    },
+    "process_cell_casing_formed": {
+      "faces": {
+        "all": { "palette": "CASING_FORMED", "shape": "tile", "note": "Formed plain metal casing tile in green" }
+      }
+    },
+    "process_cell_casing_unformed": {
+      "faces": {
+        "all": { "palette": "CASING_UNFORMED", "shape": "tile", "note": "Unformed plain metal casing tile in amber" }
+      }
+    },
+    "process_cell_power_port_formed": {
+      "faces": {
+        "all": { "palette": "PORT_FORMED", "shape": "port", "note": "Formed power port with lightning bolt" }
+      }
+    },
+    "process_cell_power_port_unformed": {
+      "faces": {
+        "all": { "palette": "PORT_UNFORMED", "shape": "port", "note": "Unformed power port with lightning bolt" }
+      }
+    }
+  },
+  "output": {
+    "itemsDir": "src/main/resources/assets/lithmod/models/item",
+    "blocksDir": "src/main/resources/assets/lithmod/models/block",
+    "texturesItemsDir": "src/main/resources/assets/lithmod/textures/item",
+    "texturesBlocksDir": "src/main/resources/assets/lithmod/textures/block",
+    "previewPath": "build/starter-textures-preview.png",
+    "itemModelsToUpdate": [
+      "foup_mk1", "foup_mk2", "logic_chip_t1", "logic_chip_t2", "memory_chip_t2",
+      "chip_scrap", "silicon", "silicon_boule", "resist_t1", "resist_t2",
+      "chip_package", "blank_mask", "mask", "mercury_lamp", "i_line_lamp",
+      "contact_plate", "reduction_lens", "manual_aligner", "stepper_stage",
+      "basic_air_filter", "fine_air_filter", "optical_microscope", "overlay_scope"
+    ],
+    "blockModelsToUpdate": [
+      "crystal_puller", "wafer_slicer", "test_package", "pattern_generator",
+      "process_cell_controller_formed", "process_cell_controller_unformed",
+      "process_cell_casing_formed", "process_cell_casing_unformed",
+      "process_cell_power_port_formed", "process_cell_power_port_unformed"
+    ],
+    "preserveUntouched": ["test_machine"]
+  }
+}
