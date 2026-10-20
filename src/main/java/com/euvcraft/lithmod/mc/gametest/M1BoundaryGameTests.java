@@ -642,6 +642,7 @@ public final class M1BoundaryGameTests {
 
     private static void buildFormedProcessCell(GameTestHelper helper, BlockPos controllerPos) {
         // Independent explicit 2 wide x 2 tall x 3 long layout, north-facing, 2 back-face ports
+        // Controller at bottom (y=0), operating panel at y=1 directly above
         for (int x = 0; x < 2; x++) {
             for (int y = 0; y < 2; y++) {
                 for (int z = 0; z < 3; z++) {
@@ -649,6 +650,9 @@ public final class M1BoundaryGameTests {
                     if (x == 0 && y == 0 && z == 0) {
                         helper.setBlock(p, ModMultiblocks.PROCESS_CELL_CONTROLLER.get()
                             .defaultBlockState().setValue(ProcessCellControllerBlock.FACING, Direction.NORTH));
+                    } else if (x == 0 && y == 1 && z == 0) {
+                        // Operating panel directly above controller
+                        helper.setBlock(p, ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get().defaultBlockState());
                     } else if (z == 2 && (x == 0 && y == 0 || x == 1 && y == 1)) {
                         helper.setBlock(p, ModMultiblocks.PROCESS_CELL_POWER_PORT.get().defaultBlockState());
                     } else {

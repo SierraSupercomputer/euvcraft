@@ -480,10 +480,10 @@ public final class M1GateGameTests {
     private static ItemStack runProcessCell(GameTestHelper helper, ServerLevel level, BlockPos controllerPos,
             ItemStack inputFoupStack, ItemStack mask, String dieType, int tierIndex) {
 
-        // Build the 2x2x3 north-facing process cell structure
-        // Controller at (1,1,1), facing NORTH
+        // Build the 2x2x3 north-facing process cell structure with operating panel
+        // Controller at bottom (y=1), operating panel at y=2 directly above
         // Ports at back face z=3: (x1,y1) and (x2,y2)
-        // Remaining 9 are casings
+        // Remaining are casings
         Direction facing = Direction.NORTH;
         BlockPos controller = controllerPos;
         for (int x = 1; x <= 2; x++) {
@@ -493,6 +493,9 @@ public final class M1GateGameTests {
                     if (p.equals(controller)) {
                         helper.setBlock(p, ModMultiblocks.PROCESS_CELL_CONTROLLER.get()
                             .defaultBlockState().setValue(ProcessCellControllerBlock.FACING, facing));
+                    } else if (x == 1 && y == 2 && z == 1) {
+                        // Operating panel directly above controller
+                        helper.setBlock(p, ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get().defaultBlockState());
                     } else if (z == 3 && (x == 1 && y == 1 || x == 2 && y == 2)) {
                         helper.setBlock(p, ModMultiblocks.PROCESS_CELL_POWER_PORT.get().defaultBlockState());
                     } else {

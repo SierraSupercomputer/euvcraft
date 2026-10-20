@@ -200,7 +200,8 @@ public final class MultiblockGameTests {
      * Places a complete, valid cell and returns its twelve relative positions.
      *
      * <p>The controller carries the facing under test, which is the only way a multiblock can know
-     * where its other eleven blocks are.</p>
+     * where its other eleven blocks are. The operating panel is placed directly above the controller
+     * (v=1, same u, d=0), replacing a casing block. Controller must be at v0=0 (bottom row).</p>
      */
     private static List<BlockPos> buildCell(GameTestHelper helper, BlockPos controller, Direction facing,
             int u0, int v0) {
@@ -212,6 +213,9 @@ public final class MultiblockGameTests {
                     if (u == u0 && v == v0 && d == 0) {
                         helper.setBlock(pos, ModMultiblocks.PROCESS_CELL_CONTROLLER.get()
                             .defaultBlockState().setValue(ProcessCellControllerBlock.FACING, facing));
+                    } else if (u == u0 && v == v0 + 1 && d == 0) {
+                        // Operating panel directly above controller
+                        helper.setBlock(pos, ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get().defaultBlockState());
                     } else if (isPort(u, v, d)) {
                         helper.setBlock(pos, ModMultiblocks.PROCESS_CELL_POWER_PORT.get().defaultBlockState());
                     } else {
@@ -288,48 +292,67 @@ public final class MultiblockGameTests {
     }
 
     // ------------------------------------------------------------------
-    // 1. all four facings
+    // 1. all four facings (controller at bottom row v0=0 only; v0=1 is invalid)
     // ------------------------------------------------------------------
 
     private static void formsInAllFourFacings(GameTestHelper helper) {
         BlockPos controller = new BlockPos(1, 1, 1);
+        int formedCount = 0;
+        int refusedCount = 0;
 
         for (Direction facing : new Direction[] { Direction.NORTH, Direction.SOUTH,
                                                   Direction.EAST, Direction.WEST }) {
             for (int u0 = 0; u0 < SHAPE.width(); u0++) {
-                for (int v0 = 0; v0 < SHAPE.height(); v0++) {
-                    List<BlockPos> cells = buildCell(helper, controller, facing, u0, v0);
-                    ProcessCellControllerBlockEntity be = revalidate(helper, controller);
+                // v0=0 (bottom row) - VALID: controller at bottom, operating panel above
+                int v0 = 0;
+                List<BlockPos> cells = buildCell(helper, controller, facing, u0, v0);
+                ProcessCellControllerBlockEntity be = revalidate(helper, controller);
+                if (be.isFormed()) {
                     assertFormed(helper, be, controller, facing, u0, v0,
                         "facing=" + facing + " offset=(" + u0 + "," + v0 + ")");
+                    formedCount++;
+                } else {
+                    helper.fail("facing=" + facing + " offset=(" + u0 + "," + v0 + ") should form but didn't: " + be.failureReason());
+                }
 
-                    // NEGATIVE CONTROL: the same twelve blocks mirrored onto the controller's front
-                    // side must not form, so a green assertion above cannot come from a matcher that
-                    // accepts any twelve structure blocks.
-                    for (BlockPos rel : cells) {
-                        helper.setBlock(rel, Blocks.AIR.defaultBlockState());
-                    }
-                    helper.setBlock(controller, ModMultiblocks.PROCESS_CELL_CONTROLLER.get()
-                        .defaultBlockState().setValue(ProcessCellControllerBlock.FACING, facing));
-                    for (BlockPos rel : mirroredCells(controller, facing, u0, v0)) {
-                        boolean port = rel.equals(cell(controller, facing, u0, v0, PORT_A[0], PORT_A[1], PORT_A[2]))
-                            || rel.equals(cell(controller, facing, u0, v0, PORT_B[0], PORT_B[1], PORT_B[2]));
-                        helper.setBlock(rel, port
-                            ? ModMultiblocks.PROCESS_CELL_POWER_PORT.get().defaultBlockState()
-                            : ModMultiblocks.PROCESS_CELL_CASING.get().defaultBlockState());
-                    }
-                    ProcessCellControllerBlockEntity front = revalidate(helper, controller);
-                    helper.assertFalse(front.isFormed(),
-                        "facing=" + facing + " offset=(" + u0 + "," + v0
-                            + "): a complete cell in front of the controller formed (negative control)");
-                    for (BlockPos rel : cells) {
-                        helper.setBlock(rel, Blocks.AIR.defaultBlockState());
-                    }
+                // NEGATIVE CONTROL: the same twelve blocks mirrored onto the controller's front
+                // side must not form.
+                for (BlockPos rel : cells) {
+                    helper.setBlock(rel, Blocks.AIR.defaultBlockState());
+                }
+                helper.setBlock(controller, ModMultiblocks.PROCESS_CELL_CONTROLLER.get()
+                    .defaultBlockState().setValue(ProcessCellControllerBlock.FACING, facing));
+                for (BlockPos rel : mirroredCells(controller, facing, u0, v0)) {
+                    boolean port = rel.equals(cell(controller, facing, u0, v0, PORT_A[0], PORT_A[1], PORT_A[2]))
+                        || rel.equals(cell(controller, facing, u0, v0, PORT_B[0], PORT_B[1], PORT_B[2]));
+                    helper.setBlock(rel, port
+                        ? ModMultiblocks.PROCESS_CELL_POWER_PORT.get().defaultBlockState()
+                        : ModMultiblocks.PROCESS_CELL_CASING.get().defaultBlockState());
+                }
+                ProcessCellControllerBlockEntity front = revalidate(helper, controller);
+                helper.assertFalse(front.isFormed(),
+                    "facing=" + facing + " offset=(" + u0 + "," + v0
+                        + "): a complete cell in front of the controller formed (negative control)");
+                for (BlockPos rel : cells) {
+                    helper.setBlock(rel, Blocks.AIR.defaultBlockState());
+                }
+
+                // v0=1 (top row) - INVALID: controller at top row, operating panel would be outside structure
+                v0 = 1;
+                cells = buildCell(helper, controller, facing, u0, v0);
+                be = revalidate(helper, controller);
+                helper.assertFalse(be.isFormed(),
+                    "facing=" + facing + " offset=(" + u0 + "," + v0 + "): controller at top row must not form (negative control)");
+                helper.assertTrue(be.failureReason().contains("operating panel") || be.failureReason().contains("wrong block"),
+                    "refusal must mention missing operating panel or wrong block: " + be.failureReason());
+                refusedCount++;
+                for (BlockPos rel : cells) {
+                    helper.setBlock(rel, Blocks.AIR.defaultBlockState());
                 }
             }
         }
-        LOGGER.info("[M1-03d] forms_in_all_four_facings: 16 controller placements formed, "
-            + "16 mirrored placements refused");
+        LOGGER.info("[M1-03d] forms_in_all_four_facings: {} controller placements formed (v0=0), {} refused (v0=1), "
+            + "16 mirrored placements refused", formedCount, refusedCount);
         helper.succeed();
     }
 
@@ -411,7 +434,7 @@ public final class MultiblockGameTests {
         ProcessCellControllerBlockEntity be = revalidate(helper, controllerRel);
         assertFormed(helper, be, controllerRel, facing, u0, v0, "before the swap");
 
-        // Swap the two blocks. The multiset of one controller, two ports and nine casings is
+        // Swap the two blocks. The multiset of one controller, two ports, one operating panel, and eight casings is
         // unchanged, so the cell stays valid; only the two positions change role.
         helper.setBlock(portCell, ModMultiblocks.PROCESS_CELL_CASING.get().defaultBlockState());
         helper.setBlock(casingCell, ModMultiblocks.PROCESS_CELL_POWER_PORT.get().defaultBlockState());
