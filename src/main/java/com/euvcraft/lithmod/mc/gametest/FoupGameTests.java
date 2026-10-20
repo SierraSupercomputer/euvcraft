@@ -886,8 +886,12 @@ public final class FoupGameTests {
                 helper.assertTrue(wafer.cumulativeRoll() == FoupContentsCodec.CLIENT_VIEW_ROLL
                     && wafer.flags() == Wafer.NO_FLAGS, "private wafer values reached public reconstruction");
             }
-            helper.assertTrue(FoupItems.trustedContentsOf(FoupItems.with(ModItems.FOUP_MK1.get(), view)) == null,
-                "actual trustedContentsOf accepted a pure client placeholder");
+            FoupContents replacement = FoupItems.trustedContentsOf(FoupItems.with(ModItems.FOUP_MK1.get(), view));
+            helper.assertTrue(replacement != null && replacement.isEmpty() && replacement.run() == null
+                && replacement.grade() == WaferSubstrate.ORDINARY
+                && replacement.capacity() == FoupItems.configuredCapacity()
+                && !FoupContentsCodec.isClientView(replacement),
+                "actual trustedContentsOf failed to replace pure client wafers with a fresh ordinary empty lot");
             helper.assertTrue(first.equals(FoupItems.trustedContentsOf(FoupItems.with(ModItems.FOUP_MK1.get(), first))),
                 "trust boundary rejected a real pure server lot");
         } finally {
