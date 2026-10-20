@@ -9,18 +9,18 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
   - com.euvcraft.lithmod.core.multiblock (6 files)
   - com.euvcraft.lithmod.mc (21 files)
   - com.euvcraft.lithmod.mc.data (12 files)
-  - com.euvcraft.lithmod.mc.gametest (20 files)
+  - com.euvcraft.lithmod.mc.gametest (21 files)
   - com.euvcraft.lithmod.mc.machine (4 files)
   - com.euvcraft.lithmod.mc.machine.client (1 files)
   - com.euvcraft.lithmod.mc.machine.mask (9 files)
   - com.euvcraft.lithmod.mc.machine.packaging (6 files)
-  - com.euvcraft.lithmod.mc.machine.process (4 files)
+  - com.euvcraft.lithmod.mc.machine.process (5 files)
   - com.euvcraft.lithmod.mc.machine.screen (2 files)
   - com.euvcraft.lithmod.mc.machine.silicon (11 files)
   - com.euvcraft.lithmod.mc.machine.silicon.client (1 files)
   - com.euvcraft.lithmod.mc.machine.silicon.screen (2 files)
   - com.euvcraft.lithmod.mc.machine.test (4 files)
-  - com.euvcraft.lithmod.mc.multiblock (9 files)
+  - com.euvcraft.lithmod.mc.multiblock (12 files)
   - com.euvcraft.lithmod.mc.recipe (2 files)
   - com.euvcraft.lithmod.mc.registry (4 files)
 
@@ -1416,6 +1416,16 @@ protected int progressBarY();
 protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
 ```
 
+### com.euvcraft.lithmod.mc.machine.process.OperatingPanelMenu
+```java
+public com.euvcraft.lithmod.mc.machine.process.OperatingPanelMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity, net.minecraft.core.BlockPos);
+public com.euvcraft.lithmod.mc.machine.process.OperatingPanelMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
+public com.euvcraft.lithmod.mc.machine.process.OperatingPanelMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+public boolean isOperatingPanel();
+public net.minecraft.core.BlockPos corePos();
+public boolean stillValid(net.minecraft.world.entity.player.Player);
+```
+
 ### com.euvcraft.lithmod.mc.machine.process.ProcessCellClientEvents
 ```java
 public static void registerScreens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent);
@@ -1444,7 +1454,11 @@ public boolean mayPickup(net.minecraft.world.entity.player.Player);
 ### com.euvcraft.lithmod.mc.machine.process.ProcessCellMenu
 ```java
 public com.euvcraft.lithmod.mc.machine.process.ProcessCellMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
+protected com.euvcraft.lithmod.mc.machine.process.ProcessCellMenu(net.minecraft.world.inventory.MenuType<?>, int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
 public com.euvcraft.lithmod.mc.machine.process.ProcessCellMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+public boolean isOperatingPanel();
+public final int visibleMachineSlotCount();
+public boolean stillValid(net.minecraft.world.entity.player.Player);
 protected void addMachineSlots();
 public boolean inputsLocked();
 public boolean aborted();
@@ -1806,8 +1820,29 @@ protected net.minecraft.world.inventory.AbstractContainerMenu createMachineMenu(
 protected com.euvcraft.lithmod.mc.multiblock.ProcessCellMemberBlockEntity(net.minecraft.world.level.block.entity.BlockEntityType<?>, net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
 public com.euvcraft.lithmod.mc.multiblock.ProcessCellControllerBlockEntity controller();
 public boolean isMemberOfFormedCell();
-public void attach(com.euvcraft.lithmod.mc.multiblock.ProcessCellControllerBlockEntity, boolean);
+public int part();
+public net.minecraft.core.Direction facing();
+public void attach(com.euvcraft.lithmod.mc.multiblock.ProcessCellControllerBlockEntity, boolean, int, net.minecraft.core.Direction);
 public void serverTick();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.ProcessCellOperatingPanelBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.ProcessCellOperatingPanelBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition$Builder<net.minecraft.world.level.block.Block, net.minecraft.world.level.block.state.BlockState>);
+public net.minecraft.world.level.block.state.BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
+protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.entity.player.Player, net.minecraft.world.InteractionHand, net.minecraft.world.phys.BlockHitResult);
+protected void neighborChanged(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.level.block.Block, net.minecraft.world.level.redstone.Orientation, boolean);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.ProcessCellOperatingPanelBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.ProcessCellOperatingPanelBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public void serverTick();
+public net.minecraft.network.chat.Component getDisplayName();
+public net.minecraft.world.inventory.AbstractContainerMenu createMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.world.entity.player.Player);
 ```
 
 ### com.euvcraft.lithmod.mc.multiblock.ProcessCellPowerPortBlock
@@ -1823,6 +1858,10 @@ protected void neighborChanged(net.minecraft.world.level.block.state.BlockState,
 ```java
 public com.euvcraft.lithmod.mc.multiblock.ProcessCellPowerPortBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
 public net.neoforged.neoforge.transfer.energy.EnergyHandler energy();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.ProcessCellVisualProperties
+```java
 ```
 
 ### com.euvcraft.lithmod.mc.recipe.MachineRecipe
@@ -2028,9 +2067,9 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 }
 ```
 
-## Recipe Summary (30 actual resources: 28 production + 2 fixture-gated)
+## Recipe Summary (31 actual resources: 29 production + 2 fixture-gated)
 
-### Vanilla recipe datapack files (28 production)
+### Vanilla recipe datapack files (29 production)
 
 | Path | Type | Result | Count |
 |------|------|--------|-------|
@@ -2049,6 +2088,7 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/recipe/crafting/pattern_generator.json | minecraft:crafting_shaped | lithmod:pattern_generator | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/process_cell_casing.json | minecraft:crafting_shaped | lithmod:process_cell_casing | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/process_cell_controller.json | minecraft:crafting_shaped | lithmod:process_cell_controller | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/process_cell_operating_panel.json | minecraft:crafting_shaped | lithmod:process_cell_operating_panel | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/process_cell_power_port.json | minecraft:crafting_shaped | lithmod:process_cell_power_port | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/reduction_lens.json | minecraft:crafting_shaped | lithmod:reduction_lens | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/resist_t1.json | minecraft:crafting_shaped | lithmod:resist_t1 | 4 |
@@ -2240,7 +2280,7 @@ Tier JSON fields per file (raw literals read from src/main/resources/data/lithmo
 | data/lithmod/tiers/t8.json | T8 | 8 | 90 | 100 | 80.0 | False |
 
 
-M0-owned data files stay as tracked: data/lithmod/die_rules/rules.json, data/lithmod/support_lines/matrix.json, and the 8 data/lithmod/tiers/t<index>.json files. Block loot tables: 8 files under data/lithmod/loot_table/blocks; block tag files: 1. Counts are read at generation time.
+M0-owned data files stay as tracked: data/lithmod/die_rules/rules.json, data/lithmod/support_lines/matrix.json, and the 8 data/lithmod/tiers/t<index>.json files. Block loot tables: 9 files under data/lithmod/loot_table/blocks; block tag files: 1. Counts are read at generation time.
 
 ### Machine data codecs (actual codec sources; core records stay game-independent)
 
