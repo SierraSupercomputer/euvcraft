@@ -1421,7 +1421,7 @@ public final class SiliconGameTests {
             Slot ms = pullerMenu.slots.get(i);
             int mx1 = ms.x - 1, my1 = ms.y - 1, mx2 = ms.x + 17, my2 = ms.y + 17;
             // Check against 3 rows of player inventory (27 slots) + hotbar (9 slots)
-            for (int p = machineSlotCount; p < pullerMenu.slots.size(); p++) {
+            for (int p = pullerMachineSlotCount; p < pullerMenu.slots.size(); p++) {
                 Slot ps = pullerMenu.slots.get(p);
                 int px1 = ps.x - 1, py1 = ps.y - 1, px2 = ps.x + 17, py2 = ps.y + 17;
                 boolean overlap = !(mx2 < px1 || px2 < mx1 || my2 < py1 || py2 < my1);
