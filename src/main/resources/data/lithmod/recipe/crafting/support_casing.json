@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "IQI",
+    "QLQ",
+    "IQI"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "Q": "minecraft:quartz",
+    "L": "lithmod:logic_chip_t2"
+  },
+  "result": {
+    "id": "lithmod:support_casing",
+    "count": 4
+  }
+}

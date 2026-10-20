@@ -53,7 +53,7 @@ class StarterTextureResourceTest {
     private static final String ITEM_TEXTURES = "/assets/" + MODID + "/textures/item/";
     private static final String BLOCK_TEXTURES = "/assets/" + MODID + "/textures/block/";
 
-    // 23 non-block production items that must have custom textures
+    // 34 non-block production items that must have custom textures
     private static final Set<String> PRODUCTION_ITEMS = Set.of(
         "foup_mk1", "foup_mk2",
         "logic_chip_t1", "logic_chip_t2", "memory_chip_t2",
@@ -64,7 +64,18 @@ class StarterTextureResourceTest {
         "contact_plate", "reduction_lens",
         "manual_aligner", "stepper_stage",
         "basic_air_filter", "fine_air_filter",
-        "optical_microscope", "overlay_scope"
+        "optical_microscope", "overlay_scope",
+        "pure_silicon_boule",
+        "logic_chip_t3",
+        "memory_chip_t3",
+        "compute_chip_t3",
+        "nand_chip_t3",
+        "krf_excimer_laser",
+        "duv_projection_lens",
+        "precision_stepper_stage",
+        "hepa_filter",
+        "laser_interferometer",
+        "resist_t3"
     );
 
     // 10 production block models (test_machine excluded — preserved untouched)
@@ -227,16 +238,22 @@ class StarterTextureResourceTest {
     }
 
     @Test
-    @DisplayName("Eight block item models reference existing production block models")
+    @DisplayName("Twelve block item models reference existing production block models")
     void blockItemModelsParentToBlockModels() throws Exception {
         List<String> blockItems = List.of(
             "crystal_puller", "wafer_slicer", "test_package", "pattern_generator",
-            "process_cell_controller", "process_cell_casing", "process_cell_power_port", "process_cell_operating_panel");
+            "process_cell_controller", "process_cell_casing", "process_cell_power_port", "process_cell_operating_panel",
+            "boule_purifier", "ebeam_mask_writer", "support_casing", "support_power_port");
         for (String id : blockItems) {
             URL modelUrl = StarterTextureResourceTest.class.getResource(ITEM_MODELS + id + ".json");
             assertNotNull(modelUrl, "Missing block item model: " + id);
             JsonObject model = parseJson(modelUrl);
-            String blockModelId = id.startsWith("process_cell_") ? id + "_unformed" : id;
+            String blockModelId = switch (id) {
+                case "boule_purifier", "ebeam_mask_writer" -> "process_cell_controller_unformed";
+                case "support_casing" -> "process_cell_casing_unformed";
+                case "support_power_port" -> "process_cell_power_port_unformed";
+                default -> id.startsWith("process_cell_") ? id + "_unformed" : id;
+            };
             assertEquals("lithmod:block/" + blockModelId, model.get("parent").getAsString(),
                 "Block item model " + id + " must reference its default block model");
             assertNotNull(StarterTextureResourceTest.class.getResource(BLOCK_MODELS + blockModelId + ".json"),
@@ -278,7 +295,8 @@ class StarterTextureResourceTest {
             if (PRODUCTION_ITEMS.contains(id)) continue;
             if (Set.of("test_machine", "crystal_puller", "wafer_slicer", "test_package",
                 "pattern_generator", "process_cell_controller", "process_cell_casing",
-                "process_cell_power_port", "process_cell_operating_panel").contains(id)) continue; // block items + joined panel item
+                "process_cell_power_port", "process_cell_operating_panel", "boule_purifier",
+                "ebeam_mask_writer", "support_casing", "support_power_port").contains(id)) continue; // block items + joined panel item
             fail("Unexpected production item model: " + id);
         }
     }

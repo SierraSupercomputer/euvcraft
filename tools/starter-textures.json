@@ -249,6 +249,39 @@
       "light": "#8A8A8A",
       "accent": "#A89A5A",
       "trim": "#E8E0A0"
+    },
+    "PURE": {
+      "outline": "#173D48",
+      "dark": "#397A8B",
+      "mid": "#60B5C5",
+      "light": "#9DDDE8",
+      "accent": "#CEEFF5",
+      "trim": "#F0FDFF"
+    },
+    "T3": {
+      "outline": "#123C38",
+      "dark": "#1B6359",
+      "mid": "#299280",
+      "light": "#50BDA6",
+      "accent": "#8AE0C7",
+      "trim": "#C9F6E9",
+      "glow": "#C9F6E9"
+    },
+    "T3_COMPUTE": {
+      "outline": "#183B25",
+      "dark": "#286440",
+      "mid": "#46975C",
+      "light": "#73BE83",
+      "accent": "#A2E0B0",
+      "trim": "#D5F5DC"
+    },
+    "T3_NAND": {
+      "outline": "#3B294A",
+      "dark": "#634575",
+      "mid": "#9267A3",
+      "light": "#B994CA",
+      "accent": "#DBBEE8",
+      "trim": "#F0DFF8"
     }
   },
   "shapes": {
@@ -2536,6 +2569,61 @@
       "palette": "SCOPE_T2",
       "shape": "scope",
       "note": "T2 overlay scope, same silhouette in violet"
+    },
+    "pure_silicon_boule": {
+      "palette": "PURE",
+      "shape": "boule",
+      "note": "Purified silicon boule, pale cyan crystal"
+    },
+    "logic_chip_t3": {
+      "palette": "T3",
+      "shape": "chip",
+      "note": "T3 logic die"
+    },
+    "memory_chip_t3": {
+      "palette": "T3",
+      "shape": "chip_mem",
+      "note": "T3 memory die with dense cell bars"
+    },
+    "compute_chip_t3": {
+      "palette": "T3_COMPUTE",
+      "shape": "chip",
+      "note": "T3 compute die, single core"
+    },
+    "nand_chip_t3": {
+      "palette": "T3_NAND",
+      "shape": "chip_mem",
+      "note": "T3 NAND die"
+    },
+    "krf_excimer_laser": {
+      "palette": "T3",
+      "shape": "lamp",
+      "note": "T3 KrF excimer light source"
+    },
+    "duv_projection_lens": {
+      "palette": "T3",
+      "shape": "lens",
+      "note": "T3 DUV projection lens"
+    },
+    "precision_stepper_stage": {
+      "palette": "T3",
+      "shape": "stage",
+      "note": "T3 precision stage"
+    },
+    "hepa_filter": {
+      "palette": "T3",
+      "shape": "filter",
+      "note": "T3 HEPA cleanroom filter"
+    },
+    "laser_interferometer": {
+      "palette": "T3",
+      "shape": "scope",
+      "note": "T3 laser interferometer"
+    },
+    "resist_t3": {
+      "palette": "T3",
+      "shape": "bottle",
+      "note": "T3 photoresist bottle"
     }
   },
   "blocks": {
@@ -2679,7 +2767,18 @@
       "basic_air_filter",
       "fine_air_filter",
       "optical_microscope",
-      "overlay_scope"
+      "overlay_scope",
+      "pure_silicon_boule",
+      "logic_chip_t3",
+      "memory_chip_t3",
+      "compute_chip_t3",
+      "nand_chip_t3",
+      "krf_excimer_laser",
+      "duv_projection_lens",
+      "precision_stepper_stage",
+      "hepa_filter",
+      "laser_interferometer",
+      "resist_t3"
     ],
     "blockModelsToUpdate": [
       "crystal_puller",
