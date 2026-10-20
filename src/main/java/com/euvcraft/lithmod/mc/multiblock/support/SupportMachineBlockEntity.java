@@ -57,7 +57,7 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
     public static final int SLOT_IN_1 = 1;
 
     /** Purifier's water tank starts at 16000 mB; the definition param may resize it. */
-    public static final int INITIAL_WATER_MB = 16_000;
+    public static final int DEFAULT_WATER_CAPACITY_MB = 16_000;
     /** Purifier definition param: water tank capacity in mB. */
     public static final String PARAM_WATER_CAPACITY = "water_capacity";
 
@@ -79,7 +79,7 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
         if (kind() == SupportMachineKind.PURIFIER) {
             // Initial 16000 mB; refreshDefinition (already run by the base constructor) resizes the
             // capacity from the definition param. Amount is preserved when capacity changes.
-            this.water = new WaterTank(INITIAL_WATER_MB, INITIAL_WATER_MB);
+            this.water = new WaterTank(DEFAULT_WATER_CAPACITY_MB);
         }
     }
 

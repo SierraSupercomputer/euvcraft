@@ -12,20 +12,6 @@ import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import org.jspecify.annotations.Null</think><tool_call>write<arg_key>content</arg_key><arg_value>package com.euvcraft.lithmod.mc.multiblock.support;
-
-import com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity;
-import com.euvcraft.lithmod.mc.machine.FabMachineMenu;
-import com.euvcraft.lithmod.mc.registry.ModItems;
-
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.world.Container;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.inventory.ContainerData;
-import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.inventory.SimpleContainerData;
-import net.minecraft.world.inventory.Slot;
-import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -97,7 +83,7 @@ public class SupportMachineMenu extends FabMachineMenu {
     private SupportMachineMenu(MenuType<?> type, int containerId, Inventory playerInventory,
                                @Nullable SupportMachineBlockEntity machine, SupportMachineKind kind) {
         super(type, containerId, playerInventory, machine,
-            kind.inputSlots(), machine == null ? kind.slotCount() : machine.slotCount());
+            kind.inputSlots(), machine == null ? kind.slotCount() : machine.getContainerSize());
         this.extraData = machine == null ? new SimpleContainerData(EXTRA_DATA_COUNT) : new ContainerData() {
             @Override
             public int get(int index) {

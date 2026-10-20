@@ -578,7 +578,7 @@ public final class SupportMultiblockGameTests {
         }
         purifier.serverTick();
         h.assertTrue(purifier.waterTank() != null, "purifier owns a tank");
-        h.assertValueEqual(16000, purifier.waterAmount(), "initial 16000 mB");
+        h.assertValueEqual(0, purifier.waterAmount(), "new purifier starts empty; capacity is not free water");
         h.assertValueEqual(16000, purifier.waterCapacity(), "capacity from definition param");
         h.assertValueEqual(100000, purifier.buffer().getCapacityAsInt(), "energy capacity applied");
 
@@ -710,7 +710,7 @@ public final class SupportMultiblockGameTests {
         serverTickN(purifier, 40);
         h.assertFalse(purifier.runner().isRunning(), "no recipe must start without the job phase");
         h.assertValueEqual(50_000L, purifier.buffer().getAmountAsLong(), "no FE spent by the foundation");
-        h.assertValueEqual(16000, purifier.waterAmount(), "inputs alone consume no water");
+        h.assertValueEqual(0, purifier.waterAmount(), "foundation does not exchange buckets or create water");
         h.assertTrue(purifier.isFormed(), "machine still forms with inputs filled");
         purifier.setSlot(SupportMachineBlockEntity.SLOT_IN_0, ItemStack.EMPTY);
         purifier.setSlot(SupportMachineBlockEntity.SLOT_IN_1, ItemStack.EMPTY);
