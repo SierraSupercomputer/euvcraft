@@ -38,6 +38,7 @@ import com.euvcraft.lithmod.mc.gametest.SiliconGameTests;
 import com.euvcraft.lithmod.mc.gametest.ClientPolishGameTests;
 import com.euvcraft.lithmod.mc.gametest.PlacementAndTitleGameTests;
 import com.euvcraft.lithmod.mc.gametest.SupportMultiblockGameTests;
+import com.euvcraft.lithmod.mc.gametest.T3ContentGameTests;
 import com.euvcraft.lithmod.mc.gametest.T3PurificationGameTests;
 import com.euvcraft.lithmod.mc.gametest.T3MaskWriterGameTests;
 import com.euvcraft.lithmod.mc.machine.mask.MaskMachines;
@@ -97,6 +98,7 @@ modEventBus.addListener(ComponentTooltipAppenders::register);
             ClientPolishGameTests.register(modEventBus);
             PlacementAndTitleGameTests.register(modEventBus);
             SupportMultiblockGameTests.register(modEventBus);
+            T3ContentGameTests.register(modEventBus);
             T3PurificationGameTests.register(modEventBus);
             T3MaskWriterGameTests.register(modEventBus);
         } else if (GameTestFixtures.shippingProbeEnabled()) {

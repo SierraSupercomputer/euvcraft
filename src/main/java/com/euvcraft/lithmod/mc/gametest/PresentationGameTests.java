@@ -262,7 +262,8 @@ public final class PresentationGameTests {
         for (Identifier id : BuiltInRegistries.ITEM.keySet())
             if (id.getNamespace().equals("lithmod") && !id.getPath().equals("test_machine") && !produced.contains(id.getPath()))
                 missing.add(id.getPath());
-        h.assertTrue(missing.equals(Set.of("foup_mk2", "logic_chip_t1", "logic_chip_t2", "memory_chip_t2", "chip_scrap")),
+        h.assertTrue(missing.equals(Set.of("foup_mk2", "logic_chip_t1", "logic_chip_t2", "memory_chip_t2", "chip_scrap",
+                "logic_chip_t3", "memory_chip_t3", "compute_chip_t3", "nand_chip_t3")),
             "Unexpected recipe-less production items: " + missing);
         h.succeed();
     }
@@ -334,7 +335,7 @@ public final class PresentationGameTests {
      * Validates the entry order of the unified EUVCRAFT creative tab.
      *
      * <p>This test ensures that the MAIN creative tab entry order is stable and matches the
-     * intended presentation order. The 32 entries are validated against their
+     * intended presentation order. The 43 entries (33 M1 + 10 T3) are validated against their
      * expected item sequence. Also verifies that all lithmod items (except test_machine)
      * appear exactly once in the tab, and that only one lithmod CreativeModeTab is registered.
      * </p>
@@ -348,8 +349,9 @@ public final class PresentationGameTests {
         mainTab.buildContents(params);
         List<ItemStack> actualEntries = new ArrayList<>(mainTab.getDisplayItems());
 
-        // Expected 33 stacks in exact order (added process_cell_operating_panel after power_port)
+        // Expected 43 stacks in exact order (33 M1 + 10 T3 appended)
         List<Item> expectedItems = List.of(
+            // M1 items
             ModItems.CRYSTAL_PULLER.get(),
             ModItems.WAFER_SLICER.get(),
             ModItems.PATTERN_GENERATOR.get(),
@@ -382,12 +384,23 @@ public final class PresentationGameTests {
             ModItems.LOGIC_CHIP_T1.get(),
             ModItems.LOGIC_CHIP_T2.get(),
             ModItems.MEMORY_CHIP_T2.get(),
-            ModItems.CHIP_SCRAP.get()
+            ModItems.CHIP_SCRAP.get(),
+            // T3 items appended
+            ModItems.KRF_EXCIMER_LASER.get(),
+            ModItems.DUV_PROJECTION_LENS.get(),
+            ModItems.PRECISION_STEPPER_STAGE.get(),
+            ModItems.HEPA_FILTER.get(),
+            ModItems.LASER_INTERFEROMETER.get(),
+            ModItems.RESIST_T3.get(),
+            ModItems.LOGIC_CHIP_T3.get(),
+            ModItems.MEMORY_CHIP_T3.get(),
+            ModItems.COMPUTE_CHIP_T3.get(),
+            ModItems.NAND_CHIP_T3.get()
         );
 
-        // Verify exact 33 stacks in order
-        h.assertValueEqual(33, actualEntries.size(), "MAIN tab entry count is not 33");
-        for (int i = 0; i < 33; i++) {
+        // Verify exact 43 stacks in order
+        h.assertValueEqual(43, actualEntries.size(), "MAIN tab entry count is not 43");
+        for (int i = 0; i < 43; i++) {
             Item expected = expectedItems.get(i);
             Item actual = actualEntries.get(i).getItem();
             h.assertTrue(actual == expected,

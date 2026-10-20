@@ -120,8 +120,13 @@ public final class ChipGameTests {
         for (Tier tier : TierDataLoader.getRegistry().all()) {
             for (String dieType : List.of(DieTypes.COMPUTE, DieTypes.NAND)) {
                 Optional<Item> chip = ChipCatalog.chipFor(dieType, tier.index());
-                helper.assertTrue(chip.isEmpty(),
-                    "the catalog returned " + chip + " for " + dieType + " at " + tier.id() + ", which has no chip yet");
+                if (tier.index() == 3) {
+                    helper.assertTrue(chip.isPresent(),
+                        "the catalog must have " + dieType + " chip at T3");
+                } else {
+                    helper.assertTrue(chip.isEmpty(),
+                        "the catalog returned " + chip + " for " + dieType + " at " + tier.id() + ", which has no chip yet");
+                }
             }
         }
         helper.assertTrue(ChipCatalog.chipFor("no_such_die", 1).isEmpty(),
@@ -154,29 +159,39 @@ public final class ChipGameTests {
         assertDesign(helper, ModItems.LOGIC_CHIP_T1.get(), DieTypes.LOGIC, 1);
         assertDesign(helper, ModItems.LOGIC_CHIP_T2.get(), DieTypes.LOGIC, 2);
         assertDesign(helper, ModItems.MEMORY_CHIP_T2.get(), DieTypes.MEMORY, 2);
+        assertDesign(helper, ModItems.LOGIC_CHIP_T3.get(), DieTypes.LOGIC, 3);
+        assertDesign(helper, ModItems.MEMORY_CHIP_T3.get(), DieTypes.MEMORY, 3);
+        assertDesign(helper, ModItems.COMPUTE_CHIP_T3.get(), DieTypes.COMPUTE, 3);
+        assertDesign(helper, ModItems.NAND_CHIP_T3.get(), DieTypes.NAND, 3);
 
         CreativeModeTab tab = ModCreativeTabs.MAIN.get();
         tab.buildContents(new CreativeModeTab.ItemDisplayParameters(
             helper.getLevel().enabledFeatures(), true, helper.getLevel().registryAccess()));
         Collection<ItemStack> displayed = tab.getDisplayItems();
 
-        // Filter to only the seven chip/consumable items
+        // Filter to only the chip/consumable items (7 M1 + 5 T3 = 12)
         java.util.Set<Item> chipItems = new java.util.HashSet<>();
         for (ItemStack stack : displayed) {
             Item item = stack.getItem();
             if (item == ModItems.LOGIC_CHIP_T1.get() || item == ModItems.LOGIC_CHIP_T2.get()
                     || item == ModItems.MEMORY_CHIP_T2.get() || item == ModItems.CHIP_SCRAP.get()
                     || item == ModItems.RESIST_T1.get() || item == ModItems.RESIST_T2.get()
-                    || item == ModItems.CHIP_PACKAGE.get()) {
+                    || item == ModItems.CHIP_PACKAGE.get()
+                    || item == ModItems.LOGIC_CHIP_T3.get() || item == ModItems.MEMORY_CHIP_T3.get()
+                    || item == ModItems.COMPUTE_CHIP_T3.get() || item == ModItems.NAND_CHIP_T3.get()
+                    || item == ModItems.RESIST_T3.get()) {
                 chipItems.add(item);
             }
         }
         for (Item expected : List.of(ModItems.LOGIC_CHIP_T1.get(), ModItems.LOGIC_CHIP_T2.get(),
             ModItems.MEMORY_CHIP_T2.get(), ModItems.CHIP_SCRAP.get(), ModItems.RESIST_T1.get(),
-            ModItems.RESIST_T2.get(), ModItems.CHIP_PACKAGE.get())) {
+            ModItems.RESIST_T2.get(), ModItems.CHIP_PACKAGE.get(),
+            ModItems.LOGIC_CHIP_T3.get(), ModItems.MEMORY_CHIP_T3.get(),
+            ModItems.COMPUTE_CHIP_T3.get(), ModItems.NAND_CHIP_T3.get(),
+            ModItems.RESIST_T3.get())) {
             helper.assertTrue(chipItems.contains(expected), expected + " is missing from the main tab");
         }
-        assertEqual(helper, 7, chipItems.size(), "the main tab does not contain exactly the seven chip/consumable items");
+        assertEqual(helper, 12, chipItems.size(), "the main tab does not contain exactly the twelve chip/consumable items");
 
         helper.succeed();
     }
@@ -194,9 +209,13 @@ public final class ChipGameTests {
         assertChipTooltip(helper, ModItems.LOGIC_CHIP_T1.get(), DieTypes.LOGIC, 1);
         assertChipTooltip(helper, ModItems.LOGIC_CHIP_T2.get(), DieTypes.LOGIC, 2);
         assertChipTooltip(helper, ModItems.MEMORY_CHIP_T2.get(), DieTypes.MEMORY, 2);
+        assertChipTooltip(helper, ModItems.LOGIC_CHIP_T3.get(), DieTypes.LOGIC, 3);
+        assertChipTooltip(helper, ModItems.MEMORY_CHIP_T3.get(), DieTypes.MEMORY, 3);
+        assertChipTooltip(helper, ModItems.COMPUTE_CHIP_T3.get(), DieTypes.COMPUTE, 3);
+        assertChipTooltip(helper, ModItems.NAND_CHIP_T3.get(), DieTypes.NAND, 3);
 
         for (Item plain : List.of(ModItems.CHIP_SCRAP.get(), ModItems.RESIST_T1.get(),
-            ModItems.RESIST_T2.get(), ModItems.CHIP_PACKAGE.get())) {
+            ModItems.RESIST_T2.get(), ModItems.RESIST_T3.get(), ModItems.CHIP_PACKAGE.get())) {
             List<Component> lines = tooltipOf(new ItemStack(plain));
             assertEqual(helper, 1, lines.size(), plain + " has more than the name line in its tooltip");
         }
