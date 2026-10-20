@@ -4,6 +4,7 @@ import com.euvcraft.lithmod.core.MachineDefinition;
 import com.euvcraft.lithmod.core.Tier;
 import com.euvcraft.lithmod.core.TierRegistry;
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
+import com.euvcraft.lithmod.mc.GameTestFixtures;
 
 import net.minecraft.resources.Identifier;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -29,8 +30,36 @@ public final class MachineDefinitionLoader
 
     public MachineDefinitionLoader() {
         super("machines", MachineDefinitionCodec.CODEC,
-            MachineDefinitionLoader::buildFromFiles, EUVCRAFTMod.LOGGER);
+            MachineDefinitionLoader::runtimeBuild, EUVCRAFTMod.LOGGER);
         CURRENT = this;
+    }
+
+    /**
+     * Runtime publication path: filters the test-machine fixture definition out before
+     * normal validation when fixtures are off, then builds as usual.
+     *
+     * <p>The filter matches the definition's real payload id ({@code definition.id()},
+     * not the file name) and is additive with the same filter in
+     * {@link MachineRecipeLoader}, so a datapack reload cannot reintroduce the fixture.
+     * The public pure builders {@link #build(List, String)} and {@link #buildFromFiles}
+     * stay unfiltered for unit tests.</p>
+     */
+    private static Registry runtimeBuild(Map<Identifier, MachineDefinition> entries, String source) {
+        if (GameTestFixtures.enabled()) {
+            return buildFromFiles(entries, source);
+        }
+        Map<Identifier, MachineDefinition> filtered = new LinkedHashMap<>();
+        entries.forEach((fileId, definition) -> {
+            if (!isFixtureDefinition(definition)) {
+                filtered.put(fileId, definition);
+            }
+        });
+        return buildFromFiles(filtered, source);
+    }
+
+    /** The test-machine fixture machine id (payload id, not a file-name pattern). */
+    static boolean isFixtureDefinition(MachineDefinition definition) {
+        return "test_machine".equals(definition.id());
     }
 
     @SubscribeEvent

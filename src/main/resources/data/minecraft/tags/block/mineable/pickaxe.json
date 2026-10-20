@@ -1,6 +1,6 @@
 {
   "values": [
-    "lithmod:test_machine",
+    {"id": "lithmod:test_machine", "required": false},
     "lithmod:crystal_puller",
     "lithmod:wafer_slicer",
     "lithmod:pattern_generator",

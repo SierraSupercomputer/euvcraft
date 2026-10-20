@@ -2,6 +2,7 @@ package com.euvcraft.lithmod.mc.registry;
 
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.euvcraft.lithmod.mc.FoupItem;
+import com.euvcraft.lithmod.mc.GameTestFixtures;
 import com.euvcraft.lithmod.mc.machine.test.ModMachines;
 import com.euvcraft.lithmod.mc.LineComponentItem;
 import com.euvcraft.lithmod.mc.multiblock.ModMultiblocks;
@@ -179,10 +180,17 @@ public final class ModItems {
      * <p>Added by M1-02c. Without a block item the machine cannot drop itself at all, so a
      * player who breaks one gets their FOUP back and no block. Same
      * {@code registerSimpleBlockItem} rule as the Process Cell items above.</p>
+     *
+     * <p>Conditionally registered only when fixtures are enabled. When fixtures are off,
+     * the holder is left null and nothing is registered at all: there is no plain Item
+     * fallback, so the id {@code lithmod:test_machine} is genuinely absent from the item
+     * registry. Every use of this holder is inside fixture-gated game tests.</p>
      */
     public static final DeferredItem<BlockItem> TEST_MACHINE =
-        ITEMS.registerSimpleBlockItem("test_machine",
-            () -> ModMachines.TEST_MACHINE.get());
+        GameTestFixtures.enabled()
+            ? ITEMS.registerSimpleBlockItem("test_machine",
+                () -> ModMachines.TEST_MACHINE.get())
+            : null;
 
     /**
      * The two silicon chain machines' block items.

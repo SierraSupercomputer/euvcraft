@@ -78,13 +78,13 @@ Plus same-tier resist, mask, and FOUP. FE via the formed power port.
 Exactly **one creative tab** (`lithmod:0_main`) with **32 stacks** in requested group order:
 - 30 unique production item types
 - 2 extra MASK variants (logic T1, logic T2, memory T2 — `blank_mask` is a different item, not a base variant)
-- `test_machine` fixture omitted from progression (M1-12 will gate/remove from shipping; **not already gated**)
+- `test_machine` fixture omitted from progression; M1-12 now gates its registration and excludes its eight JSON resources from shipping jars
 
 ## 8. What Is NOT in M1
 
 - FOUP Mk2 has no crafting recipe. Higher progression, chip-consuming recipes, Encoded Logistics changes and scrap recycling remain outside M1.
-- **T6 core choices:** later user decision; does not enable M1 core play.
-- **Debug energy fill command:** M1-12 future; do not claim present.
+- **T6 core choices:** owner-confirmed start of future core-count choices; remains outside M1 core play.
+- **Debug energy fill command:** M1-12 adds config-gated `/debug fab energy`; it is a walkthrough/development aid, disabled by default.
 - **Hidden roll/yield numbers:** never displayed to player.
 - **Complete playable M1 or visual proof:** M1-12 covers end-to-end, client gates, statistics, privacy, hand-fed reload, debug command, shipping fixture gate, generated handoff, manual walkthrough.
 
@@ -95,3 +95,13 @@ Exactly **one creative tab** (`lithmod:0_main`) with **32 stacks** in requested 
 - Machine recipes: `data/lithmod/machine_recipes/*.json`
 - Crafting recipes: `data/lithmod/recipe/crafting/*.json`
 - Tier data: `data/lithmod/tiers/*.json`
+
+## M1-12 automated gate and owner handoff
+
+The current source passed both full physical T1 logic and twelve-layer T2 memory chains, 200 sampled lots/tier (12,800 wafers each, absolute yield tolerance 0.02), ten complete machine lots/tier, privacy and hand-fed boundaries, actual definition reload, debug energy safeguards and shipping fixture gating. Three complete server processes each passed 810/810 cases, including all 140 ordinary project IDs; Arcforge creosote failed 0/3. Units/core/jar passed 517 tests in 76 classes. The separate shipping probe passes one case and is excluded from ordinary counts.
+
+The Process Cell is 2 wide, 2 tall and 3 long: twelve blocks comprising one controller, one or two ports, and casings. Line components belong in its eight-slot inventory. A mask loses one use per completed lot; same-type-and-components resist top-ups are allowed while active, and Abort keeps automatic startup stopped until FOUP removal/reinsertion.
+
+The fixture-enabled hand-fed audit covers eight blocks on six directions plus null and twelve formed members. Normal shipping leaves seven production blocks; its off-mode registry/creative probe is not an additional all-side audit. Privacy checks combine real wire/menu/tooltip/log invariance with bounded source auditing, not a formal proof.
+
+See [the report](reports/M1-12_m1-gate-and-handoff.md), [generated reference](m1-slice.md), and [owner walkthrough](manual-walkthrough-m1.md). Two final whole-task reviews, separate candidate verification and integration remain pending at authoring time. Only initial singleplayer launch is owner-confirmed; the complete rendered-client walkthrough and visual observations remain pending. T6 is already the owner-confirmed future core-choice start, with no higher-tier gameplay added to M1.

@@ -343,3 +343,15 @@ See `reports/M1-09_process-cell-controller.md` for actual registered IDs, class 
 See `reports/M1-11_recipes-and-presentation.md` for factual scope/result, actual relative changed paths, recipes/guide, FOUP and GUI/creative changes, thorough measured evidence, limitations, review/integration PENDING.
 
 M1-11 accepted: see `reports/M1-11_acceptance.md` and `reports/M1-11_review.md` for the final candidate results and two independent approvals. Earlier pending statements describe source-phase authoring.
+
+## M1-12 gate verification and handoff
+
+Game source `be5670fe3a8261b98f20f22e6d29db7d6d7d9f33` passed 517 unit tests in 76 classes (zero failures/errors/skips), core-import and release-jar checks, all 140 ordinary project server IDs, and a separate one-case fixtures-disabled server probe. Three actual complete server processes each passed 810/810 distinct cases; Arcforge creosote failed 0/3 and none were skipped. See [the report](reports/M1-12_m1-gate-and-handoff.md) for measured statistics, class rows, focused review scope, preserved failures and receipt labels.
+
+The later two server runs reused only three hash-verified Minecraft/NeoForge dependency jars, with an executed wrong-hash rejection control. compileJava was FROM-CACHE then UP-TO-DATE; each server JVM and all server cases actually ran. The prior metadata-bootstrap failure ran no server cases and is excluded. First-run wrapper bookkeeping was reconciled from saved successful XML after a lease collision, without rerunning Minecraft. No dependency code was changed.
+
+Actual gates cover physical T1/T2 chains, 200 lots/tier (12,800 wafers each), twenty complete machine lots, wire/menu/tooltip/log privacy invariance, bounded lexical source checks, hand-fed capability checks, definition reload with real paid FE, config/permission/target-controlled debug energy, shipping fixture absence and generated-reference controls. Shipping removes eight fixture JSON resources only from the jar; three shared tags retain production blocks with optional fixture references. Fixture classes are not claimed physically stripped.
+
+For ordinary local checks, use the project's configured JDK 25 with `gradlew.bat test checkCoreImports jar runGameTestServer --offline --console=plain`. This convenience command is not a verbatim record of the three retained runs: the repeated-run coordinator also supplies its XML report and hash-guard init scripts. Offline mode alone does not prevent NeoForm metadata refresh.
+
+[Generated reference](m1-slice.md) and [owner walkthrough](manual-walkthrough-m1.md) accompany the report. The walkthrough is source-derived and owner execution remains pending; only singleplayer launch is confirmed. Privacy checks are bounded, not a formal flow proof. Two final whole-task reviews, separate candidate checks and integration are pending at authoring time.

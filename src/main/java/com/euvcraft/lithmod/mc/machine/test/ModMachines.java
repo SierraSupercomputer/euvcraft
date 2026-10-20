@@ -1,6 +1,7 @@
 package com.euvcraft.lithmod.mc.machine.test;
 
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
+import com.euvcraft.lithmod.mc.GameTestFixtures;
 import com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity;
 import com.euvcraft.lithmod.mc.registry.ModMenus;
 
@@ -27,6 +28,11 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  *   <li>{@code RegisterCapabilitiesEvent} implements {@code IModBusEvent}, so the listener is
  *       attached here, never on {@code NeoForge.EVENT_BUS}.</li>
  * </ul>
+ *
+ * <p>All fixture registrations are gated by {@link GameTestFixtures#enabled()}. When fixtures
+ * are off, no test_machine block, BlockItem, BlockEntityType, MenuType, capabilities, or
+ * screen are registered. DeferredHolders may remain declared but .get() is only called when
+ * registered.</p>
  */
 public final class ModMachines {
 
@@ -49,6 +55,9 @@ public final class ModMachines {
 
     /** Attaches every deferred register and the capability listener to the mod event bus. */
     public static void register(IEventBus modEventBus) {
+        if (!GameTestFixtures.enabled()) {
+            return;
+        }
         BLOCKS.register(modEventBus);
         BLOCK_ENTITIES.register(modEventBus);
         ModMenus.MENU_TYPES.register(modEventBus);
@@ -60,6 +69,9 @@ public final class ModMachines {
      * {@code event.registerBlockEntity(capability, blockEntityType, (be, side) -> handler)}.
      */
     private static void registerCapabilities(RegisterCapabilitiesEvent event) {
+        if (!GameTestFixtures.enabled()) {
+            return;
+        }
         event.registerBlockEntity(Capabilities.Energy.BLOCK, TEST_MACHINE_BE.get(),
             (blockEntity, side) -> blockEntity instanceof FabMachineBlockEntity machine
                 ? machine.energy()

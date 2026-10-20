@@ -21,9 +21,14 @@ import com.euvcraft.lithmod.mc.data.MachineRecipeLoader;
 import com.euvcraft.lithmod.mc.registry.ModCreativeTabs;
 import com.euvcraft.lithmod.mc.registry.ModDataComponents;
 import com.euvcraft.lithmod.mc.registry.ModItems;
+import com.euvcraft.lithmod.mc.gametest.M1ShippingGameTests;
 import com.euvcraft.lithmod.mc.gametest.MachineDropGameTests;
 import com.euvcraft.lithmod.mc.gametest.MachineGameTests;
 import com.euvcraft.lithmod.mc.gametest.MaskGameTests;
+import com.euvcraft.lithmod.mc.gametest.M1GateGameTests;
+import com.euvcraft.lithmod.mc.gametest.M1BoundaryGameTests;
+import com.euvcraft.lithmod.mc.gametest.M1ReloadGameTests;
+import com.euvcraft.lithmod.mc.gametest.M1DebugGameTests;
 import com.euvcraft.lithmod.mc.gametest.MultiblockGameTests;
 import com.euvcraft.lithmod.mc.gametest.PackagingGameTests;
 import com.euvcraft.lithmod.mc.gametest.ProcessCellGameTests;
@@ -58,20 +63,32 @@ public class EUVCRAFTMod {
         modEventBus.addListener(ChipTooltipAppenders::register);
         modEventBus.addListener(MaskTooltipAppenders::register);
 modEventBus.addListener(ComponentTooltipAppenders::register);
-        com.euvcraft.lithmod.mc.gametest.EUVCRAFTGameTests.register(modEventBus);
-        com.euvcraft.lithmod.mc.gametest.FabRandomGameTests.register(modEventBus);
-        com.euvcraft.lithmod.mc.gametest.FoupGameTests.register(modEventBus);
-        com.euvcraft.lithmod.mc.gametest.YieldGameTests.register(modEventBus);
-        com.euvcraft.lithmod.mc.gametest.ChipGameTests.register(modEventBus);
-com.euvcraft.lithmod.mc.gametest.ComponentGameTests.register(modEventBus);
-        MachineGameTests.register(modEventBus);
-        MachineDropGameTests.register(modEventBus);
-        MultiblockGameTests.register(modEventBus);
-        SiliconGameTests.register(modEventBus);
-        MaskGameTests.register(modEventBus);
-        PackagingGameTests.register(modEventBus);
-        ProcessCellGameTests.register(modEventBus);
-        PresentationGameTests.register(modEventBus);
+        // Test-only game tests are registered only when fixtures are enabled. When
+        // fixtures are off and the shipping probe is on, ONLY M1ShippingGameTests is
+        // registered (required literal id m1_gate_shipping_no_fixtures). Production
+        // never registers game tests or the probe: both gates return false there.
+        if (GameTestFixtures.enabled()) {
+            com.euvcraft.lithmod.mc.gametest.EUVCRAFTGameTests.register(modEventBus);
+            com.euvcraft.lithmod.mc.gametest.FabRandomGameTests.register(modEventBus);
+            com.euvcraft.lithmod.mc.gametest.FoupGameTests.register(modEventBus);
+            com.euvcraft.lithmod.mc.gametest.YieldGameTests.register(modEventBus);
+            com.euvcraft.lithmod.mc.gametest.ChipGameTests.register(modEventBus);
+            com.euvcraft.lithmod.mc.gametest.ComponentGameTests.register(modEventBus);
+            MachineGameTests.register(modEventBus);
+            MachineDropGameTests.register(modEventBus);
+            MultiblockGameTests.register(modEventBus);
+            SiliconGameTests.register(modEventBus);
+            MaskGameTests.register(modEventBus);
+            PackagingGameTests.register(modEventBus);
+            ProcessCellGameTests.register(modEventBus);
+            PresentationGameTests.register(modEventBus);
+            M1GateGameTests.register(modEventBus);
+            M1BoundaryGameTests.register(modEventBus);
+            M1ReloadGameTests.register(modEventBus);
+            M1DebugGameTests.register(modEventBus);
+        } else if (GameTestFixtures.shippingProbeEnabled()) {
+            M1ShippingGameTests.register(modEventBus);
+        }
 
         modContainer.registerConfig(ModConfig.Type.LOCAL, FabConfig.getSpec());
         config = new FabConfig();
@@ -83,6 +100,7 @@ com.euvcraft.lithmod.mc.gametest.ComponentGameTests.register(modEventBus);
         modEventBus.addListener(EUVCRAFTMod::configReloaded);
 
         NeoForge.EVENT_BUS.addListener(FoupDebugCommand::register);
+        NeoForge.EVENT_BUS.addListener(FabDebugCommand::register);
 
         NeoForge.EVENT_BUS.register(TierDataLoader.class);
         NeoForge.EVENT_BUS.register(SupportLineDataLoader.class);

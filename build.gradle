@@ -68,6 +68,12 @@ neoForge {
         gameTestServer {
             type = "gameTestServer"
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Fixtures are on by default for the normal gameTestServer full suite.
+            // -PlithmodFixtures=false (normally with -PlithmodShippingProbe=true) runs the
+            // shipping-off probe instead: fixture registrations off, only the
+            // m1_gate_shipping_no_fixtures game test registered.
+            systemProperty 'lithmodFixtures', project.findProperty('lithmodFixtures')?.toString() ?: 'true'
+            systemProperty 'lithmodShippingProbe', project.findProperty('lithmodShippingProbe')?.toString() ?: 'false'
         }
 
         data {
@@ -219,4 +225,22 @@ tasks.register('checkCoreImports', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'com.euvcraft.lithmod.core.ImportChecker'
     workingDir = project.projectDir
+}
+
+// Shipping jar: exclude the eight test-machine fixture JSON entries from the jar task
+// only. processResources is untouched so the fixture game tests still find the fixture
+// structures/JSON in the normal development outputs. Production content whose name
+// merely contains "test" (for example data/lithmod/machines/test_package.json) is NOT
+// excluded — only these exact eight fixture entries are.
+tasks.named('jar', Jar).configure {
+    exclude(
+        'assets/lithmod/blockstates/test_machine.json',
+        'assets/lithmod/items/test_machine.json',
+        'assets/lithmod/models/block/test_machine.json',
+        'assets/lithmod/models/item/test_machine.json',
+        'data/lithmod/loot_table/blocks/test_machine.json',
+        'data/lithmod/machines/test_machine.json',
+        'data/lithmod/machine_recipes/test_machine_from_planks.json',
+        'data/lithmod/machine_recipes/test_machine_from_ingot.json'
+    )
 }

@@ -1,6 +1,7 @@
 package com.euvcraft.lithmod.mc.machine.client;
 
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
+import com.euvcraft.lithmod.mc.GameTestFixtures;
 import com.euvcraft.lithmod.mc.machine.screen.TestMachineScreen;
 import com.euvcraft.lithmod.mc.registry.ModMenus;
 
@@ -15,6 +16,10 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
  * <p>Annotated {@code value = Dist.CLIENT}, which is what keeps {@code TestMachineScreen} and
  * everything it pulls in off a dedicated server. This class is the only reference to the
  * screen package from common code.</p>
+ *
+ * <p>Screen registration is guarded by {@link GameTestFixtures#enabled()} so that when
+ * fixtures are off, the test machine screen is not registered, preventing client crashes
+ * from a guarded screen with no menu type.</p>
  */
 @EventBusSubscriber(modid = EUVCRAFTMod.MODID, value = Dist.CLIENT)
 public final class MachineClientEvents {
@@ -24,6 +29,9 @@ public final class MachineClientEvents {
 
     @SubscribeEvent
     public static void registerScreens(RegisterMenuScreensEvent event) {
+        if (!GameTestFixtures.enabled()) {
+            return;
+        }
         event.register(ModMenus.TEST_MACHINE.get(), TestMachineScreen::new);
     }
 }

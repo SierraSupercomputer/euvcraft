@@ -107,8 +107,7 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
      * @return the trusted lot, or {@code null} when this slot must refuse the stack
      */
     public static @Nullable FoupContents acceptedFoup(ItemStack stack) {
-        FoupContents raw = FoupItems.contentsOf(stack);
-        if (raw == null || FoupContentsCodec.isClientView(raw)) {
+        if (!FoupItems.hasSealedContents(stack)) {
             return null;
         }
         FoupContents contents = FoupItems.trustedContentsOf(stack);
@@ -143,14 +142,15 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
      * </ul>
      */
     public static boolean acceptsFoupStack(ItemStack stack) {
-        FoupContents contents = FoupItems.contentsOf(stack);
-        if (contents == null) {
+        FoupPublicView view = FoupItems.publicViewOf(stack);
+        if (view == null) {
             return false;
         }
-        if (FoupContentsCodec.isClientView(contents)) {
-            FoupPublicView view = contents.publicView();
+        if (FoupItems.isClientView(stack)) {
             return view.waferCount() == 0;
         }
+        // Sealed lot: use trusted read for run spec check
+        FoupContents contents = FoupItems.trustedContentsOf(stack);
         return contents.isEmpty() && contents.run() == null;
     }
 
