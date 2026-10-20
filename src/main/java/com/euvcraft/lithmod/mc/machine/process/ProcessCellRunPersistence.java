@@ -307,8 +307,8 @@ public final class ProcessCellRunPersistence {
             if (!lot.lotId().equals(this.lotId)) {
                 throw new IllegalArgumentException("lot UUID mismatch: contract=" + this.lotId + ", lot=" + lot.lotId());
             }
-            // T3: lot grade must match frozen contract grade
-            if (tier.index() == 3 && !lot.grade().equals(this.grade)) {
+            // Every restored lot must retain its accepted substrate grade.
+            if (!lot.grade().equals(this.grade)) {
                 throw new IllegalArgumentException("lot grade mismatch: contract=" + this.grade + ", lot=" + lot.grade());
             }
 

@@ -471,11 +471,15 @@ public final class T3ContentGameTests {
         try {
             FabConfig.WAFERS_PER_BOULE.set(4);
             FabConfig.RESIST_PER_LAYER.set(2);
-            FabConfig.LAYER_TICKS_OVERRIDES.set(List.of("T3=3"));
+            FabConfig.LAYER_TICKS_OVERRIDES.set(List.of("T1=3", "T2=3", "T3=3"));
             EUVCRAFTMod.config().onConfigReload();
 
-            // Test all four T3 designs
-            for (String dieType : List.of(DieTypes.LOGIC, DieTypes.MEMORY, DieTypes.COMPUTE, DieTypes.NAND)) {
+            // Pure wafers also complete T1/T2 on G1 masks, followed by all four T3 designs.
+            int[] tiers = {1, 2, 3, 3, 3, 3};
+            List<String> designs = List.of(DieTypes.LOGIC, DieTypes.MEMORY, DieTypes.LOGIC, DieTypes.MEMORY, DieTypes.COMPUTE, DieTypes.NAND);
+            for (int scenario = 0; scenario < tiers.length; scenario++) {
+                int tier = tiers[scenario];
+                String dieType = designs.get(scenario);
                 // Fresh cell for each design
                 clearCell(helper, level, cellPos);
                 buildFormedProcessCell(helper, level, cellPos, Direction.NORTH);
@@ -493,7 +497,7 @@ public final class T3ContentGameTests {
                 // T3 mask with G2 shopGeneration
                 ItemStack maskStack = new ItemStack(ModItems.MASK.get());
                 maskStack.set(ModDataComponents.MASK_DATA.get(),
-                    new MaskData(dieType, 3, EUVCRAFTMod.settings().maskUses(), 2));
+                    new MaskData(dieType, tier, EUVCRAFTMod.settings().maskUses(), tier == 3 ? 2 : 1));
 
                 // T3 components
                 cell.setSlot(ProcessCellControllerBlockEntity.SLOT_FOUP, foupWithLot);
@@ -523,10 +527,10 @@ public final class T3ContentGameTests {
                 // Verify lot layer = 24 (T3 layers)
                 ItemStack processedFoup = cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP);
                 FoupContents processedLot = FoupItems.trustedContentsOf(processedFoup);
-                helper.assertValueEqual(24, processedLot.lotLayer(), "T3 " + dieType + " must complete 24 layers");
+                helper.assertValueEqual(TierDataLoader.getRegistry().byIndex(tier).orElseThrow().layers(), processedLot.lotLayer(), "T3 " + dieType + " must complete 24 layers");
                 helper.assertTrue(processedLot.grade() == WaferSubstrate.PURE, "grade must remain PURE");
                 helper.assertTrue(processedLot.run() != null, "run spec must be frozen");
-                helper.assertValueEqual(3, processedLot.run().tierIndex(), "run spec tier must be 3");
+                helper.assertValueEqual(tier, processedLot.run().tierIndex(), "run spec tier must be 3");
                 helper.assertTrue(processedLot.run().dieType().equals(dieType), "run spec die type must match");
 
                 // Verify compute T3 uses core count 1
@@ -550,13 +554,13 @@ public final class T3ContentGameTests {
 
                 int waferCount = processedLot.size();
                 int passing = FabYieldService.countPassing(level, processedLot,
-                    TierDataLoader.getRegistry().byIndex(3).orElseThrow(), dieType,
+                    TierDataLoader.getRegistry().byIndex(tier).orElseThrow(), dieType,
                     DieTypes.COMPUTE.equals(dieType) ? 1 : null);
                 int expectedChips = passing * chipsPerWafer;
                 int expectedScrap = (waferCount - passing) * chipsPerWafer;
                 int expectedPackages = passing * packagesPerWafer;
 
-                Item expectedChip = ChipCatalog.chipFor(dieType, 3).orElseThrow();
+                Item expectedChip = ChipCatalog.chipFor(dieType, tier).orElseThrow();
                 packaging.setSlot(TestPackageBlockEntity.PACKAGE_SLOT, new ItemStack(ModItems.CHIP_PACKAGE.get(), 64));
                 packaging.setSlot(TestPackageBlockEntity.FOUP_SLOT, processedFoup.copy());
 
