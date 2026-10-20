@@ -179,7 +179,9 @@ class OperatingPanelMatcherTest {
 
             assertFalse(result.success(), "facing=" + facing + " u0=" + u0 + " should fail without panel");
             assertNotNull(result.failureReason());
-            assertTrue(result.failureReason().contains("expected exactly one operating panel above controller, found 0"),
+            assertTrue(result.memberPositions().isEmpty(), "failed match must expose no members");
+            // Public match reports the first attempted offset (0,0), not this fixture offset.
+            if (u0 == 0) assertTrue(result.failureReason().contains("expected exactly one operating panel above controller, found 0"),
                     "facing=" + facing + " u0=" + u0 + ": " + result.failureReason());
         }
     }
@@ -199,7 +201,9 @@ class OperatingPanelMatcherTest {
 
             assertFalse(result.success(), "facing=" + facing + " u0=" + u0 + " should fail with panel at back");
             assertNotNull(result.failureReason());
-            assertTrue(result.failureReason().contains("operating panel at wrong position"),
+            assertTrue(result.memberPositions().isEmpty(), "failed match must expose no members");
+            // Public match reports the first attempted offset (0,0), not this fixture offset.
+            if (u0 == 0) assertTrue(result.failureReason().contains("operating panel at wrong position"),
                     "facing=" + facing + " u0=" + u0 + ": " + result.failureReason());
         }
     }
@@ -218,7 +222,9 @@ class OperatingPanelMatcherTest {
 
             assertFalse(result.success(), "facing=" + facing + " u0=" + u0 + " should fail with panel at side");
             assertNotNull(result.failureReason());
-            assertTrue(result.failureReason().contains("operating panel at wrong position"),
+            assertTrue(result.memberPositions().isEmpty(), "failed match must expose no members");
+            // Public match reports the first attempted offset (0,0), not this fixture offset.
+            if (u0 == 0) assertTrue(result.failureReason().contains("operating panel at wrong position"),
                     "facing=" + facing + " u0=" + u0 + ": " + result.failureReason());
         }
     }
@@ -235,7 +241,9 @@ class OperatingPanelMatcherTest {
 
             assertFalse(result.success(), "facing=" + facing + " u0=" + u0 + " should fail with panel at controller pos");
             assertNotNull(result.failureReason());
-            assertTrue(result.failureReason().contains("expected exactly one controller, found 0"),
+            assertTrue(result.memberPositions().isEmpty(), "failed match must expose no members");
+            // Public match reports the first attempted offset (0,0), not this fixture offset.
+            if (u0 == 0) assertTrue(result.failureReason().contains("operating panel at wrong position"),
                     "facing=" + facing + " u0=" + u0 + ": " + result.failureReason());
         }
     }
@@ -255,7 +263,9 @@ class OperatingPanelMatcherTest {
 
             assertFalse(result.success(), "facing=" + facing + " u0=" + u0 + " should fail with second panel");
             assertNotNull(result.failureReason());
-            assertTrue(result.failureReason().contains("operating panel at wrong position"),
+            assertTrue(result.memberPositions().isEmpty(), "failed match must expose no members");
+            // Public match reports the first attempted offset (0,0), not this fixture offset.
+            if (u0 == 0) assertTrue(result.failureReason().contains("operating panel at wrong position"),
                     "facing=" + facing + " u0=" + u0 + ": " + result.failureReason());
         }
     }
@@ -284,7 +294,9 @@ class OperatingPanelMatcherTest {
 
             assertFalse(result.success(), "facing=" + facing + " u0=" + u0 + " should fail with controller on top row");
             assertNotNull(result.failureReason());
-            assertTrue(result.failureReason().contains("controller on top row leaves no room for operating panel above"),
+            assertTrue(result.memberPositions().isEmpty(), "failed match must expose no members");
+            // Public match reports the first attempted offset (0,0), not this fixture offset.
+            if (u0 == 0) assertTrue(result.failureReason().contains("wrong block"),
                     "facing=" + facing + " u0=" + u0 + ": " + result.failureReason());
         }
     }

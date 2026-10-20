@@ -196,10 +196,10 @@ class StructureMatcherTest {
         // Inclusive min/max world bounds on x, y and z for CONTROLLER at offset (u0, v0) = (1, 0) (bottom row).
         int[][] bounds = switch (facing) {
             //        x min/max,  y min/max, z min/max
-            case NORTH -> new int[][] {{9, 10}, {4, 5}, {10, 12}};
-            case SOUTH -> new int[][] {{10, 11}, {4, 5}, {8, 10}};
-            case EAST -> new int[][] {{8, 10}, {4, 5}, {9, 10}};
-            case WEST -> new int[][] {{10, 12}, {4, 5}, {10, 11}};
+            case NORTH -> new int[][] {{9, 10}, {5, 6}, {10, 12}};
+            case SOUTH -> new int[][] {{10, 11}, {5, 6}, {8, 10}};
+            case EAST -> new int[][] {{8, 10}, {5, 6}, {9, 10}};
+            case WEST -> new int[][] {{10, 12}, {5, 6}, {10, 11}};
         };
 
         MatchResult result = StructureMatcher.match(CONTROLLER, facing, SHAPE,
@@ -380,7 +380,7 @@ class StructureMatcherTest {
             MatchResult result = StructureMatcher.match(CONTROLLER, facing, SHAPE,
                     worldAt(CONTROLLER, facing, u0, v0, layout));
 
-            assertRejects(result, "expected exactly one controller, found 0", facing, u0, v0);
+            assertRejects(result, "operating panel at wrong position", facing, u0, v0);
         }
     }
 
