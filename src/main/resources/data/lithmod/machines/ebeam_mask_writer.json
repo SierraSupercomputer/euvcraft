@@ -1,0 +1,8 @@
+{
+  "id": "ebeam_mask_writer",
+  "energy_capacity": 4000000,
+  "max_receive": 32000,
+  "energy_per_tick": 2000,
+  "per_tier_energy_per_tick": {},
+  "params": {}
+}

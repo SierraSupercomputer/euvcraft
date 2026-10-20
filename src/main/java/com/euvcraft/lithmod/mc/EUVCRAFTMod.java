@@ -36,12 +36,14 @@ import com.euvcraft.lithmod.mc.gametest.PresentationGameTests;
 import com.euvcraft.lithmod.mc.gametest.SiliconGameTests;
 import com.euvcraft.lithmod.mc.gametest.ClientPolishGameTests;
 import com.euvcraft.lithmod.mc.gametest.PlacementAndTitleGameTests;
+import com.euvcraft.lithmod.mc.gametest.SupportMultiblockGameTests;
 import com.euvcraft.lithmod.mc.machine.mask.MaskMachines;
 import com.euvcraft.lithmod.mc.machine.mask.MaskTooltipAppenders;
 import com.euvcraft.lithmod.mc.machine.packaging.PackagingMachines;
 import com.euvcraft.lithmod.mc.machine.silicon.SiliconMachines;
 import com.euvcraft.lithmod.mc.machine.test.ModMachines;
 import com.euvcraft.lithmod.mc.multiblock.ModMultiblocks;
+import com.euvcraft.lithmod.mc.multiblock.support.SupportMachines;
 
 @Mod(EUVCRAFTMod.MODID)
 public class EUVCRAFTMod {
@@ -59,6 +61,7 @@ public class EUVCRAFTMod {
         MaskMachines.register(modEventBus);
         PackagingMachines.register(modEventBus);
         ModMultiblocks.register(modEventBus);
+        SupportMachines.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(FoupTooltipAppenders::register);
@@ -90,6 +93,7 @@ modEventBus.addListener(ComponentTooltipAppenders::register);
             M1DebugGameTests.register(modEventBus);
             ClientPolishGameTests.register(modEventBus);
             PlacementAndTitleGameTests.register(modEventBus);
+            SupportMultiblockGameTests.register(modEventBus);
         } else if (GameTestFixtures.shippingProbeEnabled()) {
             M1ShippingGameTests.register(modEventBus);
         }

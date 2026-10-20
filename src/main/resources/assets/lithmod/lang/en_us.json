@@ -117,5 +117,16 @@
   "block.lithmod.process_cell_controller": "Process Cell Controller",
   "block.lithmod.process_cell_power_port": "Process Cell Power Port",
   "block.lithmod.test_machine": "Test Machine",
-  "block.lithmod.wafer_slicer": "Wafer Slicer"
+  "block.lithmod.wafer_slicer": "Wafer Slicer",
+  "block.lithmod.boule_purifier": "Boule Purifier",
+  "item.lithmod.boule_purifier": "Boule Purifier",
+  "block.lithmod.ebeam_mask_writer": "E-beam Mask Writer",
+  "item.lithmod.ebeam_mask_writer": "E-beam Mask Writer",
+  "block.lithmod.support_casing": "Support Casing",
+  "item.lithmod.support_casing": "Support Casing",
+  "block.lithmod.support_power_port": "Support Power Port",
+  "item.lithmod.support_power_port": "Support Power Port",
+  "label.lithmod.support.formed": "Cell: %s",
+  "label.lithmod.support.water": "Water: %s / %s mB",
+  "label.lithmod.support.water_none": "Water: -"
 }

@@ -179,6 +179,30 @@ public final class ModItems {
             () -> ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get());
 
     /**
+     * The four T3 support-multiblock block items.
+     *
+     * <p>Same rule as every block item above: the {@code .get()} call sits inside a lambda and the
+     * blocks come from {@link com.euvcraft.lithmod.mc.multiblock.support.SupportMachines}, which is
+     * the support foundation's own registry class. The two controller items name the machine kinds;
+     * the casing and port items name the shared member blocks that never alias Process Cell blocks.</p>
+     */
+    public static final DeferredItem<BlockItem> BOULE_PURIFIER =
+        ITEMS.registerSimpleBlockItem("boule_purifier",
+            () -> com.euvcraft.lithmod.mc.multiblock.support.SupportMachines.BOULE_PURIFIER.get());
+
+    public static final DeferredItem<BlockItem> E_BEAM_MASK_WRITER =
+        ITEMS.registerSimpleBlockItem("ebeam_mask_writer",
+            () -> com.euvcraft.lithmod.mc.multiblock.support.SupportMachines.E_BEAM_MASK_WRITER.get());
+
+    public static final DeferredItem<BlockItem> SUPPORT_CASING =
+        ITEMS.registerSimpleBlockItem("support_casing",
+            () -> com.euvcraft.lithmod.mc.multiblock.support.SupportMachines.SUPPORT_CASING.get());
+
+    public static final DeferredItem<BlockItem> SUPPORT_POWER_PORT =
+        ITEMS.registerSimpleBlockItem("support_power_port",
+            () -> com.euvcraft.lithmod.mc.multiblock.support.SupportMachines.SUPPORT_POWER_PORT.get());
+
+    /**
      * The test-only machine's block item.
      *
      * <p>Added by M1-02c. Without a block item the machine cannot drop itself at all, so a
