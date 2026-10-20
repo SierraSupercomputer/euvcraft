@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "north": "lithmod:block/joined_shell_north_u0v1",
+    "south": "lithmod:block/joined_shell_south_u1v1",
+    "west": "lithmod:block/joined_shell_west_u1v1",
+    "east": "lithmod:block/joined_shell_east_u1v1",
+    "up": "lithmod:block/joined_shell_up_u1v1",
+    "down": "lithmod:block/joined_shell_down_u1v1",
+    "particle": "lithmod:block/joined_shell_north_u0v1"
+  }
+}

@@ -3,863 +3,2651 @@
   "version": 2,
   "palette": {
     "STEEL": {
-      "outline": "#2A2A2A", "dark": "#4A4A4A", "mid": "#6A6A6A",
-      "light": "#8A8A8A", "accent": "#AAAAAA", "trim": "#CACACA"
+      "outline": "#2A2A2A",
+      "dark": "#4A4A4A",
+      "mid": "#6A6A6A",
+      "light": "#8A8A8A",
+      "accent": "#AAAAAA",
+      "trim": "#CACACA"
     },
     "FOUP": {
-      "outline": "#2A2A2A", "dark": "#4A4A4A", "mid": "#6A6A6A",
-      "light": "#8A8A8A", "accent": "#AAAAAA", "trim": "#CACACA"
+      "outline": "#2A2A2A",
+      "dark": "#4A4A4A",
+      "mid": "#6A6A6A",
+      "light": "#8A8A8A",
+      "accent": "#AAAAAA",
+      "trim": "#CACACA"
     },
     "CHIP_T1": {
-      "outline": "#4D3A1A", "dark": "#7A5A2A", "mid": "#A87A3A",
-      "light": "#D69A6A", "accent": "#E8B89A", "trim": "#FFD8C8"
+      "outline": "#4D3A1A",
+      "dark": "#7A5A2A",
+      "mid": "#A87A3A",
+      "light": "#D69A6A",
+      "accent": "#E8B89A",
+      "trim": "#FFD8C8"
     },
     "CHIP_T2": {
-      "outline": "#1A3E6B", "dark": "#2A5A9B", "mid": "#3A7DC9",
-      "light": "#6AA8E8", "accent": "#9AD0F5", "trim": "#C8E8FF"
+      "outline": "#1A3E6B",
+      "dark": "#2A5A9B",
+      "mid": "#3A7DC9",
+      "light": "#6AA8E8",
+      "accent": "#9AD0F5",
+      "trim": "#C8E8FF"
     },
     "CHIP_MEM": {
-      "outline": "#3A1A4D", "dark": "#5A2A7A", "mid": "#7A3AA8",
-      "light": "#9A5AD6", "accent": "#B87AE8", "trim": "#D89AFF"
+      "outline": "#3A1A4D",
+      "dark": "#5A2A7A",
+      "mid": "#7A3AA8",
+      "light": "#9A5AD6",
+      "accent": "#B87AE8",
+      "trim": "#D89AFF"
     },
     "SCRAP": {
-      "outline": "#4D4D4D", "dark": "#6A6A6A", "mid": "#8A8A8A",
-      "light": "#AAAAAA", "accent": "#CACACA", "trim": "#E8E8E8"
+      "outline": "#4D4D4D",
+      "dark": "#6A6A6A",
+      "mid": "#8A8A8A",
+      "light": "#AAAAAA",
+      "accent": "#CACACA",
+      "trim": "#E8E8E8"
     },
     "SILICON": {
-      "outline": "#3A3A3A", "dark": "#5A5A5A", "mid": "#7A7A7A",
-      "light": "#9A9A9A", "accent": "#BABABA", "trim": "#DADADA"
+      "outline": "#3A3A3A",
+      "dark": "#5A5A5A",
+      "mid": "#7A7A7A",
+      "light": "#9A9A9A",
+      "accent": "#BABABA",
+      "trim": "#DADADA"
     },
     "BOULE": {
-      "outline": "#2A1A4D", "dark": "#4A2A7A", "mid": "#6A3AA8",
-      "light": "#8A5AD6", "accent": "#A87AE8", "trim": "#C89AFF"
+      "outline": "#2A1A4D",
+      "dark": "#4A2A7A",
+      "mid": "#6A3AA8",
+      "light": "#8A5AD6",
+      "accent": "#A87AE8",
+      "trim": "#C89AFF"
     },
     "RESIST_T1": {
-      "outline": "#4D3A1A", "dark": "#7A5A2A", "mid": "#A87A3A",
-      "light": "#D69A6A", "accent": "#E8B89A", "trim": "#FFD8C8"
+      "outline": "#4D3A1A",
+      "dark": "#7A5A2A",
+      "mid": "#A87A3A",
+      "light": "#D69A6A",
+      "accent": "#E8B89A",
+      "trim": "#FFD8C8"
     },
     "RESIST_T2": {
-      "outline": "#1A4D3A", "dark": "#2A7A5A", "mid": "#3AA87A",
-      "light": "#6AD69A", "accent": "#9AE8B8", "trim": "#C8FFD8"
+      "outline": "#1A4D3A",
+      "dark": "#2A7A5A",
+      "mid": "#3AA87A",
+      "light": "#6AD69A",
+      "accent": "#9AE8B8",
+      "trim": "#C8FFD8"
     },
     "PACKAGE": {
-      "outline": "#4D4D3A", "dark": "#7A7A5A", "mid": "#A8A87A",
-      "light": "#D6D69A", "accent": "#E8E8B8", "trim": "#FFFFD8"
+      "outline": "#4D4D3A",
+      "dark": "#7A7A5A",
+      "mid": "#A8A87A",
+      "light": "#D6D69A",
+      "accent": "#E8E8B8",
+      "trim": "#FFFFD8"
     },
     "MASK": {
-      "outline": "#1A4D4D", "dark": "#2A7A7A", "mid": "#3AA8A8",
-      "light": "#6AD6D6", "accent": "#9AE8E8", "trim": "#C8FFFF"
+      "outline": "#1A4D4D",
+      "dark": "#2A7A7A",
+      "mid": "#3AA8A8",
+      "light": "#6AD6D6",
+      "accent": "#9AE8E8",
+      "trim": "#C8FFFF"
     },
     "LAMP_T1": {
-      "outline": "#4D3A1A", "dark": "#7A5A2A", "mid": "#A8874A",
-      "light": "#D6B87A", "glow": "#FFE8A0", "trim": "#FFF6D0"
+      "outline": "#4D3A1A",
+      "dark": "#7A5A2A",
+      "mid": "#A8874A",
+      "light": "#D6B87A",
+      "glow": "#FFE8A0",
+      "trim": "#FFF6D0"
     },
     "LAMP_T2": {
-      "outline": "#1A3A4D", "dark": "#2A5A7A", "mid": "#4A87B0",
-      "light": "#7AB0D8", "glow": "#9AE8FF", "trim": "#E0F6FF"
+      "outline": "#1A3A4D",
+      "dark": "#2A5A7A",
+      "mid": "#4A87B0",
+      "light": "#7AB0D8",
+      "glow": "#9AE8FF",
+      "trim": "#E0F6FF"
     },
     "LENS_T2": {
-      "outline": "#1A2A4D", "dark": "#2A4A7A", "mid": "#3A6AA8",
-      "light": "#5A8AD6", "accent": "#7AACE8", "trim": "#9ACEFF"
+      "outline": "#1A2A4D",
+      "dark": "#2A4A7A",
+      "mid": "#3A6AA8",
+      "light": "#5A8AD6",
+      "accent": "#7AACE8",
+      "trim": "#9ACEFF"
     },
     "STAGE_T1": {
-      "outline": "#4D3A1A", "dark": "#7A5A2A", "mid": "#A87A3A",
-      "light": "#D69A6A", "accent": "#E8B89A", "trim": "#FFD8C8"
+      "outline": "#4D3A1A",
+      "dark": "#7A5A2A",
+      "mid": "#A87A3A",
+      "light": "#D69A6A",
+      "accent": "#E8B89A",
+      "trim": "#FFD8C8"
     },
     "STAGE_T2": {
-      "outline": "#1A4D3A", "dark": "#2A7A5A", "mid": "#3AA87A",
-      "light": "#6AD69A", "accent": "#9AE8B8", "trim": "#C8FFD8"
+      "outline": "#1A4D3A",
+      "dark": "#2A7A5A",
+      "mid": "#3AA87A",
+      "light": "#6AD69A",
+      "accent": "#9AE8B8",
+      "trim": "#C8FFD8"
     },
     "FILTER_T1": {
-      "outline": "#3A4D3A", "dark": "#5A7A5A", "mid": "#7AA87A",
-      "light": "#9AD69A", "accent": "#B8E8B8", "trim": "#D8FFD8"
+      "outline": "#3A4D3A",
+      "dark": "#5A7A5A",
+      "mid": "#7AA87A",
+      "light": "#9AD69A",
+      "accent": "#B8E8B8",
+      "trim": "#D8FFD8"
     },
     "FILTER_T2": {
-      "outline": "#1A4D4D", "dark": "#2A7A7A", "mid": "#3AA8A8",
-      "light": "#6AD6D6", "accent": "#9AE8E8", "trim": "#C8FFFF"
+      "outline": "#1A4D4D",
+      "dark": "#2A7A7A",
+      "mid": "#3AA8A8",
+      "light": "#6AD6D6",
+      "accent": "#9AE8E8",
+      "trim": "#C8FFFF"
     },
     "SCOPE_T1": {
-      "outline": "#4D2A3A", "dark": "#7A4A5A", "mid": "#A86A7A",
-      "light": "#D68A9A", "accent": "#E8AAB8", "trim": "#FFCAD8"
+      "outline": "#4D2A3A",
+      "dark": "#7A4A5A",
+      "mid": "#A86A7A",
+      "light": "#D68A9A",
+      "accent": "#E8AAB8",
+      "trim": "#FFCAD8"
     },
     "SCOPE_T2": {
-      "outline": "#3A1A4D", "dark": "#5A2A7A", "mid": "#7A3AA8",
-      "light": "#9A5AD6", "accent": "#B87AE8", "trim": "#D89AFF"
+      "outline": "#3A1A4D",
+      "dark": "#5A2A7A",
+      "mid": "#7A3AA8",
+      "light": "#9A5AD6",
+      "accent": "#B87AE8",
+      "trim": "#D89AFF"
     },
     "CASING_FORMED": {
-      "outline": "#143314", "dark": "#1D4A1D", "mid": "#2E7A2E",
-      "light": "#4FB04F", "accent": "#8AE08A", "trim": "#B8E8B8"
+      "outline": "#143314",
+      "dark": "#1D4A1D",
+      "mid": "#2E7A2E",
+      "light": "#4FB04F",
+      "accent": "#8AE08A",
+      "trim": "#B8E8B8"
     },
     "CASING_UNFORMED": {
-      "outline": "#3A2E1A", "dark": "#5A4626", "mid": "#7A6236",
-      "light": "#A8874A", "accent": "#C8A86A", "trim": "#E8D0A0"
+      "outline": "#3A2E1A",
+      "dark": "#5A4626",
+      "mid": "#7A6236",
+      "light": "#A8874A",
+      "accent": "#C8A86A",
+      "trim": "#E8D0A0"
     },
     "CTRL_FRONT_FORMED": {
-      "outline": "#14142A", "panel": "#3A3A7A", "panelLight": "#6A6AD6",
-      "wafer": "#9A9A9A", "waferLight": "#E8E8E8", "status": "#3ECC3E"
+      "outline": "#14142A",
+      "panel": "#3A3A7A",
+      "panelLight": "#6A6AD6",
+      "wafer": "#9A9A9A",
+      "waferLight": "#E8E8E8",
+      "status": "#3ECC3E"
     },
     "CTRL_FRONT_UNFORMED": {
-      "outline": "#403218", "panel": "#6A5232", "panelLight": "#8A7448",
-      "wafer": "#9A9A9A", "waferLight": "#E0E0E0", "status": "#E8A83A"
+      "outline": "#403218",
+      "panel": "#6A5232",
+      "panelLight": "#8A7448",
+      "wafer": "#9A9A9A",
+      "waferLight": "#E0E0E0",
+      "status": "#E8A83A"
     },
     "PORT_FORMED": {
-      "outline": "#143314", "dark": "#1D4A1D", "mid": "#2E7A2E",
-      "light": "#4FB04F", "bolt": "#E8C84A", "rim": "#FFF2A8"
+      "outline": "#143314",
+      "dark": "#1D4A1D",
+      "mid": "#2E7A2E",
+      "light": "#4FB04F",
+      "bolt": "#E8C84A",
+      "rim": "#FFF2A8"
     },
     "PORT_UNFORMED": {
-      "outline": "#403218", "dark": "#5A4626", "mid": "#7A6236",
-      "light": "#A8874A", "bolt": "#F0C43A", "rim": "#FFE98A"
+      "outline": "#403218",
+      "dark": "#5A4626",
+      "mid": "#7A6236",
+      "light": "#A8874A",
+      "bolt": "#F0C43A",
+      "rim": "#FFE98A"
     },
     "PULLER": {
-      "outline": "#2A2A2A", "dark": "#4A4A4A", "mid": "#6A6A6A",
-      "light": "#8A8A8A", "crystal": "#3AA8A8", "glow": "#6AD6D6"
+      "outline": "#2A2A2A",
+      "dark": "#4A4A4A",
+      "mid": "#6A6A6A",
+      "light": "#8A8A8A",
+      "crystal": "#3AA8A8",
+      "glow": "#6AD6D6"
     },
     "SLICER": {
-      "outline": "#2A2A2A", "dark": "#4A4A4A", "mid": "#6A6A6A",
-      "light": "#8A8A8A", "blade": "#B8C4CC", "wafer": "#3A7AA8"
+      "outline": "#2A2A2A",
+      "dark": "#4A4A4A",
+      "mid": "#6A6A6A",
+      "light": "#8A8A8A",
+      "blade": "#B8C4CC",
+      "wafer": "#3A7AA8"
     },
     "PATTERN": {
-      "outline": "#2A2A2A", "dark": "#3A2A4D", "mid": "#5A3A7A",
-      "light": "#7A5AA8", "grid": "#9A7AD6", "trim": "#D8C8FF"
+      "outline": "#2A2A2A",
+      "dark": "#3A2A4D",
+      "mid": "#5A3A7A",
+      "light": "#7A5AA8",
+      "grid": "#9A7AD6",
+      "trim": "#D8C8FF"
     },
     "TESTPKG": {
-      "outline": "#2A2A2A", "dark": "#4A4A4A", "mid": "#6A6A6A",
-      "light": "#8A8A8A", "accent": "#A89A5A", "trim": "#E8E0A0"
+      "outline": "#2A2A2A",
+      "dark": "#4A4A4A",
+      "mid": "#6A6A6A",
+      "light": "#8A8A8A",
+      "accent": "#A89A5A",
+      "trim": "#E8E0A0"
     }
   },
   "shapes": {
     "foup": [
-      ["line", "outline", 3, 2, 12, 2],
-      ["dot", "outline", 3, 3],
-      ["dot", "outline", 12, 3],
-      ["frame", "outline", 3, 4, 10, 10],
-      ["rect", "mid", 4, 5, 8, 8],
-      ["rect", "light", 4, 5, 8, 1],
-      ["rect", "dark", 4, 11, 8, 2],
-      ["line", "dark", 6, 6, 6, 10],
-      ["line", "dark", 8, 6, 8, 10],
-      ["line", "dark", 10, 6, 10, 10],
-      ["rect", "trim", 5, 12, 6, 1]
+      [
+        "line",
+        "outline",
+        3,
+        2,
+        12,
+        2
+      ],
+      [
+        "dot",
+        "outline",
+        3,
+        3
+      ],
+      [
+        "dot",
+        "outline",
+        12,
+        3
+      ],
+      [
+        "frame",
+        "outline",
+        3,
+        4,
+        10,
+        10
+      ],
+      [
+        "rect",
+        "mid",
+        4,
+        5,
+        8,
+        8
+      ],
+      [
+        "rect",
+        "light",
+        4,
+        5,
+        8,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        4,
+        11,
+        8,
+        2
+      ],
+      [
+        "line",
+        "dark",
+        6,
+        6,
+        6,
+        10
+      ],
+      [
+        "line",
+        "dark",
+        8,
+        6,
+        8,
+        10
+      ],
+      [
+        "line",
+        "dark",
+        10,
+        6,
+        10,
+        10
+      ],
+      [
+        "rect",
+        "trim",
+        5,
+        12,
+        6,
+        1
+      ]
     ],
     "foup2": [
-      ["line", "outline", 3, 2, 12, 2],
-      ["dot", "outline", 3, 3],
-      ["dot", "outline", 12, 3],
-      ["frame", "outline", 3, 4, 10, 10],
-      ["rect", "mid", 4, 5, 8, 8],
-      ["rect", "light", 4, 5, 8, 1],
-      ["rect", "dark", 4, 11, 8, 2],
-      ["line", "dark", 6, 6, 6, 10],
-      ["line", "dark", 8, 6, 8, 10],
-      ["line", "dark", 10, 6, 10, 10],
-      ["dot", "accent", 6, 7],
-      ["dot", "accent", 8, 7],
-      ["dot", "accent", 10, 7],
-      ["dot", "accent", 6, 10],
-      ["dot", "accent", 8, 10],
-      ["dot", "accent", 10, 10]
+      [
+        "line",
+        "outline",
+        3,
+        2,
+        12,
+        2
+      ],
+      [
+        "dot",
+        "outline",
+        3,
+        3
+      ],
+      [
+        "dot",
+        "outline",
+        12,
+        3
+      ],
+      [
+        "frame",
+        "outline",
+        3,
+        4,
+        10,
+        10
+      ],
+      [
+        "rect",
+        "mid",
+        4,
+        5,
+        8,
+        8
+      ],
+      [
+        "rect",
+        "light",
+        4,
+        5,
+        8,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        4,
+        11,
+        8,
+        2
+      ],
+      [
+        "line",
+        "dark",
+        6,
+        6,
+        6,
+        10
+      ],
+      [
+        "line",
+        "dark",
+        8,
+        6,
+        8,
+        10
+      ],
+      [
+        "line",
+        "dark",
+        10,
+        6,
+        10,
+        10
+      ],
+      [
+        "dot",
+        "accent",
+        6,
+        7
+      ],
+      [
+        "dot",
+        "accent",
+        8,
+        7
+      ],
+      [
+        "dot",
+        "accent",
+        10,
+        7
+      ],
+      [
+        "dot",
+        "accent",
+        6,
+        10
+      ],
+      [
+        "dot",
+        "accent",
+        8,
+        10
+      ],
+      [
+        "dot",
+        "accent",
+        10,
+        10
+      ]
     ],
     "chip": [
-      ["rect", "outline", 5, 2, 2, 1],
-      ["rect", "outline", 9, 2, 2, 1],
-      ["rect", "outline", 5, 13, 2, 1],
-      ["rect", "outline", 9, 13, 2, 1],
-      ["frame", "outline", 3, 3, 10, 10],
-      ["rect", "mid", 4, 4, 8, 8],
-      ["rect", "light", 4, 4, 8, 1],
-      ["rect", "dark", 4, 11, 8, 1],
-      ["rect", "dark", 6, 6, 4, 4],
-      ["rect", "accent", 7, 7, 2, 2],
-      ["dot", "light", 5, 6],
-      ["dot", "light", 10, 9]
+      [
+        "rect",
+        "outline",
+        5,
+        2,
+        2,
+        1
+      ],
+      [
+        "rect",
+        "outline",
+        9,
+        2,
+        2,
+        1
+      ],
+      [
+        "rect",
+        "outline",
+        5,
+        13,
+        2,
+        1
+      ],
+      [
+        "rect",
+        "outline",
+        9,
+        13,
+        2,
+        1
+      ],
+      [
+        "frame",
+        "outline",
+        3,
+        3,
+        10,
+        10
+      ],
+      [
+        "rect",
+        "mid",
+        4,
+        4,
+        8,
+        8
+      ],
+      [
+        "rect",
+        "light",
+        4,
+        4,
+        8,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        4,
+        11,
+        8,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        6,
+        6,
+        4,
+        4
+      ],
+      [
+        "rect",
+        "accent",
+        7,
+        7,
+        2,
+        2
+      ],
+      [
+        "dot",
+        "light",
+        5,
+        6
+      ],
+      [
+        "dot",
+        "light",
+        10,
+        9
+      ]
     ],
     "chip_mem": [
-      ["rect", "outline", 5, 2, 2, 1],
-      ["rect", "outline", 9, 2, 2, 1],
-      ["rect", "outline", 5, 13, 2, 1],
-      ["rect", "outline", 9, 13, 2, 1],
-      ["frame", "outline", 3, 3, 10, 10],
-      ["rect", "mid", 4, 4, 8, 8],
-      ["rect", "light", 4, 4, 8, 1],
-      ["rect", "dark", 4, 11, 8, 1],
-      ["rect", "dark", 5, 6, 6, 5],
-      ["rect", "trim", 6, 7, 1, 3],
-      ["rect", "trim", 9, 7, 1, 3],
-      ["rect", "accent", 7, 6, 2, 1]
+      [
+        "rect",
+        "outline",
+        5,
+        2,
+        2,
+        1
+      ],
+      [
+        "rect",
+        "outline",
+        9,
+        2,
+        2,
+        1
+      ],
+      [
+        "rect",
+        "outline",
+        5,
+        13,
+        2,
+        1
+      ],
+      [
+        "rect",
+        "outline",
+        9,
+        13,
+        2,
+        1
+      ],
+      [
+        "frame",
+        "outline",
+        3,
+        3,
+        10,
+        10
+      ],
+      [
+        "rect",
+        "mid",
+        4,
+        4,
+        8,
+        8
+      ],
+      [
+        "rect",
+        "light",
+        4,
+        4,
+        8,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        4,
+        11,
+        8,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        5,
+        6,
+        6,
+        5
+      ],
+      [
+        "rect",
+        "trim",
+        6,
+        7,
+        1,
+        3
+      ],
+      [
+        "rect",
+        "trim",
+        9,
+        7,
+        1,
+        3
+      ],
+      [
+        "rect",
+        "accent",
+        7,
+        6,
+        2,
+        1
+      ]
     ],
     "scrap": [
-      ["frame", "outline", 4, 5, 8, 6],
-      ["rect", "mid", 5, 6, 6, 4],
-      ["rect", "light", 5, 6, 6, 1],
-      ["rect", "dark", 7, 8, 4, 2],
-      ["frame", "outline", 10, 11, 4, 3],
-      ["rect", "mid", 11, 12, 2, 1],
-      ["dot", "accent", 12, 4],
-      ["dot", "dark", 3, 10],
-      ["dot", "dark", 3, 11]
+      [
+        "frame",
+        "outline",
+        4,
+        5,
+        8,
+        6
+      ],
+      [
+        "rect",
+        "mid",
+        5,
+        6,
+        6,
+        4
+      ],
+      [
+        "rect",
+        "light",
+        5,
+        6,
+        6,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        7,
+        8,
+        4,
+        2
+      ],
+      [
+        "frame",
+        "outline",
+        10,
+        11,
+        4,
+        3
+      ],
+      [
+        "rect",
+        "mid",
+        11,
+        12,
+        2,
+        1
+      ],
+      [
+        "dot",
+        "accent",
+        12,
+        4
+      ],
+      [
+        "dot",
+        "dark",
+        3,
+        10
+      ],
+      [
+        "dot",
+        "dark",
+        3,
+        11
+      ]
     ],
     "crystal": [
-      ["rect", "outline", 5, 3, 6, 2],
-      ["frame", "outline", 4, 5, 8, 8],
-      ["rect", "mid", 5, 6, 6, 6],
-      ["rect", "light", 5, 6, 6, 1],
-      ["line", "dark", 5, 9, 10, 6],
-      ["line", "light", 6, 10, 9, 11],
-      ["rect", "dark", 5, 11, 6, 1],
-      ["dot", "trim", 7, 7],
-      ["dot", "trim", 9, 10]
+      [
+        "rect",
+        "outline",
+        5,
+        3,
+        6,
+        2
+      ],
+      [
+        "frame",
+        "outline",
+        4,
+        5,
+        8,
+        8
+      ],
+      [
+        "rect",
+        "mid",
+        5,
+        6,
+        6,
+        6
+      ],
+      [
+        "rect",
+        "light",
+        5,
+        6,
+        6,
+        1
+      ],
+      [
+        "line",
+        "dark",
+        5,
+        9,
+        10,
+        6
+      ],
+      [
+        "line",
+        "light",
+        6,
+        10,
+        9,
+        11
+      ],
+      [
+        "rect",
+        "dark",
+        5,
+        11,
+        6,
+        1
+      ],
+      [
+        "dot",
+        "trim",
+        7,
+        7
+      ],
+      [
+        "dot",
+        "trim",
+        9,
+        10
+      ]
     ],
     "boule": [
-      ["rect", "dark", 6, 1, 4, 1],
-      ["rect", "mid", 6, 2, 4, 1],
-      ["dot", "trim", 7, 2],
-      ["frame", "outline", 5, 3, 6, 11],
-      ["rect", "mid", 6, 4, 4, 9],
-      ["rect", "light", 6, 4, 1, 9],
-      ["rect", "dark", 9, 4, 1, 9],
-      ["rect", "dark", 6, 8, 4, 1],
-      ["rect", "dark", 6, 14, 4, 1]
+      [
+        "rect",
+        "dark",
+        6,
+        1,
+        4,
+        1
+      ],
+      [
+        "rect",
+        "mid",
+        6,
+        2,
+        4,
+        1
+      ],
+      [
+        "dot",
+        "trim",
+        7,
+        2
+      ],
+      [
+        "frame",
+        "outline",
+        5,
+        3,
+        6,
+        11
+      ],
+      [
+        "rect",
+        "mid",
+        6,
+        4,
+        4,
+        9
+      ],
+      [
+        "rect",
+        "light",
+        6,
+        4,
+        1,
+        9
+      ],
+      [
+        "rect",
+        "dark",
+        9,
+        4,
+        1,
+        9
+      ],
+      [
+        "rect",
+        "dark",
+        6,
+        8,
+        4,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        6,
+        14,
+        4,
+        1
+      ]
     ],
     "bottle": [
-      ["rect", "outline", 6, 0, 4, 2],
-      ["rect", "mid", 7, 2, 2, 2],
-      ["frame", "outline", 4, 4, 8, 10],
-      ["rect", "mid", 5, 5, 6, 8],
-      ["rect", "trim", 5, 5, 6, 2],
-      ["rect", "accent", 5, 8, 6, 5],
-      ["dot", "light", 6, 10]
+      [
+        "rect",
+        "outline",
+        6,
+        0,
+        4,
+        2
+      ],
+      [
+        "rect",
+        "mid",
+        7,
+        2,
+        2,
+        2
+      ],
+      [
+        "frame",
+        "outline",
+        4,
+        4,
+        8,
+        10
+      ],
+      [
+        "rect",
+        "mid",
+        5,
+        5,
+        6,
+        8
+      ],
+      [
+        "rect",
+        "trim",
+        5,
+        5,
+        6,
+        2
+      ],
+      [
+        "rect",
+        "accent",
+        5,
+        8,
+        6,
+        5
+      ],
+      [
+        "dot",
+        "light",
+        6,
+        10
+      ]
     ],
     "package": [
-      ["dot", "outline", 5, 2],
-      ["dot", "outline", 8, 2],
-      ["dot", "outline", 11, 2],
-      ["dot", "outline", 5, 12],
-      ["dot", "outline", 8, 12],
-      ["dot", "outline", 11, 12],
-      ["frame", "outline", 3, 3, 10, 9],
-      ["rect", "mid", 4, 4, 8, 7],
-      ["rect", "light", 4, 4, 8, 1],
-      ["rect", "dark", 4, 10, 8, 1],
-      ["rect", "accent", 4, 6, 8, 1],
-      ["dot", "trim", 6, 8],
-      ["dot", "trim", 9, 8]
+      [
+        "dot",
+        "outline",
+        5,
+        2
+      ],
+      [
+        "dot",
+        "outline",
+        8,
+        2
+      ],
+      [
+        "dot",
+        "outline",
+        11,
+        2
+      ],
+      [
+        "dot",
+        "outline",
+        5,
+        12
+      ],
+      [
+        "dot",
+        "outline",
+        8,
+        12
+      ],
+      [
+        "dot",
+        "outline",
+        11,
+        12
+      ],
+      [
+        "frame",
+        "outline",
+        3,
+        3,
+        10,
+        9
+      ],
+      [
+        "rect",
+        "mid",
+        4,
+        4,
+        8,
+        7
+      ],
+      [
+        "rect",
+        "light",
+        4,
+        4,
+        8,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        4,
+        10,
+        8,
+        1
+      ],
+      [
+        "rect",
+        "accent",
+        4,
+        6,
+        8,
+        1
+      ],
+      [
+        "dot",
+        "trim",
+        6,
+        8
+      ],
+      [
+        "dot",
+        "trim",
+        9,
+        8
+      ]
     ],
     "plate": [
-      ["frame", "outline", 2, 4, 12, 9],
-      ["rect", "mid", 3, 5, 10, 7],
-      ["rect", "light", 3, 5, 10, 1],
-      ["rect", "dark", 3, 10, 10, 1],
-      ["rect", "trim", 6, 7, 4, 2],
-      ["dot", "dark", 4, 6],
-      ["dot", "dark", 11, 6]
+      [
+        "frame",
+        "outline",
+        2,
+        4,
+        12,
+        9
+      ],
+      [
+        "rect",
+        "mid",
+        3,
+        5,
+        10,
+        7
+      ],
+      [
+        "rect",
+        "light",
+        3,
+        5,
+        10,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        3,
+        10,
+        10,
+        1
+      ],
+      [
+        "rect",
+        "trim",
+        6,
+        7,
+        4,
+        2
+      ],
+      [
+        "dot",
+        "dark",
+        4,
+        6
+      ],
+      [
+        "dot",
+        "dark",
+        11,
+        6
+      ]
     ],
     "maskgrid": [
-      ["frame", "outline", 2, 4, 12, 9],
-      ["rect", "mid", 3, 5, 10, 7],
-      ["rect", "light", 3, 5, 10, 1],
-      ["rect", "dark", 3, 10, 10, 1],
-      ["line", "accent", 5, 6, 5, 9],
-      ["line", "accent", 6, 7, 10, 7],
-      ["line", "accent", 11, 6, 11, 9],
-      ["dot", "trim", 7, 5],
-      ["dot", "trim", 9, 10]
+      [
+        "frame",
+        "outline",
+        2,
+        4,
+        12,
+        9
+      ],
+      [
+        "rect",
+        "mid",
+        3,
+        5,
+        10,
+        7
+      ],
+      [
+        "rect",
+        "light",
+        3,
+        5,
+        10,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        3,
+        10,
+        10,
+        1
+      ],
+      [
+        "line",
+        "accent",
+        5,
+        6,
+        5,
+        9
+      ],
+      [
+        "line",
+        "accent",
+        6,
+        7,
+        10,
+        7
+      ],
+      [
+        "line",
+        "accent",
+        11,
+        6,
+        11,
+        9
+      ],
+      [
+        "dot",
+        "trim",
+        7,
+        5
+      ],
+      [
+        "dot",
+        "trim",
+        9,
+        10
+      ]
     ],
     "lamp": [
-      ["rect", "outline", 1, 7, 3, 2],
-      ["rect", "outline", 12, 7, 3, 2],
-      ["frame", "outline", 4, 5, 8, 6],
-      ["rect", "mid", 5, 6, 6, 3],
-      ["rect", "glow", 6, 7, 4, 2],
-      ["dot", "trim", 5, 6],
-      ["dot", "trim", 10, 9]
+      [
+        "rect",
+        "outline",
+        1,
+        7,
+        3,
+        2
+      ],
+      [
+        "rect",
+        "outline",
+        12,
+        7,
+        3,
+        2
+      ],
+      [
+        "frame",
+        "outline",
+        4,
+        5,
+        8,
+        6
+      ],
+      [
+        "rect",
+        "mid",
+        5,
+        6,
+        6,
+        3
+      ],
+      [
+        "rect",
+        "glow",
+        6,
+        7,
+        4,
+        2
+      ],
+      [
+        "dot",
+        "trim",
+        5,
+        6
+      ],
+      [
+        "dot",
+        "trim",
+        10,
+        9
+      ]
     ],
     "contact": [
-      ["frame", "outline", 3, 3, 10, 10],
-      ["rect", "mid", 4, 4, 8, 8],
-      ["rect", "light", 4, 4, 8, 1],
-      ["rect", "dark", 4, 11, 8, 1],
-      ["dot", "outline", 6, 6],
-      ["dot", "outline", 9, 6],
-      ["dot", "outline", 6, 9],
-      ["dot", "outline", 9, 9]
+      [
+        "frame",
+        "outline",
+        3,
+        3,
+        10,
+        10
+      ],
+      [
+        "rect",
+        "mid",
+        4,
+        4,
+        8,
+        8
+      ],
+      [
+        "rect",
+        "light",
+        4,
+        4,
+        8,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        4,
+        11,
+        8,
+        1
+      ],
+      [
+        "dot",
+        "outline",
+        6,
+        6
+      ],
+      [
+        "dot",
+        "outline",
+        9,
+        6
+      ],
+      [
+        "dot",
+        "outline",
+        6,
+        9
+      ],
+      [
+        "dot",
+        "outline",
+        9,
+        9
+      ]
     ],
     "lens": [
-      ["rect", "outline", 1, 5, 2, 5],
-      ["rect", "outline", 13, 5, 2, 5],
-      ["frame", "outline", 3, 3, 10, 10],
-      ["rect", "mid", 4, 4, 8, 8],
-      ["frame", "light", 5, 5, 6, 6],
-      ["rect", "accent", 7, 7, 2, 2],
-      ["rect", "dark", 4, 11, 8, 1],
-      ["dot", "trim", 5, 5],
-      ["dot", "trim", 6, 5]
+      [
+        "rect",
+        "outline",
+        1,
+        5,
+        2,
+        5
+      ],
+      [
+        "rect",
+        "outline",
+        13,
+        5,
+        2,
+        5
+      ],
+      [
+        "frame",
+        "outline",
+        3,
+        3,
+        10,
+        10
+      ],
+      [
+        "rect",
+        "mid",
+        4,
+        4,
+        8,
+        8
+      ],
+      [
+        "frame",
+        "light",
+        5,
+        5,
+        6,
+        6
+      ],
+      [
+        "rect",
+        "accent",
+        7,
+        7,
+        2,
+        2
+      ],
+      [
+        "rect",
+        "dark",
+        4,
+        11,
+        8,
+        1
+      ],
+      [
+        "dot",
+        "trim",
+        5,
+        5
+      ],
+      [
+        "dot",
+        "trim",
+        6,
+        5
+      ]
     ],
     "stage": [
-      ["rect", "outline", 7, 4, 2, 6],
-      ["rect", "light", 8, 5, 1, 4],
-      ["frame", "outline", 4, 2, 8, 3],
-      ["rect", "mid", 5, 3, 6, 1],
-      ["frame", "outline", 2, 10, 12, 3],
-      ["rect", "mid", 3, 11, 10, 1],
-      ["rect", "trim", 5, 9, 3, 1],
-      ["dot", "accent", 3, 9],
-      ["dot", "accent", 12, 9]
+      [
+        "rect",
+        "outline",
+        7,
+        4,
+        2,
+        6
+      ],
+      [
+        "rect",
+        "light",
+        8,
+        5,
+        1,
+        4
+      ],
+      [
+        "frame",
+        "outline",
+        4,
+        2,
+        8,
+        3
+      ],
+      [
+        "rect",
+        "mid",
+        5,
+        3,
+        6,
+        1
+      ],
+      [
+        "frame",
+        "outline",
+        2,
+        10,
+        12,
+        3
+      ],
+      [
+        "rect",
+        "mid",
+        3,
+        11,
+        10,
+        1
+      ],
+      [
+        "rect",
+        "trim",
+        5,
+        9,
+        3,
+        1
+      ],
+      [
+        "dot",
+        "accent",
+        3,
+        9
+      ],
+      [
+        "dot",
+        "accent",
+        12,
+        9
+      ]
     ],
     "filter": [
-      ["frame", "outline", 3, 2, 10, 12],
-      ["rect", "mid", 4, 3, 8, 10],
-      ["rect", "light", 4, 3, 8, 1],
-      ["line", "light", 5, 4, 5, 12],
-      ["line", "dark", 7, 4, 7, 12],
-      ["line", "light", 9, 4, 9, 12],
-      ["line", "dark", 11, 4, 11, 12]
+      [
+        "frame",
+        "outline",
+        3,
+        2,
+        10,
+        12
+      ],
+      [
+        "rect",
+        "mid",
+        4,
+        3,
+        8,
+        10
+      ],
+      [
+        "rect",
+        "light",
+        4,
+        3,
+        8,
+        1
+      ],
+      [
+        "line",
+        "light",
+        5,
+        4,
+        5,
+        12
+      ],
+      [
+        "line",
+        "dark",
+        7,
+        4,
+        7,
+        12
+      ],
+      [
+        "line",
+        "light",
+        9,
+        4,
+        9,
+        12
+      ],
+      [
+        "line",
+        "dark",
+        11,
+        4,
+        11,
+        12
+      ]
     ],
     "scope": [
-      ["rect", "outline", 7, 0, 2, 2],
-      ["rect", "outline", 6, 2, 4, 6],
-      ["rect", "mid", 7, 3, 2, 4],
-      ["rect", "dark", 6, 8, 4, 1],
-      ["frame", "outline", 4, 9, 5, 2],
-      ["rect", "mid", 5, 10, 3, 1],
-      ["frame", "outline", 3, 11, 10, 2],
-      ["rect", "mid", 4, 12, 8, 1],
-      ["dot", "accent", 11, 8],
-      ["dot", "accent", 12, 10]
+      [
+        "rect",
+        "outline",
+        7,
+        0,
+        2,
+        2
+      ],
+      [
+        "rect",
+        "outline",
+        6,
+        2,
+        4,
+        6
+      ],
+      [
+        "rect",
+        "mid",
+        7,
+        3,
+        2,
+        4
+      ],
+      [
+        "rect",
+        "dark",
+        6,
+        8,
+        4,
+        1
+      ],
+      [
+        "frame",
+        "outline",
+        4,
+        9,
+        5,
+        2
+      ],
+      [
+        "rect",
+        "mid",
+        5,
+        10,
+        3,
+        1
+      ],
+      [
+        "frame",
+        "outline",
+        3,
+        11,
+        10,
+        2
+      ],
+      [
+        "rect",
+        "mid",
+        4,
+        12,
+        8,
+        1
+      ],
+      [
+        "dot",
+        "accent",
+        11,
+        8
+      ],
+      [
+        "dot",
+        "accent",
+        12,
+        10
+      ]
     ],
     "tile": [
-      ["rect", "outline", 0, 0, 16, 16],
-      ["rect", "mid", 1, 1, 14, 14],
-      ["rect", "light", 1, 1, 14, 1],
-      ["rect", "dark", 1, 14, 14, 1],
-      ["rect", "light", 1, 1, 1, 14],
-      ["rect", "dark", 14, 1, 1, 14],
-      ["dot", "accent", 3, 3],
-      ["dot", "accent", 12, 3],
-      ["dot", "accent", 3, 12],
-      ["dot", "accent", 12, 12]
+      [
+        "rect",
+        "outline",
+        0,
+        0,
+        16,
+        16
+      ],
+      [
+        "rect",
+        "mid",
+        1,
+        1,
+        14,
+        14
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        1,
+        14,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        1,
+        14
+      ],
+      [
+        "rect",
+        "dark",
+        14,
+        1,
+        1,
+        14
+      ],
+      [
+        "dot",
+        "accent",
+        3,
+        3
+      ],
+      [
+        "dot",
+        "accent",
+        12,
+        3
+      ],
+      [
+        "dot",
+        "accent",
+        3,
+        12
+      ],
+      [
+        "dot",
+        "accent",
+        12,
+        12
+      ]
     ],
     "ctrl_side": [
-      ["rect", "outline", 0, 0, 16, 16],
-      ["rect", "mid", 1, 1, 14, 14],
-      ["rect", "light", 1, 1, 14, 1],
-      ["rect", "dark", 1, 14, 14, 1],
-      ["rect", "light", 1, 1, 1, 14],
-      ["rect", "dark", 14, 1, 1, 14],
-      ["line", "dark", 4, 4, 4, 11],
-      ["line", "dark", 6, 4, 6, 11],
-      ["line", "dark", 10, 4, 10, 11],
-      ["line", "dark", 12, 4, 12, 11],
-      ["rect", "light", 2, 7, 2, 1]
+      [
+        "rect",
+        "outline",
+        0,
+        0,
+        16,
+        16
+      ],
+      [
+        "rect",
+        "mid",
+        1,
+        1,
+        14,
+        14
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        1,
+        14,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        1,
+        14
+      ],
+      [
+        "rect",
+        "dark",
+        14,
+        1,
+        1,
+        14
+      ],
+      [
+        "line",
+        "dark",
+        4,
+        4,
+        4,
+        11
+      ],
+      [
+        "line",
+        "dark",
+        6,
+        4,
+        6,
+        11
+      ],
+      [
+        "line",
+        "dark",
+        10,
+        4,
+        10,
+        11
+      ],
+      [
+        "line",
+        "dark",
+        12,
+        4,
+        12,
+        11
+      ],
+      [
+        "rect",
+        "light",
+        2,
+        7,
+        2,
+        1
+      ]
     ],
     "ctrl_top": [
-      ["rect", "outline", 0, 0, 16, 16],
-      ["rect", "mid", 1, 1, 14, 14],
-      ["rect", "light", 1, 1, 14, 1],
-      ["rect", "dark", 1, 14, 14, 1],
-      ["rect", "light", 1, 1, 1, 14],
-      ["rect", "dark", 14, 1, 1, 14],
-      ["frame", "outline", 5, 5, 6, 6],
-      ["rect", "accent", 6, 6, 4, 4],
-      ["dot", "trim", 6, 6],
-      ["dot", "trim", 9, 6],
-      ["dot", "trim", 6, 9],
-      ["dot", "trim", 9, 9]
+      [
+        "rect",
+        "outline",
+        0,
+        0,
+        16,
+        16
+      ],
+      [
+        "rect",
+        "mid",
+        1,
+        1,
+        14,
+        14
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        1,
+        14,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        1,
+        14
+      ],
+      [
+        "rect",
+        "dark",
+        14,
+        1,
+        1,
+        14
+      ],
+      [
+        "frame",
+        "outline",
+        5,
+        5,
+        6,
+        6
+      ],
+      [
+        "rect",
+        "accent",
+        6,
+        6,
+        4,
+        4
+      ],
+      [
+        "dot",
+        "trim",
+        6,
+        6
+      ],
+      [
+        "dot",
+        "trim",
+        9,
+        6
+      ],
+      [
+        "dot",
+        "trim",
+        6,
+        9
+      ],
+      [
+        "dot",
+        "trim",
+        9,
+        9
+      ]
     ],
     "ctrl_front": [
-      ["rect", "outline", 0, 0, 16, 16],
-      ["rect", "panel", 1, 1, 14, 14],
-      ["rect", "panelLight", 1, 1, 14, 1],
-      ["rect", "panelLight", 1, 1, 1, 14],
-      ["rect", "outline", 3, 2, 10, 9],
-      ["rect", "wafer", 4, 3, 8, 7],
-      ["rect", "waferLight", 4, 3, 8, 1],
-      ["line", "waferLight", 7, 4, 7, 9],
-      ["line", "waferLight", 9, 4, 9, 9],
-      ["line", "waferLight", 5, 6, 10, 6],
-      ["frame", "outline", 2, 12, 12, 2],
-      ["rect", "status", 3, 12, 10, 2],
-      ["dot", "outline", 5, 12],
-      ["dot", "outline", 8, 12],
-      ["dot", "outline", 11, 12]
+      [
+        "rect",
+        "outline",
+        0,
+        0,
+        16,
+        16
+      ],
+      [
+        "rect",
+        "panel",
+        1,
+        1,
+        14,
+        14
+      ],
+      [
+        "rect",
+        "panelLight",
+        1,
+        1,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "panelLight",
+        1,
+        1,
+        1,
+        14
+      ],
+      [
+        "rect",
+        "outline",
+        3,
+        2,
+        10,
+        9
+      ],
+      [
+        "rect",
+        "wafer",
+        4,
+        3,
+        8,
+        7
+      ],
+      [
+        "rect",
+        "waferLight",
+        4,
+        3,
+        8,
+        1
+      ],
+      [
+        "line",
+        "waferLight",
+        7,
+        4,
+        7,
+        9
+      ],
+      [
+        "line",
+        "waferLight",
+        9,
+        4,
+        9,
+        9
+      ],
+      [
+        "line",
+        "waferLight",
+        5,
+        6,
+        10,
+        6
+      ],
+      [
+        "frame",
+        "outline",
+        2,
+        12,
+        12,
+        2
+      ],
+      [
+        "rect",
+        "status",
+        3,
+        12,
+        10,
+        2
+      ],
+      [
+        "dot",
+        "outline",
+        5,
+        12
+      ],
+      [
+        "dot",
+        "outline",
+        8,
+        12
+      ],
+      [
+        "dot",
+        "outline",
+        11,
+        12
+      ]
     ],
     "port": [
-      ["rect", "outline", 0, 0, 16, 16],
-      ["rect", "mid", 1, 1, 14, 14],
-      ["rect", "light", 1, 1, 14, 1],
-      ["rect", "dark", 1, 14, 14, 1],
-      ["rect", "light", 1, 1, 1, 14],
-      ["rect", "dark", 14, 1, 1, 14],
-      ["rect", "dark", 5, 2, 6, 2],
-      ["rect", "dark", 5, 12, 6, 2],
-      ["line", "bolt", 9, 4, 7, 7],
-      ["line", "bolt", 7, 7, 10, 7],
-      ["line", "bolt", 10, 7, 8, 10],
-      ["dot", "light", 4, 4],
-      ["dot", "light", 12, 4],
-      ["dot", "light", 4, 11],
-      ["dot", "light", 12, 11]
+      [
+        "rect",
+        "outline",
+        0,
+        0,
+        16,
+        16
+      ],
+      [
+        "rect",
+        "mid",
+        1,
+        1,
+        14,
+        14
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        1,
+        14,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        1,
+        14
+      ],
+      [
+        "rect",
+        "dark",
+        14,
+        1,
+        1,
+        14
+      ],
+      [
+        "rect",
+        "dark",
+        5,
+        2,
+        6,
+        2
+      ],
+      [
+        "rect",
+        "dark",
+        5,
+        12,
+        6,
+        2
+      ],
+      [
+        "line",
+        "bolt",
+        9,
+        4,
+        7,
+        7
+      ],
+      [
+        "line",
+        "bolt",
+        7,
+        7,
+        10,
+        7
+      ],
+      [
+        "line",
+        "bolt",
+        10,
+        7,
+        8,
+        10
+      ],
+      [
+        "dot",
+        "light",
+        4,
+        4
+      ],
+      [
+        "dot",
+        "light",
+        12,
+        4
+      ],
+      [
+        "dot",
+        "light",
+        4,
+        11
+      ],
+      [
+        "dot",
+        "light",
+        12,
+        11
+      ]
     ],
     "puller": [
-      ["rect", "outline", 0, 0, 16, 16],
-      ["rect", "mid", 1, 1, 14, 14],
-      ["rect", "light", 1, 1, 14, 1],
-      ["rect", "dark", 1, 14, 14, 1],
-      ["rect", "light", 1, 1, 1, 14],
-      ["rect", "dark", 14, 1, 1, 14],
-      ["rect", "outline", 3, 3, 10, 10],
-      ["rect", "crystal", 4, 4, 8, 8],
-      ["rect", "glow", 6, 6, 4, 3],
-      ["line", "dark", 7, 4, 7, 6],
-      ["dot", "glow", 6, 10],
-      ["dot", "glow", 10, 10],
-      ["rect", "dark", 4, 12, 8, 1]
+      [
+        "rect",
+        "outline",
+        0,
+        0,
+        16,
+        16
+      ],
+      [
+        "rect",
+        "mid",
+        1,
+        1,
+        14,
+        14
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        1,
+        14,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        1,
+        14
+      ],
+      [
+        "rect",
+        "dark",
+        14,
+        1,
+        1,
+        14
+      ],
+      [
+        "rect",
+        "outline",
+        3,
+        3,
+        10,
+        10
+      ],
+      [
+        "rect",
+        "crystal",
+        4,
+        4,
+        8,
+        8
+      ],
+      [
+        "rect",
+        "glow",
+        6,
+        6,
+        4,
+        3
+      ],
+      [
+        "line",
+        "dark",
+        7,
+        4,
+        7,
+        6
+      ],
+      [
+        "dot",
+        "glow",
+        6,
+        10
+      ],
+      [
+        "dot",
+        "glow",
+        10,
+        10
+      ],
+      [
+        "rect",
+        "dark",
+        4,
+        12,
+        8,
+        1
+      ]
     ],
     "slicer": [
-      ["rect", "outline", 0, 0, 16, 16],
-      ["rect", "mid", 1, 1, 14, 14],
-      ["rect", "light", 1, 1, 14, 1],
-      ["rect", "dark", 1, 14, 14, 1],
-      ["rect", "light", 1, 1, 1, 14],
-      ["rect", "dark", 14, 1, 1, 14],
-      ["rect", "outline", 2, 5, 12, 5],
-      ["rect", "dark", 3, 6, 10, 3],
-      ["rect", "blade", 3, 8, 10, 1],
-      ["rect", "wafer", 5, 10, 6, 2],
-      ["dot", "light", 4, 4],
-      ["dot", "light", 12, 4]
+      [
+        "rect",
+        "outline",
+        0,
+        0,
+        16,
+        16
+      ],
+      [
+        "rect",
+        "mid",
+        1,
+        1,
+        14,
+        14
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        1,
+        14,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        1,
+        14
+      ],
+      [
+        "rect",
+        "dark",
+        14,
+        1,
+        1,
+        14
+      ],
+      [
+        "rect",
+        "outline",
+        2,
+        5,
+        12,
+        5
+      ],
+      [
+        "rect",
+        "dark",
+        3,
+        6,
+        10,
+        3
+      ],
+      [
+        "rect",
+        "blade",
+        3,
+        8,
+        10,
+        1
+      ],
+      [
+        "rect",
+        "wafer",
+        5,
+        10,
+        6,
+        2
+      ],
+      [
+        "dot",
+        "light",
+        4,
+        4
+      ],
+      [
+        "dot",
+        "light",
+        12,
+        4
+      ]
     ],
     "patterncell": [
-      ["rect", "outline", 0, 0, 16, 16],
-      ["rect", "mid", 1, 1, 14, 14],
-      ["rect", "light", 1, 1, 14, 1],
-      ["rect", "dark", 1, 14, 14, 1],
-      ["rect", "light", 1, 1, 1, 14],
-      ["rect", "dark", 14, 1, 1, 14],
-      ["line", "grid", 4, 1, 4, 14],
-      ["line", "grid", 8, 1, 8, 14],
-      ["line", "grid", 12, 1, 12, 14],
-      ["line", "grid", 1, 4, 14, 4],
-      ["line", "grid", 1, 8, 14, 8],
-      ["line", "grid", 1, 12, 14, 12],
-      ["dot", "trim", 2, 2],
-      ["dot", "trim", 13, 2],
-      ["dot", "trim", 2, 13],
-      ["dot", "trim", 13, 13]
+      [
+        "rect",
+        "outline",
+        0,
+        0,
+        16,
+        16
+      ],
+      [
+        "rect",
+        "mid",
+        1,
+        1,
+        14,
+        14
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        1,
+        14,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        1,
+        14
+      ],
+      [
+        "rect",
+        "dark",
+        14,
+        1,
+        1,
+        14
+      ],
+      [
+        "line",
+        "grid",
+        4,
+        1,
+        4,
+        14
+      ],
+      [
+        "line",
+        "grid",
+        8,
+        1,
+        8,
+        14
+      ],
+      [
+        "line",
+        "grid",
+        12,
+        1,
+        12,
+        14
+      ],
+      [
+        "line",
+        "grid",
+        1,
+        4,
+        14,
+        4
+      ],
+      [
+        "line",
+        "grid",
+        1,
+        8,
+        14,
+        8
+      ],
+      [
+        "line",
+        "grid",
+        1,
+        12,
+        14,
+        12
+      ],
+      [
+        "dot",
+        "trim",
+        2,
+        2
+      ],
+      [
+        "dot",
+        "trim",
+        13,
+        2
+      ],
+      [
+        "dot",
+        "trim",
+        2,
+        13
+      ],
+      [
+        "dot",
+        "trim",
+        13,
+        13
+      ]
     ],
     "testpkg": [
-      ["rect", "outline", 0, 0, 16, 16],
-      ["rect", "mid", 1, 1, 14, 14],
-      ["rect", "light", 1, 1, 14, 1],
-      ["rect", "dark", 1, 14, 14, 1],
-      ["rect", "light", 1, 1, 1, 14],
-      ["rect", "dark", 14, 1, 1, 14],
-      ["frame", "outline", 3, 3, 10, 10],
-      ["rect", "accent", 4, 4, 8, 8],
-      ["line", "dark", 4, 7, 11, 7],
-      ["line", "dark", 7, 4, 7, 11],
-      ["dot", "trim", 5, 5],
-      ["dot", "trim", 10, 5],
-      ["dot", "trim", 5, 10],
-      ["dot", "trim", 10, 10]
+      [
+        "rect",
+        "outline",
+        0,
+        0,
+        16,
+        16
+      ],
+      [
+        "rect",
+        "mid",
+        1,
+        1,
+        14,
+        14
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        1,
+        14,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        1,
+        14
+      ],
+      [
+        "rect",
+        "dark",
+        14,
+        1,
+        1,
+        14
+      ],
+      [
+        "frame",
+        "outline",
+        3,
+        3,
+        10,
+        10
+      ],
+      [
+        "rect",
+        "accent",
+        4,
+        4,
+        8,
+        8
+      ],
+      [
+        "line",
+        "dark",
+        4,
+        7,
+        11,
+        7
+      ],
+      [
+        "line",
+        "dark",
+        7,
+        4,
+        7,
+        11
+      ],
+      [
+        "dot",
+        "trim",
+        5,
+        5
+      ],
+      [
+        "dot",
+        "trim",
+        10,
+        5
+      ],
+      [
+        "dot",
+        "trim",
+        5,
+        10
+      ],
+      [
+        "dot",
+        "trim",
+        10,
+        10
+      ]
     ]
   },
   "items": {
-    "foup_mk1": { "palette": "FOUP", "shape": "foup", "note": "FOUP Mk1 canister with top handle and slot window" },
-    "foup_mk2": { "palette": "FOUP", "shape": "foup2", "note": "FOUP Mk2 canister, same body with wafer dots" },
-    "logic_chip_t1": { "palette": "CHIP_T1", "shape": "chip", "note": "T1 logic die, amber package with word pins" },
-    "logic_chip_t2": { "palette": "CHIP_T2", "shape": "chip", "note": "T2 logic die, same die geometry in blue" },
-    "memory_chip_t2": { "palette": "CHIP_MEM", "shape": "chip_mem", "note": "T2 memory die with dense cell bars" },
-    "chip_scrap": { "palette": "SCRAP", "shape": "scrap", "note": "Irregular grey chip shards" },
-    "silicon": { "palette": "SILICON", "shape": "crystal", "note": "Polycrystalline silicon nugget" },
-    "silicon_boule": { "palette": "BOULE", "shape": "boule", "note": "Single-crystal boule with seed cap" },
-    "resist_t1": { "palette": "RESIST_T1", "shape": "bottle", "note": "T1 photoresist bottle" },
-    "resist_t2": { "palette": "RESIST_T2", "shape": "bottle", "note": "T2 photoresist bottle, same geometry in teal" },
-    "chip_package": { "palette": "PACKAGE", "shape": "package", "note": "Chip packaging tray with pin grid" },
-    "blank_mask": { "palette": "SCRAP", "shape": "plate", "note": "Blank photomask plate" },
-    "mask": { "palette": "MASK", "shape": "maskgrid", "note": "Exposed photomask with circuit traces" },
-    "mercury_lamp": { "palette": "LAMP_T1", "shape": "lamp", "note": "T1 mercury lamp glow tube" },
-    "i_line_lamp": { "palette": "LAMP_T2", "shape": "lamp", "note": "T2 i-line lamp, same tube in cyan" },
-    "contact_plate": { "palette": "STEEL", "shape": "contact", "note": "T1 contact plate with dot grid" },
-    "reduction_lens": { "palette": "LENS_T2", "shape": "lens", "note": "T2 reduction lens barrel with flanges" },
-    "manual_aligner": { "palette": "STAGE_T1", "shape": "stage", "note": "T1 manual aligner stage with knobs" },
-    "stepper_stage": { "palette": "STAGE_T2", "shape": "stage", "note": "T2 stepper stage, same geometry in teal" },
-    "basic_air_filter": { "palette": "FILTER_T1", "shape": "filter", "note": "T1 cleanroom filter pleats" },
-    "fine_air_filter": { "palette": "FILTER_T2", "shape": "filter", "note": "T2 dense filter, same pleats in teal" },
-    "optical_microscope": { "palette": "SCOPE_T1", "shape": "scope", "note": "T1 metrology scope silhouette" },
-    "overlay_scope": { "palette": "SCOPE_T2", "shape": "scope", "note": "T2 overlay scope, same silhouette in violet" }
+    "foup_mk1": {
+      "palette": "FOUP",
+      "shape": "foup",
+      "note": "FOUP Mk1 canister with top handle and slot window"
+    },
+    "foup_mk2": {
+      "palette": "FOUP",
+      "shape": "foup2",
+      "note": "FOUP Mk2 canister, same body with wafer dots"
+    },
+    "logic_chip_t1": {
+      "palette": "CHIP_T1",
+      "shape": "chip",
+      "note": "T1 logic die, amber package with word pins"
+    },
+    "logic_chip_t2": {
+      "palette": "CHIP_T2",
+      "shape": "chip",
+      "note": "T2 logic die, same die geometry in blue"
+    },
+    "memory_chip_t2": {
+      "palette": "CHIP_MEM",
+      "shape": "chip_mem",
+      "note": "T2 memory die with dense cell bars"
+    },
+    "chip_scrap": {
+      "palette": "SCRAP",
+      "shape": "scrap",
+      "note": "Irregular grey chip shards"
+    },
+    "silicon": {
+      "palette": "SILICON",
+      "shape": "crystal",
+      "note": "Polycrystalline silicon nugget"
+    },
+    "silicon_boule": {
+      "palette": "BOULE",
+      "shape": "boule",
+      "note": "Single-crystal boule with seed cap"
+    },
+    "resist_t1": {
+      "palette": "RESIST_T1",
+      "shape": "bottle",
+      "note": "T1 photoresist bottle"
+    },
+    "resist_t2": {
+      "palette": "RESIST_T2",
+      "shape": "bottle",
+      "note": "T2 photoresist bottle, same geometry in teal"
+    },
+    "chip_package": {
+      "palette": "PACKAGE",
+      "shape": "package",
+      "note": "Chip packaging tray with pin grid"
+    },
+    "blank_mask": {
+      "palette": "SCRAP",
+      "shape": "plate",
+      "note": "Blank photomask plate"
+    },
+    "mask": {
+      "palette": "MASK",
+      "shape": "maskgrid",
+      "note": "Exposed photomask with circuit traces"
+    },
+    "mercury_lamp": {
+      "palette": "LAMP_T1",
+      "shape": "lamp",
+      "note": "T1 mercury lamp glow tube"
+    },
+    "i_line_lamp": {
+      "palette": "LAMP_T2",
+      "shape": "lamp",
+      "note": "T2 i-line lamp, same tube in cyan"
+    },
+    "contact_plate": {
+      "palette": "STEEL",
+      "shape": "contact",
+      "note": "T1 contact plate with dot grid"
+    },
+    "reduction_lens": {
+      "palette": "LENS_T2",
+      "shape": "lens",
+      "note": "T2 reduction lens barrel with flanges"
+    },
+    "manual_aligner": {
+      "palette": "STAGE_T1",
+      "shape": "stage",
+      "note": "T1 manual aligner stage with knobs"
+    },
+    "stepper_stage": {
+      "palette": "STAGE_T2",
+      "shape": "stage",
+      "note": "T2 stepper stage, same geometry in teal"
+    },
+    "basic_air_filter": {
+      "palette": "FILTER_T1",
+      "shape": "filter",
+      "note": "T1 cleanroom filter pleats"
+    },
+    "fine_air_filter": {
+      "palette": "FILTER_T2",
+      "shape": "filter",
+      "note": "T2 dense filter, same pleats in teal"
+    },
+    "optical_microscope": {
+      "palette": "SCOPE_T1",
+      "shape": "scope",
+      "note": "T1 metrology scope silhouette"
+    },
+    "overlay_scope": {
+      "palette": "SCOPE_T2",
+      "shape": "scope",
+      "note": "T2 overlay scope, same silhouette in violet"
+    }
   },
   "blocks": {
     "crystal_puller": {
       "faces": {
-        "all": { "palette": "PULLER", "shape": "puller", "note": "Crystal chamber in steel frame with glowing seed rod" }
+        "all": {
+          "palette": "PULLER",
+          "shape": "puller",
+          "note": "Crystal chamber in steel frame with glowing seed rod"
+        }
       }
     },
     "wafer_slicer": {
       "faces": {
-        "all": { "palette": "SLICER", "shape": "slicer", "note": "Steel body with horizontal blade slot and wafer bay" }
+        "all": {
+          "palette": "SLICER",
+          "shape": "slicer",
+          "note": "Steel body with horizontal blade slot and wafer bay"
+        }
       }
     },
     "test_package": {
       "faces": {
-        "all": { "palette": "TESTPKG", "shape": "testpkg", "note": "Chip test banks in steel casing" }
+        "all": {
+          "palette": "TESTPKG",
+          "shape": "testpkg",
+          "note": "Chip test banks in steel casing"
+        }
       }
     },
     "pattern_generator": {
       "faces": {
-        "all": { "palette": "PATTERN", "shape": "patterncell", "note": "Purple mask grid over steel body" }
+        "all": {
+          "palette": "PATTERN",
+          "shape": "patterncell",
+          "note": "Purple mask grid over steel body"
+        }
       }
     },
     "process_cell_controller_formed": {
       "faces": {
-        "side": { "palette": "CASING_FORMED", "shape": "ctrl_side", "note": "Formed controller side, green metal with vents" },
-        "top": { "palette": "CASING_FORMED", "shape": "ctrl_top", "note": "Formed controller top with wafer inset" },
-        "front": { "palette": "CTRL_FRONT_FORMED", "shape": "ctrl_front", "note": "Front wafer panel with green status bar" }
+        "side": {
+          "palette": "CASING_FORMED",
+          "shape": "ctrl_side",
+          "note": "Formed controller side, green metal with vents"
+        },
+        "top": {
+          "palette": "CASING_FORMED",
+          "shape": "ctrl_top",
+          "note": "Formed controller top with wafer inset"
+        },
+        "front": {
+          "palette": "CTRL_FRONT_FORMED",
+          "shape": "ctrl_front",
+          "note": "Front wafer panel with green status bar"
+        }
       }
     },
     "process_cell_controller_unformed": {
       "faces": {
-        "side": { "palette": "CASING_UNFORMED", "shape": "ctrl_side", "note": "Unformed controller side, amber steel with vents" },
-        "top": { "palette": "CASING_UNFORMED", "shape": "ctrl_top", "note": "Unformed controller top with wafer inset" },
-        "front": { "palette": "CTRL_FRONT_UNFORMED", "shape": "ctrl_front", "note": "Front panel with amber status bar" }
+        "side": {
+          "palette": "CASING_UNFORMED",
+          "shape": "ctrl_side",
+          "note": "Unformed controller side, amber steel with vents"
+        },
+        "top": {
+          "palette": "CASING_UNFORMED",
+          "shape": "ctrl_top",
+          "note": "Unformed controller top with wafer inset"
+        },
+        "front": {
+          "palette": "CTRL_FRONT_UNFORMED",
+          "shape": "ctrl_front",
+          "note": "Front panel with amber status bar"
+        }
       }
     },
     "process_cell_casing_formed": {
       "faces": {
-        "all": { "palette": "CASING_FORMED", "shape": "tile", "note": "Formed plain metal casing tile in green" }
+        "all": {
+          "palette": "CASING_FORMED",
+          "shape": "tile",
+          "note": "Formed plain metal casing tile in green"
+        }
       }
     },
     "process_cell_casing_unformed": {
       "faces": {
-        "all": { "palette": "CASING_UNFORMED", "shape": "tile", "note": "Unformed plain metal casing tile in amber" }
+        "all": {
+          "palette": "CASING_UNFORMED",
+          "shape": "tile",
+          "note": "Unformed plain metal casing tile in amber"
+        }
       }
     },
     "process_cell_power_port_formed": {
       "faces": {
-        "all": { "palette": "PORT_FORMED", "shape": "port", "note": "Formed power port with lightning bolt" }
+        "all": {
+          "palette": "PORT_FORMED",
+          "shape": "port",
+          "note": "Formed power port with lightning bolt"
+        }
       }
     },
     "process_cell_power_port_unformed": {
       "faces": {
-        "all": { "palette": "PORT_UNFORMED", "shape": "port", "note": "Unformed power port with lightning bolt" }
+        "all": {
+          "palette": "PORT_UNFORMED",
+          "shape": "port",
+          "note": "Unformed power port with lightning bolt"
+        }
       }
-    }
-  },
-  "joinedPanels": {
-    "$comment": "Joined 2x2x3 operator panel assets (schema v2 extension). Palettes, shapes, tiles, faceMap, roleAssignments, unformedTiles, and output config for 4 roles x 12 parts x 2 states.",
-    "palette": {
-      "STEEL_FRAME": {
-        "outline": "#1A1A1A", "dark": "#2E2E2E", "mid": "#4A4A4A",
-        "light": "#6A6A6A", "accent": "#3AE8E8", "trim": "#8AFFFF"
-      },
-      "STEEL_STRIPES": {
-        "outline": "#1A1A1A", "dark": "#2E2E2E", "mid": "#4A4A4A",
-        "stripe": "#3AE8E8", "stripeLight": "#8AFFFF", "trim": "#6A6A6A"
-      },
-      "STEEL_VENTS": {
-        "outline": "#1A1A1A", "dark": "#2E2E2E", "mid": "#4A4A4A",
-        "vent": "#2A2A2A", "ventDark": "#1A1A1A", "trim": "#6A6A6A"
-      },
-      "STEEL_SERVICE": {
-        "outline": "#1A1A1A", "dark": "#2E2E2E", "mid": "#4A4A4A",
-        "panel": "#3A3A3A", "panelLine": "#2A2A2A", "bolt": "#E8C84A", "trim": "#6A6A6A"
-      },
-      "CTRL_FRONT": {
-        "outline": "#1A1A1A", "door": "#2E2E2E", "doorLight": "#4A4A4A",
-        "handle": "#E8C84A", "handleLight": "#FFF2A8", "status": "#3ECC3E", "trim": "#6A6A6A"
-      },
-      "PANEL_FRONT": {
-        "outline": "#1A1A1A", "screen": "#1A3A1A", "screenLight": "#3AE83A",
-        "button": "#E8C84A", "buttonLight": "#FFF2A8", "buttonDark": "#B8982A", "trim": "#6A6A6A"
-      },
-      "PORT_FACE": {
-        "outline": "#1A1A1A", "dark": "#2E2E2E", "mid": "#4A4A4A",
-        "bolt": "#E8C84A", "boltLight": "#FFF2A8", "rim": "#FFF2A8", "trim": "#6A6A6A"
-      },
-      "UNFORMED_CTRL": {
-        "outline": "#403218", "dark": "#5A4626", "mid": "#7A6236",
-        "light": "#A8874A", "accent": "#C8A86A", "trim": "#E8D0A0"
-      },
-      "UNFORMED_CASING": {
-        "outline": "#403218", "dark": "#5A4626", "mid": "#7A6236",
-        "light": "#A8874A", "accent": "#C8A86A", "trim": "#E8D0A0"
-      },
-      "UNFORMED_PORT": {
-        "outline": "#403218", "dark": "#5A4626", "mid": "#7A6236",
-        "light": "#A8874A", "bolt": "#B8982A", "trim": "#E8D0A0"
-      },
-      "UNFORMED_PANEL": {
-        "outline": "#403218", "dark": "#5A4626", "mid": "#7A6236",
-        "light": "#A8874A", "screen": "#5A4626", "trim": "#E8D0A0"
-      }
-    },
-    "shapes": {
-      "steel_frame": [
-        ["frame", "outline", 0, 0, 16, 16],
-        ["rect", "mid", 1, 1, 14, 14],
-        ["rect", "light", 1, 1, 14, 1],
-        ["rect", "light", 1, 1, 1, 14],
-        ["rect", "dark", 1, 14, 14, 1],
-        ["rect", "dark", 14, 1, 1, 14],
-        ["line", "accent", 3, 3, 12, 3],
-        ["line", "accent", 3, 12, 12, 12],
-        ["line", "accent", 3, 3, 3, 12],
-        ["line", "accent", 12, 3, 12, 12]
-      ],
-      "steel_stripes": [
-        ["frame", "outline", 0, 0, 16, 16],
-        ["rect", "mid", 1, 1, 14, 14],
-        ["rect", "stripe", 1, 3, 14, 1],
-        ["rect", "stripe", 1, 6, 14, 1],
-        ["rect", "stripe", 1, 9, 14, 1],
-        ["rect", "stripe", 1, 12, 14, 1],
-        ["rect", "stripeLight", 1, 4, 14, 1],
-        ["rect", "stripeLight", 1, 7, 14, 1],
-        ["rect", "stripeLight", 1, 10, 14, 1],
-        ["rect", "stripeLight", 1, 13, 14, 1],
-        ["rect", "trim", 1, 1, 14, 1],
-        ["rect", "trim", 1, 14, 14, 1],
-        ["rect", "trim", 1, 1, 1, 14],
-        ["rect", "trim", 14, 1, 1, 14]
-      ],
-      "steel_vents": [
-        ["frame", "outline", 0, 0, 16, 16],
-        ["rect", "mid", 1, 1, 14, 14],
-        ["rect", "vent", 3, 3, 2, 2],
-        ["rect", "vent", 7, 3, 2, 2],
-        ["rect", "vent", 11, 3, 2, 2],
-        ["rect", "vent", 3, 7, 2, 2],
-        ["rect", "vent", 7, 7, 2, 2],
-        ["rect", "vent", 11, 7, 2, 2],
-        ["rect", "vent", 3, 11, 2, 2],
-        ["rect", "vent", 7, 11, 2, 2],
-        ["rect", "vent", 11, 11, 2, 2],
-        ["rect", "ventDark", 4, 4, 1, 1],
-        ["rect", "ventDark", 8, 4, 1, 1],
-        ["rect", "ventDark", 12, 4, 1, 1],
-        ["rect", "ventDark", 4, 8, 1, 1],
-        ["rect", "ventDark", 8, 8, 1, 1],
-        ["rect", "ventDark", 12, 8, 1, 1],
-        ["rect", "ventDark", 4, 12, 1, 1],
-        ["rect", "ventDark", 8, 12, 1, 1],
-        ["rect", "ventDark", 12, 12, 1, 1],
-        ["rect", "trim", 1, 1, 14, 1],
-        ["rect", "trim", 1, 14, 14, 1],
-        ["rect", "trim", 1, 1, 1, 14],
-        ["rect", "trim", 14, 1, 1, 14]
-      ],
-      "steel_service": [
-        ["frame", "outline", 0, 0, 16, 16],
-        ["rect", "mid", 1, 1, 14, 14],
-        ["rect", "panel", 3, 3, 10, 10],
-        ["line", "panelLine", 3, 7, 12, 7],
-        ["line", "panelLine", 3, 10, 12, 10],
-        ["line", "panelLine", 7, 3, 7, 12],
-        ["line", "panelLine", 10, 3, 10, 12],
-        ["dot", "bolt", 5, 5],
-        ["dot", "bolt", 10, 5],
-        ["dot", "bolt", 5, 10],
-        ["dot", "bolt", 10, 10],
-        ["rect", "trim", 1, 1, 14, 1],
-        ["rect", "trim", 1, 14, 14, 1],
-        ["rect", "trim", 1, 1, 1, 14],
-        ["rect", "trim", 14, 1, 1, 14]
-      ],
-      "controller_front": [
-        ["frame", "outline", 0, 0, 16, 16],
-        ["rect", "door", 2, 2, 12, 12],
-        ["rect", "doorLight", 2, 2, 12, 1],
-        ["rect", "doorLight", 2, 2, 1, 12],
-        ["line", "outline", 3, 3, 12, 10],
-        ["rect", "handle", 10, 7, 2, 4],
-        ["rect", "handleLight", 10, 7, 1, 4],
-        ["rect", "status", 4, 12, 8, 2],
-        ["dot", "outline", 5, 12],
-        ["dot", "outline", 8, 12],
-        ["dot", "outline", 11, 12],
-        ["rect", "trim", 1, 1, 14, 1],
-        ["rect", "trim", 1, 14, 14, 1],
-        ["rect", "trim", 1, 1, 1, 14],
-        ["rect", "trim", 14, 1, 1, 14]
-      ],
-      "panel_front": [
-        ["frame", "outline", 0, 0, 16, 16],
-        ["rect", "screen", 2, 2, 12, 8],
-        ["rect", "screenLight", 2, 2, 12, 1],
-        ["rect", "screenLight", 2, 2, 1, 8],
-        ["dot", "button", 4, 11],
-        ["dot", "button", 8, 11],
-        ["dot", "button", 12, 11],
-        ["dot", "buttonLight", 5, 11],
-        ["dot", "buttonLight", 9, 11],
-        ["dot", "buttonLight", 13, 11],
-        ["dot", "buttonDark", 4, 12],
-        ["dot", "buttonDark", 8, 12],
-        ["dot", "buttonDark", 12, 12],
-        ["rect", "trim", 1, 1, 14, 1],
-        ["rect", "trim", 1, 14, 14, 1],
-        ["rect", "trim", 1, 1, 1, 14],
-        ["rect", "trim", 14, 1, 1, 14]
-      ],
-      "power_port_face": [
-        ["frame", "outline", 0, 0, 16, 16],
-        ["rect", "mid", 1, 1, 14, 14],
-        ["rect", "dark", 4, 2, 8, 2],
-        ["rect", "dark", 4, 12, 8, 2],
-        ["line", "bolt", 8, 5, 7, 8],
-        ["line", "bolt", 7, 8, 9, 8],
-        ["line", "bolt", 9, 8, 8, 11],
-        ["dot", "rim", 3, 3],
-        ["dot", "rim", 12, 3],
-        ["dot", "rim", 3, 12],
-        ["dot", "rim", 12, 12],
-        ["line", "boltLight", 8, 5, 7, 8],
-        ["line", "boltLight", 7, 8, 9, 8],
-        ["line", "boltLight", 9, 8, 8, 11],
-        ["rect", "trim", 1, 1, 14, 1],
-        ["rect", "trim", 1, 14, 14, 1],
-        ["rect", "trim", 1, 1, 1, 14],
-        ["rect", "trim", 14, 1, 1, 14]
-      ],
-      "unformed_tile": [
-        ["frame", "outline", 0, 0, 16, 16],
-        ["rect", "mid", 1, 1, 14, 14],
-        ["rect", "light", 1, 1, 14, 1],
-        ["rect", "light", 1, 1, 1, 14],
-        ["rect", "dark", 1, 14, 14, 1],
-        ["rect", "dark", 14, 1, 1, 14],
-        ["line", "dark", 4, 4, 4, 11],
-        ["line", "dark", 8, 4, 8, 11],
-        ["line", "dark", 12, 4, 12, 11],
-        ["rect", "accent", 2, 7, 2, 1]
-      ]
-    },
-    "tiles": {
-      "steel_frame": { "palette": "STEEL_FRAME", "shape": "steel_frame" },
-      "steel_stripes": { "palette": "STEEL_STRIPES", "shape": "steel_stripes" },
-      "steel_vents": { "palette": "STEEL_VENTS", "shape": "steel_vents" },
-      "steel_service": { "palette": "STEEL_SERVICE", "shape": "steel_service" },
-      "controller_front": { "palette": "CTRL_FRONT", "shape": "controller_front" },
-      "panel_front": { "palette": "PANEL_FRONT", "shape": "panel_front" },
-      "power_port_face": { "palette": "PORT_FACE", "shape": "power_port_face" },
-      "unformed_controller": { "palette": "UNFORMED_CTRL", "shape": "unformed_tile" },
-      "unformed_casing": { "palette": "UNFORMED_CASING", "shape": "unformed_tile" },
-      "unformed_power_port": { "palette": "UNFORMED_PORT", "shape": "unformed_tile" },
-      "unformed_operating_panel": { "palette": "UNFORMED_PANEL", "shape": "unformed_tile" }
-    },
-    "faceMap": {
-      "controller": {
-        "north": "controller_front",
-        "south": "steel_vents",
-        "east": "steel_stripes",
-        "west": "steel_stripes",
-        "up": "steel_frame",
-        "down": "steel_frame"
-      },
-      "casing": {
-        "north": "steel_stripes",
-        "south": "steel_stripes",
-        "east": "steel_stripes",
-        "west": "steel_stripes",
-        "up": "steel_frame",
-        "down": "steel_frame"
-      },
-      "power_port": {
-        "north": "steel_service",
-        "south": "power_port_face",
-        "east": "steel_stripes",
-        "west": "steel_stripes",
-        "up": "steel_frame",
-        "down": "steel_frame"
-      },
-      "operating_panel": {
-        "north": "panel_front",
-        "south": "steel_vents",
-        "east": "steel_stripes",
-        "west": "steel_stripes",
-        "up": "steel_frame",
-        "down": "steel_frame"
-      }
-    },
-    "roleAssignments": {
-      "0": "controller",
-      "1": "controller",
-      "2": "operating_panel",
-      "3": "operating_panel",
-      "4": "casing",
-      "5": "casing",
-      "6": "casing",
-      "7": "casing",
-      "8": "power_port",
-      "9": "power_port",
-      "10": "casing",
-      "11": "casing"
-    },
-    "unformedTiles": {
-      "controller": "unformed_controller",
-      "casing": "unformed_casing",
-      "power_port": "unformed_power_port",
-      "operating_panel": "unformed_operating_panel"
-    },
-    "output": {
-      "blocksDir": "src/main/resources/assets/lithmod/models/block",
-      "blockstatesDir": "src/main/resources/assets/lithmod/blockstates",
-      "texturesBlocksDir": "src/main/resources/assets/lithmod/textures/block",
-      "itemsDir": "src/main/resources/assets/lithmod/models/item",
-      "itemsDefinitionsDir": "src/main/resources/assets/lithmod/items",
-      "texturesItemsDir": "src/main/resources/assets/lithmod/textures/item",
-      "previewPath": "build/joined-panels-preview.png",
-      "lootTablesDir": "src/main/resources/data/lithmod/loot_table/blocks",
-      "recipesDir": "src/main/resources/data/lithmod/recipe/crafting",
-      "blockModelsToUpdate": [
-        "process_cell_controller_part0_formed", "process_cell_controller_part0_unformed",
-        "process_cell_controller_part1_formed", "process_cell_controller_part1_unformed",
-        "process_cell_controller_part2_formed", "process_cell_controller_part2_unformed",
-        "process_cell_controller_part3_formed", "process_cell_controller_part3_unformed",
-        "process_cell_controller_part4_formed", "process_cell_controller_part4_unformed",
-        "process_cell_controller_part5_formed", "process_cell_controller_part5_unformed",
-        "process_cell_controller_part6_formed", "process_cell_controller_part6_unformed",
-        "process_cell_controller_part7_formed", "process_cell_controller_part7_unformed",
-        "process_cell_controller_part8_formed", "process_cell_controller_part8_unformed",
-        "process_cell_controller_part9_formed", "process_cell_controller_part9_unformed",
-        "process_cell_controller_part10_formed", "process_cell_controller_part10_unformed",
-        "process_cell_controller_part11_formed", "process_cell_controller_part11_unformed",
-        "process_cell_casing_part0_formed", "process_cell_casing_part0_unformed",
-        "process_cell_casing_part1_formed", "process_cell_casing_part1_unformed",
-        "process_cell_casing_part2_formed", "process_cell_casing_part2_unformed",
-        "process_cell_casing_part3_formed", "process_cell_casing_part3_unformed",
-        "process_cell_casing_part4_formed", "process_cell_casing_part4_unformed",
-        "process_cell_casing_part5_formed", "process_cell_casing_part5_unformed",
-        "process_cell_casing_part6_formed", "process_cell_casing_part6_unformed",
-        "process_cell_casing_part7_formed", "process_cell_casing_part7_unformed",
-        "process_cell_casing_part8_formed", "process_cell_casing_part8_unformed",
-        "process_cell_casing_part9_formed", "process_cell_casing_part9_unformed",
-        "process_cell_casing_part10_formed", "process_cell_casing_part10_unformed",
-        "process_cell_casing_part11_formed", "process_cell_casing_part11_unformed",
-        "process_cell_power_port_part0_formed", "process_cell_power_port_part0_unformed",
-        "process_cell_power_port_part1_formed", "process_cell_power_port_part1_unformed",
-        "process_cell_power_port_part2_formed", "process_cell_power_port_part2_unformed",
-        "process_cell_power_port_part3_formed", "process_cell_power_port_part3_unformed",
-        "process_cell_power_port_part4_formed", "process_cell_power_port_part4_unformed",
-        "process_cell_power_port_part5_formed", "process_cell_power_port_part5_unformed",
-        "process_cell_power_port_part6_formed", "process_cell_power_port_part6_unformed",
-        "process_cell_power_port_part7_formed", "process_cell_power_port_part7_unformed",
-        "process_cell_power_port_part8_formed", "process_cell_power_port_part8_unformed",
-        "process_cell_power_port_part9_formed", "process_cell_power_port_part9_unformed",
-        "process_cell_power_port_part10_formed", "process_cell_power_port_part10_unformed",
-        "process_cell_power_port_part11_formed", "process_cell_power_port_part11_unformed",
-        "process_cell_operating_panel_part0_formed", "process_cell_operating_panel_part0_unformed",
-        "process_cell_operating_panel_part1_formed", "process_cell_operating_panel_part1_unformed",
-        "process_cell_operating_panel_part2_formed", "process_cell_operating_panel_part2_unformed",
-        "process_cell_operating_panel_part3_formed", "process_cell_operating_panel_part3_unformed",
-        "process_cell_operating_panel_part4_formed", "process_cell_operating_panel_part4_unformed",
-        "process_cell_operating_panel_part5_formed", "process_cell_operating_panel_part5_unformed",
-        "process_cell_operating_panel_part6_formed", "process_cell_operating_panel_part6_unformed",
-        "process_cell_operating_panel_part7_formed", "process_cell_operating_panel_part7_unformed",
-        "process_cell_operating_panel_part8_formed", "process_cell_operating_panel_part8_unformed",
-        "process_cell_operating_panel_part9_formed", "process_cell_operating_panel_part9_unformed",
-        "process_cell_operating_panel_part10_formed", "process_cell_operating_panel_part10_unformed",
-        "process_cell_operating_panel_part11_formed", "process_cell_operating_panel_part11_unformed"
-      ]
     }
   },
   "output": {
@@ -869,18 +2657,734 @@
     "texturesBlocksDir": "src/main/resources/assets/lithmod/textures/block",
     "previewPath": "build/starter-textures-preview.png",
     "itemModelsToUpdate": [
-      "foup_mk1", "foup_mk2", "logic_chip_t1", "logic_chip_t2", "memory_chip_t2",
-      "chip_scrap", "silicon", "silicon_boule", "resist_t1", "resist_t2",
-      "chip_package", "blank_mask", "mask", "mercury_lamp", "i_line_lamp",
-      "contact_plate", "reduction_lens", "manual_aligner", "stepper_stage",
-      "basic_air_filter", "fine_air_filter", "optical_microscope", "overlay_scope"
+      "foup_mk1",
+      "foup_mk2",
+      "logic_chip_t1",
+      "logic_chip_t2",
+      "memory_chip_t2",
+      "chip_scrap",
+      "silicon",
+      "silicon_boule",
+      "resist_t1",
+      "resist_t2",
+      "chip_package",
+      "blank_mask",
+      "mask",
+      "mercury_lamp",
+      "i_line_lamp",
+      "contact_plate",
+      "reduction_lens",
+      "manual_aligner",
+      "stepper_stage",
+      "basic_air_filter",
+      "fine_air_filter",
+      "optical_microscope",
+      "overlay_scope"
     ],
     "blockModelsToUpdate": [
-      "crystal_puller", "wafer_slicer", "test_package", "pattern_generator",
-      "process_cell_controller_formed", "process_cell_controller_unformed",
-      "process_cell_casing_formed", "process_cell_casing_unformed",
-      "process_cell_power_port_formed", "process_cell_power_port_unformed"
+      "crystal_puller",
+      "wafer_slicer",
+      "test_package",
+      "pattern_generator",
+      "process_cell_controller_formed",
+      "process_cell_controller_unformed",
+      "process_cell_casing_formed",
+      "process_cell_casing_unformed",
+      "process_cell_power_port_formed",
+      "process_cell_power_port_unformed"
     ],
-    "preserveUntouched": ["test_machine"]
+    "preserveUntouched": [
+      "test_machine"
+    ]
+  },
+  "joinedPanels": {
+    "version": 1,
+    "palette": {
+      "steel": "#9BAEB7",
+      "light": "#C8D8DF",
+      "shade": "#687D88",
+      "edge": "#293E49",
+      "teal": "#278D94",
+      "glow": "#80E4DD",
+      "copper": "#D59B60",
+      "amber": "#E5B65D",
+      "screen": "#173B4B"
+    },
+    "faces": {
+      "north": [
+        [
+          "rect",
+          0,
+          0,
+          32,
+          32,
+          "steel"
+        ],
+        [
+          "frame",
+          0,
+          0,
+          32,
+          32,
+          "edge"
+        ],
+        [
+          "rect",
+          1,
+          1,
+          30,
+          1,
+          "light"
+        ],
+        [
+          "rect",
+          1,
+          2,
+          1,
+          29,
+          "light"
+        ],
+        [
+          "rect",
+          30,
+          2,
+          1,
+          29,
+          "shade"
+        ],
+        [
+          "rect",
+          2,
+          30,
+          28,
+          1,
+          "shade"
+        ],
+        [
+          "rect",
+          1,
+          14,
+          30,
+          2,
+          "teal"
+        ]
+      ],
+      "south": [
+        [
+          "rect",
+          0,
+          0,
+          32,
+          32,
+          "steel"
+        ],
+        [
+          "frame",
+          0,
+          0,
+          32,
+          32,
+          "edge"
+        ],
+        [
+          "rect",
+          1,
+          1,
+          30,
+          1,
+          "light"
+        ],
+        [
+          "rect",
+          1,
+          2,
+          1,
+          29,
+          "light"
+        ],
+        [
+          "rect",
+          30,
+          2,
+          1,
+          29,
+          "shade"
+        ],
+        [
+          "rect",
+          2,
+          30,
+          28,
+          1,
+          "shade"
+        ],
+        [
+          "rect",
+          1,
+          14,
+          30,
+          2,
+          "teal"
+        ],
+        [
+          "rect",
+          6,
+          21,
+          20,
+          1,
+          "shade"
+        ],
+        [
+          "rect",
+          6,
+          23,
+          20,
+          1,
+          "shade"
+        ],
+        [
+          "rect",
+          6,
+          25,
+          20,
+          1,
+          "shade"
+        ]
+      ],
+      "west": [
+        [
+          "rect",
+          0,
+          0,
+          48,
+          32,
+          "steel"
+        ],
+        [
+          "frame",
+          0,
+          0,
+          48,
+          32,
+          "edge"
+        ],
+        [
+          "rect",
+          1,
+          1,
+          46,
+          1,
+          "light"
+        ],
+        [
+          "rect",
+          1,
+          2,
+          1,
+          29,
+          "light"
+        ],
+        [
+          "rect",
+          46,
+          2,
+          1,
+          29,
+          "shade"
+        ],
+        [
+          "rect",
+          2,
+          30,
+          44,
+          1,
+          "shade"
+        ],
+        [
+          "rect",
+          1,
+          14,
+          46,
+          2,
+          "teal"
+        ],
+        [
+          "rect",
+          6,
+          21,
+          36,
+          1,
+          "shade"
+        ],
+        [
+          "rect",
+          6,
+          23,
+          36,
+          1,
+          "shade"
+        ],
+        [
+          "rect",
+          6,
+          25,
+          36,
+          1,
+          "shade"
+        ]
+      ],
+      "east": [
+        [
+          "rect",
+          0,
+          0,
+          48,
+          32,
+          "steel"
+        ],
+        [
+          "frame",
+          0,
+          0,
+          48,
+          32,
+          "edge"
+        ],
+        [
+          "rect",
+          1,
+          1,
+          46,
+          1,
+          "light"
+        ],
+        [
+          "rect",
+          1,
+          2,
+          1,
+          29,
+          "light"
+        ],
+        [
+          "rect",
+          46,
+          2,
+          1,
+          29,
+          "shade"
+        ],
+        [
+          "rect",
+          2,
+          30,
+          44,
+          1,
+          "shade"
+        ],
+        [
+          "rect",
+          1,
+          14,
+          46,
+          2,
+          "teal"
+        ],
+        [
+          "rect",
+          6,
+          21,
+          36,
+          1,
+          "shade"
+        ],
+        [
+          "rect",
+          6,
+          23,
+          36,
+          1,
+          "shade"
+        ],
+        [
+          "rect",
+          6,
+          25,
+          36,
+          1,
+          "shade"
+        ]
+      ],
+      "up": [
+        [
+          "rect",
+          0,
+          0,
+          32,
+          48,
+          "steel"
+        ],
+        [
+          "frame",
+          0,
+          0,
+          32,
+          48,
+          "edge"
+        ],
+        [
+          "rect",
+          1,
+          1,
+          30,
+          1,
+          "light"
+        ],
+        [
+          "rect",
+          1,
+          2,
+          1,
+          45,
+          "light"
+        ],
+        [
+          "rect",
+          30,
+          2,
+          1,
+          45,
+          "shade"
+        ],
+        [
+          "rect",
+          2,
+          46,
+          28,
+          1,
+          "shade"
+        ],
+        [
+          "rect",
+          1,
+          5,
+          30,
+          2,
+          "teal"
+        ],
+        [
+          "frame",
+          5,
+          11,
+          22,
+          30,
+          "shade"
+        ],
+        [
+          "rect",
+          9,
+          16,
+          14,
+          1,
+          "shade"
+        ],
+        [
+          "rect",
+          9,
+          22,
+          14,
+          1,
+          "shade"
+        ],
+        [
+          "rect",
+          9,
+          28,
+          14,
+          1,
+          "shade"
+        ],
+        [
+          "rect",
+          9,
+          34,
+          14,
+          1,
+          "shade"
+        ]
+      ],
+      "down": [
+        [
+          "rect",
+          0,
+          0,
+          32,
+          48,
+          "steel"
+        ],
+        [
+          "frame",
+          0,
+          0,
+          32,
+          48,
+          "edge"
+        ],
+        [
+          "rect",
+          1,
+          1,
+          30,
+          1,
+          "light"
+        ],
+        [
+          "rect",
+          1,
+          2,
+          1,
+          45,
+          "light"
+        ],
+        [
+          "rect",
+          30,
+          2,
+          1,
+          45,
+          "shade"
+        ],
+        [
+          "rect",
+          2,
+          46,
+          28,
+          1,
+          "shade"
+        ],
+        [
+          "rect",
+          1,
+          5,
+          30,
+          2,
+          "teal"
+        ],
+        [
+          "frame",
+          5,
+          11,
+          22,
+          30,
+          "shade"
+        ],
+        [
+          "rect",
+          9,
+          16,
+          14,
+          1,
+          "shade"
+        ],
+        [
+          "rect",
+          9,
+          22,
+          14,
+          1,
+          "shade"
+        ],
+        [
+          "rect",
+          9,
+          28,
+          14,
+          1,
+          "shade"
+        ],
+        [
+          "rect",
+          9,
+          34,
+          14,
+          1,
+          "shade"
+        ]
+      ]
+    },
+    "markings": {
+      "controller": [
+        [
+          "rect",
+          3,
+          3,
+          10,
+          10,
+          "shade"
+        ],
+        [
+          "frame",
+          3,
+          3,
+          10,
+          10,
+          "edge"
+        ],
+        [
+          "rect",
+          4,
+          4,
+          1,
+          8,
+          "light"
+        ],
+        [
+          "rect",
+          10,
+          7,
+          2,
+          4,
+          "copper"
+        ]
+      ],
+      "operating_panel": [
+        [
+          "rect",
+          3,
+          3,
+          10,
+          6,
+          "screen"
+        ],
+        [
+          "frame",
+          3,
+          3,
+          10,
+          6,
+          "edge"
+        ],
+        [
+          "rect",
+          4,
+          4,
+          8,
+          3,
+          "teal"
+        ],
+        [
+          "dot",
+          4,
+          11,
+          "glow"
+        ],
+        [
+          "dot",
+          7,
+          11,
+          "copper"
+        ],
+        [
+          "dot",
+          10,
+          11,
+          "amber"
+        ]
+      ],
+      "power_port": [
+        [
+          "rect",
+          3,
+          3,
+          10,
+          10,
+          "edge"
+        ],
+        [
+          "rect",
+          4,
+          4,
+          8,
+          8,
+          "shade"
+        ],
+        [
+          "rect",
+          5,
+          5,
+          6,
+          6,
+          "copper"
+        ],
+        [
+          "rect",
+          7,
+          5,
+          2,
+          6,
+          "screen"
+        ],
+        [
+          "rect",
+          5,
+          7,
+          6,
+          2,
+          "screen"
+        ]
+      ]
+    },
+    "unformedPanel": [
+      [
+        "rect",
+        0,
+        0,
+        16,
+        16,
+        "shade"
+      ],
+      [
+        "frame",
+        0,
+        0,
+        16,
+        16,
+        "amber"
+      ],
+      [
+        "rect",
+        3,
+        3,
+        10,
+        6,
+        "screen"
+      ],
+      [
+        "rect",
+        4,
+        4,
+        8,
+        1,
+        "shade"
+      ],
+      [
+        "dot",
+        4,
+        11,
+        "amber"
+      ],
+      [
+        "dot",
+        7,
+        11,
+        "shade"
+      ],
+      [
+        "dot",
+        10,
+        11,
+        "shade"
+      ]
+    ]
   }
 }

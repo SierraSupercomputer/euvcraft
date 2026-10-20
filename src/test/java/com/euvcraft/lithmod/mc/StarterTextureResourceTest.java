@@ -77,17 +77,18 @@ class StarterTextureResourceTest {
 
     // Joined panel block models: 4 roles x 12 parts x 2 states = 96 models
     // Validated by JoinedPanelResourceTest; allowed here to prevent orphan false positives.
-    private static final Set<String> JOINED_PANEL_BLOCKS = (() -> {
-        Set<String> s = new HashSet<>();
-        String[] roles = {"controller", "casing", "power_port", "operating_panel"};
-        for (String role : roles) {
+    private static final Set<String> JOINED_PANEL_BLOCKS = joinedPanelBlockIds();
+    private static Set<String> joinedPanelBlockIds() {
+        Set<String> ids = new HashSet<>();
+        for (String role : List.of("controller", "casing", "power_port", "operating_panel")) {
             for (int part = 0; part < 12; part++) {
-                s.add("process_cell_" + role + "_part" + part + "_formed");
-                s.add("process_cell_" + role + "_part" + part + "_unformed");
+                ids.add("process_cell_" + role + "_part" + part + "_formed");
+                ids.add("process_cell_" + role + "_part" + part + "_unformed");
             }
         }
-        return s;
-    })();
+        ids.add("process_cell_operating_panel_unformed");
+        return Set.copyOf(ids);
+    }
 
     // Block models that use orientable (multi-face) vs cube_all (single face)
     private static final Set<String> ORIENTABLE_BLOCKS = Set.of(
@@ -226,11 +227,11 @@ class StarterTextureResourceTest {
     }
 
     @Test
-    @DisplayName("Seven block item models reference existing production block models")
+    @DisplayName("Eight block item models reference existing production block models")
     void blockItemModelsParentToBlockModels() throws Exception {
         List<String> blockItems = List.of(
             "crystal_puller", "wafer_slicer", "test_package", "pattern_generator",
-            "process_cell_controller", "process_cell_casing", "process_cell_power_port");
+            "process_cell_controller", "process_cell_casing", "process_cell_power_port", "process_cell_operating_panel");
         for (String id : blockItems) {
             URL modelUrl = StarterTextureResourceTest.class.getResource(ITEM_MODELS + id + ".json");
             assertNotNull(modelUrl, "Missing block item model: " + id);
