@@ -348,7 +348,7 @@ public final class PresentationGameTests {
         mainTab.buildContents(params);
         List<ItemStack> actualEntries = new ArrayList<>(mainTab.getDisplayItems());
 
-        // Expected 32 stacks in exact order
+        // Expected 33 stacks in exact order (added process_cell_operating_panel after power_port)
         List<Item> expectedItems = List.of(
             ModItems.CRYSTAL_PULLER.get(),
             ModItems.WAFER_SLICER.get(),
@@ -357,6 +357,7 @@ public final class PresentationGameTests {
             ModItems.PROCESS_CELL_CONTROLLER.get(),
             ModItems.PROCESS_CELL_CASING.get(),
             ModItems.PROCESS_CELL_POWER_PORT.get(),
+            ModItems.PROCESS_CELL_OPERATING_PANEL.get(),
             ModItems.FOUP_MK1.get(),
             ModItems.FOUP_MK2.get(),
             ModItems.SILICON.get(),
@@ -384,9 +385,9 @@ public final class PresentationGameTests {
             ModItems.CHIP_SCRAP.get()
         );
 
-        // Verify exact 32 stacks in order
-        h.assertValueEqual(32, actualEntries.size(), "MAIN tab entry count is not 32");
-        for (int i = 0; i < 32; i++) {
+        // Verify exact 33 stacks in order
+        h.assertValueEqual(33, actualEntries.size(), "MAIN tab entry count is not 33");
+        for (int i = 0; i < 33; i++) {
             Item expected = expectedItems.get(i);
             Item actual = actualEntries.get(i).getItem();
             h.assertTrue(actual == expected,

@@ -544,6 +544,324 @@
       }
     }
   },
+  "joinedPanels": {
+    "$comment": "Joined 2x2x3 operator panel assets (schema v2 extension). Palettes, shapes, tiles, faceMap, roleAssignments, unformedTiles, and output config for 4 roles x 12 parts x 2 states.",
+    "palette": {
+      "STEEL_FRAME": {
+        "outline": "#1A1A1A", "dark": "#2E2E2E", "mid": "#4A4A4A",
+        "light": "#6A6A6A", "accent": "#3AE8E8", "trim": "#8AFFFF"
+      },
+      "STEEL_STRIPES": {
+        "outline": "#1A1A1A", "dark": "#2E2E2E", "mid": "#4A4A4A",
+        "stripe": "#3AE8E8", "stripeLight": "#8AFFFF", "trim": "#6A6A6A"
+      },
+      "STEEL_VENTS": {
+        "outline": "#1A1A1A", "dark": "#2E2E2E", "mid": "#4A4A4A",
+        "vent": "#2A2A2A", "ventDark": "#1A1A1A", "trim": "#6A6A6A"
+      },
+      "STEEL_SERVICE": {
+        "outline": "#1A1A1A", "dark": "#2E2E2E", "mid": "#4A4A4A",
+        "panel": "#3A3A3A", "panelLine": "#2A2A2A", "bolt": "#E8C84A", "trim": "#6A6A6A"
+      },
+      "CTRL_FRONT": {
+        "outline": "#1A1A1A", "door": "#2E2E2E", "doorLight": "#4A4A4A",
+        "handle": "#E8C84A", "handleLight": "#FFF2A8", "status": "#3ECC3E", "trim": "#6A6A6A"
+      },
+      "PANEL_FRONT": {
+        "outline": "#1A1A1A", "screen": "#1A3A1A", "screenLight": "#3AE83A",
+        "button": "#E8C84A", "buttonLight": "#FFF2A8", "buttonDark": "#B8982A", "trim": "#6A6A6A"
+      },
+      "PORT_FACE": {
+        "outline": "#1A1A1A", "dark": "#2E2E2E", "mid": "#4A4A4A",
+        "bolt": "#E8C84A", "boltLight": "#FFF2A8", "rim": "#FFF2A8", "trim": "#6A6A6A"
+      },
+      "UNFORMED_CTRL": {
+        "outline": "#403218", "dark": "#5A4626", "mid": "#7A6236",
+        "light": "#A8874A", "accent": "#C8A86A", "trim": "#E8D0A0"
+      },
+      "UNFORMED_CASING": {
+        "outline": "#403218", "dark": "#5A4626", "mid": "#7A6236",
+        "light": "#A8874A", "accent": "#C8A86A", "trim": "#E8D0A0"
+      },
+      "UNFORMED_PORT": {
+        "outline": "#403218", "dark": "#5A4626", "mid": "#7A6236",
+        "light": "#A8874A", "bolt": "#B8982A", "trim": "#E8D0A0"
+      },
+      "UNFORMED_PANEL": {
+        "outline": "#403218", "dark": "#5A4626", "mid": "#7A6236",
+        "light": "#A8874A", "screen": "#5A4626", "trim": "#E8D0A0"
+      }
+    },
+    "shapes": {
+      "steel_frame": [
+        ["frame", "outline", 0, 0, 16, 16],
+        ["rect", "mid", 1, 1, 14, 14],
+        ["rect", "light", 1, 1, 14, 1],
+        ["rect", "light", 1, 1, 1, 14],
+        ["rect", "dark", 1, 14, 14, 1],
+        ["rect", "dark", 14, 1, 1, 14],
+        ["line", "accent", 3, 3, 12, 3],
+        ["line", "accent", 3, 12, 12, 12],
+        ["line", "accent", 3, 3, 3, 12],
+        ["line", "accent", 12, 3, 12, 12]
+      ],
+      "steel_stripes": [
+        ["frame", "outline", 0, 0, 16, 16],
+        ["rect", "mid", 1, 1, 14, 14],
+        ["rect", "stripe", 1, 3, 14, 1],
+        ["rect", "stripe", 1, 6, 14, 1],
+        ["rect", "stripe", 1, 9, 14, 1],
+        ["rect", "stripe", 1, 12, 14, 1],
+        ["rect", "stripeLight", 1, 4, 14, 1],
+        ["rect", "stripeLight", 1, 7, 14, 1],
+        ["rect", "stripeLight", 1, 10, 14, 1],
+        ["rect", "stripeLight", 1, 13, 14, 1],
+        ["rect", "trim", 1, 1, 14, 1],
+        ["rect", "trim", 1, 14, 14, 1],
+        ["rect", "trim", 1, 1, 1, 14],
+        ["rect", "trim", 14, 1, 1, 14]
+      ],
+      "steel_vents": [
+        ["frame", "outline", 0, 0, 16, 16],
+        ["rect", "mid", 1, 1, 14, 14],
+        ["rect", "vent", 3, 3, 2, 2],
+        ["rect", "vent", 7, 3, 2, 2],
+        ["rect", "vent", 11, 3, 2, 2],
+        ["rect", "vent", 3, 7, 2, 2],
+        ["rect", "vent", 7, 7, 2, 2],
+        ["rect", "vent", 11, 7, 2, 2],
+        ["rect", "vent", 3, 11, 2, 2],
+        ["rect", "vent", 7, 11, 2, 2],
+        ["rect", "vent", 11, 11, 2, 2],
+        ["rect", "ventDark", 4, 4, 1, 1],
+        ["rect", "ventDark", 8, 4, 1, 1],
+        ["rect", "ventDark", 12, 4, 1, 1],
+        ["rect", "ventDark", 4, 8, 1, 1],
+        ["rect", "ventDark", 8, 8, 1, 1],
+        ["rect", "ventDark", 12, 8, 1, 1],
+        ["rect", "ventDark", 4, 12, 1, 1],
+        ["rect", "ventDark", 8, 12, 1, 1],
+        ["rect", "ventDark", 12, 12, 1, 1],
+        ["rect", "trim", 1, 1, 14, 1],
+        ["rect", "trim", 1, 14, 14, 1],
+        ["rect", "trim", 1, 1, 1, 14],
+        ["rect", "trim", 14, 1, 1, 14]
+      ],
+      "steel_service": [
+        ["frame", "outline", 0, 0, 16, 16],
+        ["rect", "mid", 1, 1, 14, 14],
+        ["rect", "panel", 3, 3, 10, 10],
+        ["line", "panelLine", 3, 7, 12, 7],
+        ["line", "panelLine", 3, 10, 12, 10],
+        ["line", "panelLine", 7, 3, 7, 12],
+        ["line", "panelLine", 10, 3, 10, 12],
+        ["dot", "bolt", 5, 5],
+        ["dot", "bolt", 10, 5],
+        ["dot", "bolt", 5, 10],
+        ["dot", "bolt", 10, 10],
+        ["rect", "trim", 1, 1, 14, 1],
+        ["rect", "trim", 1, 14, 14, 1],
+        ["rect", "trim", 1, 1, 1, 14],
+        ["rect", "trim", 14, 1, 1, 14]
+      ],
+      "controller_front": [
+        ["frame", "outline", 0, 0, 16, 16],
+        ["rect", "door", 2, 2, 12, 12],
+        ["rect", "doorLight", 2, 2, 12, 1],
+        ["rect", "doorLight", 2, 2, 1, 12],
+        ["line", "outline", 3, 3, 12, 10],
+        ["rect", "handle", 10, 7, 2, 4],
+        ["rect", "handleLight", 10, 7, 1, 4],
+        ["rect", "status", 4, 12, 8, 2],
+        ["dot", "outline", 5, 12],
+        ["dot", "outline", 8, 12],
+        ["dot", "outline", 11, 12],
+        ["rect", "trim", 1, 1, 14, 1],
+        ["rect", "trim", 1, 14, 14, 1],
+        ["rect", "trim", 1, 1, 1, 14],
+        ["rect", "trim", 14, 1, 1, 14]
+      ],
+      "panel_front": [
+        ["frame", "outline", 0, 0, 16, 16],
+        ["rect", "screen", 2, 2, 12, 8],
+        ["rect", "screenLight", 2, 2, 12, 1],
+        ["rect", "screenLight", 2, 2, 1, 8],
+        ["dot", "button", 4, 11],
+        ["dot", "button", 8, 11],
+        ["dot", "button", 12, 11],
+        ["dot", "buttonLight", 5, 11],
+        ["dot", "buttonLight", 9, 11],
+        ["dot", "buttonLight", 13, 11],
+        ["dot", "buttonDark", 4, 12],
+        ["dot", "buttonDark", 8, 12],
+        ["dot", "buttonDark", 12, 12],
+        ["rect", "trim", 1, 1, 14, 1],
+        ["rect", "trim", 1, 14, 14, 1],
+        ["rect", "trim", 1, 1, 1, 14],
+        ["rect", "trim", 14, 1, 1, 14]
+      ],
+      "power_port_face": [
+        ["frame", "outline", 0, 0, 16, 16],
+        ["rect", "mid", 1, 1, 14, 14],
+        ["rect", "dark", 4, 2, 8, 2],
+        ["rect", "dark", 4, 12, 8, 2],
+        ["line", "bolt", 8, 5, 7, 8],
+        ["line", "bolt", 7, 8, 9, 8],
+        ["line", "bolt", 9, 8, 8, 11],
+        ["dot", "rim", 3, 3],
+        ["dot", "rim", 12, 3],
+        ["dot", "rim", 3, 12],
+        ["dot", "rim", 12, 12],
+        ["line", "boltLight", 8, 5, 7, 8],
+        ["line", "boltLight", 7, 8, 9, 8],
+        ["line", "boltLight", 9, 8, 8, 11],
+        ["rect", "trim", 1, 1, 14, 1],
+        ["rect", "trim", 1, 14, 14, 1],
+        ["rect", "trim", 1, 1, 1, 14],
+        ["rect", "trim", 14, 1, 1, 14]
+      ],
+      "unformed_tile": [
+        ["frame", "outline", 0, 0, 16, 16],
+        ["rect", "mid", 1, 1, 14, 14],
+        ["rect", "light", 1, 1, 14, 1],
+        ["rect", "light", 1, 1, 1, 14],
+        ["rect", "dark", 1, 14, 14, 1],
+        ["rect", "dark", 14, 1, 1, 14],
+        ["line", "dark", 4, 4, 4, 11],
+        ["line", "dark", 8, 4, 8, 11],
+        ["line", "dark", 12, 4, 12, 11],
+        ["rect", "accent", 2, 7, 2, 1]
+      ]
+    },
+    "tiles": {
+      "steel_frame": { "palette": "STEEL_FRAME", "shape": "steel_frame" },
+      "steel_stripes": { "palette": "STEEL_STRIPES", "shape": "steel_stripes" },
+      "steel_vents": { "palette": "STEEL_VENTS", "shape": "steel_vents" },
+      "steel_service": { "palette": "STEEL_SERVICE", "shape": "steel_service" },
+      "controller_front": { "palette": "CTRL_FRONT", "shape": "controller_front" },
+      "panel_front": { "palette": "PANEL_FRONT", "shape": "panel_front" },
+      "power_port_face": { "palette": "PORT_FACE", "shape": "power_port_face" },
+      "unformed_controller": { "palette": "UNFORMED_CTRL", "shape": "unformed_tile" },
+      "unformed_casing": { "palette": "UNFORMED_CASING", "shape": "unformed_tile" },
+      "unformed_power_port": { "palette": "UNFORMED_PORT", "shape": "unformed_tile" },
+      "unformed_operating_panel": { "palette": "UNFORMED_PANEL", "shape": "unformed_tile" }
+    },
+    "faceMap": {
+      "controller": {
+        "north": "controller_front",
+        "south": "steel_vents",
+        "east": "steel_stripes",
+        "west": "steel_stripes",
+        "up": "steel_frame",
+        "down": "steel_frame"
+      },
+      "casing": {
+        "north": "steel_stripes",
+        "south": "steel_stripes",
+        "east": "steel_stripes",
+        "west": "steel_stripes",
+        "up": "steel_frame",
+        "down": "steel_frame"
+      },
+      "power_port": {
+        "north": "steel_service",
+        "south": "power_port_face",
+        "east": "steel_stripes",
+        "west": "steel_stripes",
+        "up": "steel_frame",
+        "down": "steel_frame"
+      },
+      "operating_panel": {
+        "north": "panel_front",
+        "south": "steel_vents",
+        "east": "steel_stripes",
+        "west": "steel_stripes",
+        "up": "steel_frame",
+        "down": "steel_frame"
+      }
+    },
+    "roleAssignments": {
+      "0": "controller",
+      "1": "controller",
+      "2": "operating_panel",
+      "3": "operating_panel",
+      "4": "casing",
+      "5": "casing",
+      "6": "casing",
+      "7": "casing",
+      "8": "power_port",
+      "9": "power_port",
+      "10": "casing",
+      "11": "casing"
+    },
+    "unformedTiles": {
+      "controller": "unformed_controller",
+      "casing": "unformed_casing",
+      "power_port": "unformed_power_port",
+      "operating_panel": "unformed_operating_panel"
+    },
+    "output": {
+      "blocksDir": "src/main/resources/assets/lithmod/models/block",
+      "blockstatesDir": "src/main/resources/assets/lithmod/blockstates",
+      "texturesBlocksDir": "src/main/resources/assets/lithmod/textures/block",
+      "itemsDir": "src/main/resources/assets/lithmod/models/item",
+      "itemsDefinitionsDir": "src/main/resources/assets/lithmod/items",
+      "texturesItemsDir": "src/main/resources/assets/lithmod/textures/item",
+      "previewPath": "build/joined-panels-preview.png",
+      "lootTablesDir": "src/main/resources/data/lithmod/loot_table/blocks",
+      "recipesDir": "src/main/resources/data/lithmod/recipe/crafting",
+      "blockModelsToUpdate": [
+        "process_cell_controller_part0_formed", "process_cell_controller_part0_unformed",
+        "process_cell_controller_part1_formed", "process_cell_controller_part1_unformed",
+        "process_cell_controller_part2_formed", "process_cell_controller_part2_unformed",
+        "process_cell_controller_part3_formed", "process_cell_controller_part3_unformed",
+        "process_cell_controller_part4_formed", "process_cell_controller_part4_unformed",
+        "process_cell_controller_part5_formed", "process_cell_controller_part5_unformed",
+        "process_cell_controller_part6_formed", "process_cell_controller_part6_unformed",
+        "process_cell_controller_part7_formed", "process_cell_controller_part7_unformed",
+        "process_cell_controller_part8_formed", "process_cell_controller_part8_unformed",
+        "process_cell_controller_part9_formed", "process_cell_controller_part9_unformed",
+        "process_cell_controller_part10_formed", "process_cell_controller_part10_unformed",
+        "process_cell_controller_part11_formed", "process_cell_controller_part11_unformed",
+        "process_cell_casing_part0_formed", "process_cell_casing_part0_unformed",
+        "process_cell_casing_part1_formed", "process_cell_casing_part1_unformed",
+        "process_cell_casing_part2_formed", "process_cell_casing_part2_unformed",
+        "process_cell_casing_part3_formed", "process_cell_casing_part3_unformed",
+        "process_cell_casing_part4_formed", "process_cell_casing_part4_unformed",
+        "process_cell_casing_part5_formed", "process_cell_casing_part5_unformed",
+        "process_cell_casing_part6_formed", "process_cell_casing_part6_unformed",
+        "process_cell_casing_part7_formed", "process_cell_casing_part7_unformed",
+        "process_cell_casing_part8_formed", "process_cell_casing_part8_unformed",
+        "process_cell_casing_part9_formed", "process_cell_casing_part9_unformed",
+        "process_cell_casing_part10_formed", "process_cell_casing_part10_unformed",
+        "process_cell_casing_part11_formed", "process_cell_casing_part11_unformed",
+        "process_cell_power_port_part0_formed", "process_cell_power_port_part0_unformed",
+        "process_cell_power_port_part1_formed", "process_cell_power_port_part1_unformed",
+        "process_cell_power_port_part2_formed", "process_cell_power_port_part2_unformed",
+        "process_cell_power_port_part3_formed", "process_cell_power_port_part3_unformed",
+        "process_cell_power_port_part4_formed", "process_cell_power_port_part4_unformed",
+        "process_cell_power_port_part5_formed", "process_cell_power_port_part5_unformed",
+        "process_cell_power_port_part6_formed", "process_cell_power_port_part6_unformed",
+        "process_cell_power_port_part7_formed", "process_cell_power_port_part7_unformed",
+        "process_cell_power_port_part8_formed", "process_cell_power_port_part8_unformed",
+        "process_cell_power_port_part9_formed", "process_cell_power_port_part9_unformed",
+        "process_cell_power_port_part10_formed", "process_cell_power_port_part10_unformed",
+        "process_cell_power_port_part11_formed", "process_cell_power_port_part11_unformed",
+        "process_cell_operating_panel_part0_formed", "process_cell_operating_panel_part0_unformed",
+        "process_cell_operating_panel_part1_formed", "process_cell_operating_panel_part1_unformed",
+        "process_cell_operating_panel_part2_formed", "process_cell_operating_panel_part2_unformed",
+        "process_cell_operating_panel_part3_formed", "process_cell_operating_panel_part3_unformed",
+        "process_cell_operating_panel_part4_formed", "process_cell_operating_panel_part4_unformed",
+        "process_cell_operating_panel_part5_formed", "process_cell_operating_panel_part5_unformed",
+        "process_cell_operating_panel_part6_formed", "process_cell_operating_panel_part6_unformed",
+        "process_cell_operating_panel_part7_formed", "process_cell_operating_panel_part7_unformed",
+        "process_cell_operating_panel_part8_formed", "process_cell_operating_panel_part8_unformed",
+        "process_cell_operating_panel_part9_formed", "process_cell_operating_panel_part9_unformed",
+        "process_cell_operating_panel_part10_formed", "process_cell_operating_panel_part10_unformed",
+        "process_cell_operating_panel_part11_formed", "process_cell_operating_panel_part11_unformed"
+      ]
+    }
+  },
   "output": {
     "itemsDir": "src/main/resources/assets/lithmod/models/item",
     "blocksDir": "src/main/resources/assets/lithmod/models/block",

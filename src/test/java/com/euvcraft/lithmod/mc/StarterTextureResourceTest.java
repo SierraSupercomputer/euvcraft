@@ -75,6 +75,20 @@ class StarterTextureResourceTest {
         "process_cell_power_port_formed", "process_cell_power_port_unformed"
     );
 
+    // Joined panel block models: 4 roles x 12 parts x 2 states = 96 models
+    // Validated by JoinedPanelResourceTest; allowed here to prevent orphan false positives.
+    private static final Set<String> JOINED_PANEL_BLOCKS = (() -> {
+        Set<String> s = new HashSet<>();
+        String[] roles = {"controller", "casing", "power_port", "operating_panel"};
+        for (String role : roles) {
+            for (int part = 0; part < 12; part++) {
+                s.add("process_cell_" + role + "_part" + part + "_formed");
+                s.add("process_cell_" + role + "_part" + part + "_unformed");
+            }
+        }
+        return s;
+    })();
+
     // Block models that use orientable (multi-face) vs cube_all (single face)
     private static final Set<String> ORIENTABLE_BLOCKS = Set.of(
         "process_cell_controller_formed", "process_cell_controller_unformed"
@@ -263,7 +277,7 @@ class StarterTextureResourceTest {
             if (PRODUCTION_ITEMS.contains(id)) continue;
             if (Set.of("test_machine", "crystal_puller", "wafer_slicer", "test_package",
                 "pattern_generator", "process_cell_controller", "process_cell_casing",
-                "process_cell_power_port").contains(id)) continue; // block items
+                "process_cell_power_port", "process_cell_operating_panel").contains(id)) continue; // block items + joined panel item
             fail("Unexpected production item model: " + id);
         }
     }
@@ -275,8 +289,9 @@ class StarterTextureResourceTest {
         for (String modelFile : modelFiles) {
             String id = modelFile.substring(0, modelFile.length() - 5);
             if (PRODUCTION_BLOCKS.contains(id)) continue;
+            if (JOINED_PANEL_BLOCKS.contains(id)) continue; // joined panels validated separately
             if (Set.of("test_machine").contains(id)) continue; // preserved
-            fail("Unexpected production block model: " + id + " (not in PRODUCTION_BLOCKS or preserve list)");
+            fail("Unexpected production block model: " + id + " (not in PRODUCTION_BLOCKS, JOINED_PANEL_BLOCKS, or preserve list)");
         }
     }
 
