@@ -590,7 +590,7 @@ public final class M1BoundaryGameTests {
     private static void allHandFed(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         Set<String> expected = new HashSet<>(Set.of("crystal_puller", "wafer_slicer", "pattern_generator",
-                "test_package", "process_cell_controller", "process_cell_casing", "process_cell_power_port"));
+                "test_package", "process_cell_controller", "process_cell_casing", "process_cell_power_port", "process_cell_operating_panel"));
         var registry = net.minecraft.core.registries.BuiltInRegistries.BLOCK;
         Identifier fixture = Identifier.parse("lithmod:test_machine");
         if (registry.containsKey(fixture)) expected.add("test_machine");
@@ -607,7 +607,8 @@ public final class M1BoundaryGameTests {
             helper.assertTrue(be != null, "Every registered M1 block must have a block entity: " + id);
             helper.assertTrue(be instanceof FabMachineBlockEntity
                     || be instanceof com.euvcraft.lithmod.mc.multiblock.ProcessCellCasingBlockEntity
-                    || be instanceof com.euvcraft.lithmod.mc.multiblock.ProcessCellPowerPortBlockEntity,
+                    || be instanceof com.euvcraft.lithmod.mc.multiblock.ProcessCellPowerPortBlockEntity
+                    || be instanceof com.euvcraft.lithmod.mc.multiblock.ProcessCellOperatingPanelBlockEntity,
                     "Unexpected registered block type requires explicit audit: " + id);
             for (Direction side : Direction.values()) testCapabilities(helper, be, side);
             testCapabilities(helper, be, null);
@@ -634,8 +635,8 @@ public final class M1BoundaryGameTests {
             members++;
         }
         helper.assertValueEqual(12, members, "All twelve formed members checked");
-        helper.assertTrue(formedTypes.equals(Set.of("process_cell_controller", "process_cell_casing", "process_cell_power_port")),
-                "All three formed member types checked");
+        helper.assertTrue(formedTypes.equals(Set.of("process_cell_controller", "process_cell_casing", "process_cell_power_port", "process_cell_operating_panel")),
+                "All four formed member types checked");
         LOGGER.info("[M1-BOUNDARY] hand-fed: {} registered blocks on seven sides, plus {} formed members", checked.size(), members);
         helper.succeed();
     }

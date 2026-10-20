@@ -281,16 +281,8 @@ public final class MultiblockGameTests {
 
     private static boolean isFormedFlag(ServerLevel level, BlockPos abs) {
         BlockState state = level.getBlockState(abs);
-        if (state.getBlock() instanceof ProcessCellControllerBlock) {
-            return state.getValue(ProcessCellControllerBlock.FORMED);
-        }
-        if (state.getBlock() instanceof ProcessCellCasingBlock) {
-            return state.getValue(ProcessCellCasingBlock.FORMED);
-        }
-        if (state.getBlock() instanceof ProcessCellPowerPortBlock) {
-            return state.getValue(ProcessCellPowerPortBlock.FORMED);
-        }
-        return false;
+        return state.hasProperty(ProcessCellControllerBlock.FORMED)
+            && state.getValue(ProcessCellControllerBlock.FORMED);
     }
 
     private static void assertNoFlagLeftSet(GameTestHelper helper, List<BlockPos> cells, BlockPos skipRel,
@@ -525,12 +517,12 @@ public final class MultiblockGameTests {
         ProcessCellControllerBlockEntity first = revalidate(helper, firstRel);
         assertFormed(helper, first, firstRel, facing, u0, v0, "the first cell");
 
-        // The second controller goes at (3, 2, 1) with front-face offset (1, 1), which puts its
+        // The second controller goes at (3, 1, 1) with front-face offset (1, 0), which puts its
         // box at x 2..3, y 1..2, z 1..3. Six of those twelve positions are already members of the
         // first, formed cell and stay that way; the second cell wants them anyway.
-        BlockPos secondRel = new BlockPos(3, 2, 1);
+        BlockPos secondRel = new BlockPos(3, 1, 1);
         int su0 = 1;
-        int sv0 = 1;
+        int sv0 = 0;
         List<BlockPos> secondCells = cellsOf(secondRel, facing, su0, sv0);
         List<BlockPos> firstAbs = new ArrayList<>();
         for (BlockPos rel : cellsOf(firstRel, facing, u0, v0)) {
@@ -559,7 +551,12 @@ public final class MultiblockGameTests {
                     .defaultBlockState().setValue(ProcessCellControllerBlock.FACING, facing));
                 continue;
             }
-            // Two ports, both in positions the first cell does not own.
+            if (rel.equals(secondRel.above())) {
+                helper.setBlock(rel, ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get().defaultBlockState());
+                continue;
+            }
+            // The second cell has a required panel and at least one non-shared port; any contested
+            // port stays owned by the first cell until the independent positive-control rebuild.
             boolean port = rel.equals(cell(secondRel, facing, su0, sv0, PORT_A[0], PORT_A[1], PORT_A[2]))
                 || rel.equals(cell(secondRel, facing, su0, sv0, PORT_B[0], PORT_B[1], PORT_B[2]));
             helper.setBlock(rel, port
