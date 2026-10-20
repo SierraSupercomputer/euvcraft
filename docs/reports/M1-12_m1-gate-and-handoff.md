@@ -168,3 +168,7 @@ The separate fixtures-disabled run contains only `lithmod:m1_gate_shipping_no_fi
 The second full run used Gradle compileJava FROM-CACHE and the third UP-TO-DATE. Their dependency jars were hash-verified; the server processes and all reported server cases actually executed. No fresh-javac claim is made for those repeated runs.
 
 Manual execution in a rendered client remains pending; only initial singleplayer launch is owner-confirmed. Final whole-task reviews, candidate verification and integration are recorded separately after they occur.
+
+## Final acceptance
+
+Accepted and integrated after the exact-source whole-task reviews and separate candidate verification recorded in `M1-12_review.md` and `M1-12_acceptance.md`. Earlier pending statements describe authoring time. Owner manual execution remains pending.

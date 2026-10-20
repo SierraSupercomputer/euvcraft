@@ -105,3 +105,5 @@ The Process Cell is 2 wide, 2 tall and 3 long: twelve blocks comprising one cont
 The fixture-enabled hand-fed audit covers eight blocks on six directions plus null and twelve formed members. Normal shipping leaves seven production blocks; its off-mode registry/creative probe is not an additional all-side audit. Privacy checks combine real wire/menu/tooltip/log invariance with bounded source auditing, not a formal proof.
 
 See [the report](reports/M1-12_m1-gate-and-handoff.md), [generated reference](m1-slice.md), and [owner walkthrough](manual-walkthrough-m1.md). Two final whole-task reviews, separate candidate verification and integration remain pending at authoring time. Only initial singleplayer launch is owner-confirmed; the complete rendered-client walkthrough and visual observations remain pending. T6 is already the owner-confirmed future core-choice start, with no higher-tier gameplay added to M1.
+
+M1-12 automated gate and handoff accepted: see `reports/M1-12_acceptance.md` and `reports/M1-12_review.md`. The owner walkthrough remains manual; no rendered-client result is claimed. Earlier pending statements describe authoring time.

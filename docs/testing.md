@@ -355,3 +355,5 @@ Actual gates cover physical T1/T2 chains, 200 lots/tier (12,800 wafers each), tw
 For ordinary local checks, use the project's configured JDK 25 with `gradlew.bat test checkCoreImports jar runGameTestServer --offline --console=plain`. This convenience command is not a verbatim record of the three retained runs: the repeated-run coordinator also supplies its XML report and hash-guard init scripts. Offline mode alone does not prevent NeoForm metadata refresh.
 
 [Generated reference](m1-slice.md) and [owner walkthrough](manual-walkthrough-m1.md) accompany the report. The walkthrough is source-derived and owner execution remains pending; only singleplayer launch is confirmed. Privacy checks are bounded, not a formal flow proof. Two final whole-task reviews, separate candidate checks and integration are pending at authoring time.
+
+M1-12 automated gate and handoff accepted: see `reports/M1-12_acceptance.md` and `reports/M1-12_review.md`. The owner walkthrough remains manual; no rendered-client result is claimed. Earlier pending statements describe authoring time.
