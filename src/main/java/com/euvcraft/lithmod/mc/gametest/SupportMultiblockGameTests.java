@@ -729,11 +729,12 @@ public final class SupportMultiblockGameTests {
         purifier.setStoredEnergy(50_000);
         purifier.setSlot(SupportMachineBlockEntity.SLOT_IN_0,
             new ItemStack(com.euvcraft.lithmod.mc.registry.ModItems.SILICON_BOULE.get()));
-        purifier.setSlot(SupportMachineBlockEntity.SLOT_IN_1, new ItemStack(Items.WATER_BUCKET));
+        // Deliberately no water: the generic runner cannot bypass the separate fluid cost.
         serverTickN(purifier, 40);
-        h.assertFalse(purifier.runner().isRunning(), "no recipe must start without the job phase");
+        h.assertFalse(purifier.runner().isRunning(), "generic runner remains disabled for support jobs");
+        h.assertFalse(purifier.isJobRunning(), "native purifier cannot start without water");
         h.assertValueEqual(50_000L, purifier.buffer().getAmountAsLong(), "no FE spent by the foundation");
-        h.assertValueEqual(0, purifier.waterAmount(), "foundation does not exchange buckets or create water");
+        h.assertValueEqual(0, purifier.waterAmount(), "no water appears without a bucket");
         h.assertTrue(purifier.isFormed(), "machine still forms with inputs filled");
         purifier.setSlot(SupportMachineBlockEntity.SLOT_IN_0, ItemStack.EMPTY);
         purifier.setSlot(SupportMachineBlockEntity.SLOT_IN_1, ItemStack.EMPTY);

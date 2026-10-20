@@ -78,6 +78,7 @@ public final class T3PurificationGameTests {
     private static final Logger LOGGER = EUVCRAFTMod.LOGGER;
     private static final String ENVIRONMENT_ID = "t3_purification";
 
+    private static final String PURIFIER_QUANTITIES = "purifier_topup_and_json_quantities_conserve";
     private static final String PURIFIER_REFUSES = "purifier_refuses_without_water_output_or_fe";
     private static final String PURIFIER_BUCKET = "purifier_bucket_exchange_conserves";
     private static final String PURIFIER_FULL_JOB = "purifier_runs_full_job_1000_water_exactly_once";
@@ -102,6 +103,7 @@ public final class T3PurificationGameTests {
     private static final BlockPos SLICER_TWO = new BlockPos(21, 3, 9);
 
     static {
+        FUNCTIONS.register(PURIFIER_QUANTITIES, () -> T3PurificationGameTests::purifierTopupAndQuantities);
         FUNCTIONS.register(PURIFIER_REFUSES, () -> T3PurificationGameTests::purifierRefusesWithoutInputs);
         FUNCTIONS.register(PURIFIER_BUCKET, () -> T3PurificationGameTests::purifierBucketExchangeConserves);
         FUNCTIONS.register(PURIFIER_FULL_JOB, () -> T3PurificationGameTests::purifierRunsFullJob);
@@ -129,6 +131,7 @@ public final class T3PurificationGameTests {
             environment, Level.OVERWORLD, Identifier.withDefaultNamespace("empty"),
             400, 0, true, Rotation.NONE, false, 1, 1, false, 0);
 
+        register(event, data, PURIFIER_QUANTITIES);
         register(event, data, PURIFIER_REFUSES);
         register(event, data, PURIFIER_BUCKET);
         register(event, data, PURIFIER_FULL_JOB);
@@ -235,7 +238,15 @@ public final class T3PurificationGameTests {
      * energy and no running job sitting on the same (already valid) casing cell.
      */
     private static @Nullable SupportMachineBlockEntity freshPurifierOnCell(GameTestHelper helper) {
-        return placeFormedPurifier(helper, CELL, Direction.NORTH);
+        ServerLevel level = helper.getLevel();
+        BlockPos abs = helper.absolutePos(CELL);
+        SupportMachineBlockEntity old = controllerAt(level, abs);
+        SupportMachineBlockEntity replacement = new SupportMachineBlockEntity(abs, level.getBlockState(abs));
+        level.removeBlockEntity(abs);
+        level.setBlockEntity(replacement);
+        if (old != null) old.revalidate();
+        replacement.revalidate();
+        return replacement;
     }
 
     private static @Nullable SupportMachineBlockEntity controllerAt(ServerLevel level, BlockPos abs) {
@@ -296,6 +307,40 @@ public final class T3PurificationGameTests {
     // ------------------------------------------------------------------
     // 1. No water, no boule, no FE: nothing starts and nothing is consumed
     // ------------------------------------------------------------------
+
+    private static void purifierTopupAndQuantities(GameTestHelper helper) {
+        SupportRecipe recipe = new SupportRecipe("boule_purifier",
+            com.euvcraft.lithmod.core.MachineIngredient.item("lithmod:silicon_boule", 2), null,
+            "lithmod:pure_silicon_boule", 3, 12, 5, 1000);
+        SupportRecipeLoader.Registry replacement = SupportRecipeLoader.buildResolved(Map.of(
+            Identifier.fromNamespaceAndPath("lithmod", "quantity_control"), recipe));
+        withSupportRegistry(replacement, () -> {
+            SupportMachineBlockEntity machine = placeFormedPurifier(helper, CELL, Direction.NORTH);
+            helper.assertTrue(machine != null && machine.isFormed(), "quantity fixture must form");
+            fillTank(helper, machine, 1000);
+            machine.setSlot(0, new ItemStack(ModItems.SILICON_BOULE.get(), 5));
+            machine.setStoredEnergy(60);
+            tickSupport(machine, 4);
+            int progress = machine.jobProgress();
+            helper.assertTrue(progress > 0, "quantity job must have paid progress");
+            machine.setSlot(1, new ItemStack(Items.WATER_BUCKET));
+            machine.setSlot(0, new ItemStack(ModItems.SILICON_BOULE.get(), 7));
+            tickSupport(machine, 1);
+            helper.assertValueEqual(progress + 1, machine.jobProgress(), "top-ups preserve paid progress");
+            helper.assertValueEqual(2000, machine.waterAmount(), "bucket top-up stores exact water");
+            helper.assertTrue(machine.slot(2).is(Items.BUCKET) && machine.slot(2).getCount() == 1,
+                "top-up returns exactly one bucket");
+            tickSupport(machine, 30);
+            helper.assertValueEqual(5, machine.slot(0).getCount(), "JSON input count two consumed exactly once");
+            helper.assertTrue(machine.slot(3).is(ModItems.PURE_SILICON_BOULE.get()), "quantity job produces pure boules");
+            helper.assertValueEqual(3, machine.slot(3).getCount(), "JSON output count three produced exactly once");
+            helper.assertValueEqual(1000, machine.waterAmount(), "only pinned water cost consumed");
+            helper.assertValueEqual(0L, machine.buffer().getAmountAsLong(), "twelve whole ticks cost sixty FE");
+            tickSupport(machine, 30);
+            helper.assertValueEqual(3, machine.slot(3).getCount(), "no duplicate completion without further FE");
+        });
+        helper.succeed();
+    }
 
     private static void purifierRefusesWithoutInputs(GameTestHelper helper) {
         SupportRecipeLoader.Resolved recipe = purifierRecipe(helper);
@@ -512,12 +557,13 @@ public final class T3PurificationGameTests {
         // Start checkpoint: a full output blocked the start as well, but the run is under way
         // here (started with a free output) — the blockage arrives mid-run.
         helper.assertTrue(purifier.isJobRunning(), "the job did not start with a free output");
+        int progressBeforeBlock = purifier.jobProgress();
         purifier.setSlot(SupportMachineBlockEntity.SLOT_PURE_BOULE_OUT,
             new ItemStack(ModItems.PURE_SILICON_BOULE.get(), 64));
         tickSupport(purifier, 1);
         helper.assertTrue(purifier.isJobRunning() && purifier.isJobPaused(),
             "a full output did not pause the job before it charged anything");
-        helper.assertValueEqual(0, purifier.jobProgress(),
+        helper.assertValueEqual(progressBeforeBlock, purifier.jobProgress(),
             "the purifier charged a tick against a blocked output");
         int progress = purifier.jobProgress();
         tickSupport(purifier, 30);
@@ -666,7 +712,7 @@ public final class T3PurificationGameTests {
                 case "duration" -> jobTag.putInt("duration", 0);
                 case "energy_per_tick" -> jobTag.putInt("energy_per_tick", -5);
                 case "water_mb" -> jobTag.putInt("water_mb", 0);
-                case "output_item" -> jobTag.putString("output_item", "lithmod:does_not_exist");
+                case "output_item" -> jobTag.putString("output_item", "minecraft:diamond");
                 case "input_count" -> jobTag.putInt("input_count", 0);
                 default -> { }
             }
@@ -846,8 +892,13 @@ public final class T3PurificationGameTests {
         try {
             Field field = SupportRecipeLoader.class.getDeclaredField("resolved");
             field.setAccessible(true);
-            field.set(null, registry);
-            action.run();
+            Object previous = field.get(null);
+            try {
+                field.set(null, registry);
+                action.run();
+            } finally {
+                field.set(null, previous);
+            }
         } catch (ReflectiveOperationException | ClassCastException failure) {
             throw new AssertionError("the support recipe registry could not be swapped", failure);
         }
