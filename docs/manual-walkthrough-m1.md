@@ -28,16 +28,6 @@ automation. Do not use GameTest fixture flags for a normal client launch.
   rejected by the Slicer. Use `/give` carriers for reliable walkthrough lots.
 - Survival `/give` remains a reliable walkthrough path.
 
-### Operator Panel note (M1-12)
-The Process Cell now **requires an Operating Panel** block. The panel sits immediately above
-the lower Equipment Cabinet in the same 2×2×3 cell. The lower cabinet (backing 3..7) holds the
-authoritative inventory, run state, and FE buffer. The upper cabinet (backing 0..2) provides the
-Abort control and a status footer only. Existing saved inventories are preserved; to upgrade a
-pre-panel world, manually replace the casing block directly above the lower cabinet with an
-Operating Panel. Top-row controllers built before this change **require a full rebuild**—no
-automatic conversion exists. All geometry, menu, and abort instructions below reflect the new
-layout; step numbers are kept stable where possible.
-
 ## 1. Launch and enable the debug command
 
 1. Close any running client. From the repository root containing `gradlew.bat`, run:
@@ -66,8 +56,8 @@ layout; step numbers are kept stable where possible.
    /give @s lithmod:test_package 1
    /give @s lithmod:process_cell_controller 1
    /give @s lithmod:process_cell_power_port 1
-   /give @s lithmod:process_cell_operating_panel 1
    /give @s lithmod:process_cell_casing 9
+   /give @s lithmod:process_cell_operating_panel 1
    /give @s lithmod:foup_mk1 2
    /give @s minecraft:quartz 8
    /give @s minecraft:coal 2
@@ -90,8 +80,8 @@ layout; step numbers are kept stable where possible.
    /give @s lithmod:fine_air_filter 1
    /give @s lithmod:overlay_scope 1
    ```
-   **Pass:** four standalone machines, one controller, one power port, **one operating panel, nine casings**, two FOUPs
-   and all listed consumables are in the inventory. (A second power port is optional; if used, reduce casings to 8.)
+   **Pass:** four standalone machines, one Equipment Cabinet, one Operating Panel, one power port, nine casings, two FOUPs
+   and all listed consumables are in the inventory.
 5. Do **not** give yourself a bare `lithmod:mask`: it has no valid mask data. The Pattern
    Generator creates the real masks in steps 10-11. Use only the `/give` FOUPs as carriers; a
    FOUP taken from the Creative inventory can be a client-view placeholder and the Slicer
@@ -127,52 +117,42 @@ layout; step numbers are kept stable where possible.
     **Pass:** the mask names **memory T2** and shows **4 uses**. Iron is an optional extra check
     for logic T2, not part of the two required batches.
 
-## 6. Build the Process Cell (2 wide × 2 tall × 3 deep, 12 blocks)
+## 6. Build the Lithography Machine (2 wide x 2 tall x 3 long)
 
-12. The cell is exactly 12 blocks: 1 controller, 1 power port, **1 operating panel, 9 casings**
-    (or 2 power ports, 1 operating panel, 8 casings). It is two 6-block layers, each 3 rows of 2
-    columns. Stand on the side the controller's front face points toward; the cell extends away
-    from you. **FRONT** is the front-face plane and **BACK** is two blocks behind it (three rows
-    including FRONT).
-
-    The **lower cabinet** (rows FRONT, MIDDLE, BACK at the bottom layer) holds the authoritative
-    inventory, run state, and FE buffer. Its backing spans indices 3–7. The **upper cabinet**
-    (same three rows at the top layer) holds the FOUP, mask, resist and components (backing 0–2)
-    and provides the **Abort control and a status footer only**.
-
-    The **Operating Panel is required immediately above the lower cabinet's center-back position**.
-    In the standard orientation (controller at front-bottom-left), the panel occupies the
-    **TOP / MIDDLE** cell directly above the lower **BACK / RIGHT** casing.
-
-    Build the bottom layer first:
+12. The cell is exactly12blocks: one Equipment Cabinet (the old controller ID), one required
+    Operating Panel, one power port and nine casings. It is two6block layers, each three rows
+    of two columns. Stand facing the cabinet's front; the cell extends away from you:
     ```text
-    BOTTOM   FRONT    [Controller] [Casing]
-             MIDDLE   [Power Port] [Casing]
-             BACK     [Casing]     [Casing]   ← lower cabinet equipment backing 3–7
-    ```
+    BOTTOM   FRONT    [Equipment Cabinet] [Casing]
+             MIDDLE   [Power Port]        [Casing]
+             BACK     [Casing]            [Casing]
 
-    Then place the Operating Panel and finish the upper cabinet:
-    ```text
-    TOP      FRONT    [Casing]     [Casing]   ← upper cabinet backing 0–2 (FOUP, mask, resist)
-             MIDDLE   [Casing]     [Operating Panel]  ← REQUIRED, above lower BACK/RIGHT
-             BACK     [Casing]     [Casing]
+    TOP      FRONT    [Operating Panel]   [Casing]
+             MIDDLE   [Casing]            [Casing]
+             BACK     [Casing]            [Casing]
     ```
+    The cabinet must be in the LOWER front row, in either column; the panel must be DIRECTLY
+    ABOVE that cabinet. A second power port may replace another casing (eight casings total).
+    Fill all12positions; this is not a hollow chamber or three-tall grid. Right-click either
+    access block. **Pass:** title **Lithography Machine**, the appropriate **Equipment Cabinet**
+    or **Operating Panel** subtitle, and **Formed** in the footer below the player inventory.
 
-    The controller may occupy any of the four front-face corner positions; the diagram uses the
-    front-bottom-left corner. A second power port is optional: place it in any casing cell,
-    leaving 8 casings. Do **not** carve a hollow chamber or build a 3-tall grid; all 12 cells
-    must be controller, port, panel, or casing. Right-click the controller.
-    **Pass:** the footer says **Formed** with no failure reason.
+    Existing worlds: manually replace the casing directly above a lower-row cabinet with the
+    new panel. Old top-row controllers require rebuilding into the lower row. Saved contents,
+    FE and run remain owned by the old cabinet; no automatic world conversion is performed.
 13. Test form/unform before processing. Break one top-layer casing that is neither controller
     nor port nor panel. **Pass:** the controller says **Unformed** and work pauses. Replace it.
     **Pass:** it says **Formed** again, keeps its stored FE, and work resumes.
 
 ## 7. Batch A: logic T1 through the Process Cell
 
-14. Right-click the formed controller. Slots are row 1: FOUP, mask, resist, light source; row 2:
-    optics, stage, cleanroom, metrology. Load by hand: one 25-wafer lot; the logic T1 mask;
-    1 `lithmod:resist_t1`; `lithmod:mercury_lamp`; `lithmod:contact_plate`;
-    `lithmod:manual_aligner`; `lithmod:basic_air_filter`; `lithmod:optical_microscope`.
+14. Open the lower **Equipment Cabinet**. Its five slots, left to right, are light source,
+    optics, stage, cleanroom/filter, metrology. Install `lithmod:mercury_lamp`,
+    `lithmod:contact_plate`, `lithmod:manual_aligner`, `lithmod:basic_air_filter`,
+    `lithmod:optical_microscope`. Open the **Operating Panel** directly above it. Its three
+    slots are FOUP, mask, resist; load one25wafer lot, the logicT1mask and one
+    `lithmod:resist_t1`. Both views show shared coarse status/FE/progress; only the upper
+    view has Abort. All eight items remain in one inventory owned by the lower cabinet.
 15. Aim at the **formed controller**, never the power port, and run `/debug fab energy`.
     **Pass:** the controller buffer reaches 100000 FE. The power port is not a machine block
     entity and cannot be the target.
@@ -186,7 +166,8 @@ layout; step numbers are kept stable where possible.
 
 ## 8. Batch B: memory T2, top-up, persistence and abort
 
-18. Load the second lot with the memory T2 mask, `lithmod:resist_t2` and the T2 components:
+18. While idle, use the upper Operating Panel for the second lot, memory T2 mask and
+    `lithmod:resist_t2`. Replace equipment in the lower Equipment Cabinet with the T2 components:
     `lithmod:i_line_lamp`, `lithmod:reduction_lens`, `lithmod:stepper_stage`,
     `lithmod:fine_air_filter`, `lithmod:overlay_scope`.
 19. Start with only **1** `lithmod:resist_t2` and fill the formed controller with
@@ -204,10 +185,8 @@ layout; step numbers are kept stable where possible.
 22. Form/unform during work: remove one casing while a T2 layer runs or is paused, then replace
     it. **Pass:** work pauses while unformed, the controller retains FE, and work resumes after
     it re-forms.
-23. Abort check: while a layer is partly paid, use the **Abort button on the Operating Panel**
-    (upper cabinet screen). Read and record its actual label; do not assume an older wording
-    or instant cancellation. The upper cabinet provides Abort and a status footer only; the
-    authoritative run state remains in the lower cabinet.
+23. Abort check: while a layer is partly paid, use **Abort** on the upper Operating Panel.
+    Read and record its actual label; do not assume an older wording or instant cancellation.
     **Pass:** partial work and any paid resist are cancelled without refund, finished layers
     remain, and the machine stays stopped. Remove the FOUP, then reinsert it. **Pass:**
     unfinished layers resume.
@@ -238,7 +217,7 @@ layout; step numbers are kept stable where possible.
     up and it resumes without re-judging the consumed lot.
 28. Scan the Creative tabs for production items, blocks and models: all three chips
     (`logic_chip_t1`, `logic_chip_t2`, `memory_chip_t2`), `chip_scrap`, `chip_package`, both
-    masks, the ten line components, the four standalone machines, controller, port, casing and
+    masks, the ten line components, the four standalone machines, Equipment Cabinet, Operating Panel, port, casing and
     both FOUPs. **Pass:** all have normal icons/models with no purple/black missing-model
     placeholder. This is a visual spot-check, not an automated render test.
 
@@ -310,15 +289,16 @@ layout; step numbers are kept stable where possible.
 - **Starter textures**: see [starter-textures.md](starter-textures.md) for the deterministic
   generator manifest, palette/shape recipes, preview atlas and resource test scope. Direct PNG
   edits are overwritten on regeneration; the manifest is the single source of truth.
-- **Client recheck pending**: formed/unformed visible amber/green textures, Process Cell
-  status labels, **and Operating Panel models/textures** must be checked in the rendered client.
-  This is distinct from automated resource tests which validate asset existence and alpha-channel
-  correctness.
-- **Upgrade path**: existing worlds with formed Process Cells must manually replace the casing
-  above the lower cabinet with an Operating Panel. Top-row controllers (built before the panel
-  requirement) require a full rebuild; no automatic conversion exists. Saved inventories are
-  preserved.
-- **Feature status**: the Operating Panel feature is **NOT accepted/integrated** until later
-  final reviews/candidate. This walkthrough reflects the current development state (source
-  `34eb4d385b68d708e933d6de171cd952a56e9d83`: 579 units, 80 classes, 834/834 server cases
-  passed, 164/164 project IDs including 146 prior + 18 new; core/jar pass).
+- **Client recheck pending**: formed/unformed visible amber/green textures and Process Cell
+  status labels must be checked in the rendered client. This is distinct
+  from automated resource tests which validate asset existence and alpha-channel correctness.
+
+### Joined-panel visual recheck
+
+Check all six exposed faces, all four cabinet facings and two adjacent cells. Formed surfaces should
+join within each machine while retaining outer borders and distinct cabinet/screen/port markings.
+Break/reform a casing and save/re-enter the world; confirm visual state refreshes. The unformed
+blocks have separate artwork. These rendered-client observations remain owner-pending.
+Edit the palette and pixel operations described in [textures.md](textures.md); generator Check and
+resource/server tests verify data and mapping, not actual client rendering.
+

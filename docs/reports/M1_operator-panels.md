@@ -1,94 +1,70 @@
-# M1 Operator Panels — Summary Report
+# Required Operating Panel and joined textures
 
-**Source head:** `34eb4d385b68d708e933d6de171cd952a56e9d83`
-**Units:** 579 | **Classes:** 80 | **Server cases:** 834/834 passed (no fails/errors/skips)
-**Project IDs:** 164/164 (146 prior + 18 new) | **Core/jar:** pass
-**Feature status:** NOT accepted/integrated — pending final reviews/candidate
+Source execution: `34eb4d385b68d708e933d6de171cd952a56e9d83`. Whole-feature final reviews, independent candidate verification and integration are pending at report freeze. The subsequent acceptance report records the final outcome. Actual rendered-client verification remains owner-pending.
 
----
+The required Operating Panel sits directly above a lower-row Equipment Cabinet inside the existing2×2×3 cell. One cabinet, one panel, one or two ports and nine or eight casings fill twelve positions. Existing controller IDs and saved inventory/run/FE remain at the lower cabinet; no automatic conversion. Existing lower-row cells need manual casing replacement; old top-row cabinets need rebuilding.
 
-## 1. Exact Changes Delivered
+The lower menu exposes backing slots3–7: light, optics, stage, filter/cleanroom, metrology. The upper menu exposes backing0–2: FOUP, mask, resist, plus Abort. Both expose only existing coarse public state. The panel has its own block/BE/menu registration but owns no inventory, energy or run. Removal unforms safely; old menu instances reject removed/replaced panel/core identities. Existing lock/top-up/Abort semantics and no-automation policy remain.
 
-### Geometry & Block Requirements
-- **Operating Panel now REQUIRED** in the Process Cell multiblock.
-- Panel sits **immediately above the lower Equipment Cabinet** in the same 2×2×3 (12-block) cell.
-- **Lower cabinet** (backing indices 3–7): authoritative inventory, run state, FE buffer (100 000 FE).
-- **Upper cabinet** (backing indices 0–2): FOUP, mask, resist, components + **Abort button + status footer only**.
-- Block counts: **1 controller, 1 power port, 1 operating panel, 9 casings** (12 total).
-  - Optional second power port → 1 controller, 2 ports, 1 panel, 8 casings.
-- Old controller block ID retained; no new block entity types added.
+All four native block types share the exact registered formed/part/facing Property instances. Formation publishes ordered part0–11 and facing; stale/removed/foreign owners cannot update another machine, and detach resets visual state. Native finite models cover all six faces and four facings. Fixed joined steel/teal panels retain outer borders and cabinet/screen/port markings. This is the approved fixed-cell scope.
 
-### Runtime & Control Facts (from EVIDENCE.json)
-| Control | File | Test | Fault Head | Restored Head | Notes |
-|---|---|---|---|---|---|
-| lower-abort-role | `ProcessCellMenu.java` | `operator_panel_no_lower_abort` | `49d0d70c…` | `8b15c86a…` | Lower cabinet has no abort; valid expected failure |
-| stale-upper-panel | `OperatingPanelMenu.java` | `operator_panel_invalid_after_removal` | `ae2c9cd2…` | `f8c2fbf3…` | Upper panel invalidated on removal; valid expected failure |
-| wrong-upper-role | `OperatingPanelMenu.java` | `operator_panel_slot_mapping` | `ecc5ddeb…` | `65cac44f…` | Slot mapping correct only on upper; valid expected failure |
-| constant-visual-part | `ProcessCellControllerBlockEntity.java` | `operator_panel_visual_parts` | `ddb7a1fb…` | `063e7f1f…` | Visual part constant; valid expected failure |
-| stale-member-owner | `ProcessCellMemberBlockEntity.java` | `operator_panel_save_reload` | `a492180c…` | `8eb43d7b…` | Stale owner fixed; valid expected failure |
-| vertical-panel-placement | `ProcessCellOperatingPanelBlock.java` | `operator_panel_horizontal_placement` | `f8886fc0…` | `4482123e…` | Panel placement vertical only; valid expected failure |
+## Editable art
 
-**Property sharing fix:** Initial native property crash was independent property instances despite same names; now **shared exact property instances across all 4 types**.
+The generator computes and validates both output sets before writing. The manifest palette and pixel operations remain editable; destinations are fixed in code. Both CLI Check modes are nonwriting. There are73new opaque16×16blockPNGs,110managedPNGs total, and138managedJSON outputs. The original37PNGs remain unchanged. The new block item inherits the unformed block model. Native FaceBakery UV flips are independently checked; see docs/textures.md for the exact mapping and preview. The assembled PNG preview is not an in-game render.
 
-### Unit Controls (StructureMatcher / Joined Panel Resources)
-- `required-panel-final`: StructureMatcher + OperatingPanelMatcher tests (4+4) — expected failure restored.
-- `native-uv-oracle`: JoinedPanelResourceTest (2) — native UV/orientation oracle validated.
+## Verified execution
 
-### Generator Output (tools/generate-joined-panels.mjs)
-- **73 new block PNGs** / **110 total managed PNGs** / **138 JSON** (native UV + orientations).
-- Generator checks all passed: `generate-starter-textures.mjs-check`, `generate-joined-panels.mjs-check`, missing-PNG, stale-PNG, invalid-manifest rejection, two-normal-generations byte-identical.
-- Source hashes restored; preview hash `498cb71dba8c6473d6b7f37d5dfcd6f1f23946eb3b379ec8996624d356a7ab51`.
+-579unit tests in80classes: zero failures/errors/skips; core-import and release-jar checks pass.
+-834distinct complete server cases:834passes, zero required failures or optional skips. All164project IDs pass; all146prior IDs retained.
+-Source run used --no-build-cache, offline dependency guard and only three hash-verified Minecraft/NeoForge jars. No compiled mod/test classes were reused for the independent controls or later candidate.
+-Generated M1 reference updated from fresh compiled signatures; recipe census31total/29production/2fixture. Byte-identical Check passes; recipe guide Check sees31JSON recipes.
 
----
+New actual project server IDs:
+- `lithmod:operator_panel_visual_parts`
+- `lithmod:operator_panel_visual_reset`
+- `lithmod:operator_panel_visual_reload_owner`
+- `lithmod:operator_panel_horizontal_placement`
+- `lithmod:operator_panel_block_use`
+- `lithmod:operator_panel_menu_open`
+- `lithmod:operator_panel_slot_mapping`
+- `lithmod:operator_panel_equipment_retains`
+- `lithmod:operator_panel_no_hidden_access`
+- `lithmod:operator_panel_stage_no_bypass`
+- `lithmod:operator_panel_player_slots_usable`
+- `lithmod:operator_panel_no_lower_abort`
+- `lithmod:operator_panel_upper_abort_valid`
+- `lithmod:operator_panel_invalid_after_removal`
+- `lithmod:operator_panel_adjacent_controller`
+- `lithmod:operator_panel_missing_reforms`
+- `lithmod:operator_panel_save_reload`
+- `lithmod:operator_panel_upper_no_inventory`
 
-## 2. Required Upgrade (Existing Worlds)
+## Actual fault and generator controls
 
-1. **Manual replacement**: In each formed Process Cell, break the casing block **directly above the lower cabinet's center-back position** and place an Operating Panel.
-2. **Top-row controllers** (built before panel requirement) **require full rebuild** — no automatic conversion.
-3. **Saved inventories are preserved** — the lower cabinet retains its items, FE, and run state.
-4. After upgrade, the cell forms with the new layout; upper cabinet shows Abort + footer only.
+- `lower-abort-role`: unchanged `lithmod:operator_panel_no_lower_abort` failed as intended; production source restored exactly. Fault `49d0d70cece52c9e9535de955120795bd050af04`, restore `8b15c86a615b67d3e9b790d0dd205bd41201ac51`.
+- `stale-upper-panel`: unchanged `lithmod:operator_panel_invalid_after_removal` failed as intended; production source restored exactly. Fault `ae2c9cd29daadcb611e53c4e179a080351660266`, restore `f8c2fbf33b769b3b41547fd2a8abac0f15b362a7`.
+- `wrong-upper-role`: unchanged `lithmod:operator_panel_slot_mapping` failed as intended; production source restored exactly. Fault `ecc5ddeba1a93ac42cf4868dc9d1bc593a118cad`, restore `65cac44f839fa16fbde6180d23896ff18407e2bb`.
+- `constant-visual-part`: unchanged `lithmod:operator_panel_visual_parts` failed as intended; production source restored exactly. Fault `ddb7a1fb0598073fbdb7d73034b6ccaa28653dd4`, restore `063e7f1fb2f3ff73114a9f4853f64519c37f1e90`.
+- `stale-member-owner`: unchanged `lithmod:operator_panel_save_reload` failed as intended; production source restored exactly. Fault `a492180cd8f03e06373b84a389abe628bad5bc4c`, restore `8eb43d7b6adfb3f3119333c4afd9cfd6d9ec4ca6`.
+- `vertical-panel-placement`: unchanged `lithmod:operator_panel_horizontal_placement` failed as intended; production source restored exactly. Fault `f8886fc0b8d540a642f3b966a8862f3e6aee610d`, restore `4482123e28655ee6e579428c729a9bb98fa7db7d`.
+- Final-source visual-part recheck: `lithmod:operator_panel_visual_parts` failed under constant-part fault `c2272dd427c059c952b5cb0d5c92044b90715ee5`; exact restoration `252834824810e8d8a9d4159cb5460476b72311d9`. This covers the later-strengthened MultiblockGameTests fixture.
+- Final-source `required-panel-final`: expected failed assertions {"com.euvcraft.lithmod.core.multiblock.StructureMatcherTest":4,"com.euvcraft.lithmod.core.multiblock.OperatingPanelMatcherTest":4}; all579cases ran with no errors/skips; exact tree restoration and unchanged tests.
+- Final-source `native-uv-oracle`: expected failed assertions {"com.euvcraft.lithmod.mc.JoinedPanelResourceTest":2}; all579cases ran with no errors/skips; exact tree restoration and unchanged tests.
+- Generator `generate-starter-textures.mjs-check`: passed with no byte/mtime/output writes.
+- Generator `generate-joined-panels.mjs-check`: passed with no byte/mtime/output writes.
+- Generator `missing-PNG`: passed with no byte/mtime/output writes.
+- Generator `stale-PNG`: passed with no byte/mtime/output writes.
+- Generator `invalid-manifest-normal-generation`: passed.
+- Generator `two-normal-generations`: passed.
 
----
+Generator sources restored exactly; assembled preview SHA256 `498cb71dba8c6473d6b7f37d5dfcd6f1f23946eb3b379ec8996624d356a7ab51`. Local receipts: `.orchestrator/operator-panels/{backend-controls,unit-controls,visual-final-control-r2,generator-controls}.json` in the coordinator workspace.
 
-## 3. Walkthrough Impact (docs/manual-walkthrough-m1.md)
+## Preserved development outcomes and limits
 
-- Step 4 (supplies): +1 `process_cell_operating_panel`, casings 10 → 9 (or 8 with 2 ports).
-- Step 12 (build): New diagram showing lower cabinet (equipment backing 3–7), required panel at TOP/MIDDLE above lower BACK/RIGHT, upper cabinet (backing 0–2).
-- Step 13 (form/unform): Exclude panel from "break a casing" test.
-- Step 23 (abort): Now explicitly "Abort button on the Operating Panel (upper cabinet screen)"; authoritative state remains in lower cabinet.
-- Known limitations updated: client recheck pending for panel models/textures; upgrade path documented; feature status flagged as not yet accepted.
+Nemotron authored scoped implementation/test/art/documentation drafts. Free Beam focused review found stale ownership; coordinator repairs addressed native API/compiler errors, shared Property instances, menu/test assumptions, stale ownership, complete resource generation and mirrored fixture geometry. The Nemotron report/manual draft is preserved separately; the coordinator corrected invented center-back geometry, eight-slot instructions, BE-registration and failure-history claims against actual source/receipts.
 
----
+The initial property runtime crash came from distinct registered Property instances despite matching names; shared instances resolved it. The first complete server run then failed eight legacy fixture/count assumptions; the second passed833/834, with one mirrored fixture depth-offset error. The corrected full run passes834/834. Compiler drafts, provider504/timeout attempts and failed output-label dispatch remain preserved. The label collision executed no new server test and is excluded from passing controls. No retry was used to conceal an optional dependency failure; the passing source run had none.
 
-## 4. Development History (Preserved Failures)
+Vanilla mining tags and the generated-reference census were omitted from original immutable worker scope. Separate coordinator tasks own those files; both supplements are part of final whole-feature reviews/candidate acceptance. The original parent scope remains unchanged.
 
-| Phase | Failures | Resolution |
-|---|---|---|
-| Initial legacy | 8 cases | Property sharing, stale owner, fixture geometry |
-| Mirrored fixture | 1 case | Panel placement orientation |
-| Final | 0 | All 834 server cases pass |
-| Generator draft | Provider 504 | Retried; all checks now pass |
-| Test compiler drafts | Re-generated | Source hashes restored |
-
-**Reviews:** Nemotron wrote code/docs/assets drafts. Free Beam focused review found stale owner. Coordinator fixed API/property sharing, stale owner, fixtures, generator, and test issues. Failed attempts preserved per policy.
-
----
-
-## 5. Known Issues / Workarounds (Carried Forward)
-
-- **Early-loading workaround**: Local client window workaround still required; multiplayer/dedicated server unverified.
-- **Client visual pending**: Formed/unformed amber-green textures, Process Cell status labels, **and Operating Panel models/textures** must be verified in rendered client (distinct from automated resource tests).
-- **Creative FOUP placeholder**: Fresh empty Creative FOUP needs server inventory tick (hold briefly in player inventory) before Slicer accepts it. Filled Creative copies remain rejected.
-- **Abort label/timing**: Must be read in client; no legacy label or instant cancellation asserted.
-- **Passing counts**: Lot-dependent; no exact pass count promised.
-
----
-
-## 6. Acceptance Gate
-
-This feature **has not passed final review/candidate gate**. Integration into a released build requires:
-- Final review sign-off
-- Candidate build verification
-- Owner acceptance of post-polish rendering and Creative interaction
-
-Until then, the walkthrough reflects the development state at source `34eb4d385b68d708e933d6de171cd952a56e9d83` only.
+Actual client titles, slot layout/legibility, panel placement and all-face joins need owner inspection. The earlier loading-window workaround remains a separate known open issue. Fresh Creative FOUPs still initialize on a server inventory tick; filled Creative copies remain untrusted. No dependency/world/client/mk4 changes, paid inference/image API, higher-tier expansion, push or daemon activation occurred.
