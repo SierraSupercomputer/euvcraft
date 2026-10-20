@@ -1,7 +1,14 @@
 # EUVCRAFT M1 Starter Textures
 
 Deterministic, editable 16×16 starter art for all M1 production items and blocks.
-Generated from a single manifest using only Node built-ins — no external services, no image libraries.
+Generated from a single manifest using only Node built-ins — no external services,
+no image libraries, no subprocesses.
+
+Provenance: all layout/motif concepts (FOUP canister, boule, mask grid, resist bottle,
+lens, stage, filter, microscope, controller wafer face, port bolt) come from the
+original hand-authored MVP manifest; the invalid fixed-width glyph patterns were
+replaced with integer draw recipes. No client render is claimed — assets are
+validated by resource tests and the owner's manual walkthrough.
 
 ---
 
@@ -9,199 +16,213 @@ Generated from a single manifest using only Node built-ins — no external servi
 
 | File | Purpose |
 |------|---------|
-| `tools/starter-textures.json` | **Primary editable source** — palette, per-sprite 16-char patterns, output paths |
-| `tools/generate-starter-textures.mjs` | Generator — validates manifest, emits PNGs + models + preview atlas |
-| `build/starter-textures-preview.png` | Compact nearest-neighbor grid of every generated asset on neutral checkerboard |
+| `tools/starter-textures.json` | **Primary editable source** — palettes, 16×16 draw recipes, output paths (schema v2) |
+| `tools/generate-starter-textures.mjs` | Generator — validates manifest, rasterizes, emits PNGs + models + preview atlas |
+| `build/starter-textures-preview.png` | 6× atlas of every generated asset on a neutral checkerboard |
 | `docs/starter-textures.md` | This file |
 
----
-
-## Quick Start
+## Commands
 
 ```bash
 # Regenerate everything (textures, models, preview)
 node tools/generate-starter-textures.mjs
 
-# Verify only — exits 1 if any asset is missing or stale
+# Verify only — prints MISSING/STALE per asset and exits 1 on any mismatch
 node tools/generate-starter-textures.mjs --check
 ```
 
-The generator writes **only** the paths declared in `starter-textures.json` under `output.*`.
-It never deletes or overwrites unrelated files.
+Any other argument (none besides `--check`) is refused with exit code 2.
+`--check` never writes — including the preview — and reuses the exact buffers
+that the write path would emit.
+
+The generator writes **only**:
+
+- the 23 item textures + 23 item models listed in `output.itemModelsToUpdate`,
+- the block face textures for the 10 block models in `output.blockModelsToUpdate`
+  (4 single `all` tiles + 2 controllers × side/top/front),
+- `build/starter-textures-preview.png`.
+
+Nothing is deleted; the `test_machine` fixture is not touched. Direct PNG edits are
+**overwritten** by the next regeneration — edit the manifest instead.
 
 ---
 
-## Manifest Structure (`starter-textures.json`)
+## Manifest Schema (v2)
 
-### Palette
-Each palette entry is an array of **exactly 6 hex colors** (`#RRGGBB` or `#RRGGBBAA`).
-Shades 0–5 map to pattern chars `.` `#` `0`–`9` `A`–`F`:
-- `.` → index 0 (transparent for items, darkest for blocks)
-- `#` → index 1
-- `0`–`9` → indices 2–11
-- `A`–`F` → indices 12–17 (clamped to palette length)
+### Palettes
 
-> **Design rule:** 4–6 shades per sprite, dark outline / top-left highlight, crisp 1-pixel lines, no antialias.
+Each palette is an object of **named color slots** (`#RRGGBB` or `#RRGGBBAA`;
+a missing `AA` means fully opaque — `#00000000` is only valid for palettes that
+need real transparency, which is never used here):
 
-### Items (`items.<id>`)
 ```json
-"foup_mk1": {
-  "palette": "ITEM_FOUP",
-  "pattern": [
-    "................",
-    "..############..",
-    ...
-  ],
-  "note": "FOUP carrier - rectangular box with vertical slots"
+"CHIP_T1": {
+  "outline": "#4D3A1A", "dark": "#7A5A2A", "mid": "#A87A3A",
+  "light": "#D69A6A", "accent": "#E8B89A", "trim": "#FFD8C8"
 }
 ```
-- `id` must match the registered item ID (e.g. `logic_chip_t1`)
-- `pattern`: **exactly 16 strings of 16 chars** — each row becomes one scanline
-- Generates `lithmod:item/<id>.png` and updates `models/item/<id>.json` to point at it
+
+Palettes carry at least 4 slots. T1/T2 item pairs and formed/unformed block pairs
+reuse the same `shape` (identical geometry) with a different palette, e.g.
+`chip` on `CHIP_T1`/`CHIP_T2`, `ctrl_front` on `CTRL_FRONT_FORMED`/`_UNFORMED`.
+
+### Shapes
+
+A shape is an ordered array of integer draw ops applied to a 16×16 RGBA canvas:
+
+| Op | Args | Meaning |
+|----|------|---------|
+| `rect` | `color, x, y, w, h` | filled rectangle |
+| `frame` | `color, x, y, w, h` | 1-pixel rectangle outline |
+| `line` | `color, x0, y0, x1, y1` | Bresenham line, endpoints included |
+| `dot` | `color, x, y` | single pixel |
+
+`color` must be a slot name in the sprite's palette. Every coordinate must be an
+integer in the 0–15 canvas; empty or negative rects, unknown kinds/colors and
+out-of-bounds ops are validation errors — nothing is silently clamped, cropped or padded.
+
+### Items (`items.<id>`)
+
+```json
+"logic_chip_t1": { "palette": "CHIP_T1", "shape": "chip", "note": "…" }
+```
+
+The item canvas starts fully transparent and must keep at least one fully
+transparent pixel (RGBA `0,0,0,0` background). Each entry generates
+`textures/item/<id>.png` (16×16 RGBA8) and the model
+`models/item/<id>.json` with parent `minecraft:item/generated` and
+`layer0: "lithmod:item/<id>", replacing the old nonexistent `minecraft:item/…` refs.
 
 ### Blocks (`blocks.<id>`)
+
 ```json
 "process_cell_controller_formed": {
-  "palette": ["GREEN_FORMED", "CONTROLLER_FRONT", "CONTROLLER_STRIPE"],
-  "textures": {
-    "side": { "palette": "GREEN_FORMED", "pattern": [...] },
-    "top":  { "palette": "GREEN_FORMED", "pattern": [...] },
-    "front": { "palette": "CONTROLLER_FRONT", "pattern": [...] },
-    "stripe": { "palette": "CONTROLLER_STRIPE", "pattern": [...] }
+  "faces": {
+    "side":  { "palette": "CASING_FORMED",     "shape": "ctrl_side" },
+    "top":   { "palette": "CASING_FORMED",     "shape": "ctrl_top" },
+    "front": { "palette": "CTRL_FRONT_FORMED", "shape": "ctrl_front" }
   }
 }
 ```
-- Supports multi-face blocks (`orientable` parent) and single-face (`cube_all`)
-- Each face gets its own PNG: `<id>_<face>.png` (or `<id>.png` for `all`)
-- Block model JSON is regenerated to reference the new texture paths
+
+- Blocks with a single face use `"faces": { "all": … }` → `textures/block/<id>.png`.
+- The two Process Cell controllers use exactly `side`, `top`, `front` →
+  `<id>_side.png`, `<id>_top.png`, `<id>_front.png`.
+- Every block pixel must end at alpha 255 — transparent block tiles are rejected.
 
 ### Output Config (`output`)
+
+The five path keys are fixed and validated against exact expected values
+(extra, missing or duplicated IDs in the two model lists, or a changed path
+or an absolute/`..`/backslash path, fails validation):
+
 ```json
-"output": {
-  "itemsDir": "src/main/resources/assets/lithmod/models/item",
-  "blocksDir": "src/main/resources/assets/lithmod/models/block",
-  "texturesItemsDir": "src/main/resources/assets/lithmod/textures/item",
-  "texturesBlocksDir": "src/main/resources/assets/lithmod/textures/block",
-  "previewPath": "build/starter-textures-preview.png",
-  "itemModelsToUpdate": [ "foup_mk1", "logic_chip_t1", ... ],
-  "blockModelsToUpdate": [ "crystal_puller", "process_cell_controller_formed", ... ],
-  "preserveUntouched": [ "test_machine" ]
-}
+"itemsDir": "src/main/resources/assets/lithmod/models/item",
+"blocksDir": "src/main/resources/assets/lithmod/models/block",
+"texturesItemsDir": "src/main/resources/assets/lithmod/textures/item",
+"texturesBlocksDir": "src/main/resources/assets/lithmod/textures/block",
+"previewPath": "build/starter-textures-preview.png",
+"itemModelsToUpdate": [ "foup_mk1", … 23 IDs … ],
+"blockModelsToUpdate": [ "crystal_puller", … 10 IDs … ],
+"preserveUntouched": [ "test_machine" ]
 ```
-All paths are relative to the repo root (derived from `import.meta.url`).
+
+Enumeration and output bytes are deterministic on Node 24: manifests are read in
+listed order, files are hashed with SHA-256, PNGs use fixed level-9 `zlib.deflateSync`
+and unsigned `zlib.crc32` chunk CRCs. Note: duplicate JSON keys in the manifest would
+be silently collapsed by `JSON.parse` — the two ID *lists* are what get duplicate-checked.
 
 ---
 
-## What Gets Generated
+## Generated Art
 
-### Item Textures (23)
-Transparent background, `minecraft:item/generated` parent.
-| ID | Palette | Note |
-|----|---------|------|
-| `foup_mk1` | ITEM_FOUP | Grey box with vertical slots |
-| `foup_mk2` | ITEM_FOUP | Same with internal dividers |
-| `logic_chip_t1` | ITEM_CHIP_T1 | Copper/amber die with grid |
-| `logic_chip_t2` | ITEM_CHIP_T2 | Blue/cyan die with grid |
-| `memory_chip_t2` | ITEM_CHIP_MEMORY | Purple/violet dense cells |
-| `chip_scrap` | ITEM_CHIP_SCRAP | Grey irregular shards |
-| `silicon` | ITEM_SILICON | Grey polycrystalline grain |
-| `silicon_boule` | ITEM_BOULE | Purple cylinder with seed |
-| `resist_t1` | ITEM_RESIST_T1 | Amber liquid bottle |
-| `resist_t2` | ITEM_RESIST_T2 | Teal/green liquid bottle |
-| `chip_package` | ITEM_CHIP_PACKAGE | Beige box with pin grid |
-| `blank_mask` | ITEM_BLANK_MASK | Plain grey plate |
-| `mask` | ITEM_MASK | Cyan/teal circuit pattern |
-| `mercury_lamp` | ITEM_LAMP_T1 | Amber glow tube |
-| `i_line_lamp` | ITEM_LAMP_T2 | Blue/cyan glow tube |
-| `contact_plate` | ITEM_OPTICS_T1 | Steel dot grid |
-| `reduction_lens` | ITEM_OPTICS_T2 | Blue lens element |
-| `manual_aligner` | ITEM_STAGE_T1 | Amber stage with knobs |
-| `stepper_stage` | ITEM_STAGE_T2 | Blue/cyan precision stage |
-| `basic_air_filter` | ITEM_CLEANROOM_T1 | Green pleated media |
-| `fine_air_filter` | ITEM_CLEANROOM_T2 | Cyan dense pleated media |
-| `optical_microscope` | ITEM_METROLOGY_T1 | Pink/magenta barrel |
-| `overlay_scope` | ITEM_METROLOGY_T2 | Purple/violet barrel |
+**Items (23)** — restrained steel/copper/blue palettes with 3+ shades and distinct
+silhouettes: FOUP canisters with handle + slot window (Mk2 adds wafer dots),
+word-pin chips (T1 amber / T2 blue), dense-cell memory die, scrap shards, silicon nugget,
+seed-capped boule, resist bottles (T1/T2), chip package pin tray, blank plate + circuit
+mask, glow tubes (mercury/i-line), contact plate dot grid, reduction lens barrel,
+stage with head/knobs, pleated filters, microscope/barrel scopes — paired T1/T2 reuse
+geometry with different palettes.
 
-### Block Textures (10 models → 16 texture files)
-Opaque, seamless tiles where applicable.
-| Model | Faces | Palette(s) |
-|-------|-------|------------|
-| `crystal_puller` | all | PULLER_CRYSTAL |
-| `wafer_slicer` | all | SLICER_BLADE |
-| `test_package` | all | STEEL_CASING |
-| `pattern_generator` | all | PATTERN_GRID |
-| `process_cell_controller_formed` | side, top, front, stripe | GREEN_FORMED, CONTROLLER_FRONT, CONTROLLER_STRIPE |
-| `process_cell_controller_unformed` | side, top, front, stripe | AMBER_UNFORMED, CONTROLLER_FRONT, CONTROLLER_STRIPE |
-| `process_cell_casing_formed` | all | GREEN_FORMED |
-| `process_cell_casing_unformed` | all | AMBER_UNFORMED |
-| `process_cell_power_port_formed` | all | GREEN_FORMED |
-| `process_cell_power_port_unformed` | all | AMBER_UNFORMED |
+**Blocks (10 models → 14 face textures)** — recognizable face motifs: Crystal Puller
+crystal chamber with glowing seed, Slicer blade slot, Test Package chip banks, purple
+Pattern Generator grid, plain-metal casing tiles, controller side vents/top inset plus a
+front face with wafer motif and a segmented status bar, and gold lightning-bolt ports.
+Formed variants render green, unformed render amber, on the same correct faces —
+the unformed controller model only points at `…_unformed` textures (matched by
+exact `_formed`/`_unformed` suffix, never a loose `endsWith('formed')`).
 
-> `test_machine` is **preserved untouched** — not in manifest, not regenerated.
-
-### Block Models
-Regenerated to reference `lithmod:block/<texture>` paths.
-- Simple blocks (`crystal_puller`, `wafer_slicer`, `test_package`, `pattern_generator`, casings, ports) → `minecraft:block/cube_all`
-- Directional controller → `minecraft:block/orientable` with `top`, `bottom`, `side`, `front`
-
-Existing blockstates (rotations, `formed` property) are **not modified**.
+Block models: four machines + casings + ports use `minecraft:block/cube_all` with
+`lithmod:block/<id>`; controllers use `minecraft:block/orientable` with
+`top`/`bottom` (=`top`)/`side`/`front` (+`particle` = side) referencing only that model's
+own textures. Blockstates (facing rotations, `formed` property) are not modified.
+The seven regenerable block-item models (`crystal_puller`, `wafer_slicer`,
+`test_package`, `pattern_generator`, `process_cell_controller`, `process_cell_casing`,
+`process_cell_power_port`) keep their `lithmod:block/<id>` parents — the generator does
+not write them, the resource test asserts they stay intact.
 
 ---
 
 ## Preview Atlas
 
-`build/starter-textures-preview.png` — a single image containing every generated texture in a compact grid:
-- Nearest-neighbor scaling (1×)
-- Neutral checkerboard background (no transparency confusion)
-- Cells ordered: all items first, then blocks
-- Useful for quick visual regression checks
+`build/starter-textures-preview.png` after a regular (non-`--check`) run:
 
----
+- Every sampled sprite is scaled 6× (nearest neighbor), so the PNG header dimensions
+  are always the true pixel size (currently 804×504).
+- Sprites are alpha-composited over a neutral gray 8-px checkerboard, so
+  transparency reads as checkers, never as white or black.
+- Order is row-major inside an 8-column grid. The legend below is the numeric order
+  (cell 1 = top-left, next cell right, wrapping to the next row):
 
-## Determinism Guarantees
-
-- **Byte-identical PNGs** on every run: fixed filter (0), fixed zlib level, no timestamps, no metadata
-- **CRC32** validated per chunk
-- **SHA-256** of each output used by `--check` for staleness detection
-- Manifest order (key iteration) is the enumeration order — stable in Node.js
+| Cells | Contents |
+|-------|----------|
+| 1–23 | item textures in `itemModelsToUpdate` order |
+| 24–27 | `crystal_puller`, `wafer_slicer`, `test_package`, `pattern_generator` |
+| 28–33 | controller formed side/top/front, controller unformed side/top/front |
+| 34–37 | casing formed, casing unformed, port formed, port unformed |
 
 ---
 
 ## Editing Workflow
 
-1. Edit `tools/starter-textures.json`:
-   - Adjust palette colors
-   - Modify pattern rows (keep 16×16!)
-   - Add/remove entries from `itemModelsToUpdate` / `blockModelsToUpdate` if registry changes
-2. Run `node tools/generate-starter-textures.mjs`
-3. Inspect `build/starter-textures-preview.png`
-4. Commit **both** the manifest and the generated assets
+1. Edit `tools/starter-textures.json` — palette colors, draw ops, notes.
+2. Run `node tools/generate-starter-textures.mjs`.
+3. Inspect `build/starter-textures-preview.png`.
+4. Run `node tools/generate-starter-textures.mjs --check` and commit both the
+   manifest and the regenerated assets.
 
-> **Direct PNG edits are overwritten** on next regeneration. The manifest is the source of truth.
+> Direct PNG edits are overwritten on the next regeneration. The manifest is the
+> single source of truth; if you hand-edit a PNG, that edit is lost (the `--check`
+> gate will flag drift as STALE before the owner's build sees it).
 
 ---
 
-## Validation (`--check`)
+## Determinism Guarantees
 
-```bash
-node tools/generate-starter-textures.mjs --check
-```
-- Recomputes every PNG and model from manifest
-- Compares SHA-256 against files on disk
-- **Never writes anything** (including preview)
-- Exits 0 if all match, 1 if any missing/stale
-- Use in CI to catch drift
+- Byte-identical PNGs per run: fixed filter 0, level-9 deflate, no timestamps/metadata.
+- Per-chunk CRC32 (unsigned) from `zlib.crc32`; full-shape PNGs carry their own IHDR.
+- `--check` compares recomputed PNGs by SHA-256 and models as parsed JSON text with
+  only line endings normalized (LF/CRLF) so Git `core.autocrlf` does not cause
+  false drift.
+- `--check` heals nothing and writes nothing; exit 1 lists each missing/stale asset.
 
 ---
 
 ## JUnit Test (`StarterTextureResourceTest`)
 
-Validates at build time:
-- All 23 item models reference `lithmod:item/<id>` and the PNG exists + decodes 16×16 RGBA
-- All 10 block models reference correct `lithmod:block/…` textures, each PNG exists + decodes 16×16 RGBA (opaque)
-- `test_machine` resources untouched
-- Missing resources **fail** the test (no silent skip)
-- Uses `ImageIO` + Gson — same stack as other resource tests
+Validates real packaged resources (ImageIO + Gson, same stack as the other
+resource tests). Missing sources fail, never skip:
+
+- All 23 item models → `lithmod:item/<id>` layer0; PNG decodes 16×16 with an alpha
+  raster, and every pixel's alpha is exactly 0 or 255 with at least one 0 (true
+  transparent background — a has-alpha-channel check alone would not prove it).
+- All 10 block models → expected parents (`cube_all` / `orientable`) and face
+  texture paths; each texture decodes 16×16 and is alpha 255 at every pixel.
+- `test_machine` model/texture fixtures preserved untouched.
+- Formed/unformed sibling models reference disjoint texture sets, and
+  controller fronts / casing / port pixel data actually differ per state
+  (amber-unformed vs green-formed cue is verified, not assumed).
+- Seven regenerable block-item models keep `lithmod:block/<id>` parents.
 
 Run with: `./gradlew test --tests StarterTextureResourceTest`
 
@@ -212,35 +233,21 @@ Run with: `./gradlew test --tests StarterTextureResourceTest`
 | Area | Status |
 |------|--------|
 | Animated textures | Not supported — static 16×16 only |
-| Higher-resolution mipmaps | Not generated — relies on Minecraft's downsampling |
-| Blockstate variants beyond `facing`+`formed` | Not handled — only the two process cell types use variants |
-| Custom model parents (e.g. `orientable` with `particle`) | Hardcoded per block type in generator |
-| Palette sharing across sprites | Manual — edit manifest to share a palette name |
-| Numbered atlas legend | Not implemented — preview grid is unlabelled |
-| Windows CRLF in generated JSON | Forced LF via `writeFileSync(..., {encoding:'utf8'})` — Git `core.autocrlf` may normalize on checkout; `--check` hashes **file bytes**, so regenerate on the same platform or configure `.gitattributes` for LF |
+| Mipmaps | Not generated — relies on Minecraft's downsampling |
+| Blockstate variants | Only `facing`+`formed`; the generator never edits blockstates |
+| Atlas labels | Numbers are documented here, not burned into the PNG (no font dependency) |
+| Duplicate manifest keys | Collapsed silently by `JSON.parse`; lists are the dedupe point |
+| Client rendering | Not claimed — visual confirmation is the owner's M1-12 walkthrough |
+| JSON line endings | Generator emits LF; `--check` normalizes CRLF↔LF before comparing |
 
 ---
 
 ## Adding New Items/Blocks
 
-1. Register the item/block in Java (ModItems, ModMultiblocks, etc.)
-2. Add palette entry if needed (6 shades)
-3. Add entry to `items` or `blocks` in manifest with 16×16 pattern
-4. Add ID to `output.itemModelsToUpdate` or `output.blockModelsToUpdate`
-5. Run generator
-6. Verify preview
-7. Commit
-
----
-
-## Palette Design Notes
-
-- **T1 (copper/amber)** → warm oranges/browns → early-tier silicon chain
-- **T2 (blue/cyan)** → cool blues → advanced lithography
-- **Formed (green)** → active/energized multiblock state
-- **Unformed (amber)** → inactive/structural multiblock state
-- **Steel casing** → neutral greys for industrial blocks
-- **Distinct silhouettes** — not just colored squares; each sprite has unique shape language
+1. Register the item/block in Java and add its ID to the generator's
+   `EXPECTED_LIST`s plus this manifest (palette + shape + output list).
+2. Describe it with the four drawing ops or reuse an existing shape with a new palette.
+3. Regenerate, run `--check` and the resource test, preview, then commit.
 
 ---
 

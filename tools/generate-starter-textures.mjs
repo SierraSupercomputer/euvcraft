@@ -1,564 +1,427 @@
 #!/usr/bin/env node
 /**
- * EUVCRAFT M1 Starter Texture Generator
+ * EUVCRAFT M1 Starter Texture Generator (Node >= 22, built-ins only: fs/path/url/zlib/crypto).
  *
- * Pure Node.js (builtins only: fs, path, url, zlib, crypto)
- * Deterministic PNG encoder (RGBA8, filter 0, correct CRC32)
- * Reads tools/starter-textures.json manifest ONLY
- * Writes: textures, updated models, preview atlas
- * --check mode: validates only, never writes
+ * Reads tools/starter-textures.json (schema v2: recipes, not char patterns) and:
+ *  - rasterizes 23 item sprites (transparent background) and 14 block face tiles (fully opaque),
+ *  - encodes deterministic RGBA8 PNGs (filter 0, level-9 deflate, unsigned zlib.crc32 CRCs),
+ *  - writes 23 item models + 10 block models, plus a 6x nearest-neighbor preview atlas,
+ *  - --check mode recomputes everything and only compares; it never writes (preview included).
+ *
+ * Writes are limited to the validated output paths; nothing is deleted or overwritten outside them.
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs';
-import { resolve, dirname, join, relative, basename } from 'path';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { createDeflate, crc32 } from 'zlib';
+import { deflateSync, crc32 } from 'zlib';
 import { createHash } from 'crypto';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const ROOT = resolve(__dirname, '..');
-const MANIFEST_PATH = join(ROOT, 'tools', 'starter-textures.json');
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-/** Read and parse manifest */
-function loadManifest() {
-  const raw = readFileSync(MANIFEST_PATH, 'utf8');
-  return JSON.parse(raw);
+// Exact expected production asset sets (M1). Anything extra/missing in the manifest fails.
+const EXPECTED_ITEM_IDS = [
+  'foup_mk1', 'foup_mk2', 'logic_chip_t1', 'logic_chip_t2', 'memory_chip_t2',
+  'chip_scrap', 'silicon', 'silicon_boule', 'resist_t1', 'resist_t2',
+  'chip_package', 'blank_mask', 'mask', 'mercury_lamp', 'i_line_lamp',
+  'contact_plate', 'reduction_lens', 'manual_aligner', 'stepper_stage',
+  'basic_air_filter', 'fine_air_filter', 'optical_microscope', 'overlay_scope',
+];
+// Ten block models. Controller state suffixes are matched exactly ('_formed'/'_unformed'),
+// never via a loose endsWith('formed') which would also hit 'unformed'.
+const EXPECTED_BLOCK_IDS = [
+  'crystal_puller', 'wafer_slicer', 'test_package', 'pattern_generator',
+  'process_cell_controller_formed', 'process_cell_controller_unformed',
+  'process_cell_casing_formed', 'process_cell_casing_unformed',
+  'process_cell_power_port_formed', 'process_cell_power_port_unformed',
+];
+const CONTROLLER_IDS = new Set(EXPECTED_BLOCK_IDS.slice(4, 6));
+// The only writable destinations. Hardcoded; manifest values must match exactly.
+const EXPECTED_OUTPUT = {
+  itemsDir: 'src/main/resources/assets/lithmod/models/item',
+  blocksDir: 'src/main/resources/assets/lithmod/models/block',
+  texturesItemsDir: 'src/main/resources/assets/lithmod/textures/item',
+  texturesBlocksDir: 'src/main/resources/assets/lithmod/textures/block',
+  previewPath: 'build/starter-textures-preview.png',
+};
+
+function fail(errors) {
+  throw new Error('Validation failed:\n' + errors.join('\n'));
 }
 
-/** Hex color (#RRGGBB or #RRGGBBAA) to [r,g,b,a] */
+/** Hex (#RRGGBB or #RRGGBBAA) to [r,g,b,a]; missing alpha means fully opaque. */
 function hexToRgba(hex) {
   const h = hex.startsWith('#') ? hex.slice(1) : hex;
-  if (h.length === 6) {
-    return [
-      parseInt(h.slice(0, 2), 16),
-      parseInt(h.slice(2, 4), 16),
-      parseInt(h.slice(4, 6), 16),
-      255
-    ];
+  if (!/^[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/.test(h)) {
+    throw new Error(`Invalid hex color: ${hex}`);
   }
-  if (h.length === 8) {
-    return [
-      parseInt(h.slice(0, 2), 16),
-      parseInt(h.slice(2, 4), 16),
-      parseInt(h.slice(4, 6), 16),
-      parseInt(h.slice(6, 8), 16)
-    ];
-  }
-  throw new Error(`Invalid hex color: ${hex}`);
+  return [
+    parseInt(h.slice(0, 2), 16),
+    parseInt(h.slice(2, 4), 16),
+    parseInt(h.slice(4, 6), 16),
+    h.length === 8 ? parseInt(h.slice(6, 8), 16) : 255,
+  ];
 }
 
-/** Expand 16-char pattern row to 16 RGBA pixels using palette */
-function expandPatternRow(row, paletteColors) {
-  if (row.length !== 16) throw new Error(`Pattern row must be 16 chars, got ${row.length}`);
-  const out = new Uint8Array(16 * 4);
-  for (let i = 0; i < 16; i++) {
-    const ch = row[i];
-    let idx;
-    if (ch === '.') {
-      idx = 0; // transparent
-    } else if (ch === '#') {
-      idx = 1; // first opaque shade
-    } else if (ch >= '0' && ch <= '9') {
-      idx = parseInt(ch, 10) + 1;
-    } else if (ch >= 'A' && ch <= 'F') {
-      idx = parseInt(ch, 16) + 1;
-    } else {
-      throw new Error(`Invalid pattern char: ${ch}`);
+function validateLists(object, list, kind, ids) {
+  const errors = [];
+  const seen = new Set();
+  for (const id of list) {
+    if (typeof id !== 'string') errors.push(`${kind} entry not a string: ${JSON.stringify(id)}`);
+    else if (seen.has(id)) errors.push(`${kind} duplicate: ${id}`);
+    seen.add(id);
+  }
+  const set = Object.keys(object);
+  const exact = set.length === ids.length && ids.every((id) => seen.has(id)) && seen.size === ids.length;
+  if (!exact) errors.push(`${kind} entries must equal the exact expected ${ids.length} IDs`);
+  return errors;
+}
+
+function validateManifest(m) {
+  const errors = [];
+  if (m.version !== 2) errors.push(`Manifest version must be 2, got ${m.version}`);
+
+  for (const [name, slots] of Object.entries(m.palette || {})) {
+    if (typeof slots !== 'object' || slots === null || Array.isArray(slots)) {
+      errors.push(`Palette ${name} must be an object of named slots`);
+      continue;
     }
-    const color = paletteColors[Math.min(idx, paletteColors.length - 1)];
-    out[i * 4] = color[0];
-    out[i * 4 + 1] = color[1];
-    out[i * 4 + 2] = color[2];
-    out[i * 4 + 3] = color[3];
+    if (Object.keys(slots).length < 4) errors.push(`Palette ${name} needs at least 4 named color slots`);
+    for (const [slot, hex] of Object.entries(slots)) {
+      try { hexToRgba(hex); } catch (e) { errors.push(`Palette ${name}.${slot}: ${e.message}`); }
+    }
   }
-  return out;
+
+  if (!m.shapes || typeof m.shapes !== 'object') errors.push('shapes missing');
+  else {
+    for (const [name, ops] of Object.entries(m.shapes)) {
+      if (!Array.isArray(ops)) errors.push(`Shape ${name} must be an array of ops`);
+    }
+  }
+
+  errors.push(...validateLists(m.items, m.output?.itemModelsToUpdate, 'itemModelsToUpdate', EXPECTED_ITEM_IDS));
+  errors.push(...validateLists(m.blocks, m.output?.blockModelsToUpdate, 'blockModelsToUpdate', EXPECTED_BLOCK_IDS));
+  if (JSON.stringify(m.output?.preserveUntouched) !== JSON.stringify(['test_machine'])) {
+    errors.push('output.preserveUntouched must be exactly ["test_machine"]');
+  }
+
+  for (const [key, expected] of Object.entries(EXPECTED_OUTPUT)) {
+    const value = m.output?.[key];
+    if (value !== expected) {
+      errors.push(`output.${key} must be exactly "${expected}", got ${JSON.stringify(value)}`);
+      continue;
+    }
+    if (/^[A-Za-z]:|^[/\\]|\.\.|[\\]/.test(value) && key !== 'previewPath') {
+      errors.push(`output.${key} is not a safe relative path: ${value}`);
+    }
+  }
+
+  for (const [id, def] of Object.entries(m.items)) {
+    if (!m.palette[def.palette]) errors.push(`Item ${id}: unknown palette ${def.palette}`);
+    if (!m.shapes[def.shape]) errors.push(`Item ${id}: unknown shape ${def.shape}`);
+  }
+
+  for (const [id, def] of Object.entries(m.blocks)) {
+    if (!def.faces) errors.push(`Block ${id} missing faces`);
+    else {
+      const expectedFaces = CONTROLLER_IDS.has(id)
+        ? ['side', 'top', 'front']
+        : ['all'];
+      if (JSON.stringify(Object.keys(def.faces)) !== JSON.stringify(expectedFaces)) {
+        errors.push(`Block ${id} faces must be [${expectedFaces}], got [${Object.keys(def.faces)}]`);
+      }
+      for (const [face, faceDef] of Object.entries(def.faces)) {
+        if (!m.palette[faceDef.palette]) errors.push(`Block ${id}.${face}: unknown palette ${faceDef.palette}`);
+        if (!m.shapes[faceDef.shape]) errors.push(`Block ${id}.${face}: unknown shape ${faceDef.shape}`);
+      }
+    }
+  }
+
+  if (errors.length) fail(errors);
 }
 
-/** Build 16x16 RGBA image from pattern array and palette name */
-function buildImage(pattern, paletteColors) {
+/** Apply one validated drawing op. Ops: rect/frame/line/dot with palette slot colors. */
+function drawOp(img, op, palette, ids) {
+  const [kind, color, ...nums] = op;
+  const rgba = palette[color];
+  if (!rgba) fail([`${ids}: op ${JSON.stringify(op)} uses unknown palette slot "${color}"`]);
+  if (nums.some((n) => typeof n !== 'number' || !Number.isInteger(n))) {
+    fail([`${ids}: op ${JSON.stringify(op)} must use integer coordinates`]);
+  }
+  let minXY, maxXY;
+  if (kind === 'rect' || kind === 'frame') {
+    if (nums.length !== 4) fail([`${ids}: ${kind} needs x,y,w,h`]);
+    const [x, y, w, h] = nums;
+    if (w <= 0 || h <= 0) fail([`${ids}: op ${JSON.stringify(op)} has invalid w/h`]);
+    minXY = [x, y]; maxXY = [x + w - 1, y + h - 1];
+  } else if (kind === 'dot') {
+    if (nums.length !== 2) fail([`${ids}: dot needs x,y`]);
+    minXY = maxXY = [nums[0], nums[1]];
+  } else if (kind === 'line') {
+    if (nums.length !== 4) fail([`${ids}: line needs x0,y0,x1,y1`]);
+    minXY = [nums[0], nums[1]]; maxXY = [nums[2], nums[3]];
+  } else {
+    fail([`${ids}: unknown op kind "${kind}" (supported: rect, frame, dot, line)`]);
+  }
+  if (minXY[0] < 0 || minXY[1] < 0 || maxXY[0] > 15 || maxXY[1] > 15) {
+    fail([`${ids}: op ${JSON.stringify(op)} exceeds the 16x16 canvas`]);
+  }
+  const put = (px, py) => {
+    const i = (py * 16 + px) * 4;
+    img[i] = rgba[0]; img[i + 1] = rgba[1]; img[i + 2] = rgba[2]; img[i + 3] = rgba[3];
+  };
+  if (kind === 'rect' || kind === 'frame') {
+    const [x, y, w, h] = nums;
+    if (kind === 'rect') {
+      for (let py = y; py < y + h; py++) for (let px = x; px < x + w; px++) put(px, py);
+    } else {
+      for (let px = x; px < x + w; px++) { put(px, y); put(px, y + h - 1); }
+      for (let py = y; py < y + h; py++) { put(x, py); put(x + w - 1, py); }
+    }
+  } else if (kind === 'dot') {
+    put(nums[0], nums[1]);
+  } else {
+    let [x0, y0, x1, y1] = nums;
+    const dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+    const dy = -Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+    let err = dx + dy;
+    for (;;) {
+      put(x0, y0);
+      if (x0 === x1 && y0 === y1) break;
+      const e2 = 2 * err;
+      if (e2 >= dy) { err += dy; x0 += sx; }
+      if (e2 <= dx) { err += dx; y0 += sy; }
+    }
+  }
+}
+
+/** Item canvas starts transparent; a fully painted background must never be accepted. */
+function rasterizeItem(id, def, palettes, shapes) {
   const img = new Uint8Array(16 * 16 * 4);
-  for (let y = 0; y < 16; y++) {
-    const row = expandPatternRow(pattern[y], paletteColors);
-    img.set(row, y * 16 * 4);
+  for (const op of shapes[def.shape]) drawOp(img, op, palettes[def.palette], `item ${id}`);
+  for (let i = 3; i < img.length; i += 4) {
+    if (img[i] === 0) return img;
+  }
+  fail([`Item ${id} would fully cover the canvas; at least one transparent pixel is required`]);
+}
+
+/** Block canvas must end fully opaque; transparency in block faces is a validation error. */
+function rasterizeBlockFace(id, face, def, palettes, shapes) {
+  const img = new Uint8Array(16 * 16 * 4);
+  for (const op of shapes[def.shape]) drawOp(img, op, palettes[def.palette], `block ${id}.${face}`);
+  for (let i = 3; i < img.length; i += 4) {
+    if (img[i] !== 255) {
+      fail([`Block ${id}.${face} must be fully opaque; transparent pixels are not allowed`]);
+    }
   }
   return img;
 }
 
-/** PNG chunk helper */
-function pngChunk(type, data) {
-  const len = Buffer.alloc(4);
-  len.writeUInt32BE(data.length, 0);
-  const typeBuf = Buffer.from(type, 'ascii');
-  const crc = crc32(Buffer.concat([typeBuf, data]));
+function chunk(type, data) {
+  const head = Buffer.alloc(4);
+  head.writeUInt32BE(data.length, 0);
+  const body = Buffer.concat([Buffer.from(type, 'ascii'), data]);
   const crcBuf = Buffer.alloc(4);
-  crcBuf.writeUInt32BE(crc, 0);
-  return Buffer.concat([len, typeBuf, data, crcBuf]);
+  crcBuf.writeUInt32BE(crc32(body) >>> 0, 0); // unsigned chunk CRC
+  return Buffer.concat([head, body, crcBuf]);
 }
 
-/** Encode raw RGBA8 (16x16) to PNG with filter 0, deterministic */
-function encodePng(rgba) {
-  const width = 16;
-  const height = 16;
-  // IDAT: each row = filter byte (0) + 16*4 bytes
-  const raw = Buffer.alloc((width * 4 + 1) * height);
+/** Encode raw RGBA to PNG: signature + IHDR + filter-0 IDAT + IEND. Level-9 deflate. */
+function encodePng(rgba, width, height) {
+  const stride = width * 4 + 1;
+  const raw = Buffer.alloc(stride * height);
+  const src = Buffer.from(rgba);
   for (let y = 0; y < height; y++) {
-    raw[y * (width * 4 + 1)] = 0; // filter type 0
-    rgba.copy(raw, y * (width * 4 + 1) + 1, y * width * 4, (y + 1) * width * 4);
+    raw[y * stride] = 0; // filter type 0
+    src.copy(raw, y * stride + 1, y * width * 4, (y + 1) * width * 4);
   }
-  const compressed = new Uint8Array(createDeflate(Buffer.from(raw)).buffer);
-  // PNG signature + IHDR + IDAT + IEND
+  const compressed = deflateSync(raw, { level: 9 });
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(width, 0);
   ihdr.writeUInt32BE(height, 4);
   ihdr[8] = 8;  // bit depth
-  ihdr[9] = 6;  // color type: RGBA
-  ihdr[10] = 0; // compression
-  ihdr[11] = 0; // filter
-  ihdr[12] = 0; // interlace
+  ihdr[9] = 6;  // color type RGBA8
   return Buffer.concat([
     Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
-    pngChunk('IHDR', ihdr),
-    pngChunk('IDAT', Buffer.from(compressed)),
-    pngChunk('IEND', Buffer.alloc(0))
+    chunk('IHDR', ihdr),
+    chunk('IDAT', compressed),
+    chunk('IEND', Buffer.alloc(0)),
   ]);
 }
 
-/** Deterministic SHA-256 of file contents for staleness check */
-function fileHash(path) {
-  if (!existsSync(path)) return null;
-  const data = readFileSync(path);
-  return createHash('sha256').update(data).digest('hex');
+function jsonText(obj) {
+  return JSON.stringify(obj, null, 2) + '\n';
 }
 
-/** Ensure directory exists */
-function ensureDir(dir) {
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+function itemModelObject(id) {
+  return { parent: 'minecraft:item/generated', textures: { layer0: `lithmod:item/${id}` } };
 }
 
-/** Validate manifest structure and invariants */
-function validateManifest(manifest) {
-  const errors = [];
-
-  // Version
-  if (manifest.version !== 1) errors.push(`Manifest version must be 1, got ${manifest.version}`);
-
-  // Palette entries must be arrays of 6 hex colors
-  for (const [name, colors] of Object.entries(manifest.palette)) {
-    if (!Array.isArray(colors) || colors.length !== 6) {
-      errors.push(`Palette ${name} must have exactly 6 colors`);
-    }
-    for (const c of colors) {
-      if (!/^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/.test(c)) {
-        errors.push(`Palette ${name} color ${c} invalid hex`);
-      }
-    }
+function blockModelObject(id) {
+  if (CONTROLLER_IDS.has(id)) {
+    return {
+      parent: 'minecraft:block/orientable',
+      textures: {
+        top: `lithmod:block/${id}_top`,
+        bottom: `lithmod:block/${id}_top`,
+        side: `lithmod:block/${id}_side`,
+        front: `lithmod:block/${id}_front`,
+        particle: `lithmod:block/${id}_side`,
+      },
+    };
   }
-
-  // Items
-  const itemIds = new Set();
-  for (const [id, def] of Object.entries(manifest.items)) {
-    if (itemIds.has(id)) errors.push(`Duplicate item ID: ${id}`);
-    itemIds.add(id);
-    if (!manifest.palette[def.palette]) errors.push(`Item ${id} references unknown palette ${def.palette}`);
-    if (!Array.isArray(def.pattern) || def.pattern.length !== 16) {
-      errors.push(`Item ${id} pattern must be 16 rows`);
-    } else {
-      for (let y = 0; y < 16; y++) {
-        if (def.pattern[y].length !== 16) {
-          errors.push(`Item ${id} row ${y} must be 16 chars`);
-        }
-        for (const ch of def.pattern[y]) {
-          if (!'.#0123456789ABCDEF'.includes(ch)) {
-            errors.push(`Item ${id} row ${y} invalid char: ${ch}`);
-          }
-        }
-      }
-    }
-  }
-
-  // Blocks
-  const blockIds = new Set();
-  for (const [id, def] of Object.entries(manifest.blocks)) {
-    if (blockIds.has(id)) errors.push(`Duplicate block ID: ${id}`);
-    blockIds.add(id);
-    if (!def.textures) errors.push(`Block ${id} missing textures`);
-    else {
-      for (const [face, tex] of Object.entries(def.textures)) {
-        if (!manifest.palette[tex.palette]) errors.push(`Block ${id} face ${face} unknown palette ${tex.palette}`);
-        if (!Array.isArray(tex.pattern) || tex.pattern.length !== 16) {
-          errors.push(`Block ${id} face ${face} pattern must be 16 rows`);
-        } else {
-          for (let y = 0; y < 16; y++) {
-            if (tex.pattern[y].length !== 16) {
-              errors.push(`Block ${id} face ${face} row ${y} must be 16 chars`);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // Output paths
-  const out = manifest.output;
-  if (!out.itemModelsToUpdate || !Array.isArray(out.itemModelsToUpdate)) errors.push('output.itemModelsToUpdate missing');
-  if (!out.blockModelsToUpdate || !Array.isArray(out.blockModelsToUpdate)) errors.push('output.blockModelsToUpdate missing');
-  if (!out.preserveUntouched || !Array.isArray(out.preserveUntouched)) errors.push('output.preserveUntouched missing');
-
-  // Check item models exist in manifest
-  for (const id of out.itemModelsToUpdate) {
-    if (!manifest.items[id]) errors.push(`output.itemModelsToUpdate references unknown item: ${id}`);
-  }
-  for (const id of out.blockModelsToUpdate) {
-    if (!manifest.blocks[id]) errors.push(`output.blockModelsToUpdate references unknown block: ${id}`);
-  }
-  for (const id of out.preserveUntouched) {
-    if (manifest.items[id] || manifest.blocks[id]) {
-      errors.push(`output.preserveUntouched ${id} should not be in items/blocks`);
-    }
-  }
-
-  // No path traversal in output dirs
-  for (const key of ['itemsDir', 'blocksDir', 'texturesItemsDir', 'texturesBlocksDir', 'previewPath']) {
-    const p = out[key];
-    if (p.includes('..')) errors.push(`output.${key} contains path traversal: ${p}`);
-  }
-
-  if (errors.length) throw new Error('Manifest validation failed:\n' + errors.join('\n'));
+  return {
+    parent: 'minecraft:block/cube_all',
+    textures: { all: `lithmod:block/${id}` },
+  };
 }
 
-/** Generate item texture PNG */
-function generateItemTexture(itemDef, paletteMap) {
-  const colors = paletteMap[itemDef.palette].map(hexToRgba);
-  const img = buildImage(itemDef.pattern, colors);
-  return encodePng(img);
+/** Every generated texture in deterministic display order for the preview legend. */
+function previewOrder(manifest) {
+  const out = [];
+  for (const id of manifest.output.itemModelsToUpdate) out.push(id);
+  for (const id of manifest.output.blockModelsToUpdate) {
+    if (CONTROLLER_IDS.has(id)) out.push(`${id}_side`, `${id}_top`, `${id}_front`);
+    else out.push(id);
+  }
+  return out;
 }
 
-/** Generate block texture PNG for a face */
-function generateBlockTexture(faceDef, paletteMap) {
-  const colors = paletteMap[faceDef.palette].map(hexToRgba);
-  const img = buildImage(faceDef.pattern, colors);
-  return encodePng(img);
-}
-
-/** Write item model JSON (LF only) */
-function writeItemModel(outDir, itemId) {
-  const content = `{
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "lithmod:item/${itemId}"
-  }
-}`;
-  const path = join(outDir, `${itemId}.json`);
-  writeFileSync(path, content, { encoding: 'utf8', flag: 'w' });
-}
-
-/** Write block model JSON (LF only) */
-function writeBlockModel(outDir, blockId, manifest) {
-  const blockDef = manifest.blocks[blockId];
-  let content;
-  if (blockId === 'crystal_puller' || blockId === 'wafer_slicer' || blockId === 'test_package' || blockId === 'pattern_generator') {
-    // Simple cube_all-style models
-    content = `{
-  "parent": "minecraft:block/cube_all",
-  "textures": {
-    "all": "lithmod:block/${blockId}"
-  }
-}`;
-  } else if (blockId.startsWith('process_cell_controller')) {
-    const formed = blockId.endsWith('formed');
-    const base = formed ? 'process_cell_controller_formed' : 'process_cell_controller_unformed';
-    content = `{
-  "parent": "minecraft:block/orientable",
-  "textures": {
-    "top": "lithmod:block/${base}_top",
-    "bottom": "lithmod:block/${base}_top",
-    "side": "lithmod:block/${base}_side",
-    "front": "lithmod:block/${base}_front"
-  }
-}`;
-  } else if (blockId.startsWith('process_cell_casing')) {
-    content = `{
-  "parent": "minecraft:block/cube_all",
-  "textures": {
-    "all": "lithmod:block/${blockId}"
-  }
-}`;
-  } else if (blockId.startsWith('process_cell_power_port')) {
-    content = `{
-  "parent": "minecraft:block/cube_all",
-  "textures": {
-    "all": "lithmod:block/${blockId}"
-  }
-}`;
-  } else {
-    throw new Error(`Unknown block model type: ${blockId}`);
-  }
-  const path = join(outDir, `${blockId}.json`);
-  writeFileSync(path, content, { encoding: 'utf8', flag: 'w' });
-}
-
-/** Generate preview atlas (nearest-neighbor grid on checkerboard) */
-function generatePreviewAtlas(manifest, itemTextures, blockTextures) {
-  const itemIds = manifest.output.itemModelsToUpdate;
-  const blockIds = manifest.output.blockModelsToUpdate;
-  const allIds = [...itemIds, ...blockIds];
-  const count = allIds.length;
-  const cols = Math.ceil(Math.sqrt(count));
-  const rows = Math.ceil(count / cols);
-  const cell = 16;
-  const pad = 1;
-  const atlasW = cols * (cell + pad) + pad;
-  const atlasH = rows * (cell + pad) + pad;
-  const atlas = new Uint8Array(atlasW * atlasH * 4);
-
-  // Checkerboard background
+/** Nearest-neighbor x6 atlas over a neutral 8px checkerboard, alpha composited. */
+function buildPreview(sprites) {
+  const scale = 6, pad = 4, cell = 16 * scale;
+  const n = sprites.length;
+  const cols = 8;
+  const rows = Math.ceil(n / cols);
+  const atlasW = cols * cell + (cols + 1) * pad;
+  const atlasH = rows * cell + (rows + 1) * pad;
+  const atlas = Buffer.alloc(atlasW * atlasH * 4);
+  const checker = (x, y) => (((x >> 3) + (y >> 3)) & 1) === 0 ? [0xE8, 0xE8, 0xE8] : [0xB8, 0xB8, 0xB8];
   for (let y = 0; y < atlasH; y++) {
     for (let x = 0; x < atlasW; x++) {
-      const cx = Math.floor((x - pad) / (cell + pad));
-      const cy = Math.floor((y - pad) / (cell + pad));
-      const isCell = x >= pad && y >= pad && (x - pad) % (cell + pad) < cell && (y - pad) % (cell + pad) < cell;
-      const checker = (cx + cy) % 2 === 0 ? 200 : 180;
-      const idx = (y * atlasW + x) * 4;
-      if (isCell) {
-        // Will be overwritten by texture
-        atlas[idx] = checker;
-        atlas[idx + 1] = checker;
-        atlas[idx + 2] = checker;
-        atlas[idx + 3] = 255;
-      } else {
-        atlas[idx] = checker;
-        atlas[idx + 1] = checker;
-        atlas[idx + 2] = checker;
-        atlas[idx + 3] = 255;
-      }
+      const [r, g, b] = checker(x, y);
+      const i = (y * atlasW + x) * 4;
+      atlas[i] = r; atlas[i + 1] = g; atlas[i + 2] = b; atlas[i + 3] = 255;
     }
   }
-
-  // Blit textures
-  for (let i = 0; i < allIds.length; i++) {
-    const id = allIds[i];
-    const cx = i % cols;
-    const cy = Math.floor(i / cols);
-    const ox = pad + cx * (cell + pad);
-    const oy = pad + cy * (cell + pad);
-    let tex;
-    if (itemIds.includes(id)) tex = itemTextures[id];
-    else tex = blockTextures[id];
-    if (!tex) continue;
+  sprites.forEach((img, idx) => {
+    const cx = idx % cols, cy = Math.floor(idx / cols);
+    const ox = pad + cx * (cell + pad), oy = pad + cy * (cell + pad);
     for (let y = 0; y < 16; y++) {
       for (let x = 0; x < 16; x++) {
-        const src = (y * 16 + x) * 4;
-        const dst = ((oy + y) * atlasW + (ox + x)) * 4;
-        atlas[dst] = tex[src];
-        atlas[dst + 1] = tex[src + 1];
-        atlas[dst + 2] = tex[src + 2];
-        atlas[dst + 3] = tex[src + 3];
+        const s = (y * 16 + x) * 4;
+        const a = img[s + 3];
+        for (let dy = 0; dy < scale; dy++) {
+          for (let dx = 0; dx < scale; dx++) {
+            const dst = (((oy + y * scale + dy) * atlasW) + (ox + x * scale + dx)) * 4;
+            const bg = checker(ox + x * scale + dx, oy + y * scale + dy);
+            for (let c = 0; c < 3; c++) {
+              atlas[dst + c] = (img[s + c] * a + bg[c] * (255 - a) + 127) / 255 | 0;
+            }
+            atlas[dst + 3] = 255;
+          }
+        }
       }
     }
-  }
-
-  // Add number labels (simple 3x5 digits) - optional, skip for simplicity
-  return encodePng(atlas);
+  });
+  return { png: encodePng(atlas, atlasW, atlasH), width: atlasW, height: atlasH, cols, rows };
 }
 
-/** Main generation */
-async function generate(checkOnly = false) {
+/** Compute every output buffer before any write/check happens. */
+function computeAll(manifest) {
+  const palettes = {};
+  for (const [name, slots] of Object.entries(manifest.palette)) {
+    palettes[name] = {};
+    for (const [slot, hex] of Object.entries(slots)) palettes[name][slot] = hexToRgba(hex);
+  }
+  const raw = new Map();   // relpath -> 16x16 RGBA array
+  const pngs = new Map();  // relpath -> Buffer
+  const models = new Map(); // relpath -> string (LF-only JSON text)
+
+  for (const id of manifest.output.itemModelsToUpdate) {
+    const rel = `${manifest.output.texturesItemsDir}/${id}.png`;
+    raw.set(rel, rasterizeItem(id, manifest.items[id], palettes, manifest.shapes));
+    pngs.set(rel, encodePng(raw.get(rel), 16, 16));
+    models.set(`${manifest.output.itemsDir}/${id}.json`, jsonText(itemModelObject(id)));
+  }
+  for (const id of manifest.output.blockModelsToUpdate) {
+    const def = manifest.blocks[id];
+    for (const face of Object.keys(def.faces)) {
+      const file = CONTROLLER_IDS.has(id) ? `${id}_${face}` : id;
+      const rel = `${manifest.output.texturesBlocksDir}/${file}.png`;
+      raw.set(rel, rasterizeBlockFace(id, face, def.faces[face], palettes, manifest.shapes));
+      pngs.set(rel, encodePng(raw.get(rel), 16, 16));
+    }
+    models.set(`${manifest.output.blocksDir}/${id}.json`, jsonText(blockModelObject(id)));
+  }
+  const preview = buildPreview(previewOrder(manifest).map((name) => raw.get(
+    manifest.output.itemModelsToUpdate.includes(name)
+      ? `${manifest.output.texturesItemsDir}/${name}.png`
+      : `${manifest.output.texturesBlocksDir}/${name}.png`
+  )));
+  return { raw, pngs, models, preview };
+}
+
+function writeAll(manifest, computed) {
+  const dirs = new Set([
+    manifest.output.itemsDir, manifest.output.blocksDir,
+    manifest.output.texturesItemsDir, manifest.output.texturesBlocksDir,
+    dirname(manifest.output.previewPath),
+  ]);
+  for (const dir of dirs) {
+    const abs = join(ROOT, dir);
+    if (!existsSync(abs)) mkdirSync(abs, { recursive: true });
+  }
+  for (const [rel, buf] of computed.pngs) writeFileSync(join(ROOT, rel), buf);
+  for (const [rel, text] of computed.models) writeFileSync(join(ROOT, rel), text, 'utf8');
+  writeFileSync(join(ROOT, manifest.output.previewPath), computed.preview.png);
+  console.log(`Wrote ${computed.pngs.size} PNGs, ${computed.models.size} models, preview ${manifest.output.previewPath} (${computed.preview.width}x${computed.preview.height}).`);
+}
+
+/** Compare without writing anything; reports every missing/stale asset, then exits nonzero. */
+function checkAll(manifest, computed) {
+  let bad = 0;
+  for (const [rel, buf] of computed.pngs) {
+    const path = join(ROOT, rel);
+    if (!existsSync(path)) { console.log(`MISSING: ${rel}`); bad++; continue; }
+    const expected = createHash('sha256').update(buf).digest('hex');
+    const actual = createHash('sha256').update(readFileSync(path)).digest('hex');
+    if (expected !== actual) { console.log(`STALE: ${rel}`); bad++; }
+  }
+  const normalize = (s) => s.replace(/\r\n?/g, '\n');
+  for (const [rel, text] of computed.models) {
+    const path = join(ROOT, rel);
+    if (!existsSync(path)) { console.log(`MISSING: ${rel}`); bad++; continue; }
+    if (normalize(readFileSync(path, 'utf8')) !== normalize(text)) {
+      console.log(`STALE: ${rel}`); bad++;
+    }
+  }
+  if (bad) {
+    console.log(`Check FAILED: ${bad} asset(s) missing or stale (preview not checked).`);
+    process.exit(1);
+  }
+  console.log(`Check PASSED: ${computed.pngs.size} PNGs and ${computed.models.size} models match (preview not checked).`);
+}
+
+function usage() {
+  console.error('Usage: node tools/generate-starter-textures.mjs [--check]');
+}
+
+function main() {
+  const args = process.argv.slice(2);
+  if (args.length > 1 || (args.length === 1 && args[0] !== '--check')) {
+    usage();
+    process.exit(2);
+  }
   const manifest = loadManifest();
   validateManifest(manifest);
-
-  const paletteMap = {};
-  for (const [name, colors] of Object.entries(manifest.palette)) {
-    paletteMap[name] = colors.map(hexToRgba);
-  }
-
-  // Generate item textures
-  const itemTextures = {};
-  for (const id of manifest.output.itemModelsToUpdate) {
-    const png = generateItemTexture(manifest.items[id], paletteMap);
-    itemTextures[id] = png;
-  }
-
-  // Generate block textures
-  const blockTextures = {};
-  for (const id of manifest.output.blockModelsToUpdate) {
-    const blockDef = manifest.blocks[id];
-    if (id === 'crystal_puller' || id === 'wafer_slicer' || id === 'test_package' || id === 'pattern_generator') {
-      blockTextures[id] = generateBlockTexture(blockDef.textures.all, paletteMap);
-    } else if (id.startsWith('process_cell_controller')) {
-      blockTextures[`${id}_side`] = generateBlockTexture(blockDef.textures.side, paletteMap);
-      blockTextures[`${id}_top`] = generateBlockTexture(blockDef.textures.top, paletteMap);
-      blockTextures[`${id}_front`] = generateBlockTexture(blockDef.textures.front, paletteMap);
-      blockTextures[`${id}_stripe`] = generateBlockTexture(blockDef.textures.stripe, paletteMap);
-    } else if (id.startsWith('process_cell_casing') || id.startsWith('process_cell_power_port')) {
-      blockTextures[id] = generateBlockTexture(blockDef.textures.all, paletteMap);
-    }
-  }
-
-  if (checkOnly) {
-    // Verify existing files match expected
-    let stale = false;
-    let missing = false;
-
-    // Check item textures
-    for (const id of manifest.output.itemModelsToUpdate) {
-      const path = join(ROOT, manifest.output.texturesItemsDir, `${id}.png`);
-      const expected = itemTextures[id];
-      const actualHash = fileHash(path);
-      const expectedHash = createHash('sha256').update(expected).digest('hex');
-      if (!actualHash) {
-        console.log(`MISSING: ${path}`);
-        missing = true;
-      } else if (actualHash !== expectedHash) {
-        console.log(`STALE: ${path}`);
-        stale = true;
-      }
-    }
-
-    // Check block textures
-    for (const id of manifest.output.blockModelsToUpdate) {
-      const blockDef = manifest.blocks[id];
-      const checkTextures = (id === 'crystal_puller' || id === 'wafer_slicer' || id === 'test_package' || id === 'pattern_generator')
-        ? { all: blockTextures[id] }
-        : (id.startsWith('process_cell_controller')
-          ? { side: blockTextures[`${id}_side`], top: blockTextures[`${id}_top`], front: blockTextures[`${id}_front`], stripe: blockTextures[`${id}_stripe`] }
-          : { all: blockTextures[id] });
-
-      for (const [face, expected] of Object.entries(checkTextures)) {
-        const faceName = face === 'all' ? id : `${id}_${face}`;
-        const path = join(ROOT, manifest.output.texturesBlocksDir, `${faceName}.png`);
-        const actualHash = fileHash(path);
-        const expectedHash = createHash('sha256').update(expected).digest('hex');
-        if (!actualHash) {
-          console.log(`MISSING: ${path}`);
-          missing = true;
-        } else if (actualHash !== expectedHash) {
-          console.log(`STALE: ${path}`);
-          stale = true;
-        }
-      }
-    }
-
-    // Check item models
-    for (const id of manifest.output.itemModelsToUpdate) {
-      const path = join(ROOT, manifest.output.itemsDir, `${id}.json`);
-      if (!existsSync(path)) {
-        console.log(`MISSING MODEL: ${path}`);
-        missing = true;
-      } else {
-        const content = readFileSync(path, 'utf8');
-        const expected = `{
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "lithmod:item/${id}"
-  }
-}`;
-        if (content !== expected) {
-          console.log(`STALE MODEL: ${path}`);
-          stale = true;
-        }
-      }
-    }
-
-    // Check block models
-    for (const id of manifest.output.blockModelsToUpdate) {
-      const path = join(ROOT, manifest.output.blocksDir, `${id}.json`);
-      if (!existsSync(path)) {
-        console.log(`MISSING MODEL: ${path}`);
-        missing = true;
-      } else {
-        // Generate expected and compare
-        let expected;
-        if (id === 'crystal_puller' || id === 'wafer_slicer' || id === 'test_package' || id === 'pattern_generator') {
-          expected = `{
-  "parent": "minecraft:block/cube_all",
-  "textures": {
-    "all": "lithmod:block/${id}"
-  }
-}`;
-        } else if (id.startsWith('process_cell_controller')) {
-          expected = `{
-  "parent": "minecraft:block/orientable",
-  "textures": {
-    "top": "lithmod:block/${id}_top",
-    "bottom": "lithmod:block/${id}_top",
-    "side": "lithmod:block/${id}_side",
-    "front": "lithmod:block/${id}_front"
-  }
-}`;
-        } else if (id.startsWith('process_cell_casing') || id.startsWith('process_cell_power_port')) {
-          expected = `{
-  "parent": "minecraft:block/cube_all",
-  "textures": {
-    "all": "lithmod:block/${id}"
-  }
-}`;
-        }
-        const content = readFileSync(path, 'utf8');
-        if (content !== expected) {
-          console.log(`STALE MODEL: ${path}`);
-          stale = true;
-        }
-      }
-    }
-
-    if (missing || stale) {
-      console.log('Check FAILED: missing or stale assets detected');
-      process.exit(1);
-    } else {
-      console.log('Check PASSED: all assets up to date');
-    }
-    return;
-  }
-
-  // Write item textures
-  ensureDir(join(ROOT, manifest.output.texturesItemsDir));
-  for (const [id, png] of Object.entries(itemTextures)) {
-    writeFileSync(join(ROOT, manifest.output.texturesItemsDir, `${id}.png`), png);
-  }
-
-  // Write block textures
-  ensureDir(join(ROOT, manifest.output.texturesBlocksDir));
-  for (const id of manifest.output.blockModelsToUpdate) {
-    const blockDef = manifest.blocks[id];
-    if (id === 'crystal_puller' || id === 'wafer_slicer' || id === 'test_package' || id === 'pattern_generator') {
-      writeFileSync(join(ROOT, manifest.output.texturesBlocksDir, `${id}.png`), blockTextures[id]);
-    } else if (id.startsWith('process_cell_controller')) {
-      writeFileSync(join(ROOT, manifest.output.texturesBlocksDir, `${id}_side.png`), blockTextures[`${id}_side`]);
-      writeFileSync(join(ROOT, manifest.output.texturesBlocksDir, `${id}_top.png`), blockTextures[`${id}_top`]);
-      writeFileSync(join(ROOT, manifest.output.texturesBlocksDir, `${id}_front.png`), blockTextures[`${id}_front`]);
-      writeFileSync(join(ROOT, manifest.output.texturesBlocksDir, `${id}_stripe.png`), blockTextures[`${id}_stripe`]);
-    } else if (id.startsWith('process_cell_casing') || id.startsWith('process_cell_power_port')) {
-      writeFileSync(join(ROOT, manifest.output.texturesBlocksDir, `${id}.png`), blockTextures[id]);
-    }
-  }
-
-  // Write item models
-  ensureDir(join(ROOT, manifest.output.itemsDir));
-  for (const id of manifest.output.itemModelsToUpdate) {
-    writeItemModel(join(ROOT, manifest.output.itemsDir), id);
-  }
-
-  // Write block models
-  ensureDir(join(ROOT, manifest.output.blocksDir));
-  for (const id of manifest.output.blockModelsToUpdate) {
-    writeBlockModel(join(ROOT, manifest.output.blocksDir), id, manifest);
-  }
-
-  // Write preview atlas
-  const previewPng = generatePreviewAtlas(manifest, itemTextures, blockTextures);
-  ensureDir(dirname(join(ROOT, manifest.output.previewPath)));
-  writeFileSync(join(ROOT, manifest.output.previewPath), previewPng);
-
-  console.log('Generation complete.');
-  console.log(`  Items: ${manifest.output.itemModelsToUpdate.length} textures + models`);
-  console.log(`  Blocks: ${manifest.output.blockModelsToUpdate.length} textures + models`);
-  console.log(`  Preview: ${manifest.output.previewPath}`);
+  const computed = computeAll(manifest); // all buffers computed before any write
+  if (args[0] === '--check') checkAll(manifest, computed);
+  else writeAll(manifest, computed);
 }
 
-const args = process.argv.slice(2);
-const checkOnly = args.includes('--check');
-generate(checkOnly).catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+function loadManifest() {
+  return JSON.parse(readFileSync(join(ROOT, 'tools', 'starter-textures.json'), 'utf8'));
+}
+
+main();

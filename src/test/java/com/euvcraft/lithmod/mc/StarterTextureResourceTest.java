@@ -1,6 +1,7 @@
 package com.euvcraft.lithmod.mc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -15,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -105,17 +107,23 @@ class StarterTextureResourceTest {
             assertEquals(16, img.getHeight(), "Item " + itemId + " texture height must be 16");
             assertTrue(img.getAlphaRaster() != null, "Item " + itemId + " must have alpha channel");
 
-            // 4. Verify transparent background (at least one fully transparent pixel)
+            // 4. Verify a true transparent background with per-pixel binary alpha.
+            // Having an alpha raster alone does not prove the background is transparent,
+            // nor that color pixels are un-antialiased; every alpha must be exactly 0 or 255
+            // and at least one pixel must be fully transparent RGBA 0,0,0,0.
             boolean hasTransparent = false;
-            for (int y = 0; y < 16 && !hasTransparent; y++) {
+            for (int y = 0; y < 16; y++) {
                 for (int x = 0; x < 16; x++) {
-                    if ((img.getRGB(x, y) >>> 24) == 0x00) {
+                    int alpha = img.getRGB(x, y) >>> 24;
+                    if (alpha == 0x00) {
                         hasTransparent = true;
-                        break;
+                    } else {
+                        assertEquals(0xFF, alpha,
+                            "Item " + itemId + " pixel (" + x + "," + y + ") alpha must be 0 or 255, got " + alpha);
                     }
                 }
             }
-            assertTrue(hasTransparent, "Item " + itemId + " texture must have transparent pixels (background)");
+            assertTrue(hasTransparent, "Item " + itemId + " texture must have fully transparent pixels (background)");
         }
     }
 
@@ -128,7 +136,12 @@ class StarterTextureResourceTest {
             assertNotNull(modelUrl, "Missing block model: " + blockId);
             JsonObject model = parseJson(modelUrl);
 
-            // 2. Determine expected texture references
+            // 2. Determine expected parent and texture references
+            String expectedParent = ORIENTABLE_BLOCKS.contains(blockId)
+                ? "minecraft:block/orientable"
+                : "minecraft:block/cube_all";
+            assertEquals(expectedParent, model.get("parent").getAsString(),
+                "Block " + blockId + " parent must be " + expectedParent);
             Map<String, String> expectedTextures = expectedBlockTextures(blockId);
             JsonObject textures = model.getAsJsonObject("textures");
             assertNotNull(textures, "Block " + blockId + " missing textures object");
@@ -161,6 +174,55 @@ class StarterTextureResourceTest {
                     }
                 }
             }
+        }
+    }
+
+    @Test
+    @DisplayName("Unformed models never reuse formed textures; state cues are pixel-distinct")
+    void formedAndUnformedStatesRenderDifferently() throws Exception {
+        for (String base : Set.of(
+            "process_cell_controller", "process_cell_casing", "process_cell_power_port")) {
+            Map<String, String> formed = blockModelTextures(base + "_formed");
+            Map<String, String> unformed = blockModelTextures(base + "_unformed");
+            // The unformed model must never point at any *_formed texture (exact
+            // state suffixes, not a loose endsWith('formed') match).
+            for (String ref : unformed.values()) {
+                assertFalse(ref.endsWith("_formed") && !ref.endsWith("_unformed"),
+                    base + " unformed texture reference " + ref + " must not be the formed texture");
+            }
+            // Sibling models must not share any texture path.
+            Set<String> formedPaths = new HashSet<>(formed.values());
+            Set<String> unformedPaths = new HashSet<>(unformed.values());
+            formedPaths.removeAll(unformedPaths);
+            assertFalse(formedPaths.isEmpty(), base + " formed/unformed models share texture references");
+        }
+        // Pixel-level proof of distinct amber-unformed / green-formed cues.
+        assertTrue(pixelsDiffer(
+            decodeBlockTexture("lithmod:block/process_cell_controller_formed_front"),
+            decodeBlockTexture("lithmod:block/process_cell_controller_unformed_front")),
+            "controller front textures must differ pixel-wise between formed and unformed");
+        assertTrue(pixelsDiffer(
+            decodeBlockTexture("lithmod:block/process_cell_casing_formed"),
+            decodeBlockTexture("lithmod:block/process_cell_casing_unformed")),
+            "casing textures must differ pixel-wise between formed and unformed");
+        assertTrue(pixelsDiffer(
+            decodeBlockTexture("lithmod:block/process_cell_power_port_formed"),
+            decodeBlockTexture("lithmod:block/process_cell_power_port_unformed")),
+            "power port textures must differ pixel-wise between formed and unformed");
+    }
+
+    @Test
+    @DisplayName("Seven regenerable block item models keep lithmod:block/<id> parents")
+    void blockItemModelsParentToBlockModels() throws Exception {
+        List<String> blockItems = List.of(
+            "crystal_puller", "wafer_slicer", "test_package", "pattern_generator",
+            "process_cell_controller", "process_cell_casing", "process_cell_power_port");
+        for (String id : blockItems) {
+            URL modelUrl = StarterTextureResourceTest.class.getResource(ITEM_MODELS + id + ".json");
+            assertNotNull(modelUrl, "Missing block item model: " + id);
+            JsonObject model = parseJson(modelUrl);
+            assertEquals("lithmod:block/" + id, model.get("parent").getAsString(),
+                "Block item model " + id + " must parent to lithmod:block/" + id);
         }
     }
 
@@ -238,6 +300,44 @@ class StarterTextureResourceTest {
             assertTrue(elem.isJsonObject(), "JSON root not object: " + url);
             return elem.getAsJsonObject();
         }
+    }
+
+    /** Face → texture reference map for an existing block model JSON. */
+    private static Map<String, String> blockModelTextures(String blockId) throws IOException {
+        URL modelUrl = StarterTextureResourceTest.class.getResource(BLOCK_MODELS + blockId + ".json");
+        assertNotNull(modelUrl, "Missing block model: " + blockId);
+        JsonObject model = parseJson(modelUrl);
+        JsonObject textures = model.getAsJsonObject("textures");
+        assertNotNull(textures, "Block " + blockId + " missing textures object");
+        Map<String, String> refs = new HashMap<>();
+        for (Map.Entry<String, JsonElement> entry : textures.entrySet()) {
+            refs.put(entry.getKey(), entry.getValue().getAsString());
+        }
+        return refs;
+    }
+
+    /** Decode a lithmod:block texture reference as a BufferedImage (16x16). */
+    private static BufferedImage decodeBlockTexture(String ref) throws IOException {
+        String texPath = ref.substring("lithmod:block/".length()) + ".png";
+        URL texUrl = StarterTextureResourceTest.class.getResource(BLOCK_TEXTURES + texPath);
+        assertNotNull(texUrl, "Missing block texture: " + texPath);
+        BufferedImage img = ImageIO.read(texUrl.openStream());
+        assertNotNull(img, "Failed to decode PNG: " + texPath);
+        return img;
+    }
+
+    /** True when the two images disagree on at least one pixel. */
+    private static boolean pixelsDiffer(BufferedImage a, BufferedImage b) {
+        assertEquals(16, a.getWidth(), "Left texture must be 16 wide");
+        assertEquals(16, b.getWidth(), "Right texture must be 16 wide");
+        assertEquals(16, a.getHeight(), "Left texture must be 16 high");
+        assertEquals(16, b.getHeight(), "Right texture must be 16 high");
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                if (a.getRGB(x, y) != b.getRGB(x, y)) return true;
+            }
+        }
+        return false;
     }
 
     /** List resource names in a bundled resource directory. */
