@@ -47,6 +47,8 @@ class StructureMatcherTest {
     private static final Cell PORT_C = new Cell(1, 0, SHAPE.length() - 1);
     /** A back-face cell that is plain casing in a perfect box, used to inject defects. */
     private static final Cell CASING_CELL = new Cell(0, 1, SHAPE.length() - 1);
+    /** Operating panel position: directly above controller at front face (u0, v0+1, 0). */
+    private static final Cell PANEL_CELL = new Cell(0, 1, 0); // u=0,v=1,d=0 when u0=0,v0=0
 
     // ---------------------------------------------------------------- geometry oracle
 
@@ -121,7 +123,7 @@ class StructureMatcherTest {
         return pos -> blocks.getOrDefault(pos, BlockKind.OTHER);
     }
 
-    /** A complete valid box: all casing, then the controller at the front face offset plus the given ports. */
+    /** A complete valid box: all casing, then the controller at the front face offset, operating panel above it, plus the given ports. */
     private static Map<Cell, BlockKind> layoutWithPorts(int u0, int v0, Cell... ports) {
         Map<Cell, BlockKind> layout = new HashMap<>();
         for (int u = 0; u < SHAPE.width(); u++) {
@@ -132,6 +134,10 @@ class StructureMatcherTest {
             }
         }
         layout.put(new Cell(u0, v0, 0), BlockKind.CONTROLLER);
+        // Operating panel directly above controller at (u0, v0+1, 0)
+        if (v0 + 1 < SHAPE.height()) {
+            layout.put(new Cell(u0, v0 + 1, 0), BlockKind.OPERATING_PANEL);
+        }
         for (Cell port : ports) {
             layout.put(port, BlockKind.POWER_PORT);
         }
@@ -141,14 +147,41 @@ class StructureMatcherTest {
     /**
      * A complete, valid box built on the wrong side of the controller: the whole box is one full
      * length in front of the controller's face instead of behind it.
+     * Contains all 12 kinds: controller at front face (u0, v0, 0), operating panel above at (u0, v0+1, 0),
+     * power ports at back face (d = length-1), and casing elsewhere.
      */
     private static Function<MultiblockPos, BlockKind> worldBuiltInFront(MultiblockPos controller,
             MultiblockDirection facing, int u0, int v0) {
         Map<MultiblockPos, BlockKind> blocks = new HashMap<>();
-        blocks.put(controller, BlockKind.CONTROLLER);
-        MultiblockPos shift = backVector(facing).multiply(-SHAPE.length());
-        for (MultiblockPos cell : expectedCells(controller, facing, u0, v0)) {
-            blocks.putIfAbsent(cell.add(shift), BlockKind.CASING);
+        // The box extends along facing (opposite of back) for length cells
+        // Keep the real anchor at (u0,v0,0); mirror only the depth direction.
+        MultiblockPos origin = controller.add(rightVector(facing).multiply(-u0)).add(UP.multiply(-v0));
+        for (int u = 0; u < SHAPE.width(); u++) {
+            for (int v = 0; v < SHAPE.height(); v++) {
+                for (int d = 0; d < SHAPE.length(); d++) {
+                    MultiblockPos pos = origin
+                            .add(rightVector(facing).multiply(u))
+                            .add(UP.multiply(v))
+                            .add(facingVector(facing).multiply(d));
+                    // Controller at front face (u0, v0, 0)
+                    if (u == u0 && v == v0 && d == 0) {
+                        blocks.put(pos, BlockKind.CONTROLLER);
+                    }
+                    // Operating panel directly above controller at (u0, v0+1, 0)
+                    else if (u == u0 && v == v0 + 1 && d == 0 && v0 + 1 < SHAPE.height()) {
+                        blocks.put(pos, BlockKind.OPERATING_PANEL);
+                    }
+                    // Power ports at back face (d = length-1)
+                    else if ((u == PORT_A.u() && v == PORT_A.v() && d == PORT_A.d())
+                            || (u == PORT_B.u() && v == PORT_B.v() && d == PORT_B.d())) {
+                        blocks.put(pos, BlockKind.POWER_PORT);
+                    }
+                    // Everything else is casing
+                    else {
+                        blocks.put(pos, BlockKind.CASING);
+                    }
+                }
+            }
         }
         return pos -> blocks.getOrDefault(pos, BlockKind.OTHER);
     }
@@ -164,13 +197,22 @@ class StructureMatcherTest {
                         worldAt(CONTROLLER, facing, u0, v0, layoutWithPorts(u0, v0, PORT_A, PORT_B));
                 MatchResult result = StructureMatcher.match(CONTROLLER, facing, SHAPE, world);
 
-                assertTrue(result.success(),
-                        "facing=" + facing + " offset=(" + u0 + "," + v0 + "): " + result.failureReason());
-                assertEquals(SHAPE.volume(), result.memberPositions().size(),
-                        "facing=" + facing + " offset=(" + u0 + "," + v0 + ")");
-                assertEquals(new HashSet<>(expectedCells(CONTROLLER, facing, u0, v0)),
-                        new HashSet<>(result.memberPositions()),
-                        "member cells for facing=" + facing + " offset=(" + u0 + "," + v0 + ")");
+                if (v0 == 0) {
+                    // Only bottom row (v0=0) allows operating panel above controller
+                    assertTrue(result.success(),
+                            "facing=" + facing + " offset=(" + u0 + "," + v0 + "): " + result.failureReason());
+                    assertEquals(SHAPE.volume(), result.memberPositions().size(),
+                            "facing=" + facing + " offset=(" + u0 + "," + v0 + ")");
+                    assertEquals(new HashSet<>(expectedCells(CONTROLLER, facing, u0, v0)),
+                            new HashSet<>(result.memberPositions()),
+                            "member cells for facing=" + facing + " offset=(" + u0 + "," + v0 + ")");
+                } else {
+                    // Top row (v0=1) leaves no room for operating panel above
+                    assertFalse(result.success(),
+                            "facing=" + facing + " offset=(" + u0 + "," + v0 + ") should fail: no room for panel");
+                    assertNotNull(result.failureReason());
+                    assertTrue(result.memberPositions().isEmpty());
+                }
             }
         }
     }
@@ -178,17 +220,17 @@ class StructureMatcherTest {
     @ParameterizedTest
     @EnumSource(MultiblockDirection.class)
     void match_returnsExactlyTheDocumentedBoundingBox(MultiblockDirection facing) {
-        // Inclusive min/max world bounds on x, y and z for CONTROLLER at offset (u0, v0) = (1, 1).
+        // Inclusive min/max world bounds on x, y and z for CONTROLLER at offset (u0, v0) = (1, 0) (bottom row).
         int[][] bounds = switch (facing) {
             //        x min/max,  y min/max, z min/max
-            case NORTH -> new int[][] {{9, 10}, {4, 5}, {10, 12}};
-            case SOUTH -> new int[][] {{10, 11}, {4, 5}, {8, 10}};
-            case EAST -> new int[][] {{8, 10}, {4, 5}, {9, 10}};
-            case WEST -> new int[][] {{10, 12}, {4, 5}, {10, 11}};
+            case NORTH -> new int[][] {{9, 10}, {5, 6}, {10, 12}};
+            case SOUTH -> new int[][] {{10, 11}, {5, 6}, {8, 10}};
+            case EAST -> new int[][] {{8, 10}, {5, 6}, {9, 10}};
+            case WEST -> new int[][] {{10, 12}, {5, 6}, {10, 11}};
         };
 
         MatchResult result = StructureMatcher.match(CONTROLLER, facing, SHAPE,
-                worldAt(CONTROLLER, facing, 1, 1, layoutWithPorts(1, 1, PORT_A, PORT_B)));
+                worldAt(CONTROLLER, facing, 1, 0, layoutWithPorts(1, 0, PORT_A, PORT_B)));
         assertTrue(result.success(), "facing=" + facing + ": " + result.failureReason());
 
         int[] min = { Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE };
@@ -210,12 +252,12 @@ class StructureMatcherTest {
     @EnumSource(MultiblockDirection.class)
     void match_acceptsExactlyOnePowerPort(MultiblockDirection facing) {
         for (int u0 = 0; u0 < SHAPE.width(); u0++) {
-            for (int v0 = 0; v0 < SHAPE.height(); v0++) {
-                MatchResult result = StructureMatcher.match(CONTROLLER, facing, SHAPE,
-                        worldAt(CONTROLLER, facing, u0, v0, layoutWithPorts(u0, v0, PORT_A)));
-                assertTrue(result.success(),
-                        "facing=" + facing + " offset=(" + u0 + "," + v0 + "): " + result.failureReason());
-            }
+            // Only v0=0 (bottom row) is valid - need room for operating panel above
+            int v0 = 0;
+            MatchResult result = StructureMatcher.match(CONTROLLER, facing, SHAPE,
+                    worldAt(CONTROLLER, facing, u0, v0, layoutWithPorts(u0, v0, PORT_A)));
+            assertTrue(result.success(),
+                    "facing=" + facing + " offset=(" + u0 + "," + v0 + "): " + result.failureReason());
         }
     }
 
@@ -223,12 +265,12 @@ class StructureMatcherTest {
     @EnumSource(MultiblockDirection.class)
     void match_acceptsExactlyTwoPowerPorts(MultiblockDirection facing) {
         for (int u0 = 0; u0 < SHAPE.width(); u0++) {
-            for (int v0 = 0; v0 < SHAPE.height(); v0++) {
-                MatchResult result = StructureMatcher.match(CONTROLLER, facing, SHAPE,
-                        worldAt(CONTROLLER, facing, u0, v0, layoutWithPorts(u0, v0, PORT_A, PORT_B)));
-                assertTrue(result.success(),
-                        "facing=" + facing + " offset=(" + u0 + "," + v0 + "): " + result.failureReason());
-            }
+            // Only v0=0 (bottom row) is valid - need room for operating panel above
+            int v0 = 0;
+            MatchResult result = StructureMatcher.match(CONTROLLER, facing, SHAPE,
+                    worldAt(CONTROLLER, facing, u0, v0, layoutWithPorts(u0, v0, PORT_A, PORT_B)));
+            assertTrue(result.success(),
+                    "facing=" + facing + " offset=(" + u0 + "," + v0 + "): " + result.failureReason());
         }
     }
 
@@ -295,11 +337,80 @@ class StructureMatcherTest {
     void match_rejectsCompleteBoxBuiltInFrontOfController(MultiblockDirection facing) {
         for (int u0 = 0; u0 < SHAPE.width(); u0++) {
             for (int v0 = 0; v0 < SHAPE.height(); v0++) {
-                MatchResult result = StructureMatcher.match(CONTROLLER, facing, SHAPE,
-                        worldBuiltInFront(CONTROLLER, facing, u0, v0));
+                Function<MultiblockPos, BlockKind> world = worldBuiltInFront(CONTROLLER, facing, u0, v0);
+                assertEquals(BlockKind.CONTROLLER, world.apply(CONTROLLER), "mirrored fixture keeps actual anchor");
+                if (v0 == 0) assertEquals(BlockKind.OPERATING_PANEL, world.apply(CONTROLLER.add(UP)),
+                        "mirrored bottom-row fixture keeps the required panel above the anchor");
+                MatchResult result = StructureMatcher.match(CONTROLLER, facing, SHAPE, world);
 
                 assertRejects(result, "wrong block", facing, u0, v0);
             }
+        }
+    }
+
+    // ---------------------------------------------------------------- operating panel failure cases
+
+    @ParameterizedTest
+    @EnumSource(MultiblockDirection.class)
+    void match_rejectsMissingOperatingPanel(MultiblockDirection facing) {
+        for (int u0 = 0; u0 < SHAPE.width(); u0++) {
+            // Only v0=0 can have a valid panel position; test missing panel there
+            int v0 = 0;
+            Map<Cell, BlockKind> layout = layoutWithPorts(u0, v0, PORT_A, PORT_B);
+            // Remove the operating panel (replace with casing)
+            layout.put(new Cell(u0, v0 + 1, 0), BlockKind.CASING);
+            MatchResult result = StructureMatcher.match(CONTROLLER, facing, SHAPE,
+                    worldAt(CONTROLLER, facing, u0, v0, layout));
+
+            assertRejects(result, "expected exactly one operating panel above controller, found 0", facing, u0, v0);
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(MultiblockDirection.class)
+    void match_rejectsOperatingPanelInWrongPosition(MultiblockDirection facing) {
+        for (int u0 = 0; u0 < SHAPE.width(); u0++) {
+            int v0 = 0;
+            Map<Cell, BlockKind> layout = layoutWithPorts(u0, v0, PORT_A, PORT_B);
+            // Move panel to wrong position (e.g., back face)
+            layout.put(new Cell(u0, v0 + 1, 0), BlockKind.CASING);
+            layout.put(new Cell(u0, v0, SHAPE.length() - 1), BlockKind.OPERATING_PANEL);
+            MatchResult result = StructureMatcher.match(CONTROLLER, facing, SHAPE,
+                    worldAt(CONTROLLER, facing, u0, v0, layout));
+
+            assertRejects(result, "operating panel at wrong position", facing, u0, v0);
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(MultiblockDirection.class)
+    void match_rejectsSecondOperatingPanel(MultiblockDirection facing) {
+        for (int u0 = 0; u0 < SHAPE.width(); u0++) {
+            int v0 = 0;
+            Map<Cell, BlockKind> layout = layoutWithPorts(u0, v0, PORT_A, PORT_B);
+            // Add a second operating panel at another front-face top cell
+            int otherU = (u0 + 1) % SHAPE.width();
+            layout.put(new Cell(otherU, v0 + 1, 0), BlockKind.OPERATING_PANEL);
+            MatchResult result = StructureMatcher.match(CONTROLLER, facing, SHAPE,
+                    worldAt(CONTROLLER, facing, u0, v0, layout));
+
+            assertRejects(result, "operating panel at wrong position", facing, u0, v0);
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(MultiblockDirection.class)
+    void match_rejectsOperatingPanelInsteadOfController(MultiblockDirection facing) {
+        for (int u0 = 0; u0 < SHAPE.width(); u0++) {
+            int v0 = 0;
+            Map<Cell, BlockKind> layout = layoutWithPorts(u0, v0, PORT_A, PORT_B);
+            // Replace controller with operating panel
+            layout.put(new Cell(u0, v0, 0), BlockKind.OPERATING_PANEL);
+            // Keep the panel above (now two panels, no controller)
+            MatchResult result = StructureMatcher.match(CONTROLLER, facing, SHAPE,
+                    worldAt(CONTROLLER, facing, u0, v0, layout));
+
+            assertRejects(result, "operating panel at wrong position", facing, u0, v0);
         }
     }
 

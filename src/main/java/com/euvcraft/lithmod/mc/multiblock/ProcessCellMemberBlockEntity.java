@@ -1,6 +1,7 @@
 package com.euvcraft.lithmod.mc.multiblock;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -21,6 +22,8 @@ public abstract class ProcessCellMemberBlockEntity extends BlockEntity {
 
     private @Nullable ProcessCellControllerBlockEntity controller;
     private boolean formed;
+    private int part;
+    private @Nullable Direction facing;
 
     protected ProcessCellMemberBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -36,18 +39,32 @@ public abstract class ProcessCellMemberBlockEntity extends BlockEntity {
         return this.formed;
     }
 
+    /** Visual part index 0..11 for formed members, 0 when unformed. */
+    public int part() {
+        return this.part;
+    }
+
+    /** Horizontal facing of the cell this member belongs to, or null when unformed. */
+    public @Nullable Direction facing() {
+        return this.facing;
+    }
+
     /**
-     * Records a new formed state and controller link. Called by the controller, never by a player.
+     * Records a new formed state, controller link, part index, and facing. Called by the controller, never by a player.
      *
      * @param controller the owning controller, or null to detach this member
      * @param formed whether the cell is formed
+     * @param part visual part index 0..11 (ignored when formed is false)
+     * @param facing horizontal facing of the cell (ignored when formed is false)
      */
-    public void attach(@Nullable ProcessCellControllerBlockEntity controller, boolean formed) {
-        if (this.controller == controller && this.formed == formed) {
+    public void attach(@Nullable ProcessCellControllerBlockEntity controller, boolean formed, int part, @Nullable Direction facing) {
+        if (this.controller == controller && this.formed == formed && this.part == part && this.facing == facing) {
             return;
         }
         this.controller = controller;
         this.formed = formed;
+        this.part = formed ? part : 0;
+        this.facing = formed ? facing : null;
         setChanged();
     }
 
@@ -59,32 +76,28 @@ public abstract class ProcessCellMemberBlockEntity extends BlockEntity {
      * and there is nobody left to push an update.</p>
      */
     public void serverTick() {
-        if (level == null || level.isClientSide()) {
-            return;
-        }
-        if (this.formed && (this.controller == null || !this.controller.isFormed())) {
-            this.formed = false;
-            this.controller = null;
+        if (level == null || level.isClientSide()) return;
+        boolean live = controller != null && !controller.isRemoved()
+            && level.getBlockEntity(controller.getBlockPos()) == controller
+            && controller.isFormed() && controller.members().contains(worldPosition);
+        BlockState state = level.getBlockState(worldPosition);
+        // All member classes share equal named properties, including after an actual BE reload.
+        boolean persistedFormed = state.hasProperty(ProcessCellCasingBlock.FORMED)
+            && state.getValue(ProcessCellCasingBlock.FORMED);
+        boolean stalePart = state.hasProperty(ProcessCellCasingBlock.PART)
+            && state.getValue(ProcessCellCasingBlock.PART) != 0;
+        if (!live && (formed || controller != null || persistedFormed || stalePart)) {
+            attach(null, false, 0, null);
             clearFormedState();
-            setChanged();
         }
     }
 
-    /**
-     * Takes this member's block state back to unformed.
-     *
-     * <p>Needed for the one case the controller cannot cover: when the controller block itself is
-     * removed there is no controller left to push an update, so each surviving member has to take
-     * its own flag down.</p>
-     */
+    /** Clear coarse visual state even if no ephemeral owner was restored from disk. */
     private void clearFormedState() {
         BlockState state = level.getBlockState(worldPosition);
-        if (state.hasProperty(ProcessCellCasingBlock.FORMED)
-                && state.getValue(ProcessCellCasingBlock.FORMED)) {
-            level.setBlock(worldPosition, state.setValue(ProcessCellCasingBlock.FORMED, Boolean.FALSE), 3);
-        } else if (state.hasProperty(ProcessCellPowerPortBlock.FORMED)
-                && state.getValue(ProcessCellPowerPortBlock.FORMED)) {
-            level.setBlock(worldPosition, state.setValue(ProcessCellPowerPortBlock.FORMED, Boolean.FALSE), 3);
-        }
+        BlockState next = state;
+        if (next.hasProperty(ProcessCellCasingBlock.FORMED)) next = next.setValue(ProcessCellCasingBlock.FORMED, false);
+        if (next.hasProperty(ProcessCellCasingBlock.PART)) next = next.setValue(ProcessCellCasingBlock.PART, 0);
+        if (next != state) level.setBlock(worldPosition, next, 3);
     }
 }

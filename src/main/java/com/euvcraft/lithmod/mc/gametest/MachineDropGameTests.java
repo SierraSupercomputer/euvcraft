@@ -490,11 +490,13 @@ public final class MachineDropGameTests {
         List<Block> blocks = List.of(
             ModMultiblocks.PROCESS_CELL_CONTROLLER.get(),
             ModMultiblocks.PROCESS_CELL_CASING.get(),
-            ModMultiblocks.PROCESS_CELL_POWER_PORT.get());
+            ModMultiblocks.PROCESS_CELL_POWER_PORT.get(),
+            ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get());
         List<Item> items = List.of(
             ModItems.PROCESS_CELL_CONTROLLER.get(),
             ModItems.PROCESS_CELL_CASING.get(),
-            ModItems.PROCESS_CELL_POWER_PORT.get());
+            ModItems.PROCESS_CELL_POWER_PORT.get(),
+            ModItems.PROCESS_CELL_OPERATING_PANEL.get());
 
         // All three are broken at the same position, one after another, so no block's drops
         // can fall inside another block's counting window. Spacing them across the structure

@@ -6,10 +6,12 @@ import com.euvcraft.lithmod.mc.multiblock.ProcessCellCasingBlockEntity;
 import com.euvcraft.lithmod.mc.multiblock.ProcessCellControllerBlock;
 import com.euvcraft.lithmod.mc.multiblock.ProcessCellControllerBlockEntity;
 import com.euvcraft.lithmod.mc.multiblock.ProcessCellMemberBlockEntity;
+import com.euvcraft.lithmod.mc.multiblock.ProcessCellOperatingPanelBlock;
 import com.euvcraft.lithmod.mc.multiblock.ProcessCellPowerPortBlock;
 import com.euvcraft.lithmod.mc.multiblock.ProcessCellPowerPortBlockEntity;
 import com.euvcraft.lithmod.mc.multiblock.ModMultiblocks;
 import com.euvcraft.lithmod.core.multiblock.StructureShape;
+import com.euvcraft.lithmod.mc.registry.ModItems;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -38,6 +40,7 @@ import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Rotation;
@@ -74,6 +77,10 @@ public final class MultiblockGameTests {
     private static final String ENERGY_ONLY_WHEN_FORMED = "multiblock_energy_reaches_controller_only_while_formed";
     private static final String FORMATION_HOOKS = "multiblock_formation_hooks_fire_per_transition";
     private static final String MODEL_TEXTURES_RESOLVE = "multiblock_model_textures_all_resolve";
+    // New operator panel visual state tests
+    private static final String OPERATOR_PANEL_VISUAL_PARTS = "operator_panel_visual_parts";
+    private static final String OPERATOR_PANEL_VISUAL_RESET = "operator_panel_visual_reset";
+    private static final String OPERATOR_PANEL_VISUAL_RELOAD_OWNER = "operator_panel_visual_reload_owner";
 
     private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS =
         DeferredRegister.create(net.minecraft.core.registries.Registries.TEST_FUNCTION, "lithmod");
@@ -92,6 +99,9 @@ public final class MultiblockGameTests {
         FUNCTIONS.register(ENERGY_ONLY_WHEN_FORMED, () -> MultiblockGameTests::energyOnlyWhileFormed);
         FUNCTIONS.register(FORMATION_HOOKS, () -> MultiblockGameTests::formationHooksFirePerTransition);
         FUNCTIONS.register(MODEL_TEXTURES_RESOLVE, () -> MultiblockGameTests::modelTexturesAllResolve);
+        FUNCTIONS.register(OPERATOR_PANEL_VISUAL_PARTS, () -> MultiblockGameTests::operatorPanelVisualParts);
+        FUNCTIONS.register(OPERATOR_PANEL_VISUAL_RESET, () -> MultiblockGameTests::operatorPanelVisualReset);
+        FUNCTIONS.register(OPERATOR_PANEL_VISUAL_RELOAD_OWNER, () -> MultiblockGameTests::operatorPanelVisualReloadOwner);
     }
 
     private MultiblockGameTests() {
@@ -116,6 +126,9 @@ public final class MultiblockGameTests {
         register(event, data, ENERGY_ONLY_WHEN_FORMED);
         register(event, data, FORMATION_HOOKS);
         register(event, data, MODEL_TEXTURES_RESOLVE);
+        register(event, data, OPERATOR_PANEL_VISUAL_PARTS);
+        register(event, data, OPERATOR_PANEL_VISUAL_RESET);
+        register(event, data, OPERATOR_PANEL_VISUAL_RELOAD_OWNER);
         LOGGER.info("Registered EUVCRAFT multiblock game tests");
     }
 
@@ -200,7 +213,8 @@ public final class MultiblockGameTests {
      * Places a complete, valid cell and returns its twelve relative positions.
      *
      * <p>The controller carries the facing under test, which is the only way a multiblock can know
-     * where its other eleven blocks are.</p>
+     * where its other eleven blocks are. The operating panel is placed directly above the controller
+     * (v=1, same u, d=0), replacing a casing block. Controller must be at v0=0 (bottom row).</p>
      */
     private static List<BlockPos> buildCell(GameTestHelper helper, BlockPos controller, Direction facing,
             int u0, int v0) {
@@ -212,6 +226,9 @@ public final class MultiblockGameTests {
                     if (u == u0 && v == v0 && d == 0) {
                         helper.setBlock(pos, ModMultiblocks.PROCESS_CELL_CONTROLLER.get()
                             .defaultBlockState().setValue(ProcessCellControllerBlock.FACING, facing));
+                    } else if (u == u0 && v == v0 + 1 && d == 0) {
+                        // Operating panel directly above controller
+                        helper.setBlock(pos, ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get().defaultBlockState());
                     } else if (isPort(u, v, d)) {
                         helper.setBlock(pos, ModMultiblocks.PROCESS_CELL_POWER_PORT.get().defaultBlockState());
                     } else {
@@ -264,16 +281,8 @@ public final class MultiblockGameTests {
 
     private static boolean isFormedFlag(ServerLevel level, BlockPos abs) {
         BlockState state = level.getBlockState(abs);
-        if (state.getBlock() instanceof ProcessCellControllerBlock) {
-            return state.getValue(ProcessCellControllerBlock.FORMED);
-        }
-        if (state.getBlock() instanceof ProcessCellCasingBlock) {
-            return state.getValue(ProcessCellCasingBlock.FORMED);
-        }
-        if (state.getBlock() instanceof ProcessCellPowerPortBlock) {
-            return state.getValue(ProcessCellPowerPortBlock.FORMED);
-        }
-        return false;
+        return state.hasProperty(ProcessCellControllerBlock.FORMED)
+            && state.getValue(ProcessCellControllerBlock.FORMED);
     }
 
     private static void assertNoFlagLeftSet(GameTestHelper helper, List<BlockPos> cells, BlockPos skipRel,
@@ -288,60 +297,105 @@ public final class MultiblockGameTests {
     }
 
     // ------------------------------------------------------------------
-    // 1. all four facings
+    // 1. all four facings (controller at bottom row v0=0 only; v0=1 is invalid)
     // ------------------------------------------------------------------
 
     private static void formsInAllFourFacings(GameTestHelper helper) {
         BlockPos controller = new BlockPos(1, 1, 1);
+        int formedCount = 0;
+        int refusedCount = 0;
 
         for (Direction facing : new Direction[] { Direction.NORTH, Direction.SOUTH,
                                                   Direction.EAST, Direction.WEST }) {
             for (int u0 = 0; u0 < SHAPE.width(); u0++) {
-                for (int v0 = 0; v0 < SHAPE.height(); v0++) {
-                    List<BlockPos> cells = buildCell(helper, controller, facing, u0, v0);
-                    ProcessCellControllerBlockEntity be = revalidate(helper, controller);
+                // v0=0 (bottom row) - VALID: controller at bottom, operating panel above
+                int v0 = 0;
+                List<BlockPos> cells = buildCell(helper, controller, facing, u0, v0);
+                ProcessCellControllerBlockEntity be = revalidate(helper, controller);
+                if (be.isFormed()) {
                     assertFormed(helper, be, controller, facing, u0, v0,
                         "facing=" + facing + " offset=(" + u0 + "," + v0 + ")");
+                    formedCount++;
+                } else {
+                    helper.fail("facing=" + facing + " offset=(" + u0 + "," + v0 + ") should form but didn't: " + be.failureReason());
+                }
 
-                    // NEGATIVE CONTROL: the same twelve blocks mirrored onto the controller's front
-                    // side must not form, so a green assertion above cannot come from a matcher that
-                    // accepts any twelve structure blocks.
-                    for (BlockPos rel : cells) {
-                        helper.setBlock(rel, Blocks.AIR.defaultBlockState());
+                // NEGATIVE CONTROL: a complete 12-cell mirrored box on the controller's front side
+                // (d=0..2 outward along facing) must not form. The mirrored box contains:
+                // - controller at its front face (u0, v0, 0)
+                // - operating panel above controller at (u0, v0+1, 0)
+                // - 1 or 2 power ports at back face
+                // - rest casing
+                // This tests that the matcher correctly rejects cells built on the wrong side.
+                for (BlockPos rel : cells) {
+                    helper.setBlock(rel, Blocks.AIR.defaultBlockState());
+                }
+                // Build complete mirrored box
+                List<BlockPos> mirrored = mirroredCells(controller, facing, u0, v0);
+                // The mirrored box's controller is at mirrored index (u0, v0, 0)
+                BlockPos mirroredControllerRel = mirrored.get(u0 * SHAPE.height() * SHAPE.length() + v0 * SHAPE.length() + 0);
+                // The mirrored box's panel is at (u0, v0+1, 0)
+                BlockPos mirroredPanelRel = mirrored.get(u0 * SHAPE.height() * SHAPE.length() + (v0 + 1) * SHAPE.length() + 0);
+                helper.assertTrue(mirroredControllerRel.equals(controller), "mirrored fixture retains the actual controller anchor");
+                helper.assertTrue(mirroredPanelRel.equals(controller.above()), "mirrored fixture retains the required panel anchor");
+                // Port positions in mirrored box (back face = d=2)
+                BlockPos mirroredPortARel = mirrored.get(PORT_A[0] * SHAPE.height() * SHAPE.length() + PORT_A[1] * SHAPE.length() + PORT_A[2]);
+                BlockPos mirroredPortBRel = mirrored.get(PORT_B[0] * SHAPE.height() * SHAPE.length() + PORT_B[1] * SHAPE.length() + PORT_B[2]);
+
+                helper.setBlock(mirroredControllerRel, ModMultiblocks.PROCESS_CELL_CONTROLLER.get()
+                    .defaultBlockState().setValue(ProcessCellControllerBlock.FACING, facing));
+                helper.setBlock(mirroredPanelRel, ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get().defaultBlockState());
+                helper.setBlock(mirroredPortARel, ModMultiblocks.PROCESS_CELL_POWER_PORT.get().defaultBlockState());
+                helper.setBlock(mirroredPortBRel, ModMultiblocks.PROCESS_CELL_POWER_PORT.get().defaultBlockState());
+                for (BlockPos rel : mirrored) {
+                    if (rel.equals(mirroredControllerRel) || rel.equals(mirroredPanelRel)
+                            || rel.equals(mirroredPortARel) || rel.equals(mirroredPortBRel)) {
+                        continue;
                     }
-                    helper.setBlock(controller, ModMultiblocks.PROCESS_CELL_CONTROLLER.get()
-                        .defaultBlockState().setValue(ProcessCellControllerBlock.FACING, facing));
-                    for (BlockPos rel : mirroredCells(controller, facing, u0, v0)) {
-                        boolean port = rel.equals(cell(controller, facing, u0, v0, PORT_A[0], PORT_A[1], PORT_A[2]))
-                            || rel.equals(cell(controller, facing, u0, v0, PORT_B[0], PORT_B[1], PORT_B[2]));
-                        helper.setBlock(rel, port
-                            ? ModMultiblocks.PROCESS_CELL_POWER_PORT.get().defaultBlockState()
-                            : ModMultiblocks.PROCESS_CELL_CASING.get().defaultBlockState());
-                    }
-                    ProcessCellControllerBlockEntity front = revalidate(helper, controller);
-                    helper.assertFalse(front.isFormed(),
-                        "facing=" + facing + " offset=(" + u0 + "," + v0
-                            + "): a complete cell in front of the controller formed (negative control)");
-                    for (BlockPos rel : cells) {
-                        helper.setBlock(rel, Blocks.AIR.defaultBlockState());
-                    }
+                    helper.setBlock(rel, ModMultiblocks.PROCESS_CELL_CASING.get().defaultBlockState());
+                }
+                // The controller at the original position (facing the mirrored box) should not form
+                ProcessCellControllerBlockEntity front = revalidate(helper, controller);
+                helper.assertFalse(front.isFormed(),
+                    "facing=" + facing + " offset=(" + u0 + "," + v0
+                        + "): a complete cell in front of the controller formed (negative control)");
+                // Clear ALL mirrored positions between iterations
+                for (BlockPos rel : mirrored) {
+                    helper.setBlock(rel, Blocks.AIR.defaultBlockState());
+                }
+
+                // v0=1 (top row) - INVALID: controller at top row, operating panel would be outside structure
+                v0 = 1;
+                cells = buildCell(helper, controller, facing, u0, v0);
+                be = revalidate(helper, controller);
+                helper.assertFalse(be.isFormed(),
+                    "facing=" + facing + " offset=(" + u0 + "," + v0 + "): controller at top row must not form (negative control)");
+                helper.assertTrue(be.failureReason().contains("operating panel") || be.failureReason().contains("wrong block"),
+                    "refusal must mention missing operating panel or wrong block: " + be.failureReason());
+                refusedCount++;
+                for (BlockPos rel : cells) {
+                    helper.setBlock(rel, Blocks.AIR.defaultBlockState());
                 }
             }
         }
-        LOGGER.info("[M1-03d] forms_in_all_four_facings: 16 controller placements formed, "
-            + "16 mirrored placements refused");
+        LOGGER.info("[M1-03d] forms_in_all_four_facings: {} controller placements formed (v0=0), {} refused (v0=1), "
+            + "8 bottom-row mirrored placements refused", formedCount, refusedCount);
         helper.succeed();
     }
 
-    /** The twelve positions a cell would occupy if it were built on the controller's front side. */
+    /** The twelve positions a cell would occupy if it were built on the controller's front side (wrong side). */
     private static List<BlockPos> mirroredCells(BlockPos controller, Direction facing, int u0, int v0) {
         List<BlockPos> cells = new ArrayList<>(SHAPE.volume());
+        // The mirrored box extends along the facing direction (opposite of back), d = 0..2
+        // Controller sits at front face of mirrored box at (u0, v0, 0) relative to mirrored origin
+        // Depth zero contains the actual controller; positive depth extends outward along facing.
         for (int u = 0; u < SHAPE.width(); u++) {
             for (int v = 0; v < SHAPE.height(); v++) {
-                for (int d = 1; d <= SHAPE.length(); d++) {
-                    BlockPos front = cell(controller, facing, u0, v0, u, v, 0);
-                    cells.add(front.offset(-facingVector(facing)[0] * d,
-                        -facingVector(facing)[1] * d, -facingVector(facing)[2] * d));
+                for (int d = 0; d < SHAPE.length(); d++) {
+                    BlockPos mirrored = cell(controller, facing, u0, v0, u, v, 0);
+                    int[] fv = facingVector(facing);
+                    mirrored = mirrored.offset(fv[0] * d, fv[1] * d, fv[2] * d);
+                    cells.add(mirrored);
                 }
             }
         }
@@ -411,7 +465,7 @@ public final class MultiblockGameTests {
         ProcessCellControllerBlockEntity be = revalidate(helper, controllerRel);
         assertFormed(helper, be, controllerRel, facing, u0, v0, "before the swap");
 
-        // Swap the two blocks. The multiset of one controller, two ports and nine casings is
+        // Swap the two blocks. The multiset of one controller, two ports, one operating panel, and eight casings is
         // unchanged, so the cell stays valid; only the two positions change role.
         helper.setBlock(portCell, ModMultiblocks.PROCESS_CELL_CASING.get().defaultBlockState());
         helper.setBlock(casingCell, ModMultiblocks.PROCESS_CELL_POWER_PORT.get().defaultBlockState());
@@ -465,12 +519,12 @@ public final class MultiblockGameTests {
         ProcessCellControllerBlockEntity first = revalidate(helper, firstRel);
         assertFormed(helper, first, firstRel, facing, u0, v0, "the first cell");
 
-        // The second controller goes at (3, 2, 1) with front-face offset (1, 1), which puts its
+        // The second controller goes at (3, 1, 1) with front-face offset (1, 0), which puts its
         // box at x 2..3, y 1..2, z 1..3. Six of those twelve positions are already members of the
         // first, formed cell and stay that way; the second cell wants them anyway.
-        BlockPos secondRel = new BlockPos(3, 2, 1);
+        BlockPos secondRel = new BlockPos(3, 1, 1);
         int su0 = 1;
-        int sv0 = 1;
+        int sv0 = 0;
         List<BlockPos> secondCells = cellsOf(secondRel, facing, su0, sv0);
         List<BlockPos> firstAbs = new ArrayList<>();
         for (BlockPos rel : cellsOf(firstRel, facing, u0, v0)) {
@@ -499,7 +553,12 @@ public final class MultiblockGameTests {
                     .defaultBlockState().setValue(ProcessCellControllerBlock.FACING, facing));
                 continue;
             }
-            // Two ports, both in positions the first cell does not own.
+            if (rel.equals(secondRel.above())) {
+                helper.setBlock(rel, ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get().defaultBlockState());
+                continue;
+            }
+            // The second cell has a required panel and at least one non-shared port; any contested
+            // port stays owned by the first cell until the independent positive-control rebuild.
             boolean port = rel.equals(cell(secondRel, facing, su0, sv0, PORT_A[0], PORT_A[1], PORT_A[2]))
                 || rel.equals(cell(secondRel, facing, su0, sv0, PORT_B[0], PORT_B[1], PORT_B[2]));
             helper.setBlock(rel, port
@@ -928,5 +987,322 @@ public final class MultiblockGameTests {
         } catch (Exception e) {
             throw new IllegalStateException("Could not read model " + resource, e);
         }
+    }
+
+    // ------------------------------------------------------------------
+    // 8. operator_panel_visual_parts: all four facings & both front columns,
+    //    assert 12 actual members correct facing/PART using independent literal
+    //    coordinate/table oracle, correct per role even upper.
+    //    Corrupt one ordinary member's facing/part without changing geometry,
+    //    revalidate unchanged membership restores metadata.
+    //    Cleanup containers first avoids drop contamination.
+    // ------------------------------------------------------------------
+    private static void operatorPanelVisualParts(GameTestHelper helper) {
+        int passed = 0;
+        for (Direction facing : new Direction[] { Direction.NORTH, Direction.SOUTH,
+                                                  Direction.EAST, Direction.WEST }) {
+            for (int u0 = 0; u0 < SHAPE.width(); u0++) {
+                int v0 = 0; // only bottom row valid
+                BlockPos controller = new BlockPos(1, 1, 1);
+                List<BlockPos> cells = buildCell(helper, controller, facing, u0, v0);
+                ProcessCellControllerBlockEntity be = revalidate(helper, controller);
+                helper.assertTrue(be.isFormed(),
+                    "facing=" + facing + " u0=" + u0 + ": cell should form");
+
+                // Verify all 12 members have correct PART and FACING using independent oracle
+                List<BlockPos> expected = cellsOf(controller, facing, u0, v0);
+                helper.assertTrue(be.members().size() == SHAPE.volume(),
+                    "facing=" + facing + " u0=" + u0 + ": expected 12 members");
+
+                for (int i = 0; i < expected.size(); i++) {
+                    BlockPos rel = expected.get(i);
+                    BlockPos abs = helper.absolutePos(rel);
+                    BlockState state = helper.getLevel().getBlockState(abs);
+                    int expectedPart = i;
+                    Direction expectedFacing = facing;
+
+                    // Check PART
+                    int actualPart = -1;
+                    if (state.hasProperty(ProcessCellControllerBlock.PART)) {
+                        actualPart = state.getValue(ProcessCellControllerBlock.PART);
+                    } else if (state.hasProperty(ProcessCellCasingBlock.PART)) {
+                        actualPart = state.getValue(ProcessCellCasingBlock.PART);
+                    } else if (state.hasProperty(ProcessCellPowerPortBlock.PART)) {
+                        actualPart = state.getValue(ProcessCellPowerPortBlock.PART);
+                    } else if (state.hasProperty(ProcessCellOperatingPanelBlock.PART)) {
+                        actualPart = state.getValue(ProcessCellOperatingPanelBlock.PART);
+                    }
+                    helper.assertValueEqual(expectedPart, actualPart,
+                        "facing=" + facing + " u0=" + u0 + " pos=" + rel + ": PART mismatch");
+
+                    // Check FACING (controller has only HORIZONTAL_FACING property already set)
+                    if (state.hasProperty(ProcessCellCasingBlock.FACING)) {
+                        helper.assertValueEqual(expectedFacing, state.getValue(ProcessCellCasingBlock.FACING),
+                            "facing=" + facing + " u0=" + u0 + " pos=" + rel + ": FACING mismatch");
+                    } else if (state.hasProperty(ProcessCellPowerPortBlock.FACING)) {
+                        helper.assertValueEqual(expectedFacing, state.getValue(ProcessCellPowerPortBlock.FACING),
+                            "facing=" + facing + " u0=" + u0 + " pos=" + rel + ": FACING mismatch");
+                    } else if (state.hasProperty(ProcessCellOperatingPanelBlock.FACING)) {
+                        helper.assertValueEqual(expectedFacing, state.getValue(ProcessCellOperatingPanelBlock.FACING),
+                            "facing=" + facing + " u0=" + u0 + " pos=" + rel + ": FACING mismatch");
+                    }
+
+                    // Check FORMED flag
+                    boolean formedFlag = false;
+                    if (state.hasProperty(ProcessCellControllerBlock.FORMED)) {
+                        formedFlag = state.getValue(ProcessCellControllerBlock.FORMED);
+                    } else if (state.hasProperty(ProcessCellCasingBlock.FORMED)) {
+                        formedFlag = state.getValue(ProcessCellCasingBlock.FORMED);
+                    } else if (state.hasProperty(ProcessCellPowerPortBlock.FORMED)) {
+                        formedFlag = state.getValue(ProcessCellPowerPortBlock.FORMED);
+                    } else if (state.hasProperty(ProcessCellOperatingPanelBlock.FORMED)) {
+                        formedFlag = state.getValue(ProcessCellOperatingPanelBlock.FORMED);
+                    }
+                    helper.assertTrue(formedFlag,
+                        "facing=" + facing + " u0=" + u0 + " pos=" + rel + ": FORMED flag not set");
+                }
+
+                // Corrupt one ordinary member's facing/part without changing geometry
+                // Pick a casing block (not controller, panel, or ports)
+                BlockPos corruptRel = null;
+                for (BlockPos rel : expected) {
+                    BlockPos abs = helper.absolutePos(rel);
+                    BlockState state = helper.getLevel().getBlockState(abs);
+                    if (state.getBlock() instanceof ProcessCellCasingBlock) {
+                        corruptRel = rel;
+                        break;
+                    }
+                }
+                helper.assertTrue(corruptRel != null, "found a casing block to corrupt");
+                BlockPos corruptAbs = helper.absolutePos(corruptRel);
+                BlockState corruptState = helper.getLevel().getBlockState(corruptAbs);
+                // Corrupt PART to wrong value and FACING to opposite
+                Direction wrongFacing = facing.getOpposite();
+                int wrongPart = 11; // different from any valid part
+                BlockState corrupted = corruptState
+                    .setValue(ProcessCellCasingBlock.PART, wrongPart)
+                    .setValue(ProcessCellCasingBlock.FACING, wrongFacing);
+                helper.setBlock(corruptRel, corrupted);
+
+                // Revalidate with unchanged membership - should restore metadata
+                ProcessCellControllerBlockEntity after = revalidate(helper, controller);
+                helper.assertTrue(after.isFormed(),
+                    "facing=" + facing + " u0=" + u0 + ": cell should remain formed after corruption");
+
+                // Verify the corrupted member was restored
+                BlockState restored = helper.getLevel().getBlockState(corruptAbs);
+                helper.assertValueEqual(cellsOf(controller, facing, u0, v0).indexOf(corruptRel),
+                    restored.getValue(ProcessCellCasingBlock.PART),
+                    "facing=" + facing + " u0=" + u0 + ": corrupted PART not restored");
+                helper.assertValueEqual(facing,
+                    restored.getValue(ProcessCellCasingBlock.FACING),
+                    "facing=" + facing + " u0=" + u0 + ": corrupted FACING not restored");
+                helper.assertTrue(restored.getValue(ProcessCellCasingBlock.FORMED),
+                    "facing=" + facing + " u0=" + u0 + ": corrupted FORMED not restored");
+
+                // Cleanup - clear containers first to avoid drop contamination
+                for (BlockPos rel : cells) {
+                    BlockPos abs = helper.absolutePos(rel);
+                    if (helper.getLevel().getBlockEntity(abs) instanceof ProcessCellControllerBlockEntity cbe) {
+                        cbe.clearContent();
+                    }
+                    helper.setBlock(rel, Blocks.AIR.defaultBlockState());
+                }
+                passed++;
+            }
+        }
+        helper.assertValueEqual(8, passed, "not all 8 valid placements (4 facings x 2 columns) exercised");
+        LOGGER.info("[M1-03d] operator_panel_visual_parts: {} facings x {} columns passed with metadata verification",
+            4, 2);
+        helper.succeed();
+    }
+
+    // ------------------------------------------------------------------
+    // 9. operator_panel_visual_reset: remove required panel -> all surviving
+    //    members unformed/part0; restore -> correct reformation; remove core ->
+    //    member ticks clear without inventory dup.
+    //    Use actual existing fixture, capture and assert positions; no tautological
+    //    same helper oracle.
+    // ------------------------------------------------------------------
+    private static void operatorPanelVisualReset(GameTestHelper helper) {
+        BlockPos controller = new BlockPos(1, 1, 1);
+        Direction facing = Direction.NORTH;
+        int u0 = 0;
+        int v0 = 0;
+
+        // Build and form the cell
+        List<BlockPos> cells = buildCell(helper, controller, facing, u0, v0);
+        ProcessCellControllerBlockEntity be = revalidate(helper, controller);
+        helper.assertTrue(be.isFormed(), "initial cell should form");
+        List<BlockPos> expected = cellsOf(controller, facing, u0, v0);
+        helper.assertTrue(be.members().size() == SHAPE.volume(), "expected 12 members");
+
+        // Capture all member positions before removal
+        List<BlockPos> memberAbs = new ArrayList<>();
+        for (BlockPos rel : expected) {
+            memberAbs.add(helper.absolutePos(rel));
+        }
+
+        // Find the operating panel position (u0, v0+1, 0)
+        BlockPos panelRel = cell(controller, facing, u0, v0, u0, v0 + 1, 0);
+        BlockPos panelAbs = helper.absolutePos(panelRel);
+
+        // Remove the required panel
+        helper.setBlock(panelRel, Blocks.AIR.defaultBlockState());
+        // Revalidate - cell should unform
+        ProcessCellControllerBlockEntity afterRemove = revalidate(helper, controller);
+        helper.assertFalse(afterRemove.isFormed(), "cell should unform when panel removed");
+
+        // All surviving members should be unformed, part=0
+        for (BlockPos abs : memberAbs) {
+            if (abs.equals(panelAbs)) continue; // panel is gone
+            BlockState state = helper.getLevel().getBlockState(abs);
+            boolean formedFlag = false;
+            int partVal = -1;
+            if (state.hasProperty(ProcessCellControllerBlock.FORMED)) {
+                formedFlag = state.getValue(ProcessCellControllerBlock.FORMED);
+                partVal = state.getValue(ProcessCellControllerBlock.PART);
+            } else if (state.hasProperty(ProcessCellCasingBlock.FORMED)) {
+                formedFlag = state.getValue(ProcessCellCasingBlock.FORMED);
+                partVal = state.getValue(ProcessCellCasingBlock.PART);
+            } else if (state.hasProperty(ProcessCellPowerPortBlock.FORMED)) {
+                formedFlag = state.getValue(ProcessCellPowerPortBlock.FORMED);
+                partVal = state.getValue(ProcessCellPowerPortBlock.PART);
+            } else if (state.hasProperty(ProcessCellOperatingPanelBlock.FORMED)) {
+                formedFlag = state.getValue(ProcessCellOperatingPanelBlock.FORMED);
+                partVal = state.getValue(ProcessCellOperatingPanelBlock.PART);
+            }
+            helper.assertFalse(formedFlag, "member at " + abs + " should be unformed after panel removal");
+            helper.assertValueEqual(0, partVal, "member at " + abs + " should have PART=0 after panel removal");
+        }
+
+        // Restore the panel -> correct reformation
+        helper.setBlock(panelRel, ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get().defaultBlockState());
+        ProcessCellControllerBlockEntity afterRestore = revalidate(helper, controller);
+        helper.assertTrue(afterRestore.isFormed(), "cell should reform when panel restored");
+        helper.assertValueEqual(SHAPE.volume(), afterRestore.members().size(), "reformed cell should have 12 members");
+
+        // Verify all members have correct PART and FACING again
+        for (int i = 0; i < expected.size(); i++) {
+            BlockPos rel = expected.get(i);
+            BlockPos abs = helper.absolutePos(rel);
+            BlockState state = helper.getLevel().getBlockState(abs);
+            int expectedPart = i;
+            int actualPart = -1;
+            if (state.hasProperty(ProcessCellControllerBlock.PART)) {
+                actualPart = state.getValue(ProcessCellControllerBlock.PART);
+            } else if (state.hasProperty(ProcessCellCasingBlock.PART)) {
+                actualPart = state.getValue(ProcessCellCasingBlock.PART);
+            } else if (state.hasProperty(ProcessCellPowerPortBlock.PART)) {
+                actualPart = state.getValue(ProcessCellPowerPortBlock.PART);
+            } else if (state.hasProperty(ProcessCellOperatingPanelBlock.PART)) {
+                actualPart = state.getValue(ProcessCellOperatingPanelBlock.PART);
+            }
+            helper.assertValueEqual(expectedPart, actualPart,
+                "after restore pos=" + rel + ": PART mismatch");
+        }
+
+        BlockPos dropPos=helper.absolutePos(controller);
+        var dropArea=new net.minecraft.world.phys.AABB(dropPos.getX()-2,dropPos.getY()-2,dropPos.getZ()-2,
+            dropPos.getX()+4,dropPos.getY()+4,dropPos.getZ()+5);
+        var priorDrops=helper.getLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,dropArea);
+        var priorIds=priorDrops.stream().map(net.minecraft.world.entity.item.ItemEntity::getUUID).collect(java.util.stream.Collectors.toSet());
+        int beforeFoups=priorDrops.stream().filter(e->e.getItem().is(ModItems.FOUP_MK1.get())).mapToInt(e->e.getItem().getCount()).sum();
+        // Remove the core (controller) -> member ticks clear without inventory dup
+        // First, put something in the controller's inventory to verify no duplication
+        if (helper.getLevel().getBlockEntity(helper.absolutePos(controller)) instanceof ProcessCellControllerBlockEntity cbe) {
+            cbe.setItem(0, new ItemStack(ModItems.FOUP_MK1.get())); // put a FOUP in slot 0
+        }
+        helper.getLevel().destroyBlock(helper.absolutePos(controller), true);
+
+        // Each surviving member should clear its formed state on its own tick
+        for (BlockPos rel : expected) {
+            if (rel.equals(controller)) continue;
+            BlockPos abs = helper.absolutePos(rel);
+            if (helper.getLevel().getBlockEntity(abs) instanceof ProcessCellMemberBlockEntity member) {
+                member.serverTick();
+            }
+        }
+
+        // Verify all surviving members are unformed with PART=0
+        for (BlockPos rel : expected) {
+            if (rel.equals(controller)) continue;
+            BlockPos abs = helper.absolutePos(rel);
+            BlockState state = helper.getLevel().getBlockState(abs);
+            boolean formedFlag = false;
+            int partVal = -1;
+            if (state.hasProperty(ProcessCellCasingBlock.FORMED)) {
+                formedFlag = state.getValue(ProcessCellCasingBlock.FORMED);
+                partVal = state.getValue(ProcessCellCasingBlock.PART);
+            } else if (state.hasProperty(ProcessCellPowerPortBlock.FORMED)) {
+                formedFlag = state.getValue(ProcessCellPowerPortBlock.FORMED);
+                partVal = state.getValue(ProcessCellPowerPortBlock.PART);
+            } else if (state.hasProperty(ProcessCellOperatingPanelBlock.FORMED)) {
+                formedFlag = state.getValue(ProcessCellOperatingPanelBlock.FORMED);
+                partVal = state.getValue(ProcessCellOperatingPanelBlock.PART);
+            }
+            helper.assertFalse(formedFlag, "member at " + rel + " should be unformed after controller removal");
+            helper.assertValueEqual(0, partVal, "member at " + rel + " should have PART=0 after controller removal");
+        }
+
+        var afterDrops=helper.getLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,dropArea);
+        int afterFoups=afterDrops.stream().filter(e->e.getItem().is(ModItems.FOUP_MK1.get())).mapToInt(e->e.getItem().getCount()).sum();
+        helper.assertValueEqual(beforeFoups+1,afterFoups,"controller removal drops exactly its one stored FOUP");
+        helper.assertTrue(helper.getLevel().getBlockEntity(dropPos)==null,"controller BE removed");
+        for(var entity:afterDrops)if(!priorIds.contains(entity.getUUID()))entity.discard();
+
+        // Cleanup
+        for (BlockPos rel : expected) {
+            helper.setBlock(rel, Blocks.AIR.defaultBlockState());
+        }
+
+        LOGGER.info("[M1-03d] operator_panel_visual_reset: panel removal unforms all, restore reforms, core removal clears members");
+        helper.succeed();
+    }
+
+    // ------------------------------------------------------------------
+    // 10. operator_panel_visual_reload_owner: stale persisted formed=true/part11
+    //     on casing/power/operator with no in-memory link/no actual core clears on
+    //     serverTick; replaced controller at same position must not be claimed by
+    //     old core instance and members ultimately link new real core.
+    //     Keep both positive and negative owner checks, no blanket exceptions/skips.
+    // ------------------------------------------------------------------
+    private static void operatorPanelVisualReloadOwner(GameTestHelper helper) {
+        ServerLevel level=helper.getLevel();
+        List<BlockState> staleStates=List.of(
+            ModMultiblocks.PROCESS_CELL_CASING.get().defaultBlockState(),
+            ModMultiblocks.PROCESS_CELL_POWER_PORT.get().defaultBlockState(),
+            ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get().defaultBlockState());
+        for(int i=0;i<staleStates.size();i++) {
+            BlockPos rel=new BlockPos(1+2*i,1,1),abs=helper.absolutePos(rel);
+            BlockState stale=staleStates.get(i).setValue(ProcessCellCasingBlock.FORMED,true)
+                .setValue(ProcessCellCasingBlock.PART,11).setValue(ProcessCellCasingBlock.FACING,Direction.EAST);
+            helper.setBlock(rel,stale);
+            var member=(ProcessCellMemberBlockEntity)level.getBlockEntity(abs);
+            helper.assertTrue(member.controller()==null&&!member.isMemberOfFormedCell(),"fresh BE has no restored ephemeral owner");
+            member.serverTick();BlockState cleared=level.getBlockState(abs);
+            helper.assertFalse(cleared.getValue(ProcessCellCasingBlock.FORMED),"unowned loaded visual state clears for role "+i);
+            helper.assertValueEqual(0,cleared.getValue(ProcessCellCasingBlock.PART),"unowned loaded PART resets for role "+i);
+            helper.setBlock(rel,Blocks.AIR.defaultBlockState());
+        }
+        BlockPos controller=new BlockPos(1,1,1),absolute=helper.absolutePos(controller);
+        List<BlockPos> cells=buildCell(helper,controller,Direction.NORTH,0,0);
+        var original=revalidate(helper,controller);helper.assertTrue(original.isFormed(),"original owner formed");
+        var replacement=new ProcessCellControllerBlockEntity(absolute,level.getBlockState(absolute));
+        level.removeBlockEntity(absolute);level.setBlockEntity(replacement);
+        original.revalidate();helper.assertFalse(original.isFormed(),"old instance cannot reclaim against replacement identity");
+        for(BlockPos rel:cells)if(level.getBlockEntity(helper.absolutePos(rel)) instanceof ProcessCellMemberBlockEntity member)member.serverTick();
+        replacement.revalidate();helper.assertTrue(replacement.isFormed(),"live replacement forms after stale links clear");
+        original.revalidate();
+        helper.assertTrue(replacement.isFormed(),"stale validation cannot unform current owner");
+        for(int i=0;i<cells.size();i++) {
+            BlockPos abs=helper.absolutePos(cells.get(i));BlockState state=level.getBlockState(abs);
+            helper.assertTrue(state.getValue(ProcessCellControllerBlock.FORMED),"replacement retains every member flag");
+            helper.assertValueEqual(i,state.getValue(ProcessCellControllerBlock.PART),"replacement retains ordered part "+i);
+            if(level.getBlockEntity(abs) instanceof ProcessCellMemberBlockEntity member)
+                helper.assertTrue(member.controller()==replacement,"member belongs only to live replacement");
+        }
+        for(BlockPos rel:cells)helper.setBlock(rel,Blocks.AIR.defaultBlockState());
+        helper.succeed();
     }
 }

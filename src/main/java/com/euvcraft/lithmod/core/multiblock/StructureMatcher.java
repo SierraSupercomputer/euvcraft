@@ -16,8 +16,10 @@ import java.util.function.Function;
  * {@code controller - u0*right - v0*up} and cell {@code (u, v, d)} is
  * {@code origin + u*right + v*up + d*back}.
  *
- * <p>Every cell must be a structure block, exactly one cell must be the controller, and there must
- * be at least one and at most two power ports. No Minecraft types are involved.
+ * <p>Every cell must be a structure block, exactly one cell must be the controller, exactly one
+ * operating panel must be directly above the controller (at {@code (u0, v0+1, 0)}, requiring
+ * {@code v0 = 0} for a height-2 shape), and there must be at least one and at most two power ports.
+ * No Minecraft types are involved.
  */
 public final class StructureMatcher {
 
@@ -63,7 +65,13 @@ public final class StructureMatcher {
 
         List<MultiblockPos> memberPositions = new ArrayList<>(shape.volume());
         int controllerCount = 0;
+        int operatingPanelCount = 0;
         int powerPortCount = 0;
+
+        // The operating panel must be at local (u0, v0+1, 0) - directly above the controller.
+        // For a height-2 shape, this requires v0 == 0 (controller on bottom row).
+        int panelV = v0 + 1;
+        boolean panelPositionValid = panelV < shape.height();
 
         for (int u = 0; u < shape.width(); u++) {
             for (int v = 0; v < shape.height(); v++) {
@@ -79,6 +87,12 @@ public final class StructureMatcher {
                         } else {
                             return MatchResult.failure("extra controller at " + worldPos);
                         }
+                    } else if (kind == BlockKind.OPERATING_PANEL) {
+                        if (u == u0 && v == panelV && d == 0 && panelPositionValid) {
+                            operatingPanelCount++;
+                        } else {
+                            return MatchResult.failure("operating panel at wrong position " + worldPos);
+                        }
                     } else if (kind == BlockKind.POWER_PORT) {
                         powerPortCount++;
                     } else if (kind != BlockKind.CASING) {
@@ -91,6 +105,12 @@ public final class StructureMatcher {
 
         if (controllerCount != 1) {
             return MatchResult.failure("expected exactly one controller, found " + controllerCount);
+        }
+        if (!panelPositionValid) {
+            return MatchResult.failure("controller on top row leaves no room for operating panel above");
+        }
+        if (operatingPanelCount != 1) {
+            return MatchResult.failure("expected exactly one operating panel above controller, found " + operatingPanelCount);
         }
         if (powerPortCount < 1) {
             return MatchResult.failure("expected at least one power port, found " + powerPortCount);

@@ -16,6 +16,7 @@ import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { deflateSync, crc32 } from 'zlib';
 import { createHash } from 'crypto';
+import { computeJoinedPanels } from './lib/joined-panels.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -378,7 +379,8 @@ function writeAll(manifest, computed) {
   for (const [rel, buf] of computed.pngs) writeFileSync(join(ROOT, rel), buf);
   for (const [rel, text] of computed.models) writeFileSync(join(ROOT, rel), text, 'utf8');
   writeFileSync(join(ROOT, manifest.output.previewPath), computed.preview.png);
-  console.log(`Wrote ${computed.pngs.size} PNGs, ${computed.models.size} models, preview ${manifest.output.previewPath} (${computed.preview.width}x${computed.preview.height}).`);
+  writeFileSync(join(ROOT, 'build/joined-panels-preview.png'), computed.joinedPreview);
+  console.log(`Wrote ${computed.pngs.size} PNGs, ${computed.models.size} JSON assets, preview ${manifest.output.previewPath} (${computed.preview.width}x${computed.preview.height}).`);
 }
 
 /** Compare without writing anything; reports every missing/stale asset, then exits nonzero. */
@@ -403,14 +405,14 @@ function checkAll(manifest, computed) {
     console.log(`Check FAILED: ${bad} asset(s) missing or stale (preview not checked).`);
     process.exit(1);
   }
-  console.log(`Check PASSED: ${computed.pngs.size} PNGs and ${computed.models.size} models match (preview not checked).`);
+  console.log(`Check PASSED: ${computed.pngs.size} PNGs and ${computed.models.size} JSON assets match (preview not checked).`);
 }
 
 function usage() {
   console.error('Usage: node tools/generate-starter-textures.mjs [--check]');
 }
 
-function main() {
+export function main() {
   const args = process.argv.slice(2);
   if (args.length > 1 || (args.length === 1 && args[0] !== '--check')) {
     usage();
@@ -419,6 +421,16 @@ function main() {
   const manifest = loadManifest();
   validateManifest(manifest);
   const computed = computeAll(manifest); // all buffers computed before any write
+  const joined = computeJoinedPanels(manifest.joinedPanels);
+  for (const [path, bytes] of joined.pngs) {
+    if (computed.pngs.has(path)) throw new Error('Joined PNG output collision: ' + path);
+    computed.pngs.set(path, bytes);
+  }
+  for (const [path, bytes] of joined.models) {
+    if (computed.models.has(path)) throw new Error('Joined JSON output collision: ' + path);
+    computed.models.set(path, bytes);
+  }
+  computed.joinedPreview = joined.preview;
   if (args[0] === '--check') checkAll(manifest, computed);
   else writeAll(manifest, computed);
 }
@@ -427,4 +439,4 @@ function loadManifest() {
   return JSON.parse(readFileSync(join(ROOT, 'tools', 'starter-textures.json'), 'utf8'));
 }
 
-main();
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();

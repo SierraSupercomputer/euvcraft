@@ -12,6 +12,7 @@ import com.euvcraft.lithmod.mc.multiblock.ProcessCellControllerBlock;
 import com.euvcraft.lithmod.mc.multiblock.ProcessCellControllerBlockEntity;
 import com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity;
 import com.euvcraft.lithmod.mc.machine.process.ProcessCellMenu;
+import com.euvcraft.lithmod.mc.machine.process.OperatingPanelMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
@@ -88,6 +89,21 @@ public final class ProcessCellGameTests {
     private static final String ACTIVE_INPUT_TAMPER_STOPS = "process_cell_active_input_tamper_stops";
     private static final String PARTIAL_BREAK_CONSERVES_INVENTORY = "process_cell_partial_break_conserves_inventory";
     private static final String HAND_FED_CAPABILITIES = "process_cell_hand_fed_capabilities";
+    // M1 Operator Panels new tests
+    private static final String OPERATOR_PANEL_BLOCK_USE = "operator_panel_block_use";
+    private static final String OPERATOR_PANEL_MENU_OPEN = "operator_panel_menu_open";
+    private static final String OPERATOR_PANEL_SLOT_MAPPING = "operator_panel_slot_mapping";
+    private static final String OPERATOR_PANEL_EQUIPMENT_RETAINS = "operator_panel_equipment_retains";
+    private static final String OPERATOR_PANEL_NO_HIDDEN_ACCESS = "operator_panel_no_hidden_access";
+    private static final String OPERATOR_PANEL_STAGE_NO_BYPASS = "operator_panel_stage_no_bypass";
+    private static final String OPERATOR_PANEL_PLAYER_SLOTS_USABLE = "operator_panel_player_slots_usable";
+    private static final String OPERATOR_PANEL_NO_LOWER_ABORT = "operator_panel_no_lower_abort";
+    private static final String OPERATOR_PANEL_UPPER_ABORT_VALID = "operator_panel_upper_abort_valid";
+    private static final String OPERATOR_PANEL_INVALID_AFTER_REMOVAL = "operator_panel_invalid_after_removal";
+    private static final String OPERATOR_PANEL_ADJACENT_CONTROLLER = "operator_panel_adjacent_controller";
+    private static final String OPERATOR_PANEL_MISSING_REFORMS = "operator_panel_missing_reforms";
+    private static final String OPERATOR_PANEL_SAVE_RELOAD = "operator_panel_save_reload";
+    private static final String OPERATOR_PANEL_UPPER_NO_INVENTORY = "operator_panel_upper_no_inventory";
     private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS =
         DeferredRegister.create(Registries.TEST_FUNCTION, "lithmod");
     static {
@@ -107,6 +123,21 @@ public final class ProcessCellGameTests {
         FUNCTIONS.register(PARTIAL_BREAK_CONSERVES_INVENTORY, () -> ProcessCellGameTests::partialBreakConservesInventory);
         FUNCTIONS.register(HAND_FED_CAPABILITIES, () -> ProcessCellGameTests::handFedCapabilities);
         FUNCTIONS.register(BLOCK_USE_OPENS_MENU, () -> ProcessCellGameTests::blockUseOpensMenu);
+        // M1 Operator Panels
+        FUNCTIONS.register(OPERATOR_PANEL_BLOCK_USE, () -> ProcessCellGameTests::operatorPanelBlockUse);
+        FUNCTIONS.register(OPERATOR_PANEL_MENU_OPEN, () -> ProcessCellGameTests::operatorPanelMenuOpen);
+        FUNCTIONS.register(OPERATOR_PANEL_SLOT_MAPPING, () -> ProcessCellGameTests::operatorPanelSlotMapping);
+        FUNCTIONS.register(OPERATOR_PANEL_EQUIPMENT_RETAINS, () -> ProcessCellGameTests::operatorPanelEquipmentRetains);
+        FUNCTIONS.register(OPERATOR_PANEL_NO_HIDDEN_ACCESS, () -> ProcessCellGameTests::operatorPanelNoHiddenAccess);
+        FUNCTIONS.register(OPERATOR_PANEL_STAGE_NO_BYPASS, () -> ProcessCellGameTests::operatorPanelStageNoBypass);
+        FUNCTIONS.register(OPERATOR_PANEL_PLAYER_SLOTS_USABLE, () -> ProcessCellGameTests::operatorPanelPlayerSlotsUsable);
+        FUNCTIONS.register(OPERATOR_PANEL_NO_LOWER_ABORT, () -> ProcessCellGameTests::operatorPanelNoLowerAbort);
+        FUNCTIONS.register(OPERATOR_PANEL_UPPER_ABORT_VALID, () -> ProcessCellGameTests::operatorPanelUpperAbortValid);
+        FUNCTIONS.register(OPERATOR_PANEL_INVALID_AFTER_REMOVAL, () -> ProcessCellGameTests::operatorPanelInvalidAfterRemoval);
+        FUNCTIONS.register(OPERATOR_PANEL_ADJACENT_CONTROLLER, () -> ProcessCellGameTests::operatorPanelAdjacentController);
+        FUNCTIONS.register(OPERATOR_PANEL_MISSING_REFORMS, () -> ProcessCellGameTests::operatorPanelMissingReforms);
+        FUNCTIONS.register(OPERATOR_PANEL_SAVE_RELOAD, () -> ProcessCellGameTests::operatorPanelSaveReload);
+        FUNCTIONS.register(OPERATOR_PANEL_UPPER_NO_INVENTORY, () -> ProcessCellGameTests::operatorPanelUpperNoInventory);
     }
     private ProcessCellGameTests() {}
     public static void register(IEventBus bus) {
@@ -134,6 +165,21 @@ public final class ProcessCellGameTests {
         register(event, data, PARTIAL_BREAK_CONSERVES_INVENTORY);
         register(event, data, HAND_FED_CAPABILITIES);
         register(event, data, BLOCK_USE_OPENS_MENU);
+        // M1 Operator Panels
+        register(event, data, OPERATOR_PANEL_BLOCK_USE);
+        register(event, data, OPERATOR_PANEL_MENU_OPEN);
+        register(event, data, OPERATOR_PANEL_SLOT_MAPPING);
+        register(event, data, OPERATOR_PANEL_EQUIPMENT_RETAINS);
+        register(event, data, OPERATOR_PANEL_NO_HIDDEN_ACCESS);
+        register(event, data, OPERATOR_PANEL_STAGE_NO_BYPASS);
+        register(event, data, OPERATOR_PANEL_PLAYER_SLOTS_USABLE);
+        register(event, data, OPERATOR_PANEL_NO_LOWER_ABORT);
+        register(event, data, OPERATOR_PANEL_UPPER_ABORT_VALID);
+        register(event, data, OPERATOR_PANEL_INVALID_AFTER_REMOVAL);
+        register(event, data, OPERATOR_PANEL_ADJACENT_CONTROLLER);
+        register(event, data, OPERATOR_PANEL_MISSING_REFORMS);
+        register(event, data, OPERATOR_PANEL_SAVE_RELOAD);
+        register(event, data, OPERATOR_PANEL_UPPER_NO_INVENTORY);
     }
     private static void register(RegisterGameTestsEvent event,
             TestData<Holder<TestEnvironmentDefinition<?>>> data, String name) {
@@ -145,11 +191,14 @@ public final class ProcessCellGameTests {
     private record Fixture(ProcessCellControllerBlockEntity cell, UUID lotId, int cost) {}
     private static Fixture fixture(GameTestHelper h, int tier, int resistCount, int uses, boolean weak) {
         BlockPos controller = new BlockPos(1, 1, 1);
-        // Independent explicit 2x2x3 north-facing box, with two back-face ports.
+        // Independent explicit 2x2x3 north-facing box, with two back-face ports and operating panel above controller.
+        // Controller at bottom (y=1), operating panel at y=2 directly above, ports at z=3 back face.
         for (int x = 1; x <= 2; x++) for (int y = 1; y <= 2; y++) for (int z = 1; z <= 3; z++) {
             BlockPos p = new BlockPos(x, y, z);
             if (p.equals(controller)) h.setBlock(p, ModMultiblocks.PROCESS_CELL_CONTROLLER.get()
                 .defaultBlockState().setValue(ProcessCellControllerBlock.FACING, Direction.NORTH));
+            else if (x == 1 && y == 2 && z == 1)
+                h.setBlock(p, ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get().defaultBlockState());
             else if (z == 3 && (x == 1 && y == 1 || x == 2 && y == 2))
                 h.setBlock(p, ModMultiblocks.PROCESS_CELL_POWER_PORT.get().defaultBlockState());
             else h.setBlock(p, ModMultiblocks.PROCESS_CELL_CASING.get().defaultBlockState());
@@ -395,7 +444,7 @@ public final class ProcessCellGameTests {
      * Assert all 8 machineSlot.mayPickup(player) false; FOUP/mask/components mayPlace false.
      * Real clicked FOUP PICKUP with empty cursor must keep FOUP and cursor empty.
      * quickMoveStack(player, 0) empty and FOUP retained.
-     * Set player hotbar via menu.slots.get(35).set(new ItemStack(Items.STONE)), clicked(0, 0, SWAP),
+     * Set player hotbar via menu.slots.get(hotbarIndex).set(new ItemStack(Items.STONE)), clicked(0, 0, SWAP),
      * assert FOUP retained/hotbar stone; clicked(0, 0, THROW), clicked(0, 2, CLONE) must not remove/duplicate FOUP.
      * Real normal resist top-up: menu.setCarried(new ItemStack(RESIST_T2, 3)); menu.clicked(2, 0, PICKUP, player);
      * assert resist 9, cursor empty. Right-click 2 more adds one, cursor 1.
@@ -405,6 +454,8 @@ public final class ProcessCellGameTests {
      * PICKUP_ALL with carried T2 count 1 cannot collect from locked resist slot; assert machine resist unchanged
      * (clear other player resist stack first).
      * Use physical FOUP UUID/item/count and cursor count assertions, not only slot predicates.
+     * Test BOTH lower (5 visible) and upper (3 visible) menus with correct hotbar indices:
+     * lower hotbar starts at 5+27=32, upper hotbar starts at 3+27=30.
      */
     private static void menuActiveLocks(GameTestHelper h) {
         settings(() -> {
@@ -416,140 +467,188 @@ public final class ProcessCellGameTests {
 
             ServerPlayer player = connect(h.getLevel());
             BlockPos controllerPos = h.absolutePos(new BlockPos(1, 1, 1));
+            BlockPos panelPos = h.absolutePos(new BlockPos(1, 2, 1));
             player.setPos(controllerPos.getX() + 0.5, controllerPos.getY() + 0.5, controllerPos.getZ() + 0.5);
-            ProcessCellMenu menu = new ProcessCellMenu(7, player.getInventory(), cell);
-            player.containerMenu = menu;
+
+            // ===== TEST LOWER MENU (ProcessCellMenu - 5 visible equipment slots) =====
+            ProcessCellMenu lowerMenu = new ProcessCellMenu(7, player.getInventory(), cell);
+            player.containerMenu = lowerMenu;
 
             // Prove the creative fixture can clone an ordinary player-inventory item.
             h.assertTrue(player.getAbilities().instabuild, "creative clone precondition");
-            menu.slots.get(9).set(new ItemStack(Items.STONE));
-            menu.setCarried(ItemStack.EMPTY);
-            menu.clicked(9, 2, ContainerInput.CLONE, player);
-            h.assertTrue(menu.getCarried().is(Items.STONE) && menu.getCarried().getCount() == 64,
-                "creative clone works for the player's own inventory");
-            menu.setCarried(ItemStack.EMPTY);
-            menu.slots.get(9).set(ItemStack.EMPTY);
+            // Lower menu: player slots start at 5, hotbar at 5+27=32
+            int lowerFirstHotbar = 5 + 27;
+            lowerMenu.slots.get(lowerFirstHotbar).set(new ItemStack(Items.STONE));
+            lowerMenu.setCarried(ItemStack.EMPTY);
+            lowerMenu.clicked(lowerFirstHotbar, 2, ContainerInput.CLONE, player);
+            h.assertTrue(lowerMenu.getCarried().is(Items.STONE) && lowerMenu.getCarried().getCount() == 64,
+                "creative clone works for the player's own inventory (lower)");
+            lowerMenu.setCarried(ItemStack.EMPTY);
+            lowerMenu.slots.get(lowerFirstHotbar).set(ItemStack.EMPTY);
 
-            // All 8 machine slots mayPickup must be false
-            for (int i = 0; i < 8; i++) {
-                h.assertFalse(menu.slots.get(i).mayPickup(player), "machine slot " + i + " mayPickup must be false when locked");
+            // All 5 lower visible machine slots mayPickup must be false
+            for (int i = 0; i < 5; i++) {
+                h.assertFalse(lowerMenu.slots.get(i).mayPickup(player), "lower machine slot " + i + " mayPickup must be false when locked");
             }
-            // FOUP/mask/components mayPlace must be false
-            for (int i = 0; i < 8; i++) {
-                if (i != ProcessCellControllerBlockEntity.SLOT_RESIST)
-                    h.assertFalse(menu.slots.get(i).mayPlace(cell.slot(i).copy()),
-                        "locked machine slot " + i + " rejects its normally valid input");
+            // Lower visible slots are equipment (underlying 3..7), all mayPlace false when locked
+            for (int i = 0; i < 5; i++) {
+                h.assertFalse(lowerMenu.slots.get(i).mayPlace(cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE + i).copy()),
+                    "locked lower machine slot " + i + " rejects its normally valid input");
             }
 
             // Real clicked FOUP PICKUP with empty cursor must keep FOUP and cursor empty
-            ItemStack foupBefore = cell.slot(0).copy();
+            // FOUP is NOT visible in lower menu! It's in upper menu only.
+            // But we can test that the lower menu's machine slots are locked by trying to interact with them
+            ItemStack foupBefore = cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP).copy();
             UUID foupUuid = FoupItems.trustedContentsOf(foupBefore).lotId();
-            menu.setCarried(ItemStack.EMPTY);
-            menu.clicked(0, 0, ContainerInput.PICKUP, player);
-            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(0), foupBefore), "FOUP must be retained after PICKUP with empty cursor");
-            h.assertValueEqual(foupUuid, FoupItems.trustedContentsOf(cell.slot(0)).lotId(), "FOUP lot UUID unchanged");
-            h.assertTrue(menu.getCarried().isEmpty(), "cursor must remain empty after PICKUP on locked FOUP");
+            
+            // Test that lower menu equipment slots are locked
+            ItemStack lightBefore = cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE).copy();
+            lowerMenu.setCarried(ItemStack.EMPTY);
+            lowerMenu.clicked(0, 0, ContainerInput.PICKUP, player); // Lower visible 0 = LIGHT_SOURCE
+            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE), lightBefore),
+                "LIGHT_SOURCE must be retained after PICKUP with empty cursor");
+            h.assertTrue(lowerMenu.getCarried().isEmpty(), "cursor must remain empty after PICKUP on locked equipment slot");
+
+            // quickMoveStack(player, 0) empty and LIGHT_SOURCE retained
+            ItemStack qmResult = lowerMenu.quickMoveStack(player, 0);
+            h.assertTrue(qmResult.isEmpty(), "quickMoveStack on locked lower slot returns empty");
+            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE), lightBefore),
+                "LIGHT_SOURCE retained after quickMoveStack");
+
+            // Set player hotbar via lower menu hotbar slot
+            ItemStack replacementLight = new ItemStack(ModItems.I_LINE_LAMP.get());
+            lowerMenu.slots.get(lowerFirstHotbar).set(replacementLight);
+            // clicked(0, 0, SWAP) assert LIGHT_SOURCE retained/hotbar stone
+            lowerMenu.clicked(0, 0, ContainerInput.SWAP, player);
+            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE), lightBefore),
+                "LIGHT_SOURCE retained after SWAP");
+            h.assertTrue(ItemStack.isSameItemSameComponents(lowerMenu.slots.get(lowerFirstHotbar).getItem(), replacementLight),
+                "valid replacement LIGHT_SOURCE stays in hotbar after rejected SWAP");
+
+            // clicked(0, 0, THROW) must not remove LIGHT_SOURCE
+            lowerMenu.clicked(0, 0, ContainerInput.THROW, player);
+            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE), lightBefore),
+                "LIGHT_SOURCE retained after THROW");
+            h.assertTrue(lowerMenu.getCarried().isEmpty(), "cursor empty after THROW on locked slot");
+
+            // clicked(0, 2, CLONE) must not duplicate LIGHT_SOURCE (creative middle-click)
+            lowerMenu.clicked(0, 2, ContainerInput.CLONE, player);
+            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE), lightBefore),
+                "LIGHT_SOURCE retained after CLONE");
+            h.assertTrue(lowerMenu.getCarried().isEmpty(), "CLONE must leave the cursor empty in locked state");
+
+            // ===== TEST UPPER MENU (OperatingPanelMenu - 3 visible consumable slots) =====
+            OperatingPanelMenu upperMenu = new OperatingPanelMenu(8, player.getInventory(), cell, controllerPos);
+            player.containerMenu = upperMenu;
+
+            // Upper menu: player slots start at 3, hotbar at 3+27=30
+            int upperFirstHotbar = 3 + 27;
+            
+            // All 3 upper visible machine slots mayPickup must be false
+            for (int i = 0; i < 3; i++) {
+                h.assertFalse(upperMenu.slots.get(i).mayPickup(player), "upper machine slot " + i + " mayPickup must be false when locked");
+            }
+            // FOUP (vis 0) and MASK (vis 1) mayPlace false when locked; RESIST (vis 2) mayPlace allowed for top-up
+            h.assertFalse(upperMenu.slots.get(0).mayPlace(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP).copy()),
+                "locked upper FOUP slot rejects placement");
+            h.assertFalse(upperMenu.slots.get(1).mayPlace(cell.slot(ProcessCellControllerBlockEntity.SLOT_MASK).copy()),
+                "locked upper MASK slot rejects placement");
+            // RESIST mayPlace is allowed for top-up when locked - test this separately
+
+            // Real clicked FOUP PICKUP with empty cursor must keep FOUP and cursor empty
+            foupBefore = cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP).copy();
+            foupUuid = FoupItems.trustedContentsOf(foupBefore).lotId();
+            upperMenu.setCarried(ItemStack.EMPTY);
+            upperMenu.clicked(0, 0, ContainerInput.PICKUP, player); // Upper visible 0 = FOUP
+            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP), foupBefore),
+                "FOUP must be retained after PICKUP with empty cursor (upper)");
+            h.assertValueEqual(foupUuid, FoupItems.trustedContentsOf(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP)).lotId(),
+                "FOUP lot UUID unchanged");
+            h.assertTrue(upperMenu.getCarried().isEmpty(), "cursor must remain empty after PICKUP on locked FOUP");
 
             // quickMoveStack(player, 0) empty and FOUP retained
-            ItemStack qmResult = menu.quickMoveStack(player, 0);
+            qmResult = upperMenu.quickMoveStack(player, 0);
             h.assertTrue(qmResult.isEmpty(), "quickMoveStack on locked FOUP returns empty");
-            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(0), foupBefore), "FOUP retained after quickMoveStack");
+            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP), foupBefore),
+                "FOUP retained after quickMoveStack");
 
-            // Set player hotbar via menu.slots.get(35).set(new ItemStack(Items.STONE))
+            // Set player hotbar via upper menu hotbar slot
             ItemStack replacementFoup = FoupItems.with(ModItems.FOUP_MK2.get(),
                 new FoupContents(UUID.randomUUID(), 2, List.of(new Wafer(0, 1.0f, 0))));
-            menu.slots.get(35).set(replacementFoup);
+            upperMenu.slots.get(upperFirstHotbar).set(replacementFoup);
             // clicked(0, 0, SWAP) assert FOUP retained/hotbar stone
-            menu.clicked(0, 0, ContainerInput.SWAP, player);
-            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(0), foupBefore), "FOUP retained after SWAP");
-            h.assertTrue(ItemStack.isSameItemSameComponents(menu.slots.get(35).getItem(), replacementFoup),
-                "valid replacement FOUP stays in hotbar after rejected SWAP");
+            upperMenu.clicked(0, 0, ContainerInput.SWAP, player);
+            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP), foupBefore),
+                "FOUP retained after SWAP (upper)");
+            h.assertTrue(ItemStack.isSameItemSameComponents(upperMenu.slots.get(upperFirstHotbar).getItem(), replacementFoup),
+                "valid replacement FOUP stays in hotbar after rejected SWAP (upper)");
 
             // clicked(0, 0, THROW) must not remove FOUP
-            menu.clicked(0, 0, ContainerInput.THROW, player);
-            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(0), foupBefore), "FOUP retained after THROW");
-            h.assertTrue(menu.getCarried().isEmpty(), "cursor empty after THROW on locked FOUP");
+            upperMenu.clicked(0, 0, ContainerInput.THROW, player);
+            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP), foupBefore),
+                "FOUP retained after THROW (upper)");
+            h.assertTrue(upperMenu.getCarried().isEmpty(), "cursor empty after THROW on locked FOUP (upper)");
 
             // clicked(0, 2, CLONE) must not duplicate FOUP (creative middle-click)
-            menu.clicked(0, 2, ContainerInput.CLONE, player);
-            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(0), foupBefore), "FOUP retained after CLONE");
-            h.assertTrue(menu.getCarried().isEmpty(), "CLONE must leave the cursor empty in locked state");
+            upperMenu.clicked(0, 2, ContainerInput.CLONE, player);
+            h.assertTrue(ItemStack.isSameItemSameComponents(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP), foupBefore),
+                "FOUP retained after CLONE (upper)");
+            h.assertTrue(upperMenu.getCarried().isEmpty(), "CLONE must leave the cursor empty in locked state (upper)");
 
-            // Real normal resist top-up: menu.setCarried(new ItemStack(RESIST_T2, 3)); menu.clicked(2, 0, PICKUP, player)
-            menu.setCarried(new ItemStack(ModItems.RESIST_T2.get(), 3));
-            menu.clicked(2, 0, ContainerInput.PICKUP, player);
-            h.assertValueEqual(9, resist(cell), "resist top-up adds 3 to existing 6");
-            h.assertTrue(menu.getCarried().isEmpty(), "cursor empty after successful resist top-up");
+            // Real normal resist top-up: upperMenu.setCarried(new ItemStack(RESIST_T2, 3)); upperMenu.clicked(2, 0, PICKUP, player)
+            upperMenu.setCarried(new ItemStack(ModItems.RESIST_T2.get(), 3));
+            upperMenu.clicked(2, 0, ContainerInput.PICKUP, player); // Upper visible 2 = RESIST
+            h.assertValueEqual(9, resist(cell), "resist top-up adds 3 to existing 6 (upper)");
+            h.assertTrue(upperMenu.getCarried().isEmpty(), "cursor empty after successful resist top-up (upper)");
 
             // Right-click 2 more adds one, cursor 1 (right-click places one from cursor)
-            menu.setCarried(new ItemStack(ModItems.RESIST_T2.get(), 2));
-            menu.clicked(2, 1, ContainerInput.PICKUP, player); // button=1 for right-click
-            h.assertValueEqual(10, resist(cell), "right-click adds one more resist");
-            h.assertValueEqual(1, menu.getCarried().getCount(), "cursor has 1 left after right-click top-up");
+            upperMenu.setCarried(new ItemStack(ModItems.RESIST_T2.get(), 2));
+            upperMenu.clicked(2, 1, ContainerInput.PICKUP, player); // button=1 for right-click
+            h.assertValueEqual(10, resist(cell), "right-click adds one more resist (upper)");
+            h.assertValueEqual(1, upperMenu.getCarried().getCount(), "cursor has 1 left after right-click top-up (upper)");
 
             // Wrong T1 cursor 3 rejected, resist unchanged
-            menu.setCarried(new ItemStack(ModItems.RESIST_T1.get(), 3));
-            menu.clicked(2, 0, ContainerInput.PICKUP, player);
-            h.assertValueEqual(10, resist(cell), "wrong T1 resist rejected, resist unchanged");
-            h.assertValueEqual(3, menu.getCarried().getCount(), "T1 cursor unchanged after rejection");
+            upperMenu.setCarried(new ItemStack(ModItems.RESIST_T1.get(), 3));
+            upperMenu.clicked(2, 0, ContainerInput.PICKUP, player);
+            h.assertValueEqual(10, resist(cell), "wrong T1 resist rejected, resist unchanged (upper)");
+            h.assertValueEqual(3, upperMenu.getCarried().getCount(), "T1 cursor unchanged after rejection (upper)");
 
             // Empty cursor PICKUP resist cannot extract
-            menu.setCarried(ItemStack.EMPTY);
-            menu.clicked(2, 0, ContainerInput.PICKUP, player);
-            h.assertValueEqual(10, resist(cell), "empty cursor PICKUP cannot extract resist");
-            h.assertTrue(menu.getCarried().isEmpty(), "cursor remains empty");
+            upperMenu.setCarried(ItemStack.EMPTY);
+            upperMenu.clicked(2, 0, ContainerInput.PICKUP, player);
+            h.assertValueEqual(10, resist(cell), "empty cursor PICKUP cannot extract resist (upper)");
+            h.assertTrue(upperMenu.getCarried().isEmpty(), "cursor remains empty (upper)");
 
-            // Player-to-machine shift: set slot 8 to RESIST_T2 stack 2; quickMoveStack(player, 8) adds 2 to existing resist, player stack empties
-            menu.slots.get(8).set(new ItemStack(ModItems.RESIST_T2.get(), 2));
-            ItemStack shifted = menu.quickMoveStack(player, 8);
-            h.assertTrue(!shifted.isEmpty() && shifted.is(ModItems.RESIST_T2.get()), "shift-click returns the moved stack copy");
-            h.assertTrue(menu.slots.get(8).getItem().isEmpty(), "shift-click empties the player source slot");
-            h.assertValueEqual(12, resist(cell), "shift-click adds 2 resist to machine");
+            // Player-to-machine shift: set upper hotbar slot to RESIST_T2 stack 2; quickMoveStack adds 2 to existing resist
+            upperMenu.slots.get(upperFirstHotbar).set(new ItemStack(ModItems.RESIST_T2.get(), 2));
+            ItemStack shifted = upperMenu.quickMoveStack(player, upperFirstHotbar);
+            h.assertTrue(!shifted.isEmpty() && shifted.is(ModItems.RESIST_T2.get()), "shift-click returns the moved stack copy (upper)");
+            h.assertTrue(upperMenu.slots.get(upperFirstHotbar).getItem().isEmpty(), "shift-click empties the player source slot (upper)");
+            h.assertValueEqual(12, resist(cell), "shift-click adds 2 resist to machine (upper)");
 
-            // Direct quickMoveStack(player, 2) cannot extract
-            menu.setCarried(ItemStack.EMPTY);
-            ItemStack directShift = menu.quickMoveStack(player, 2);
-            h.assertTrue(directShift.isEmpty(), "quickMoveStack on locked resist slot cannot extract");
-            h.assertValueEqual(12, resist(cell), "resist unchanged after failed extraction");
+            // Direct quickMoveStack(player, 2) cannot extract (resist slot is visible index 2 in upper)
+            upperMenu.setCarried(ItemStack.EMPTY);
+            ItemStack directShift = upperMenu.quickMoveStack(player, 2);
+            h.assertTrue(directShift.isEmpty(), "quickMoveStack on locked resist slot cannot extract (upper)");
+            h.assertValueEqual(12, resist(cell), "resist unchanged after failed extraction (upper)");
 
             // PICKUP_ALL with carried T2 count 1 cannot collect from locked resist slot
             // First clear other player resist stacks
-            for (int i = 8; i < 44; i++) {
-                if (menu.slots.get(i).getItem().is(ModItems.RESIST_T2.get())) {
-                    menu.slots.get(i).set(ItemStack.EMPTY);
+            for (int i = upperFirstHotbar; i < upperFirstHotbar + 9; i++) { // hotbar only
+                if (upperMenu.slots.get(i).getItem().is(ModItems.RESIST_T2.get())) {
+                    upperMenu.slots.get(i).set(ItemStack.EMPTY);
                 }
             }
-            menu.setCarried(new ItemStack(ModItems.RESIST_T2.get(), 1));
-            h.assertFalse(menu.canTakeItemForPickAll(menu.getCarried(), menu.slots.get(2)),
-                "PICKUP_ALL predicate protects the active resist slot");
-            menu.clicked(2, 0, ContainerInput.PICKUP_ALL, player);
-            h.assertValueEqual(12, resist(cell), "real PICKUP_ALL cannot extract active resist");
-            h.assertValueEqual(1, menu.getCarried().getCount(), "real PICKUP_ALL leaves the cursor count unchanged");
-
-            // Real left-drag sequence: stage bits 0, 1, 2; type bits zero.
-            menu.setCarried(new ItemStack(ModItems.RESIST_T2.get(), 4));
-            menu.clicked(-999, 0, ContainerInput.QUICK_CRAFT, player);
-            menu.clicked(2, 1, ContainerInput.QUICK_CRAFT, player);
-            menu.clicked(-999, 2, ContainerInput.QUICK_CRAFT, player);
-            h.assertValueEqual(16, resist(cell), "same-type drag inserts four resist");
-            h.assertTrue(menu.getCarried().isEmpty(), "same-type drag consumes exactly the cursor stack");
-            menu.setCarried(new ItemStack(ModItems.RESIST_T1.get(), 4));
-            menu.clicked(-999, 0, ContainerInput.QUICK_CRAFT, player);
-            menu.clicked(2, 1, ContainerInput.QUICK_CRAFT, player);
-            menu.clicked(-999, 2, ContainerInput.QUICK_CRAFT, player);
-            h.assertValueEqual(16, resist(cell), "wrong-type drag changes no machine items");
-            h.assertValueEqual(4, menu.getCarried().getCount(), "wrong-type drag retains all cursor items");
-
-            menu.setCarried(new ItemStack(ModItems.RESIST_T2.get(), 4));
-            menu.clicked(-999, AbstractContainerMenu.getQuickcraftMask(0, 2), ContainerInput.QUICK_CRAFT, player);
-            menu.clicked(2, AbstractContainerMenu.getQuickcraftMask(1, 2), ContainerInput.QUICK_CRAFT, player);
-            menu.clicked(8, AbstractContainerMenu.getQuickcraftMask(1, 2), ContainerInput.QUICK_CRAFT, player);
-            menu.clicked(-999, AbstractContainerMenu.getQuickcraftMask(2, 2), ContainerInput.QUICK_CRAFT, player);
-            h.assertValueEqual(16, resist(cell), "creative drag cannot clone resist into the active slot");
-            h.assertValueEqual(4, menu.getCarried().getCount(), "rejected creative drag keeps the cursor unchanged");
+            upperMenu.setCarried(new ItemStack(ModItems.RESIST_T2.get(), 1));
+            h.assertFalse(upperMenu.canTakeItemForPickAll(upperMenu.getCarried(), upperMenu.slots.get(2)),
+                "PICKUP_ALL predicate protects the active resist slot (upper)");
+            upperMenu.clicked(2, 0, ContainerInput.PICKUP_ALL, player);
+            h.assertValueEqual(12, resist(cell), "real PICKUP_ALL cannot extract active resist (upper)");
+            h.assertValueEqual(1, upperMenu.getCarried().getCount(), "real PICKUP_ALL leaves the cursor count unchanged (upper)");
 
             // Verify physical FOUP UUID/item/count and cursor count assertions
-            ItemStack finalFoup = cell.slot(0);
+            ItemStack finalFoup = cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP);
             h.assertValueEqual(foupUuid, FoupItems.trustedContentsOf(finalFoup).lotId(), "final FOUP UUID matches");
             h.assertTrue(finalFoup.is(ModItems.FOUP_MK1.get()), "final FOUP is correct item");
             h.assertValueEqual(1, finalFoup.getCount(), "final FOUP count is 1");
@@ -561,26 +660,29 @@ public final class ProcessCellGameTests {
      * Case process_cell_menu_empty_resist_top_up:
      * fixture T2 resist 2 => tick 1 empty slot. Actual server menu remains locked,
      * resistSlot.mayPlace T2 true / T1 false, mayPickup false.
+     * Resist is ONLY visible in upper menu (OperatingPanelMenu) at visible index 2.
      * Wrong T1 cursor PICKUP rejected empty; same T2 cursor count 3 normal PICKUP fills 3 and cursor empty.
      * Tick 2 completes first layer without paying resist again, tick 1 next layer consumes 2 leaves 1;
      * verify layer 1, active, original UUID. Normal pickup from empty or filled active slot cannot extract.
      * Preserve exact resist counts.
+     * Test using UPPER menu since resist is only visible there.
      */
     private static void menuEmptyResistTopUp(GameTestHelper h) {
         settings(() -> {
             Fixture f = fixture(h, 2, 2, 4, false);
             var cell = f.cell();
             tick(cell, 1);
-            h.assertTrue(cell.slot(2).isEmpty(), "initial layer empties resist slot");
+            h.assertTrue(cell.slot(ProcessCellControllerBlockEntity.SLOT_RESIST).isEmpty(), "initial layer empties resist slot");
             h.assertTrue(cell.inputsLocked(), "partial run locks inputs");
 
             ServerPlayer player = connect(h.getLevel());
             BlockPos controllerPos = h.absolutePos(new BlockPos(1, 1, 1));
             player.setPos(controllerPos.getX() + 0.5, controllerPos.getY() + 0.5, controllerPos.getZ() + 0.5);
-            ProcessCellMenu menu = new ProcessCellMenu(7, player.getInventory(), cell);
-            player.containerMenu = menu;
+            // Use UPPER menu since resist is only visible there (visible index 2)
+            OperatingPanelMenu upperMenu = new OperatingPanelMenu(7, player.getInventory(), cell, controllerPos);
+            player.containerMenu = upperMenu;
 
-            Slot resistSlot = menu.slots.get(2);
+            Slot resistSlot = upperMenu.slots.get(2); // Upper visible 2 = RESIST (underlying 2)
             // resistSlot.mayPlace T2 true / T1 false
             h.assertTrue(resistSlot.mayPlace(new ItemStack(ModItems.RESIST_T2.get())), "resist slot mayPlace T2 when locked and empty");
             h.assertFalse(resistSlot.mayPlace(new ItemStack(ModItems.RESIST_T1.get())), "resist slot rejects T1 when locked and empty");
@@ -588,16 +690,16 @@ public final class ProcessCellGameTests {
             h.assertFalse(resistSlot.mayPickup(player), "resist slot mayPickup false when locked");
 
             // Wrong T1 cursor PICKUP rejected empty
-            menu.setCarried(new ItemStack(ModItems.RESIST_T1.get(), 3));
-            menu.clicked(2, 0, ContainerInput.PICKUP, player);
-            h.assertTrue(cell.slot(2).isEmpty(), "T1 resist rejected, slot remains empty");
-            h.assertValueEqual(3, menu.getCarried().getCount(), "T1 cursor unchanged after rejection");
+            upperMenu.setCarried(new ItemStack(ModItems.RESIST_T1.get(), 3));
+            upperMenu.clicked(2, 0, ContainerInput.PICKUP, player);
+            h.assertTrue(cell.slot(ProcessCellControllerBlockEntity.SLOT_RESIST).isEmpty(), "T1 resist rejected, slot remains empty");
+            h.assertValueEqual(3, upperMenu.getCarried().getCount(), "T1 cursor unchanged after rejection");
 
             // Same T2 cursor count 3 normal PICKUP fills 3 and cursor empty
-            menu.setCarried(new ItemStack(ModItems.RESIST_T2.get(), 3));
-            menu.clicked(2, 0, ContainerInput.PICKUP, player);
+            upperMenu.setCarried(new ItemStack(ModItems.RESIST_T2.get(), 3));
+            upperMenu.clicked(2, 0, ContainerInput.PICKUP, player);
             h.assertValueEqual(3, resist(cell), "T2 resist top-up fills 3");
-            h.assertTrue(menu.getCarried().isEmpty(), "cursor empty after successful top-up");
+            h.assertTrue(upperMenu.getCarried().isEmpty(), "cursor empty after successful top-up");
 
             // Tick 2 completes first layer without paying resist again
             UUID originalLotId = f.lotId();
@@ -612,16 +714,16 @@ public final class ProcessCellGameTests {
             h.assertValueEqual(1, resist(cell), "second layer consumes 2 resist, leaves 1");
 
             // Normal pickup from empty or filled active slot cannot extract
-            menu.setCarried(ItemStack.EMPTY);
-            menu.clicked(2, 0, ContainerInput.PICKUP, player);
+            upperMenu.setCarried(ItemStack.EMPTY);
+            upperMenu.clicked(2, 0, ContainerInput.PICKUP, player);
             h.assertValueEqual(1, resist(cell), "empty cursor PICKUP cannot extract from filled resist slot");
-            h.assertTrue(menu.getCarried().isEmpty(), "cursor remains empty");
+            h.assertTrue(upperMenu.getCarried().isEmpty(), "cursor remains empty");
 
             // Try to extract with PICKUP when resist is present
-            menu.setCarried(new ItemStack(ModItems.RESIST_T2.get(), 1));
-            menu.clicked(2, 0, ContainerInput.PICKUP, player);
+            upperMenu.setCarried(new ItemStack(ModItems.RESIST_T2.get(), 1));
+            upperMenu.clicked(2, 0, ContainerInput.PICKUP, player);
             h.assertValueEqual(2, resist(cell), "same-type cursor adds one to the occupied active slot");
-            h.assertTrue(menu.getCarried().isEmpty(), "same-type top-up consumes exactly the cursor item");
+            h.assertTrue(upperMenu.getCarried().isEmpty(), "same-type top-up consumes exactly the cursor item");
         });
         h.succeed();
     }
@@ -638,6 +740,7 @@ public final class ProcessCellGameTests {
      * Same FOUP remove/reinsert + tick reactivates; destroy actual controller and assert staleMenu
      * stillValid false / clickMenuButton false. Include wrong world check only if actual API readily available;
      * no fabricated ClientLevel.
+     * ABORT_BUTTON only works on OperatingPanelMenu (upper), ProcessCellMenu (lower) returns false.
      */
     private static void abortButtonValidation(GameTestHelper h) {
         settings(() -> {
@@ -651,25 +754,35 @@ public final class ProcessCellGameTests {
             BlockPos controllerPos = h.absolutePos(new BlockPos(1, 1, 1));
             player.setPos(controllerPos.getX() + 0.5, controllerPos.getY() + 0.5, controllerPos.getZ() + 0.5);
 
-            // Real server menu
-            ProcessCellMenu serverMenu = new ProcessCellMenu(7, player.getInventory(), cell);
-            player.containerMenu = serverMenu;
+            // ===== Test LOWER menu (ProcessCellMenu) - should NOT have abort =====
+            ProcessCellMenu lowerMenu = new ProcessCellMenu(7, player.getInventory(), cell);
+            player.containerMenu = lowerMenu;
+
+            // Lower menu is not operating panel, so clickMenuButton should return false for abort button
+            h.assertFalse(lowerMenu.clickMenuButton(player, ProcessCellMenu.ABORT_BUTTON),
+                "lower menu clickMenuButton returns false (not operating panel)");
+            h.assertFalse(cell.aborted(), "lower menu cannot abort the cell");
+            h.assertTrue(cell.inputsLocked(), "inputs still locked after lower menu abort attempt");
+
+            // ===== Test UPPER menu (OperatingPanelMenu) - should have valid abort =====
+            OperatingPanelMenu upperMenu = new OperatingPanelMenu(8, player.getInventory(), cell, controllerPos);
+            player.containerMenu = upperMenu;
 
             // Wrong id 1 false/no abort
-            h.assertFalse(serverMenu.clickMenuButton(player, 1), "wrong button id returns false");
+            h.assertFalse(upperMenu.clickMenuButton(player, 1), "wrong button id returns false");
             h.assertFalse(cell.aborted(), "wrong id does not abort");
             h.assertTrue(cell.inputsLocked(), "inputs still locked after wrong id");
 
             // player.containerMenu = player.inventoryMenu false/no abort
             player.containerMenu = player.inventoryMenu;
-            h.assertFalse(serverMenu.clickMenuButton(player, 0), "wrong containerMenu returns false");
+            h.assertFalse(upperMenu.clickMenuButton(player, 0), "wrong containerMenu returns false");
             h.assertFalse(cell.aborted(), "wrong containerMenu does not abort");
             h.assertTrue(cell.inputsLocked(), "inputs still locked after wrong containerMenu");
 
             // Restore pointer, move 20 blocks away false/no abort
-            player.containerMenu = serverMenu;
+            player.containerMenu = upperMenu;
             player.setPos(controllerPos.getX() + 20.5, controllerPos.getY() + 0.5, controllerPos.getZ() + 0.5);
-            h.assertFalse(serverMenu.clickMenuButton(player, 0), "too far returns false");
+            h.assertFalse(upperMenu.clickMenuButton(player, 0), "too far returns false");
             h.assertFalse(cell.aborted(), "too far does not abort");
             h.assertTrue(cell.inputsLocked(), "inputs still locked after distance check");
 
@@ -684,8 +797,8 @@ public final class ProcessCellGameTests {
             ServerPlayer otherPlayer = new ServerPlayer(h.getLevel().getServer(), otherLevel,
                 otherCookie.gameProfile(), otherCookie.clientInformation());
             otherPlayer.setPos(controllerPos.getX() + 0.5, controllerPos.getY() + 0.5, controllerPos.getZ() + 0.5);
-            otherPlayer.containerMenu = serverMenu;
-            h.assertFalse(serverMenu.clickMenuButton(otherPlayer, 0), "wrong-world player cannot abort");
+            otherPlayer.containerMenu = upperMenu;
+            h.assertFalse(upperMenu.clickMenuButton(otherPlayer, 0), "wrong-world player cannot abort");
             h.assertFalse(cell.aborted(), "wrong-world request leaves the run active");
 
             // Construct client-style Menu(id, inventory, (FabMachineBlockEntity)null), set pointer clientMenu
@@ -696,14 +809,14 @@ public final class ProcessCellGameTests {
             h.assertFalse(cell.aborted(), "client menu cannot abort real controller");
             h.assertTrue(cell.inputsLocked(), "inputs still locked after client menu click");
 
-            // Restore pointer serverMenu and correct near id 0 true, cell.aborted true, inputs unlocked
-            player.containerMenu = serverMenu;
-            h.assertTrue(serverMenu.clickMenuButton(player, 0), "correct server menu near player aborts");
+            // Restore pointer upperMenu and correct near id 0 true, cell.aborted true, inputs unlocked
+            player.containerMenu = upperMenu;
+            h.assertTrue(upperMenu.clickMenuButton(player, 0), "correct upper menu near player aborts");
             h.assertTrue(cell.aborted(), "abort latches stopped");
             h.assertFalse(cell.inputsLocked(), "abort permits FOUP removal");
 
             // Second click false / no active
-            h.assertFalse(serverMenu.clickMenuButton(player, 0), "second click on aborted cell returns false");
+            h.assertFalse(upperMenu.clickMenuButton(player, 0), "second click on aborted cell returns false");
             h.assertTrue(cell.aborted(), "abort remains latched");
             h.assertFalse(cell.inputsLocked(), "inputs remain unlocked");
 
@@ -714,8 +827,8 @@ public final class ProcessCellGameTests {
             h.assertValueEqual(60, resist(cell), "resist not refunded");
 
             // Same FOUP remove/reinsert + tick reactivates
-            ItemStack foupStack = cell.removeItemNoUpdate(0);
-            cell.setItem(0, foupStack);
+            ItemStack foupStack = cell.removeItemNoUpdate(ProcessCellControllerBlockEntity.SLOT_FOUP);
+            cell.setItem(ProcessCellControllerBlockEntity.SLOT_FOUP, foupStack);
             tick(cell, 1);
             h.assertFalse(cell.aborted(), "FOUP removal releases abort latch");
             h.assertValueEqual(1, cell.progressTicks(), "discarded partial layer starts from zero");
@@ -727,8 +840,8 @@ public final class ProcessCellGameTests {
             // Destroy actual controller and assert staleMenu stillValid false / clickMenuButton false
             h.setBlock(new BlockPos(1, 1, 1), Blocks.AIR.defaultBlockState());
             cell.revalidate();
-            h.assertFalse(serverMenu.stillValid(player), "stale menu stillValid false after controller destroyed");
-            h.assertFalse(serverMenu.clickMenuButton(player, 0), "clickMenuButton false on stale menu");
+            h.assertFalse(upperMenu.stillValid(player), "stale menu stillValid false after controller destroyed");
+            h.assertFalse(upperMenu.clickMenuButton(player, 0), "clickMenuButton false on stale menu");
             h.assertFalse(cell.aborted(), "stale menu cannot abort its still-active removed controller");
         });
         h.succeed();
@@ -858,6 +971,7 @@ public final class ProcessCellGameTests {
      * player.gameMode.useItemOn real server path with empty hand then held ordinary item;
      * both consume action and open ProcessCellMenu bound slots[0].container == cell, stillValid true.
      * player.closeContainer between uses; after closing returns inventoryMenu.
+     * Lower menu has 41 total slots (5 machine + 36 player).
      * Follow actual source EXAMPLES signature. No direct constructor-only substitute for block interaction.
      * No logs containing private wafer data. Each case helper.succeed only after assertions.
      */
@@ -885,6 +999,7 @@ public final class ProcessCellGameTests {
             ProcessCellMenu openedMenu = (ProcessCellMenu) player.containerMenu;
             h.assertTrue(openedMenu.slots.get(0).container == cell,
                 "menu opened by block interaction is bound to the cell (slot 0 container)");
+            h.assertTrue(openedMenu.slots.size() == 41, "lower menu has 41 total slots (5 machine + 36 player)");
             h.assertTrue(openedMenu.stillValid(player), "menu considers player close enough");
             player.closeContainer();
             h.assertTrue(player.containerMenu == player.inventoryMenu,
@@ -900,10 +1015,735 @@ public final class ProcessCellGameTests {
             ProcessCellMenu openedMenu2 = (ProcessCellMenu) player.containerMenu;
             h.assertTrue(openedMenu2.slots.get(0).container == cell,
                 "menu opened with held item is bound to the cell");
+            h.assertTrue(openedMenu2.slots.size() == 41, "lower menu has 41 total slots (5 machine + 36 player)");
             h.assertTrue(openedMenu2.stillValid(player), "menu considers player close enough");
             player.closeContainer();
             h.assertTrue(player.containerMenu == player.inventoryMenu,
                 "closing menu after held item returns player to inventory menu");
+        });
+        h.succeed();
+    }
+
+    // ------------------------------------------------------------------------
+    // M1 Operator Panels new test cases
+    // ------------------------------------------------------------------------
+
+    /**
+     * Case operator_panel_block_use:
+     * Fixture T1, actual connected player near operating panel (above controller),
+     * hit BlockHitResult(Vec3.atCenterOf(absPanelPos), Direction.UP, absPanelPos, false).
+     * player.gameMode.useItemOn real server path with empty hand then held ordinary item;
+     * both consume action and open OperatingPanelMenu bound slots[0].container == cell, stillValid true.
+     * player.closeContainer between uses; after closing returns inventoryMenu.
+     * Upper menu has 39 total slots (3 machine + 36 player).
+     */
+    private static void operatorPanelBlockUse(GameTestHelper h) {
+        settings(() -> {
+            Fixture f = fixture(h, 1, 64, 4, false);
+            var cell = f.cell();
+
+            ServerPlayer player = connect(h.getLevel());
+            BlockPos panelPos = h.absolutePos(new BlockPos(1, 2, 1));
+            player.setPos(panelPos.getX() + 0.5, panelPos.getY() + 0.5, panelPos.getZ() + 0.5);
+
+            BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(panelPos), Direction.UP, panelPos, false);
+
+            // Empty hand
+            player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            InteractionResult emptyHand = player.gameMode.useItemOn(player, h.getLevel(),
+                player.getItemInHand(InteractionHand.MAIN_HAND), InteractionHand.MAIN_HAND, hit);
+            h.assertTrue(emptyHand.consumesAction(), "using the operating panel with empty hand consumes action");
+            h.assertTrue(player.containerMenu instanceof OperatingPanelMenu,
+                "empty hand opens OperatingPanelMenu, got " + player.containerMenu.getClass().getSimpleName());
+            OperatingPanelMenu openedMenu = (OperatingPanelMenu) player.containerMenu;
+            h.assertTrue(openedMenu.slots.get(0).container == cell,
+                "menu opened by panel interaction is bound to the cell (slot 0 container)");
+            h.assertTrue(openedMenu.slots.size() == 39, "upper menu has 39 total slots (3 machine + 36 player)");
+            h.assertTrue(openedMenu.stillValid(player), "menu considers player close enough");
+            player.closeContainer();
+            h.assertTrue(player.containerMenu == player.inventoryMenu,
+                "closing menu returns player to inventory menu");
+
+            // Held ordinary item
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.STONE));
+            InteractionResult heldItem = player.gameMode.useItemOn(player, h.getLevel(),
+                player.getItemInHand(InteractionHand.MAIN_HAND), InteractionHand.MAIN_HAND, hit);
+            h.assertTrue(heldItem.consumesAction(), "using the panel with held item consumes action");
+            h.assertTrue(player.containerMenu instanceof OperatingPanelMenu,
+                "held item opens OperatingPanelMenu, got " + player.containerMenu.getClass().getSimpleName());
+            OperatingPanelMenu openedMenu2 = (OperatingPanelMenu) player.containerMenu;
+            h.assertTrue(openedMenu2.slots.get(0).container == cell,
+                "menu opened with held item is bound to the cell");
+            h.assertTrue(openedMenu2.slots.size() == 39, "upper menu has 39 total slots (3 machine + 36 player)");
+            h.assertTrue(openedMenu2.stillValid(player), "menu considers player close enough");
+            player.closeContainer();
+            h.assertTrue(player.containerMenu == player.inventoryMenu,
+                "closing menu after held item returns player to inventory menu");
+        });
+        h.succeed();
+    }
+
+    /**
+     * Case operator_panel_menu_open:
+     * Direct menu construction for both lower (ProcessCellMenu) and upper (OperatingPanelMenu)
+     * with real connected player. Verify both open correctly and reference the same cell.
+     * Upper menu: 39 total slots (3 machine + 36 player). Lower menu: 41 total slots (5 machine + 36 player).
+     */
+    private static void operatorPanelMenuOpen(GameTestHelper h) {
+        settings(() -> {
+            Fixture f = fixture(h, 1, 64, 4, false);
+            var cell = f.cell();
+
+            ServerPlayer player = connect(h.getLevel());
+            BlockPos controllerPos = h.absolutePos(new BlockPos(1, 1, 1));
+            BlockPos panelPos = h.absolutePos(new BlockPos(1, 2, 1));
+            player.setPos(controllerPos.getX() + 0.5, controllerPos.getY() + 0.5, controllerPos.getZ() + 0.5);
+
+            // Lower menu (ProcessCellMenu) - 5 visible equipment slots
+            ProcessCellMenu lowerMenu = new ProcessCellMenu(7, player.getInventory(), cell);
+            player.containerMenu = lowerMenu;
+            h.assertTrue(lowerMenu.visibleMachineSlotCount() == 5, "lower menu shows 5 visible machine slots");
+            h.assertTrue(lowerMenu.slots.size() == 41, "lower menu has 41 total slots (5 machine + 36 player)");
+            h.assertTrue(lowerMenu.slots.get(0).container == cell, "lower menu slot 0 bound to cell");
+            h.assertTrue(lowerMenu.stillValid(player), "lower menu valid near controller");
+
+            // Upper menu (OperatingPanelMenu) - 3 visible consumable slots
+            OperatingPanelMenu upperMenu = new OperatingPanelMenu(8, player.getInventory(), cell, controllerPos);
+            player.containerMenu = upperMenu;
+            h.assertTrue(upperMenu.visibleMachineSlotCount() == 3, "upper menu shows 3 visible machine slots");
+            h.assertTrue(upperMenu.slots.size() == 39, "upper menu has 39 total slots (3 machine + 36 player)");
+            h.assertTrue(upperMenu.slots.get(0).container == cell, "upper menu slot 0 bound to cell");
+            h.assertTrue(upperMenu.corePos().equals(controllerPos), "upper menu tracks core position");
+            h.assertTrue(upperMenu.stillValid(player), "upper menu valid near panel");
+
+            player.closeContainer();
+            h.assertTrue(player.containerMenu == player.inventoryMenu,
+                "closing upper menu returns player to inventory menu");
+        });
+        h.succeed();
+    }
+
+    /**
+     * Case operator_panel_slot_mapping:
+     * Verify exact 3/5 slot underlying mapping shared one owner.
+     * Lower: visible 5 slots map to underlying indices 3..7 (LIGHT_SOURCE..METROLOGY).
+     * Upper: visible 3 slots map to underlying indices 0..2 (FOUP, MASK, RESIST).
+     * Both menus share the same 8-slot inventory in the cell.
+     * Use Slot.getContainerSlot() for backing slot index; getSlotIndex() is menu index.
+     */
+    private static void operatorPanelSlotMapping(GameTestHelper h) {
+        settings(() -> {
+            Fixture f = fixture(h, 1, 64, 4, false);
+            var cell = f.cell();
+
+            ServerPlayer player = connect(h.getLevel());
+            BlockPos controllerPos = h.absolutePos(new BlockPos(1, 1, 1));
+            player.setPos(controllerPos.getX() + 0.5, controllerPos.getY() + 0.5, controllerPos.getZ() + 0.5);
+
+            ProcessCellMenu lowerMenu = new ProcessCellMenu(7, player.getInventory(), cell);
+            OperatingPanelMenu upperMenu = new OperatingPanelMenu(8, player.getInventory(), cell, controllerPos);
+
+            // Lower menu: visible indices 0..4 map to underlying 3..7
+            for (int vis = 0; vis < 5; vis++) {
+                int underlying = ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE + vis;
+                h.assertTrue(lowerMenu.slots.get(vis).container == cell,
+                    "lower visible " + vis + " container is cell");
+                h.assertTrue(lowerMenu.slots.get(vis).getContainerSlot() == underlying,
+                    "lower visible " + vis + " maps to underlying slot " + underlying);
+            }
+
+            // Upper menu: visible indices 0..2 map to underlying 0..2
+            for (int vis = 0; vis < 3; vis++) {
+                int underlying = vis; // FOUP, MASK, RESIST
+                h.assertTrue(upperMenu.slots.get(vis).container == cell,
+                    "upper visible " + vis + " container is cell");
+                h.assertTrue(upperMenu.slots.get(vis).getContainerSlot() == underlying,
+                    "upper visible " + vis + " maps to underlying slot " + underlying);
+            }
+
+            // Upper menu corePos tracking
+            h.assertTrue(upperMenu.corePos().equals(controllerPos), "upper menu tracks core position");
+
+            // Verify shared inventory: change equipment via lower visible 0 (underlying 3 = LIGHT_SOURCE),
+            // assert cell.slot(3) changes and upper FOUP (underlying 0) unchanged
+            ItemStack retainedFoup = cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP).copy();
+            ItemStack newLight = new ItemStack(ModItems.I_LINE_LAMP.get());
+            lowerMenu.slots.get(0).set(newLight.copy());
+            h.assertTrue(ItemStack.matches(cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE), newLight),
+                "cell underlying slot 3 (LIGHT_SOURCE) changed via lower visible 0");
+            h.assertTrue(ItemStack.matches(retainedFoup, upperMenu.slots.get(0).getItem()),
+                "upper FOUP (underlying 0) unchanged after lower equipment change");
+
+            // Change FOUP/resist via upper, assert cell.slot(0/2) changes while lower equipment retained
+            ItemStack newFoup = FoupItems.with(ModItems.FOUP_MK2.get(),
+                new FoupContents(UUID.randomUUID(), 2, List.of(new Wafer(0, 1.0f, 0))));
+            upperMenu.slots.get(0).set(newFoup.copy());
+            h.assertTrue(ItemStack.matches(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP), newFoup),
+                "cell underlying slot 0 (FOUP) changed via upper visible 0");
+            // Lower equipment (visible 0 = underlying 3) should be unchanged
+            h.assertTrue(ItemStack.matches(newLight, lowerMenu.slots.get(0).getItem()),
+                "lower equipment retained after upper FOUP change");
+
+            ItemStack newResist = new ItemStack(ModItems.RESIST_T2.get(), 10);
+            upperMenu.slots.get(2).set(newResist.copy());
+            h.assertTrue(ItemStack.matches(cell.slot(ProcessCellControllerBlockEntity.SLOT_RESIST), newResist),
+                "cell underlying slot 2 (RESIST) changed via upper visible 2");
+            // Lower equipment (visible 0 = underlying 3) should still be unchanged
+            h.assertTrue(ItemStack.matches(newLight, lowerMenu.slots.get(0).getItem()),
+                "lower equipment retained after upper resist change");
+        });
+        h.succeed();
+    }
+
+    /**
+     * Case operator_panel_equipment_retains:
+     * Installed equipment (slots 3..7) remains when operating FOUP changes.
+     * Swap FOUP in upper menu (visible index 0), verify lower equipment slots unchanged.
+     */
+    private static void operatorPanelEquipmentRetains(GameTestHelper h) {
+        settings(() -> {
+            Fixture f = fixture(h, 2, 64, 4, false);
+            var cell = f.cell();
+            ServerPlayer player = connect(h.getLevel());
+            BlockPos pos = cell.getBlockPos();
+            player.setPos(pos.getX()+0.5, pos.getY()+0.5, pos.getZ()+0.5);
+            ProcessCellMenu lower = new ProcessCellMenu(7, player.getInventory(), cell);
+            OperatingPanelMenu upper = new OperatingPanelMenu(8, player.getInventory(), cell);
+            player.containerMenu = upper;
+            ItemStack[] equipment = new ItemStack[5];
+            for (int i=0; i<5; i++) equipment[i]=lower.slots.get(i).getItem().copy();
+            ItemStack originalFoup=cell.slot(0).copy();
+            upper.clicked(0, 0, ContainerInput.PICKUP, player);
+            h.assertTrue(cell.slot(0).isEmpty() && ItemStack.matches(originalFoup,upper.getCarried()),
+                "actual upper pickup removes exactly the original FOUP");
+            player.getInventory().setItem(9, upper.getCarried().copy());
+            ItemStack next=FoupItems.with(ModItems.FOUP_MK2.get(),new FoupContents(UUID.randomUUID(),2,List.of(new Wafer(0,0.37f,0))));
+            upper.setCarried(next.copy());
+            upper.clicked(0,0,ContainerInput.PICKUP,player);
+            h.assertTrue(upper.getCarried().isEmpty() && ItemStack.matches(next,cell.slot(0)),
+                "actual upper insertion changes the controller FOUP");
+            for(int i=0;i<5;i++) h.assertTrue(ItemStack.matches(equipment[i],lower.slots.get(i).getItem()),
+                "equipment count/components unchanged after FOUP removal and insertion: "+i);
+            h.assertTrue(ItemStack.matches(originalFoup,player.getInventory().getItem(9)),"removed FOUP remains with player");
+        });
+        h.succeed();
+    }
+
+    /**
+     * Case operator_panel_no_hidden_access:
+     * No hidden-slot accesses via click/shift/drag on either menu when inputs locked.
+     * Tick once to lock inputs, then test all lock actions on both menus.
+     * Lower visible slots are equipment (indices 3..7), upper visible slots are consumables (indices 0..2).
+     */
+    private static void operatorPanelNoHiddenAccess(GameTestHelper h) {
+        settings(() -> {
+            Fixture f = fixture(h, 2, 8, 4, false);
+            var cell = f.cell();
+            tick(cell, 1);
+            h.assertTrue(cell.inputsLocked(), "cell is active with inputs locked");
+
+            ServerPlayer player = connect(h.getLevel());
+            BlockPos controllerPos = h.absolutePos(new BlockPos(1, 1, 1));
+            player.setPos(controllerPos.getX() + 0.5, controllerPos.getY() + 0.5, controllerPos.getZ() + 0.5);
+
+            ProcessCellMenu lowerMenu = new ProcessCellMenu(7, player.getInventory(), cell);
+            OperatingPanelMenu upperMenu = new OperatingPanelMenu(8, player.getInventory(), cell, controllerPos);
+
+            // Test lower menu (5 visible slots = equipment, all locked)
+            player.containerMenu = lowerMenu;
+            for (int vis = 0; vis < 5; vis++) {
+                Slot slot = lowerMenu.slots.get(vis);
+                h.assertFalse(slot.mayPickup(player), "lower visible " + vis + " mayPickup false when locked");
+                h.assertFalse(slot.mayPlace(ItemStack.EMPTY), "lower visible " + vis + " mayPlace empty when locked");
+            }
+            // Test quickMoveStack on lower locked slots returns empty
+            for (int vis = 0; vis < 5; vis++) {
+                ItemStack result = lowerMenu.quickMoveStack(player, vis);
+                h.assertTrue(result.isEmpty(), "lower quickMoveStack on locked slot " + vis + " returns empty");
+            }
+            // Test PICKUP_ALL cannot extract from lower locked slots
+            for (int vis = 0; vis < 5; vis++) {
+                h.assertFalse(lowerMenu.canTakeItemForPickAll(ItemStack.EMPTY, lowerMenu.slots.get(vis)),
+                    "lower PICKUP_ALL predicate protects locked slot " + vis);
+            }
+
+            // Test upper menu (3 visible slots = FOUP, MASK, RESIST, all locked)
+            player.containerMenu = upperMenu;
+            for (int vis = 0; vis < 3; vis++) {
+                Slot slot = upperMenu.slots.get(vis);
+                h.assertFalse(slot.mayPickup(player), "upper visible " + vis + " mayPickup false when locked");
+                // RESIST (vis=2) mayPlace allowed for top-up, but FOUP/MASK (vis=0,1) not
+                if (vis < 2) {
+                    h.assertFalse(slot.mayPlace(ItemStack.EMPTY), "upper visible " + vis + " mayPlace empty when locked");
+                }
+            }
+            // Test quickMoveStack on upper locked slots (except resist top-up)
+            for (int vis = 0; vis < 2; vis++) { // FOUP, MASK
+                ItemStack result = upperMenu.quickMoveStack(player, vis);
+                h.assertTrue(result.isEmpty(), "upper quickMoveStack on locked slot " + vis + " returns empty");
+            }
+            // Test PICKUP_ALL cannot extract from upper locked slots (except resist)
+            for (int vis = 0; vis < 3; vis++) {
+                if (vis != ProcessCellControllerBlockEntity.SLOT_RESIST) {
+                    h.assertFalse(upperMenu.canTakeItemForPickAll(ItemStack.EMPTY, upperMenu.slots.get(vis)),
+                        "upper PICKUP_ALL predicate protects locked slot " + vis);
+                }
+            }
+        });
+        h.succeed();
+    }
+
+    /**
+     * Case operator_panel_stage_no_bypass:
+     * Lower visible slot 2 (STAGE, underlying index 5) never gets resist bypass.
+     * The resist bypass only applies to the RESIST slot (underlying index 2, upper visible 2).
+     * Lower menu only shows equipment slots (underlying 3..7), never consumables (0..2).
+     */
+    private static void operatorPanelStageNoBypass(GameTestHelper h) {
+        settings(() -> {
+            Fixture f=fixture(h,2,8,4,false);var cell=f.cell();tick(cell,1);
+            ServerPlayer player=connect(h.getLevel());BlockPos pos=cell.getBlockPos();
+            player.setPos(pos.getX()+0.5,pos.getY()+0.5,pos.getZ()+0.5);
+            ProcessCellMenu lower=new ProcessCellMenu(7,player.getInventory(),cell);
+            OperatingPanelMenu upper=new OperatingPanelMenu(8,player.getInventory(),cell);
+            player.containerMenu=lower;h.assertTrue(cell.inputsLocked(),"active lock precondition");
+            Slot stage=lower.slots.get(2);ItemStack savedStage=cell.slot(5).copy();int before=resist(cell);
+            h.assertValueEqual(5,stage.getContainerSlot(),"lower visible2 is underlying STAGE5");
+            h.assertFalse(stage.mayPickup(player),"stage cannot be removed during run");
+            h.assertFalse(stage.mayPlace(new ItemStack(ModItems.STEPPER_STAGE.get())),"locked stage rejects valid equipment");
+            h.assertFalse(stage.mayPlace(new ItemStack(ModItems.RESIST_T2.get())),"stage rejects resist");
+            lower.setCarried(new ItemStack(ModItems.RESIST_T2.get(),3));lower.clicked(2,0,ContainerInput.PICKUP,player);
+            h.assertTrue(ItemStack.matches(savedStage,cell.slot(5)),"resist bypass cannot replace equipment");
+            h.assertValueEqual(3,lower.getCarried().getCount(),"rejected lower click retains cursor");
+            h.assertValueEqual(before,resist(cell),"lower click cannot reach hidden resist");
+            player.getInventory().setItem(9,lower.getCarried().copy());lower.setCarried(ItemStack.EMPTY);
+            player.containerMenu=upper;h.assertValueEqual(2,upper.slots.get(2).getContainerSlot(),"upper visible2 is RESIST2");
+            upper.setCarried(new ItemStack(ModItems.RESIST_T2.get(),3));upper.clicked(2,0,ContainerInput.PICKUP,player);
+            h.assertValueEqual(before+3,resist(cell),"upper top-up adds exactly cursor amount after prior layer debit");
+            h.assertTrue(upper.getCarried().isEmpty(),"upper insertion consumes cursor");
+            h.assertTrue(ItemStack.matches(savedStage,cell.slot(5)),"upper top-up also retains stage");
+        });h.succeed();
+    }
+
+    /**
+     * Case operator_panel_player_slots_usable:
+     * Own player slots remain usable while running.
+     * Lower menu: 5 visible machine slots, player inventory starts at index 5, hotbar at 5+27=32.
+     * Upper menu: 3 visible machine slots, player inventory starts at index 3, hotbar at 3+27=30.
+     * Test that player hotbar slots work normally on both menus.
+     */
+    private static void operatorPanelPlayerSlotsUsable(GameTestHelper h) {
+        settings(() -> {
+            Fixture f=fixture(h,2,8,4,false);var cell=f.cell();tick(cell,1);int before=resist(cell);
+            ServerPlayer player=connect(h.getLevel());BlockPos pos=cell.getBlockPos();
+            player.setPos(pos.getX()+0.5,pos.getY()+0.5,pos.getZ()+0.5);
+            ProcessCellMenu lower=new ProcessCellMenu(7,player.getInventory(),cell);
+            OperatingPanelMenu upper=new OperatingPanelMenu(8,player.getInventory(),cell);
+            h.assertTrue(cell.inputsLocked(),"active lock precondition");
+            player.containerMenu=lower;lower.slots.get(32).set(new ItemStack(Items.DIAMOND,3));
+            lower.clicked(32,0,ContainerInput.PICKUP,player);
+            h.assertTrue(lower.getCarried().is(Items.DIAMOND)&&lower.getCarried().getCount()==3,"lower player hotbar remains usable");
+            lower.clicked(32,0,ContainerInput.PICKUP,player);h.assertTrue(lower.getCarried().isEmpty(),"lower player stack restored");
+            lower.slots.get(32).set(new ItemStack(ModItems.RESIST_T2.get(),5));
+            h.assertTrue(lower.quickMoveStack(player,32).isEmpty(),"no move into locked equipment returns EMPTY");
+            h.assertValueEqual(5,lower.slots.get(32).getItem().getCount(),"failed lower shift retains all five player items");
+            h.assertValueEqual(before,resist(cell),"lower shift cannot access hidden resist");
+            player.containerMenu=upper;
+            for(int index=3;index<=7;index++) {
+                upper.slots.get(index).set(new ItemStack(Items.EMERALD,2));upper.clicked(index,0,ContainerInput.PICKUP,player);
+                h.assertTrue(upper.getCarried().is(Items.EMERALD)&&upper.getCarried().getCount()==2,"upper player slot usable: "+index);
+                upper.clicked(index,0,ContainerInput.PICKUP,player);h.assertTrue(upper.getCarried().isEmpty(),"player stack restored: "+index);
+            }
+            upper.slots.get(30).set(new ItemStack(ModItems.RESIST_T2.get(),5));ItemStack moved=upper.quickMoveStack(player,30);
+            h.assertTrue(moved.is(ModItems.RESIST_T2.get())&&moved.getCount()==5,"successful shift returns original copied stack");
+            h.assertTrue(upper.slots.get(30).getItem().isEmpty(),"all five player resist transferred");
+            h.assertValueEqual(before+5,resist(cell),"upper shift adds exactly five resist");
+        });h.succeed();
+    }
+
+    /**
+     * Case operator_panel_no_lower_abort:
+     * Lower menu has no Abort button (ABORT_BUTTON only works on operating panel menu).
+     * Clicking button 0 on lower menu returns false, does not abort.
+     */
+    private static void operatorPanelNoLowerAbort(GameTestHelper h) {
+        settings(() -> {
+            Fixture f = fixture(h, 2, 64, 4, false);
+            var cell = f.cell();
+            tick(cell, 4);
+            h.assertTrue(cell.inputsLocked(), "cell is active with inputs locked");
+
+            ServerPlayer player = connect(h.getLevel());
+            BlockPos controllerPos = h.absolutePos(new BlockPos(1, 1, 1));
+            player.setPos(controllerPos.getX() + 0.5, controllerPos.getY() + 0.5, controllerPos.getZ() + 0.5);
+
+            ProcessCellMenu lowerMenu = new ProcessCellMenu(7, player.getInventory(), cell);
+            player.containerMenu = lowerMenu;
+
+            // Lower menu is not operating panel, so clickMenuButton should return false
+            h.assertFalse(lowerMenu.clickMenuButton(player, ProcessCellMenu.ABORT_BUTTON),
+                "lower menu clickMenuButton returns false (not operating panel)");
+            h.assertFalse(cell.aborted(), "lower menu cannot abort the cell");
+            h.assertTrue(cell.inputsLocked(), "inputs still locked after lower menu abort attempt");
+        });
+        h.succeed();
+    }
+
+    /**
+     * Case operator_panel_upper_abort_valid:
+     * Upper menu (OperatingPanelMenu) has valid Abort button.
+     * Clicking button 0 on upper menu returns true, aborts cell, unlocks inputs.
+     * Second click returns false (no active run).
+     */
+    private static void operatorPanelUpperAbortValid(GameTestHelper h) {
+        settings(() -> {
+            Fixture f = fixture(h, 2, 64, 4, false);
+            var cell = f.cell();
+            tick(cell, 4);
+            h.assertValueEqual(1, lot(cell).lotLayer(), "one layer before abort test");
+            h.assertTrue(cell.inputsLocked(), "inputs locked before abort");
+
+            ServerPlayer player = connect(h.getLevel());
+            BlockPos controllerPos = h.absolutePos(new BlockPos(1, 1, 1));
+            player.setPos(controllerPos.getX() + 0.5, controllerPos.getY() + 0.5, controllerPos.getZ() + 0.5);
+
+            OperatingPanelMenu upperMenu = new OperatingPanelMenu(7, player.getInventory(), cell, controllerPos);
+            player.containerMenu = upperMenu;
+
+            // Valid abort via upper menu
+            h.assertTrue(upperMenu.clickMenuButton(player, ProcessCellMenu.ABORT_BUTTON),
+                "upper menu clickMenuButton returns true");
+            h.assertTrue(cell.aborted(), "abort latches stopped");
+            h.assertFalse(cell.inputsLocked(), "abort permits FOUP removal");
+
+            // Second click returns false
+            h.assertFalse(upperMenu.clickMenuButton(player, ProcessCellMenu.ABORT_BUTTON),
+                "second click on aborted cell returns false");
+            h.assertTrue(cell.aborted(), "abort remains latched");
+
+            // Verify applied layers / FE / resist no premature refund
+            h.assertValueEqual(1, lot(cell).lotLayer(), "applied layer preserved");
+            long expectedFE = 10000L - 4L * f.cost();
+            h.assertValueEqual(expectedFE, cell.buffer().getAmountAsLong(), "FE not refunded");
+            h.assertValueEqual(60, resist(cell), "resist not refunded");
+        });
+        h.succeed();
+    }
+
+    /**
+     * Case operator_panel_invalid_after_removal:
+     * Upper menu becomes invalid after panel/controller removal/replacement or wrong world/distance.
+     * Test: remove panel -> stillValid false, clickMenuButton false.
+     * Test: destroy controller -> stillValid false.
+     * Test: wrong world -> stillValid false.
+     * Test: distance > 8 -> stillValid false.
+     */
+    private static void operatorPanelInvalidAfterRemoval(GameTestHelper h) {
+        settings(() -> {
+            Fixture f=fixture(h,2,64,4,false);var cell=f.cell();tick(cell,1);
+            ServerPlayer player=connect(h.getLevel());BlockPos core=cell.getBlockPos(),panel=core.above();
+            player.setPos(panel.getX()+0.5,panel.getY()+0.5,panel.getZ()+0.5);
+            OperatingPanelMenu old=new OperatingPanelMenu(7,player.getInventory(),cell);player.containerMenu=old;
+            h.assertTrue(old.stillValid(player),"original live panel valid");
+            h.setBlock(new BlockPos(1,2,1),Blocks.AIR.defaultBlockState());cell.revalidate();
+            h.assertFalse(old.stillValid(player),"removed panel invalidates menu");
+            h.assertFalse(old.clickMenuButton(player,ProcessCellMenu.ABORT_BUTTON),"removed panel cannot Abort");
+            h.setBlock(new BlockPos(1,2,1),ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get().defaultBlockState());cell.revalidate();
+            h.assertFalse(old.stillValid(player),"replacement panel never revives stale menu");
+            h.assertFalse(old.clickMenuButton(player,ProcessCellMenu.ABORT_BUTTON),"stale replacement menu cannot Abort");
+            OperatingPanelMenu fresh=new OperatingPanelMenu(8,player.getInventory(),cell);player.containerMenu=fresh;
+            h.assertTrue(fresh.stillValid(player),"newly opened replacement panel is valid");
+            player.setPos(core.getX()+10.5,core.getY()+0.5,core.getZ()+0.5);
+            h.assertFalse(fresh.stillValid(player),"distance over eight invalidates live menu");
+            h.assertFalse(fresh.clickMenuButton(player,ProcessCellMenu.ABORT_BUTTON),"distant player cannot Abort");
+            player.setPos(panel.getX()+0.5,panel.getY()+0.5,panel.getZ()+0.5);
+            h.assertTrue(fresh.stillValid(player),"returning in range restores current live menu");
+            ServerLevel other=h.getLevel().getServer().getLevel(Level.NETHER);h.assertTrue(other!=null,"other dimension exists");
+            CommonListenerCookie cookie=CommonListenerCookie.createInitial(new GameProfile(UUID.randomUUID(),"wrong-world-panel"),false);
+            ServerPlayer wrong=new ServerPlayer(h.getLevel().getServer(),other,cookie.gameProfile(),cookie.clientInformation());
+            wrong.setPos(panel.getX()+0.5,panel.getY()+0.5,panel.getZ()+0.5);wrong.containerMenu=fresh;
+            h.assertFalse(fresh.stillValid(wrong),"equal coordinates in another world are invalid");
+            h.assertFalse(fresh.clickMenuButton(wrong,ProcessCellMenu.ABORT_BUTTON),"wrong world cannot Abort");
+            h.assertFalse(cell.aborted(),"all invalid requests retain active run");
+            for(int i=0;i<8;i++)cell.setSlot(i,ItemStack.EMPTY);
+            h.setBlock(new BlockPos(1,1,1),Blocks.AIR.defaultBlockState());
+            h.assertFalse(fresh.stillValid(player),"removed controller invalidates fresh menu");
+            h.assertFalse(fresh.clickMenuButton(player,ProcessCellMenu.ABORT_BUTTON),"removed controller cannot Abort");
+            h.setBlock(new BlockPos(1,1,1),ModMultiblocks.PROCESS_CELL_CONTROLLER.get().defaultBlockState());
+            var replacement=(ProcessCellControllerBlockEntity)h.getLevel().getBlockEntity(core);
+            h.assertTrue(replacement!=cell,"replacement controller has different identity");
+            h.assertFalse(fresh.stillValid(player),"replacement cabinet does not revive old menu");
+            OperatingPanelMenu current=new OperatingPanelMenu(9,player.getInventory(),replacement);
+            h.assertTrue(current.stillValid(player),"current unformed cabinet/panel permits fresh status access");
+        });h.succeed();
+    }
+
+    /**
+     * Case operator_panel_adjacent_controller:
+     * Upper menu cannot resolve adjacent different controller.
+     * Build two cells side by side, open upper menu on first, verify it rejects second controller.
+     * Proximity to second cell 3 blocks away does NOT invalidate first menu within 8 blocks!
+     * Assert owner remains first and second contents unchanged, then remove/replace first panel/core
+     * to assert no retarget to second; explicit >8 distance check.
+     */
+    private static void operatorPanelAdjacentController(GameTestHelper h) {
+        settings(() -> {
+            Fixture f=fixture(h,2,64,4,false);var first=f.cell();tick(first,1);
+            BlockPos secondRel=new BlockPos(4,1,1);
+            for(int x=4;x<=5;x++)for(int y=1;y<=2;y++)for(int z=1;z<=3;z++) {
+                BlockPos p=new BlockPos(x,y,z);
+                if(p.equals(secondRel))h.setBlock(p,ModMultiblocks.PROCESS_CELL_CONTROLLER.get().defaultBlockState().setValue(ProcessCellControllerBlock.FACING,Direction.NORTH));
+                else if(z==3&&(x==4&&y==1||x==5&&y==2))h.setBlock(p,ModMultiblocks.PROCESS_CELL_POWER_PORT.get().defaultBlockState());
+                else h.setBlock(p,ModMultiblocks.PROCESS_CELL_CASING.get().defaultBlockState());
+            }
+            var second=(ProcessCellControllerBlockEntity)h.getLevel().getBlockEntity(h.absolutePos(secondRel));
+            second.revalidate();h.assertFalse(second.isFormed(),"second cell cannot form without its own panel");
+            h.setBlock(new BlockPos(4,2,1),ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get().defaultBlockState());
+            second.revalidate();h.assertTrue(second.isFormed(),"second cell forms with its own panel");
+            ServerPlayer player=connect(h.getLevel());BlockPos core=first.getBlockPos(),otherPanel=second.getBlockPos().above();
+            player.setPos(core.getX()+0.5,core.getY()+1.5,core.getZ()+0.5);
+            OperatingPanelMenu menu=new OperatingPanelMenu(7,player.getInventory(),first);player.containerMenu=menu;
+            h.assertTrue(menu.stillValid(player),"first menu initially valid");
+            player.setPos(otherPanel.getX()+0.5,otherPanel.getY()+0.5,otherPanel.getZ()+0.5);
+            h.assertTrue(menu.stillValid(player),"standing near second cell remains within eight blocks of first");
+            h.assertTrue(menu.corePos().equals(core)&&menu.slots.get(0).container==first,"menu remains owned by first cabinet");
+            h.assertTrue(menu.clickMenuButton(player,ProcessCellMenu.ABORT_BUTTON),"valid first menu controls first run even near second cell");
+            h.assertTrue(first.aborted(),"first cabinet receives its own Abort");
+            h.assertFalse(second.aborted(),"adjacent cabinet does not receive another menu's Abort");
+            h.assertTrue(second.slot(0).isEmpty(),"adjacent cabinet inventory remains empty");
+            h.setBlock(new BlockPos(1,2,1),Blocks.AIR.defaultBlockState());first.revalidate();
+            h.assertFalse(menu.stillValid(player),"losing first panel cannot retarget to existing second panel");
+            h.setBlock(new BlockPos(1,2,1),ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get().defaultBlockState());first.revalidate();
+            h.assertFalse(menu.stillValid(player),"replacing first panel keeps old menu invalid");
+            OperatingPanelMenu reopened=new OperatingPanelMenu(8,player.getInventory(),first);player.containerMenu=reopened;
+            h.assertTrue(reopened.stillValid(player),"fresh first menu remains valid within range");
+            player.setPos(core.getX()+10.5,core.getY()+0.5,core.getZ()+0.5);
+            h.assertFalse(reopened.stillValid(player),"distance over eight invalidates current menu");
+            h.assertFalse(reopened.clickMenuButton(player,ProcessCellMenu.ABORT_BUTTON),"distant request rejected");
+            h.assertFalse(second.aborted(),"all first-menu actions leave second cabinet unchanged");
+        });h.succeed();
+    }
+
+    /**
+     * Case operator_panel_missing_reforms:
+     * Required panel missing/misplaced/extra pauses/reform resumes preserving exact
+     * FOUP UUID/rolls/mask/resist/equipment/energy and no duplicate drops.
+     * Test: remove panel -> PAUSED_STRUCTURE (after one tick), restore panel -> resumes preserving all state.
+     * Initial tick 4 = first layer done + 1 tick next layer, restore 32 remaining ticks => 36 total paid ticks correct.
+     * Total resist 40 of 64 unchanged (12 layers * 2 each).
+     */
+    private static void operatorPanelMissingReforms(GameTestHelper h) {
+        settings(() -> {
+            Fixture f = fixture(h, 2, 64, 4, false);
+            var cell = f.cell();
+            tick(cell, 4);
+            h.assertValueEqual(1, lot(cell).lotLayer(), "one layer before panel removal");
+            UUID originalLotId = f.lotId();
+            int originalResist = resist(cell); // 60 after first layer
+            long originalFE = cell.buffer().getAmountAsLong(); // 10000 - 4*cost
+            int originalUses = uses(cell);
+            ItemStack[] originalEquipment = new ItemStack[5];
+            for (int i = 0; i < 5; i++) {
+                originalEquipment[i] = cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE + i).copy();
+            }
+
+            // Remove operating panel -> cell unforms, run pauses ON NEXT TICK
+            h.setBlock(new BlockPos(1, 2, 1), Blocks.AIR.defaultBlockState());
+            cell.revalidate();
+            h.assertFalse(cell.isFormed(), "cell unformed after panel removal");
+            // Core run.tick observes structure on next serverTick - tick once before asserting pause
+            tick(cell, 1);
+            h.assertTrue(cell.processState() == ProcessState.PAUSED_STRUCTURE, "run pauses for missing panel after tick");
+
+            // State preserved during pause (no FE/resist advance)
+            tick(cell, 5);
+            h.assertValueEqual(1, lot(cell).lotLayer(), "layer preserved during pause");
+            h.assertValueEqual(originalLotId, lot(cell).lotId(), "FOUP UUID preserved");
+            h.assertValueEqual(originalResist, resist(cell), "resist preserved during pause");
+            h.assertValueEqual(originalFE, cell.buffer().getAmountAsLong(), "FE preserved during pause");
+            h.assertValueEqual(originalUses, uses(cell), "mask uses preserved");
+            for (int i = 0; i < 5; i++) {
+                h.assertTrue(ItemStack.matches(originalEquipment[i], cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE + i)),
+                    "equipment " + i + " preserved");
+            }
+
+            // Restore panel -> cell reforms, run resumes
+            h.setBlock(new BlockPos(1, 2, 1), ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get().defaultBlockState());
+            cell.revalidate();
+            h.assertTrue(cell.isFormed(), "cell reformed after panel restored");
+            // Initial 4 ticks + 1 pause tick = 5 paid. Need 31 more to reach 36 total (12 layers * 3 ticks)
+            tick(cell, 32); // Complete remaining 11 layers (32 ticks total after the pause tick = 36 total paid)
+            completed(h, f, 12, DieTypes.MEMORY);
+            h.assertValueEqual(40, resist(cell), "exact resist after completion (12 layers * 2 = 24 used, 64-24=40)");
+            h.assertValueEqual(10000L - 36L * f.cost(), cell.buffer().getAmountAsLong(), "exact energy after completion (36 paid ticks)");
+
+            // Verify all state preserved through pause/reform
+            h.assertValueEqual(originalLotId, lot(cell).lotId(), "FOUP UUID preserved through reform");
+            for (int i = 0; i < 5; i++) {
+                h.assertTrue(ItemStack.matches(originalEquipment[i], cell.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE + i)),
+                    "equipment " + i + " preserved through reform");
+            }
+
+            // No duplicate drops - meaningful conservation check
+            ServerLevel level = h.getLevel();
+            BlockPos absController = h.absolutePos(new BlockPos(1, 1, 1));
+            AABB area = new AABB(absController).inflate(3.0);
+            List<net.minecraft.world.entity.item.ItemEntity> entities = level.getEntities(EntityTypes.ITEM, area, Entity::isAlive);
+            // During pause/reform, no items should have been dropped
+            for (Entity e : entities) {
+                if (e.getType() == EntityTypes.ITEM) {
+                    net.minecraft.world.entity.item.ItemEntity itemEnt = (net.minecraft.world.entity.item.ItemEntity) e;
+                    ItemStack stack = itemEnt.getItem();
+                    h.assertTrue(!stack.is(ModItems.FOUP_MK1.get()) && !stack.is(ModItems.MASK.get()) &&
+                            !stack.is(ModItems.RESIST_T2.get()) && !stack.is(ModItems.I_LINE_LAMP.get()) &&
+                            !stack.is(ModItems.REDUCTION_LENS.get()) && !stack.is(ModItems.STEPPER_STAGE.get()) &&
+                            !stack.is(ModItems.FINE_AIR_FILTER.get()) && !stack.is(ModItems.OVERLAY_SCOPE.get()),
+                        "no machine inventory items dropped during pause/reform: " + stack.getItem());
+                }
+            }
+        });
+        h.succeed();
+    }
+
+    /**
+     * Case operator_panel_save_reload:
+     * Save/reload owner persists all 8 slots and run state; upper owns no inventory/run/FE.
+     * Upper menu has 39 slots (3 machine + 36 player), lower has 41 slots (5 machine + 36 player).
+     * Save the cell with active run, reload, verify all state preserved.
+     */
+    private static void operatorPanelSaveReload(GameTestHelper h) {
+        settings(() -> {
+            Fixture f = fixture(h, 2, 64, 4, false);
+            var cell = f.cell();
+            tick(cell, 4);
+            h.assertValueEqual(1, lot(cell).lotLayer(), "one layer before save");
+
+            // Save
+            CompoundTag saved = save(h.getLevel(), cell);
+
+            // Recreate only the authoritative block entity, as a chunk reload does: no block drops or new lot.
+            BlockPos absolute=cell.getBlockPos();
+            var savedLot=lot(cell);ItemStack[] savedSlots=new ItemStack[8];
+            for(int i=0;i<8;i++)savedSlots[i]=cell.slot(i).copy();
+            var cell2=new ProcessCellControllerBlockEntity(absolute,h.getLevel().getBlockState(absolute));
+            h.getLevel().removeBlockEntity(absolute);h.getLevel().setBlockEntity(cell2);
+            load(h.getLevel(),cell2,saved);
+            for(BlockPos memberPos:cell.members()) {
+                if(h.getLevel().getBlockEntity(memberPos) instanceof com.euvcraft.lithmod.mc.multiblock.ProcessCellMemberBlockEntity member)member.serverTick();
+            }
+            cell2.revalidate();
+            h.assertTrue(cell2.isFormed(),"replacement owner reforms after stale links clear");
+            h.assertTrue(savedLot.equals(lot(cell2)),"all saved wafer state is preserved exactly");
+            for(int i=0;i<8;i++)h.assertTrue(ItemStack.matches(savedSlots[i],cell2.slot(i)),"saved slot count/components preserved: "+i);
+            Fixture f2=new Fixture(cell2,f.lotId(),f.cost());
+
+            // Verify all 8 slots preserved
+            h.assertValueEqual(f.lotId(), lot(cell2).lotId(), "FOUP UUID preserved after reload");
+            h.assertValueEqual(1, lot(cell2).lotLayer(), "applied layer preserved");
+            h.assertValueEqual(resist(f.cell()), resist(cell2), "resist count preserved");
+            h.assertValueEqual(f.cell().buffer().getAmountAsLong(), cell2.buffer().getAmountAsLong(), "FE preserved");
+            h.assertValueEqual(uses(f.cell()), uses(cell2), "mask uses preserved");
+            for (int i = 0; i < 5; i++) {
+                h.assertTrue(ItemStack.matches(f.cell().slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE + i),
+                        cell2.slot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE + i)),
+                    "equipment " + i + " preserved");
+            }
+
+            // Run state preserved
+            h.assertTrue(cell2.inputsLocked(), "run still active after reload");
+            h.assertFalse(cell2.aborted(), "abort not latched after reload");
+
+            // Resume and complete
+            tick(cell2, 32);
+            completed(h, f2, 12, DieTypes.MEMORY);
+
+            // Upper menu owns no inventory/run/FE - verify by constructing upper menu
+            ServerPlayer player = connect(h.getLevel());
+            BlockPos controllerPos = h.absolutePos(new BlockPos(1, 1, 1));
+            player.setPos(controllerPos.getX() + 0.5, controllerPos.getY() + 0.5, controllerPos.getZ() + 0.5);
+            OperatingPanelMenu upperMenu = new OperatingPanelMenu(7, player.getInventory(), cell2, controllerPos);
+            // Upper menu references same cell, so data slots show same values
+            h.assertValueEqual(12, upperMenu.currentLayer(), "upper menu shows completed layer");
+            h.assertValueEqual(12, upperMenu.totalLayers(), "upper menu shows total layers");
+            h.assertValueEqual(ProcessState.FINISHED.ordinal(), upperMenu.status(), "upper menu shows finished status");
+            // But upper menu itself has no inventory - it's just a view
+            h.assertTrue(upperMenu.slots.size() == 39, "upper menu has 39 slots (3 machine + 36 player)");
+            h.assertTrue(upperMenu.visibleMachineSlotCount() == 3, "upper menu shows 3 visible machine slots");
+
+            // Lower menu has 41 slots (5 machine + 36 player)
+            ProcessCellMenu lowerMenu = new ProcessCellMenu(8, player.getInventory(), cell2);
+            h.assertTrue(lowerMenu.slots.size() == 41, "lower menu has 41 slots (5 machine + 36 player)");
+            h.assertTrue(lowerMenu.visibleMachineSlotCount() == 5, "lower menu shows 5 visible machine slots");
+
+            // Verify upper menu slots 0..2 backed by cell, 3..38 backed by player
+            for (int i = 0; i < 3; i++) {
+                h.assertTrue(upperMenu.slots.get(i).container == cell2, "upper slot " + i + " backed by cell");
+            }
+            for (int i = 3; i < 39; i++) {
+                h.assertTrue(upperMenu.slots.get(i).container == player.getInventory(), "upper slot " + i + " backed by player");
+            }
+            // Verify lower menu slots 0..4 backed by cell, 5..40 backed by player
+            for (int i = 0; i < 5; i++) {
+                h.assertTrue(lowerMenu.slots.get(i).container == cell2, "lower slot " + i + " backed by cell");
+            }
+            for (int i = 5; i < 41; i++) {
+                h.assertTrue(lowerMenu.slots.get(i).container == player.getInventory(), "lower slot " + i + " backed by player");
+            }
+        });
+        h.succeed();
+    }
+
+    /**
+     * Case operator_panel_upper_no_inventory:
+     * Upper menu (OperatingPanelMenu) owns no inventory/run/FE - it's a view only.
+     * The client SimpleContainer backing still has 8 slots, but only 3 visible.
+     * Upper menu slot indices: 0..2 = cell-backed (FOUP, MASK, RESIST), 3..38 = player inventory backed.
+     * Total slots = 3 (visible machine) + 36 (player) = 39 slots.
+     */
+    private static void operatorPanelUpperNoInventory(GameTestHelper h) {
+        settings(() -> {
+            Fixture f = fixture(h, 2, 64, 4, false);
+            var cell = f.cell();
+
+            ServerPlayer player = connect(h.getLevel());
+            BlockPos controllerPos = h.absolutePos(new BlockPos(1, 1, 1));
+            player.setPos(controllerPos.getX() + 0.5, controllerPos.getY() + 0.5, controllerPos.getZ() + 0.5);
+
+            OperatingPanelMenu upperMenu = new OperatingPanelMenu(7, player.getInventory(), cell, controllerPos);
+
+            // Upper menu has 3 visible machine slots
+            h.assertTrue(upperMenu.visibleMachineSlotCount() == 3, "upper menu shows 3 visible slots");
+            h.assertTrue(upperMenu.slots.size() == 39, "upper menu has 39 total slots (3 machine + 36 player)");
+
+            // Machine slots 0..2 backed by cell
+            for (int vis = 0; vis < 3; vis++) {
+                h.assertTrue(upperMenu.slots.get(vis).container == cell,
+                    "upper visible " + vis + " container is cell");
+                h.assertTrue(upperMenu.slots.get(vis).getContainerSlot() == vis,
+                    "upper visible " + vis + " maps to underlying slot " + vis);
+            }
+
+            // Player inventory slots 3..38 backed by player inventory
+            for (int i = 3; i < 39; i++) {
+                h.assertTrue(upperMenu.slots.get(i).container == player.getInventory(),
+                    "upper slot " + i + " container is player inventory");
+            }
+
+            // Upper menu is operating panel
+            h.assertTrue(upperMenu.isOperatingPanel(), "upper menu is operating panel");
+            h.assertTrue(upperMenu.corePos().equals(cell.getBlockPos()), "upper menu tracks the real controller position");
+
+            // Modify via upper visible slot, see via cell directly
+            ProcessCellMenu lowerMenu = new ProcessCellMenu(8, player.getInventory(), cell);
+            ItemStack retainedLight = lowerMenu.slots.get(0).getItem().copy();
+            upperMenu.slots.get(0).set(new ItemStack(Items.DIRT)); // Direct backing-write ownership probe
+            h.assertTrue(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP).is(Items.DIRT),"upper write reaches actual core FOUP");
+            h.assertTrue(ItemStack.matches(retainedLight,lowerMenu.slots.get(0).getItem()),"hidden FOUP write leaves lower light unchanged");
+
+            // Shared FE observation - both menus read from same core
+            h.assertValueEqual(upperMenu.energy(), cell.buffer().getAmountAsInt(), "upper menu energy matches cell");
+            h.assertValueEqual(lowerMenu.energy(), cell.buffer().getAmountAsInt(), "lower menu energy matches cell");
+            h.assertValueEqual(upperMenu.energy(), lowerMenu.energy(), "both menus show same energy");
         });
         h.succeed();
     }

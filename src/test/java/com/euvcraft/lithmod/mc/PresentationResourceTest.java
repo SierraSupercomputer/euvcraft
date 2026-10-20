@@ -48,11 +48,11 @@ class PresentationResourceTest {
     private static final String DOCS_RECIPES = "docs/recipes.md";
 
     /**
-     * Validates all 22 crafting JSON files use current ingredient strings/vanilla IDs,
+     * Validates all 23 crafting JSON files use current ingredient strings/vanilla IDs,
      * valid patterns, and result item matching filename and allowed outputs.
      */
     @Test
-    @DisplayName("all 22 crafting JSON use valid ingredients, patterns, and results")
+    @DisplayName("all 23 crafting JSON use valid ingredients, patterns, and results")
     void craftingJsonFilesAreValid() throws Exception {
         List<String> expectedFiles = List.of(
             "crystal_puller.json", "wafer_slicer.json", "pattern_generator.json",
@@ -61,10 +61,11 @@ class PresentationResourceTest {
             "mercury_lamp.json", "i_line_lamp.json", "contact_plate.json",
             "reduction_lens.json", "manual_aligner.json", "stepper_stage.json",
             "basic_air_filter.json", "fine_air_filter.json", "optical_microscope.json",
-            "overlay_scope.json", "resist_t1.json", "resist_t2.json", "chip_package.json"
+            "overlay_scope.json", "resist_t1.json", "resist_t2.json", "chip_package.json",
+            "process_cell_operating_panel.json"
         );
 
-        assertEquals(22, expectedFiles.size(), "Expected 22 crafting recipe files");
+        assertEquals(23, expectedFiles.size(), "Expected 23 crafting recipe files");
 
         Set<String> allowedResultItems = Set.of(
             "lithmod:crystal_puller", "lithmod:wafer_slicer", "lithmod:pattern_generator",
@@ -74,7 +75,7 @@ class PresentationResourceTest {
             "lithmod:reduction_lens", "lithmod:manual_aligner", "lithmod:stepper_stage",
             "lithmod:basic_air_filter", "lithmod:fine_air_filter", "lithmod:optical_microscope",
             "lithmod:overlay_scope", "lithmod:resist_t1", "lithmod:resist_t2",
-            "lithmod:chip_package"
+            "lithmod:chip_package", "lithmod:process_cell_operating_panel"
         );
 
         int validated = 0;
@@ -129,7 +130,7 @@ class PresentationResourceTest {
                 validated++;
             }
         }
-        assertEquals(22, validated, "Validated " + validated + " crafting files, expected 22");
+        assertEquals(23, validated, "Validated " + validated + " crafting files, expected 23");
     }
 
     /**
@@ -212,11 +213,11 @@ class PresentationResourceTest {
     }
 
     /**
-     * Validates generated docs/recipes.md contains all 30 actual resource IDs and
+     * Validates generated docs/recipes.md contains all 31 actual resource IDs and
      * source paths, correct per-recipe counts/components from source where useful.
      */
     @Test
-    @DisplayName("generated docs/recipes.md contains all 30 resource IDs and source paths")
+    @DisplayName("generated docs/recipes.md contains all 31 resource IDs and source paths")
     void generatedRecipesMarkdownIsComplete() throws Exception {
         Path docPath = Path.of(DOCS_RECIPES);
         assertTrue(Files.exists(docPath), "docs/recipes.md does not exist");
@@ -224,9 +225,9 @@ class PresentationResourceTest {
         String content = Files.readString(docPath, StandardCharsets.UTF_8);
         assertNotNull(content, "docs/recipes.md is empty");
 
-        // Expected 30 resource IDs: 22 crafting + 2 cooking + 6 machine recipes
+        // Expected 31 resource IDs: 23 crafting + 2 cooking + 6 machine recipes
         List<String> expectedResourceIds = List.of(
-            // 22 crafting
+            // 23 crafting
             "lithmod:crafting/crystal_puller", "lithmod:crafting/wafer_slicer",
             "lithmod:crafting/pattern_generator", "lithmod:crafting/test_package",
             "lithmod:crafting/process_cell_controller", "lithmod:crafting/process_cell_casing",
@@ -238,6 +239,7 @@ class PresentationResourceTest {
             "lithmod:crafting/fine_air_filter", "lithmod:crafting/optical_microscope",
             "lithmod:crafting/overlay_scope", "lithmod:crafting/resist_t1",
             "lithmod:crafting/resist_t2", "lithmod:crafting/chip_package",
+            "lithmod:crafting/process_cell_operating_panel",
             // 2 cooking
             "lithmod:silicon_from_smelting", "lithmod:silicon_from_blasting",
             // 6 machine recipes
@@ -267,12 +269,12 @@ class PresentationResourceTest {
         assertTrue(!content.contains("FIXME"), "Found FIXME placeholder in docs/recipes.md");
         assertTrue(!content.contains("PLACEHOLDER"), "Found PLACEHOLDER in docs/recipes.md");
 
-        // Validate per-recipe counts: 30 total
+        // Validate per-recipe counts: 31 total
         long recipeCount = content.lines()
             .filter(line -> line.startsWith("| lithmod:"))
             .count();
-        // Allow some flexibility in markdown formatting, but should have at least 30 entries
-        assertEquals(30L, recipeCount, "Expected at least 30 recipe entries in docs/recipes.md, found " + recipeCount);
+        // Allow some flexibility in markdown formatting, but should have at least 31 entries
+        assertEquals(31L, recipeCount, "Expected at least 31 recipe entries in docs/recipes.md, found " + recipeCount);
 
         // Validate components from source where useful (mask_data for pattern recipes)
         assertTrue(content.contains("mask_data"), "Missing mask_data component documentation");

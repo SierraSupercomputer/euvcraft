@@ -21,6 +21,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jspecify.annotations.Nullable;
@@ -41,20 +42,23 @@ import org.jspecify.annotations.Nullable;
 public class ProcessCellControllerBlock extends BaseEntityBlock {
 
     /** Which way the cell looks. The structure extends along the opposite side. */
-    public static final Property<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final Property<Direction> FACING = ProcessCellVisualProperties.FACING;
     /** True while all twelve cells of the cell are in place. */
-    public static final BooleanProperty FORMED = BooleanProperty.create("formed");
+    public static final BooleanProperty FORMED = ProcessCellVisualProperties.FORMED;
+    /** Visual part index 0..11 for formed members, 0 when unformed. */
+    public static final IntegerProperty PART = ProcessCellVisualProperties.PART;
 
     public ProcessCellControllerBlock(BlockBehaviour.Properties properties) {
         super(properties);
         this.registerDefaultState(this.stateDefinition.any()
             .setValue(FACING, Direction.NORTH)
-            .setValue(FORMED, Boolean.FALSE));
+            .setValue(FORMED, Boolean.FALSE)
+            .setValue(PART, Integer.valueOf(0)));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, FORMED);
+        builder.add(FACING, FORMED, PART);
     }
 
     @Override

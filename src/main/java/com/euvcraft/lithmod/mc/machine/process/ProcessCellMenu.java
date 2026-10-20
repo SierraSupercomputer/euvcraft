@@ -23,10 +23,11 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
-/** Eight hand-fed inputs. The server owns permissions; only coarse public state is synced. */
+/** Two views of one eight-slot inventory. Permissions are server-owned; sync is coarse and public. */
 public class ProcessCellMenu extends FabMachineMenu {
 
     // ContainerData wire indices (base DATA_COUNT = 4)
@@ -55,7 +56,11 @@ public class ProcessCellMenu extends FabMachineMenu {
     private int observedQuickcraftType = -1;
 
     public ProcessCellMenu(int containerId, Inventory playerInventory, FabMachineBlockEntity machine) {
-        super(ModMultiblocks.PROCESS_CELL_MENU_TYPE.get(), containerId, playerInventory, machine,
+        this(ModMultiblocks.PROCESS_CELL_MENU_TYPE.get(), containerId, playerInventory, machine);
+    }
+
+    protected ProcessCellMenu(MenuType<?> type, int containerId, Inventory playerInventory, @Nullable FabMachineBlockEntity machine) {
+        super(type, containerId, playerInventory, machine,
                 ProcessCellControllerBlockEntity.INPUT_SLOTS, ProcessCellControllerBlockEntity.SLOT_COUNT);
 
         // Both sides get their own ContainerData; server updates it from controller getters.
@@ -91,8 +96,19 @@ public class ProcessCellMenu extends FabMachineMenu {
         this(containerId, playerInventory, (FabMachineBlockEntity) null);
     }
 
+    /** Fixed role, safe even during the superclass constructor. */
+    public boolean isOperatingPanel() { return false; }
+
+    public final int visibleMachineSlotCount() { return isOperatingPanel() ? 3 : 5; }
+
+    @Override
+    public boolean stillValid(Player player) {
+        return blockEntity != null && blockEntity.getLevel() == player.level() && super.stillValid(player);
+    }
+
     @Override
     protected void addMachineSlots() {
+        if (isOperatingPanel()) {
         // Slot 0: FOUP
         addCustomSlot(new LockedFoupSlot(machineSlots(), ProcessCellControllerBlockEntity.SLOT_FOUP, 26, 35));
 
@@ -135,20 +151,22 @@ public class ProcessCellMenu extends FabMachineMenu {
             }
         });
 
+            return;
+        }
         // Slot 3: LIGHT_SOURCE
-        addCustomSlot(new LockedComponentSlot(machineSlots(), ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE, 134, 35, "light_source"));
+        addCustomSlot(new LockedComponentSlot(machineSlots(), ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE, 26, 35, "light_source"));
 
         // Slot 4: OPTICS
-        addCustomSlot(new LockedComponentSlot(machineSlots(), ProcessCellControllerBlockEntity.SLOT_OPTICS, 26, 53, "optics"));
+        addCustomSlot(new LockedComponentSlot(machineSlots(), ProcessCellControllerBlockEntity.SLOT_OPTICS, 53, 35, "optics"));
 
         // Slot 5: STAGE
-        addCustomSlot(new LockedComponentSlot(machineSlots(), ProcessCellControllerBlockEntity.SLOT_STAGE, 62, 53, "stage"));
+        addCustomSlot(new LockedComponentSlot(machineSlots(), ProcessCellControllerBlockEntity.SLOT_STAGE, 80, 35, "stage"));
 
         // Slot 6: CLEANROOM
-        addCustomSlot(new LockedComponentSlot(machineSlots(), ProcessCellControllerBlockEntity.SLOT_CLEANROOM, 98, 53, "cleanroom"));
+        addCustomSlot(new LockedComponentSlot(machineSlots(), ProcessCellControllerBlockEntity.SLOT_CLEANROOM, 107, 35, "cleanroom"));
 
         // Slot 7: METROLOGY
-        addCustomSlot(new LockedComponentSlot(machineSlots(), ProcessCellControllerBlockEntity.SLOT_METROLOGY, 134, 53, "metrology"));
+        addCustomSlot(new LockedComponentSlot(machineSlots(), ProcessCellControllerBlockEntity.SLOT_METROLOGY, 134, 35, "metrology"));
     }
 
     /**
@@ -224,7 +242,7 @@ public class ProcessCellMenu extends FabMachineMenu {
      */
     @Override
     public boolean clickMenuButton(Player player, int id) {
-        if (id != ABORT_BUTTON) return false;
+        if (!isOperatingPanel() || id != ABORT_BUTTON) return false;
         if (!serverSide) return false;
         if (!(player instanceof net.minecraft.server.level.ServerPlayer)) return false;
         if (player.containerMenu != this) return false;
@@ -247,7 +265,7 @@ public class ProcessCellMenu extends FabMachineMenu {
 
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
-        if (inputsLocked() && index >= 0 && index < ProcessCellControllerBlockEntity.INPUT_SLOTS)
+        if (inputsLocked() && index >= 0 && index < visibleMachineSlotCount())
             return ItemStack.EMPTY;
         return super.quickMoveStack(player, index);
     }
@@ -255,7 +273,7 @@ public class ProcessCellMenu extends FabMachineMenu {
     @Override
     public boolean canTakeItemForPickAll(ItemStack stack, Slot slot) {
         int index = slots.indexOf(slot);
-        return !(inputsLocked() && index >= 0 && index < ProcessCellControllerBlockEntity.INPUT_SLOTS)
+        return !(inputsLocked() && index >= 0 && index < visibleMachineSlotCount())
             && super.canTakeItemForPickAll(stack, slot);
     }
 
@@ -265,7 +283,7 @@ public class ProcessCellMenu extends FabMachineMenu {
             int header = getQuickcraftHeader(button);
             if (header == QUICKCRAFT_HEADER_START) observedQuickcraftType = getQuickcraftType(button);
             ItemStack carried = getCarried();
-            resistInsertionInProgress = inputsLocked() && !carried.isEmpty()
+            resistInsertionInProgress = isOperatingPanel() && inputsLocked() && !carried.isEmpty()
                 && (observedQuickcraftType == QUICKCRAFT_TYPE_CHARITABLE
                     || observedQuickcraftType == QUICKCRAFT_TYPE_GREEDY)
                 && slots.get(ProcessCellControllerBlockEntity.SLOT_RESIST).mayPlace(carried);
@@ -280,7 +298,7 @@ public class ProcessCellMenu extends FabMachineMenu {
         observedQuickcraftType = -1;
         // Vanilla checks mayPickup before merging into an occupied slot. Permit insertion
         // explicitly while keeping every extraction and swap path locked.
-        if (inputsLocked() && slotIndex == ProcessCellControllerBlockEntity.SLOT_RESIST
+        if (isOperatingPanel() && inputsLocked() && slotIndex == ProcessCellControllerBlockEntity.SLOT_RESIST
                 && action == net.minecraft.world.inventory.ContainerInput.PICKUP
                 && (button == 0 || button == 1)) {
             resetQuickCraft();
@@ -292,7 +310,7 @@ public class ProcessCellMenu extends FabMachineMenu {
             return;
         }
         // Guard hotbar SWAP/THROW/CLONE/QUICK_MOVE on locked machine slots
-        if (inputsLocked() && slotIndex >= 0 && slotIndex < ProcessCellControllerBlockEntity.INPUT_SLOTS) {
+        if (inputsLocked() && slotIndex >= 0 && slotIndex < visibleMachineSlotCount()) {
             // action values in 26.3: PICKUP, QUICK_MOVE, SWAP, CLONE, THROW, QUICK_CRAFT
             switch (action) {
                 case SWAP, THROW, CLONE, QUICK_MOVE -> {
@@ -315,7 +333,7 @@ public class ProcessCellMenu extends FabMachineMenu {
     public boolean canDragTo(Slot slot) {
         // Creative drag-fill may still operate on the player's own inventory, but must
         // never create additional resist in a locked machine input.
-        return !(inputsLocked() && observedQuickcraftType == QUICKCRAFT_TYPE_CLONE
+        return !(isOperatingPanel() && inputsLocked() && observedQuickcraftType == QUICKCRAFT_TYPE_CLONE
                 && slot == slots.get(ProcessCellControllerBlockEntity.SLOT_RESIST))
             && super.canDragTo(slot);
     }

@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "north": "lithmod:block/joined_power_port_north_u0v1",
+    "south": "lithmod:block/joined_power_port_south_u1v1",
+    "west": "lithmod:block/joined_power_port_west_u2v1",
+    "east": "lithmod:block/joined_power_port_east_u0v1",
+    "up": "lithmod:block/joined_power_port_up_u1v2",
+    "down": "lithmod:block/joined_power_port_down_u1v0",
+    "particle": "lithmod:block/joined_power_port_north_u0v1"
+  }
+}

@@ -149,7 +149,7 @@ public final class ModItems {
         ITEMS.registerItem("overlay_scope", properties -> new LineComponentItem(properties, "metrology", 2), properties -> properties.stacksTo(1));
 
     /**
-     * The three Process Cell multiblock block items.
+     * The four Process Cell multiblock block items.
      *
      * <p>Declared here so the whole item registry stays in one place, but the blocks come from
      * {@code ModMultiblocks} because a block item cannot be built before its block is registered.
@@ -173,6 +173,10 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> PROCESS_CELL_POWER_PORT =
         ITEMS.registerSimpleBlockItem("process_cell_power_port",
             () -> ModMultiblocks.PROCESS_CELL_POWER_PORT.get());
+
+    public static final DeferredItem<BlockItem> PROCESS_CELL_OPERATING_PANEL =
+        ITEMS.registerSimpleBlockItem("process_cell_operating_panel",
+            () -> ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get());
 
     /**
      * The test-only machine's block item.

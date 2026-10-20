@@ -1,6 +1,7 @@
 package com.euvcraft.lithmod.mc.multiblock;
 
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
+import com.euvcraft.lithmod.mc.machine.process.OperatingPanelMenu;
 import com.euvcraft.lithmod.mc.machine.process.ProcessCellMenu;
 
 import net.minecraft.core.registries.Registries;
@@ -15,7 +16,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
- * Registers the Process Cell multiblock: three blocks, three block entity types, three block items
+ * Registers the Process Cell multiblock: four blocks, four block entity types, two menu types,
  * and the power port's energy capability.
  *
  * <p>Every line follows a pattern the M1-02s spike proved against the real 26.3 classpath and
@@ -46,6 +47,9 @@ public final class ModMultiblocks {
     public static final DeferredHolder<MenuType<?>, MenuType<ProcessCellMenu>> PROCESS_CELL_MENU_TYPE =
             MENU_TYPES.register("process_cell", () -> IMenuTypeExtension.create(ProcessCellMenu::new));
 
+    public static final DeferredHolder<MenuType<?>, MenuType<ProcessCellMenu>> OPERATING_PANEL_MENU_TYPE =
+            MENU_TYPES.register("operating_panel", () -> IMenuTypeExtension.create(OperatingPanelMenu::new));
+
     // ---------------------------------------------------------------- blocks
 
     /** The controller: owns the cell and its energy buffer. */
@@ -61,6 +65,11 @@ public final class ModMultiblocks {
     /** Power port: the only member that exposes anything. */
     public static final DeferredBlock<ProcessCellPowerPortBlock> PROCESS_CELL_POWER_PORT =
             BLOCKS.registerBlock("process_cell_power_port", ProcessCellPowerPortBlock::new,
+                    properties -> properties.strength(2.5f, 5.0f).requiresCorrectToolForDrops());
+
+    /** Operating panel: the upper panel of the two-panel machine, placed directly above the controller. */
+    public static final DeferredBlock<ProcessCellOperatingPanelBlock> PROCESS_CELL_OPERATING_PANEL =
+            BLOCKS.registerBlock("process_cell_operating_panel", ProcessCellOperatingPanelBlock::new,
                     properties -> properties.strength(2.5f, 5.0f).requiresCorrectToolForDrops());
 
     // ---------------------------------------------------------------- block entity types
@@ -80,11 +89,16 @@ public final class ModMultiblocks {
             () -> new BlockEntityType<ProcessCellPowerPortBlockEntity>(
                     ProcessCellPowerPortBlockEntity::new, PROCESS_CELL_POWER_PORT.get()));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ProcessCellOperatingPanelBlockEntity>>
+            PROCESS_CELL_OPERATING_PANEL_BE = BLOCK_ENTITIES.register("process_cell_operating_panel",
+            () -> new BlockEntityType<ProcessCellOperatingPanelBlockEntity>(
+                    ProcessCellOperatingPanelBlockEntity::new, PROCESS_CELL_OPERATING_PANEL.get()));
+
     // ---------------------------------------------------------------- block items
     //
-    // The three block items are declared in ModItems, because a block item cannot be built before
+    // The four block items are declared in ModItems, because a block item cannot be built before
     // its block is registered and the item registry is the natural home for it:
-    //   ModItems.PROCESS_CELL_CONTROLLER / _CASING / _POWER_PORT
+    //   ModItems.PROCESS_CELL_CONTROLLER / _CASING / _POWER_PORT / _OPERATING_PANEL
 
     private ModMultiblocks() {
     }

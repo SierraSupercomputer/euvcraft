@@ -5,6 +5,8 @@ import com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity;
 import com.euvcraft.lithmod.mc.multiblock.ModMultiblocks;
 import com.euvcraft.lithmod.mc.multiblock.ProcessCellControllerBlock;
 import com.euvcraft.lithmod.mc.multiblock.ProcessCellControllerBlockEntity;
+import com.euvcraft.lithmod.mc.multiblock.ProcessCellOperatingPanelBlock;
+import com.euvcraft.lithmod.mc.multiblock.ProcessCellOperatingPanelBlockEntity;
 import com.euvcraft.lithmod.mc.registry.ModItems;
 
 import com.google.gson.JsonElement;
@@ -70,6 +72,7 @@ public final class PlacementAndTitleGameTests {
     private static final String VERTICAL_CONTEXTS = "placement_title_vertical_contexts";
     private static final String ACTUAL_PLACEMENT = "placement_title_actual_placement";
     private static final String LOCALIZED_NAME = "placement_title_localized_name";
+    private static final String OPERATOR_PANEL_HORIZONTAL_PLACEMENT = "operator_panel_horizontal_placement";
 
     /** The language resource bundled with the mod. */
     private static final String LANGUAGE_PATH = "/assets/lithmod/lang/en_us.json";
@@ -92,6 +95,7 @@ public final class PlacementAndTitleGameTests {
         FUNCTIONS.register(VERTICAL_CONTEXTS, () -> PlacementAndTitleGameTests::verticalContexts);
         FUNCTIONS.register(ACTUAL_PLACEMENT, () -> PlacementAndTitleGameTests::actualPlacement);
         FUNCTIONS.register(LOCALIZED_NAME, () -> PlacementAndTitleGameTests::localizedName);
+        FUNCTIONS.register(OPERATOR_PANEL_HORIZONTAL_PLACEMENT, () -> PlacementAndTitleGameTests::operatorPanelHorizontalPlacement);
     }
 
     private PlacementAndTitleGameTests() {
@@ -113,6 +117,7 @@ public final class PlacementAndTitleGameTests {
         register(event, data, VERTICAL_CONTEXTS);
         register(event, data, ACTUAL_PLACEMENT);
         register(event, data, LOCALIZED_NAME);
+        register(event, data, OPERATOR_PANEL_HORIZONTAL_PLACEMENT);
         LOGGER.info("Registered EUVCRAFT placement and title game tests");
     }
 
@@ -297,5 +302,122 @@ public final class PlacementAndTitleGameTests {
             clearPlacedController(h, level, CONTROLLER);
         }
         h.succeed();
+    }
+
+    // ------------------------------------------------------------------------
+    // Test 4: operator panel horizontal placement
+    // ------------------------------------------------------------------------
+
+    /**
+     * Tests the operating panel's horizontal placement behavior:
+     * - Steep up/down pitch with all four yaws
+     * - Checks that the new FACING property is horizontal (copied from controller below when present,
+     *   otherwise opposite player yaw)
+     * - Uses real BlockItem.place for operator steep pitch
+     * - Reuses existing placement helper patterns
+     */
+    private static void operatorPanelHorizontalPlacement(GameTestHelper h) {
+        ServerLevel level = h.getLevel();
+        BlockItem panelItem = ModItems.PROCESS_CELL_OPERATING_PANEL.get();
+
+        // Test 1: Panel placed with controller directly below (copies controller's facing)
+        h.setBlock(SUPPORT, Blocks.STONE);
+        h.setBlock(CONTROLLER, ModMultiblocks.PROCESS_CELL_CONTROLLER.get().defaultBlockState()
+            .setValue(ProcessCellControllerBlock.FACING, Direction.NORTH));
+        try {
+            for (Direction yaw : YAWS) {
+                for (float pitch : new float[] {-89.9f, 89.9f}) {
+                    try {
+                        Player player = h.makeMockPlayer(GameType.CREATIVE);
+                        BlockPlaceContext context = placementContext(h, player, yaw, pitch,
+                                h.absolutePos(TARGET), h.absolutePos(SUPPORT));
+                        InteractionResult result = panelItem.place(context);
+                        h.assertTrue(result.consumesAction(),
+                                "placing the operator panel must succeed (yaw " + yaw + ", pitch " + pitch + "), got " + result);
+                        BlockState placed = level.getBlockState(h.absolutePos(TARGET));
+                        h.assertTrue(placed.is(ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get()),
+                                "the world block at the target must be the operator panel (yaw " + yaw + ", pitch " + pitch + ")");
+                        // FACING should be copied from controller below (NORTH), not from player yaw
+                        h.assertValueEqual(Direction.NORTH, placed.getValue(ProcessCellOperatingPanelBlock.FACING),
+                                "operator panel FACING must copy controller below (yaw " + yaw + ", pitch " + pitch + ")");
+                        h.assertFalse(placed.getValue(ProcessCellOperatingPanelBlock.FORMED),
+                                "a placed operator panel must not be formed (yaw " + yaw + ", pitch " + pitch + ")");
+                        h.assertValueEqual(0, placed.getValue(ProcessCellOperatingPanelBlock.PART),
+                                "a placed operator panel must have PART=0 (yaw " + yaw + ", pitch " + pitch + ")");
+                    } finally {
+                        clearPlacedPanel(h, level, TARGET);
+                    }
+                }
+            }
+        } finally {
+            h.setBlock(CONTROLLER, Blocks.AIR.defaultBlockState());
+            h.setBlock(SUPPORT, Blocks.AIR.defaultBlockState());
+        }
+
+        // Test 2: Panel placed WITHOUT controller below (uses horizontal opposite of player yaw)
+        h.setBlock(SUPPORT, Blocks.STONE);
+        try {
+            for (Direction yaw : YAWS) {
+                for (float pitch : new float[] {-89.9f, 89.9f}) {
+                    try {
+                        Player player = h.makeMockPlayer(GameType.CREATIVE);
+                        BlockPlaceContext context = placementContext(h, player, yaw, pitch,
+                                h.absolutePos(TARGET), h.absolutePos(SUPPORT));
+                        InteractionResult result = panelItem.place(context);
+                        h.assertTrue(result.consumesAction(),
+                                "placing the operator panel must succeed without controller (yaw " + yaw + ", pitch " + pitch + "), got " + result);
+                        BlockState placed = level.getBlockState(h.absolutePos(TARGET));
+                        h.assertTrue(placed.is(ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get()),
+                                "the world block at the target must be the operator panel (yaw " + yaw + ", pitch " + pitch + ")");
+                        // FACING should be horizontal opposite of player yaw
+                        h.assertValueEqual(yaw.getOpposite(), placed.getValue(ProcessCellOperatingPanelBlock.FACING),
+                                "operator panel FACING must be horizontal opposite of player yaw without controller (yaw " + yaw + ", pitch " + pitch + ")");
+                        h.assertFalse(placed.getValue(ProcessCellOperatingPanelBlock.FORMED),
+                                "a placed operator panel must not be formed (yaw " + yaw + ", pitch " + pitch + ")");
+                        h.assertValueEqual(0, placed.getValue(ProcessCellOperatingPanelBlock.PART),
+                                "a placed operator panel must have PART=0 (yaw " + yaw + ", pitch " + pitch + ")");
+                    } finally {
+                        clearPlacedPanel(h, level, TARGET);
+                    }
+                }
+            }
+        } finally {
+            h.setBlock(SUPPORT, Blocks.AIR.defaultBlockState());
+        }
+
+        // Test 3: Verify FACING is always horizontal (never vertical) even with steep pitch
+        h.setBlock(SUPPORT, Blocks.STONE);
+        try {
+            for (Direction yaw : YAWS) {
+                for (float pitch : new float[] {-89.9f, 0f, 89.9f}) {
+                    try {
+                        Player player = h.makeMockPlayer(GameType.CREATIVE);
+                        BlockPlaceContext context = placementContext(h, player, yaw, pitch,
+                                h.absolutePos(TARGET), h.absolutePos(SUPPORT));
+                        BlockState state = ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get().getStateForPlacement(context);
+                        Direction facing = state.getValue(ProcessCellOperatingPanelBlock.FACING);
+                        h.assertTrue(facing.getAxis().isHorizontal(),
+                                "operator panel FACING must always be horizontal (yaw " + yaw + ", pitch " + pitch + "), got " + facing);
+                    } finally {
+                        clearPlacedPanel(h, level, TARGET);
+                    }
+                }
+            }
+        } finally {
+            h.setBlock(SUPPORT, Blocks.AIR.defaultBlockState());
+        }
+
+        LOGGER.info("[M1-03d] operator_panel_horizontal_placement: panel FACING copies controller below or uses horizontal opposite player yaw, always horizontal");
+        h.succeed();
+    }
+
+    /**
+     * Empties a placed operator panel's inventory (if any) and clears the block.
+     */
+    private static void clearPlacedPanel(GameTestHelper h, ServerLevel level, BlockPos relativeTarget) {
+        if (level.getBlockEntity(h.absolutePos(relativeTarget)) instanceof ProcessCellOperatingPanelBlockEntity panel) {
+            // Panel has no inventory, but clear for consistency
+        }
+        h.setBlock(relativeTarget, Blocks.AIR.defaultBlockState());
     }
 }

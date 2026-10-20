@@ -1,6 +1,7 @@
 package com.euvcraft.lithmod.mc.multiblock;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
@@ -10,7 +11,10 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.level.block.state.properties.Property;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -26,16 +30,23 @@ import org.jspecify.annotations.Nullable;
 public class ProcessCellPowerPortBlock extends BaseEntityBlock {
 
     /** True while this port is part of a formed cell. */
-    public static final BooleanProperty FORMED = BooleanProperty.create("formed");
+    public static final BooleanProperty FORMED = ProcessCellVisualProperties.FORMED;
+    /** Visual part index 0..11 for formed members, 0 when unformed. */
+    public static final IntegerProperty PART = ProcessCellVisualProperties.PART;
+    /** Horizontal facing of the cell this member belongs to. */
+    public static final Property<Direction> FACING = ProcessCellVisualProperties.FACING;
 
     public ProcessCellPowerPortBlock(BlockBehaviour.Properties properties) {
         super(properties);
-        this.registerDefaultState(this.stateDefinition.any().setValue(FORMED, Boolean.FALSE));
+        this.registerDefaultState(this.stateDefinition.any()
+            .setValue(FORMED, Boolean.FALSE)
+            .setValue(PART, Integer.valueOf(0))
+            .setValue(FACING, Direction.NORTH));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FORMED);
+        builder.add(FORMED, PART, FACING);
     }
 
     @Override

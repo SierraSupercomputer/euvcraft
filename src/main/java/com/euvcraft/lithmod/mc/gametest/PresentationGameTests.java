@@ -165,7 +165,7 @@ public final class PresentationGameTests {
     }
     private static void recipeRegistry(GameTestHelper h) {
         var vanilla = resources(h, "recipe");
-        h.assertValueEqual(24, vanilla.size(), "M1 vanilla recipe inventory");
+        h.assertValueEqual(25, vanilla.size(), "M1 vanilla recipe inventory");
         for (var entry : vanilla.entrySet()) {
             JsonObject source = json(entry.getValue());
             expectedOutput(h, source, assemble(h, entry.getKey(), source), entry.getKey().toString());
@@ -210,7 +210,7 @@ public final class PresentationGameTests {
                 cooking++;
             }
         }
-        h.assertValueEqual(22, crafting, "Crafting lookup inventory");
+        h.assertValueEqual(23, crafting, "Crafting lookup inventory");
         h.assertValueEqual(2, cooking, "Cooking lookup inventory");
         var sand = manager.getRecipeFor(RecipeType.SMELTING, new SingleRecipeInput(new ItemStack(Items.SAND)), h.getLevel()).orElseThrow();
         h.assertTrue(sand.value().assemble(new SingleRecipeInput(new ItemStack(Items.SAND))).is(Items.GLASS), "Sand must still smelt to glass");
@@ -348,7 +348,7 @@ public final class PresentationGameTests {
         mainTab.buildContents(params);
         List<ItemStack> actualEntries = new ArrayList<>(mainTab.getDisplayItems());
 
-        // Expected 32 stacks in exact order
+        // Expected 33 stacks in exact order (added process_cell_operating_panel after power_port)
         List<Item> expectedItems = List.of(
             ModItems.CRYSTAL_PULLER.get(),
             ModItems.WAFER_SLICER.get(),
@@ -357,6 +357,7 @@ public final class PresentationGameTests {
             ModItems.PROCESS_CELL_CONTROLLER.get(),
             ModItems.PROCESS_CELL_CASING.get(),
             ModItems.PROCESS_CELL_POWER_PORT.get(),
+            ModItems.PROCESS_CELL_OPERATING_PANEL.get(),
             ModItems.FOUP_MK1.get(),
             ModItems.FOUP_MK2.get(),
             ModItems.SILICON.get(),
@@ -384,9 +385,9 @@ public final class PresentationGameTests {
             ModItems.CHIP_SCRAP.get()
         );
 
-        // Verify exact 32 stacks in order
-        h.assertValueEqual(32, actualEntries.size(), "MAIN tab entry count is not 32");
-        for (int i = 0; i < 32; i++) {
+        // Verify exact 33 stacks in order
+        h.assertValueEqual(33, actualEntries.size(), "MAIN tab entry count is not 33");
+        for (int i = 0; i < 33; i++) {
             Item expected = expectedItems.get(i);
             Item actual = actualEntries.get(i).getItem();
             h.assertTrue(actual == expected,
@@ -394,15 +395,15 @@ public final class PresentationGameTests {
         }
 
         // Verify the three mask entries have correct designs
-        MaskData d1 = actualEntries.get(12).get(ModDataComponents.MASK_DATA.get());
+        MaskData d1 = actualEntries.get(13).get(ModDataComponents.MASK_DATA.get());
         h.assertTrue(d1 != null && DieTypes.LOGIC.equals(d1.dieType()) && d1.tierIndex() == 1,
-            "Entry 12 (mask 0) not logic T1: " + d1);
-        MaskData d2 = actualEntries.get(13).get(ModDataComponents.MASK_DATA.get());
+            "Entry 13 (mask 0) not logic T1: " + d1);
+        MaskData d2 = actualEntries.get(14).get(ModDataComponents.MASK_DATA.get());
         h.assertTrue(d2 != null && DieTypes.LOGIC.equals(d2.dieType()) && d2.tierIndex() == 2,
-            "Entry 13 (mask 1) not logic T2: " + d2);
-        MaskData d3 = actualEntries.get(14).get(ModDataComponents.MASK_DATA.get());
+            "Entry 14 (mask 1) not logic T2: " + d2);
+        MaskData d3 = actualEntries.get(15).get(ModDataComponents.MASK_DATA.get());
         h.assertTrue(d3 != null && DieTypes.MEMORY.equals(d3.dieType()) && d3.tierIndex() == 2,
-            "Entry 14 (mask 2) not memory T2: " + d3);
+            "Entry 15 (mask 2) not memory T2: " + d3);
 
         // Ensure all registered lithmod item IDs except EXACT test_machine fixture present
         Set<String> expectedItemIds = new HashSet<>();

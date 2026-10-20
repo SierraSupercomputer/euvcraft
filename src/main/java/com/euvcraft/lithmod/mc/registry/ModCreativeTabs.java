@@ -56,6 +56,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.PROCESS_CELL_CONTROLLER.get());
                 output.accept(ModItems.PROCESS_CELL_CASING.get());
                 output.accept(ModItems.PROCESS_CELL_POWER_PORT.get());
+                output.accept(ModItems.PROCESS_CELL_OPERATING_PANEL.get());
                 // FOUP variants via FoupItems.emptyFoup (real sealed lots)
                 output.accept(FoupItems.emptyFoup(ModItems.FOUP_MK1.get()));
                 output.accept(FoupItems.emptyFoup(ModItems.FOUP_MK2.get()));

@@ -1,12 +1,16 @@
 {
   "values": [
-    { "id": "lithmod:test_machine", "required": false },
+    {
+      "id": "lithmod:test_machine",
+      "required": false
+    },
     "lithmod:crystal_puller",
     "lithmod:wafer_slicer",
     "lithmod:pattern_generator",
     "lithmod:process_cell_controller",
     "lithmod:process_cell_casing",
     "lithmod:process_cell_power_port",
-    "lithmod:test_package"
+    "lithmod:test_package",
+    "lithmod:process_cell_operating_panel"
   ]
 }

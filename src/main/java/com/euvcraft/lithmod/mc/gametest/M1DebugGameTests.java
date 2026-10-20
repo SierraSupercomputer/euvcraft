@@ -209,6 +209,7 @@ public final class M1DebugGameTests {
         for(int x=0;x<2;x++) for(int y=0;y<2;y++) for(int z=0;z<3;z++) {
             BlockPos pos=base.offset(x,y,z);clear(h,pos);
             if(x==0 && y==0 && z==0) h.setBlock(pos,ModMultiblocks.PROCESS_CELL_CONTROLLER.get().defaultBlockState().setValue(ProcessCellControllerBlock.FACING,Direction.NORTH));
+            else if(x==0 && y==1 && z==0) h.setBlock(pos,ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get());
             else if(x==1 && y==0 && z==2) h.setBlock(pos,ModMultiblocks.PROCESS_CELL_POWER_PORT.get());
             else h.setBlock(pos,ModMultiblocks.PROCESS_CELL_CASING.get());
         }

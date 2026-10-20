@@ -19,20 +19,20 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import java.util.List;
 
 /**
- * Screen for the Process Cell: base machine bars plus a coarse status footer below the
- * player inventory/hotbar.
+ * Screen for the Process Cell (both Equipment Cabinet and Operating Panel views):
+ * base machine bars plus a coarse status footer below the player inventory/hotbar.
  * <p>
  * The menu image is 176x240 so the footer sits below the hotbar (which ends at y=160).
  * Inventory label Y is set to 72 explicitly (base calculates height-94 which would overlap).
  * Machine grid rows remain at 35 and 53. Energy bar at (8,17), progress bar at (146,17).
- * Footer status at y=168, layer at 178, design at 188, formed at 198.
- * Abort button bounds: leftPos+8, topPos+212, 160x20.
+ * Role subtitle at y=26. Footer status at y=168, layer at 178, design at 188, formed at 198.
+ * Abort button bounds: leftPos+8, topPos+212, 160x20 (only for Operating Panel).
  * </p>
  * <p>
  * Label texts fit 160 width or wrap/clip without overlapping inventory/button.
  * Title and FE text from base are preserved. The Abort button is added in init(),
- * active only when {@link ProcessCellMenu#inputsLocked()}. Container tick update uses
- * the standard screen tick hook.
+ * active only when {@link ProcessCellMenu#inputsLocked()} for Operating Panel menu.
+ * Container tick update uses the standard screen tick hook.
  * </p>
  */
 public class ProcessCellScreen extends FabMachineScreen<ProcessCellMenu> {
@@ -48,6 +48,8 @@ public class ProcessCellScreen extends FabMachineScreen<ProcessCellMenu> {
     private static final int FOOTER_LAYER_Y = 178;
     private static final int FOOTER_DESIGN_Y = 188;
     private static final int FOOTER_FORMED_Y = 198;
+    /** Role subtitle Y position relative to topPos. */
+    private static final int SUBTITLE_Y = 57;
     /** Abort button bounds relative to top-left. */
     private static final int ABORT_BTN_X = 8;
     private static final int ABORT_BTN_Y = 212;
@@ -55,16 +57,23 @@ public class ProcessCellScreen extends FabMachineScreen<ProcessCellMenu> {
     private static final int ABORT_BTN_HEIGHT = 20;
     /** Label color (neutral grey matching base screen, opaque). */
     private static final int LABEL_COLOR = 0xFF404040;
+    /** Subtitle color (slightly lighter grey). */
+    private static final int SUBTITLE_COLOR = 0xFF606060;
     /** Maximum text width for footer lines. */
     private static final int MAX_TEXT_WIDTH = 160;
 
     private Button abortButton;
+    private Component roleSubtitle;
 
     public ProcessCellScreen(ProcessCellMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title, IMAGE_WIDTH, IMAGE_HEIGHT);
         // Base calculates inventoryLabelY = imageHeight - 94 = 146, which overlaps hotbar.
         // Set explicitly to 72 to match the machine grid row alignment.
         this.inventoryLabelY = 72;
+        // Determine role subtitle based on menu type
+        this.roleSubtitle = menu.isOperatingPanel()
+                ? Component.translatable("screen.lithmod.process_cell.operating_panel")
+                : Component.translatable("screen.lithmod.process_cell.equipment_cabinet");
     }
 
     @Override
@@ -90,14 +99,16 @@ public class ProcessCellScreen extends FabMachineScreen<ProcessCellMenu> {
     @Override
     protected void init() {
         super.init();
-        // Abort button: active only when inputs are locked
-        this.abortButton = Button.builder(Component.translatable("button.lithmod.process_cell.abort"),
-                        btn -> handleAbortClick())
-                .bounds(this.leftPos + ABORT_BTN_X, this.topPos + ABORT_BTN_Y,
-                        ABORT_BTN_WIDTH, ABORT_BTN_HEIGHT)
-                .build();
-        this.addRenderableWidget(this.abortButton);
-        updateAbortButtonActive();
+        // Abort button: only for Operating Panel menu, active only when inputs are locked
+        if (this.menu.isOperatingPanel()) {
+            this.abortButton = Button.builder(Component.translatable("button.lithmod.process_cell.abort"),
+                            btn -> handleAbortClick())
+                    .bounds(this.leftPos + ABORT_BTN_X, this.topPos + ABORT_BTN_Y,
+                            ABORT_BTN_WIDTH, ABORT_BTN_HEIGHT)
+                    .build();
+            this.addRenderableWidget(this.abortButton);
+            updateAbortButtonActive();
+        }
     }
 
     @Override
@@ -126,6 +137,9 @@ public class ProcessCellScreen extends FabMachineScreen<ProcessCellMenu> {
     protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         super.extractLabels(graphics, mouseX, mouseY);
 
+        // Free row below machine slots; keep clear of the FE label at y=19.
+        drawCenteredSubtitle(graphics, this.roleSubtitle, SUBTITLE_Y);
+
         // Footer status line at y=168
         Component statusText = statusText();
         drawClippedRightAligned(graphics, statusText, FOOTER_STATUS_Y);
@@ -143,6 +157,13 @@ public class ProcessCellScreen extends FabMachineScreen<ProcessCellMenu> {
         drawClippedRightAligned(graphics, formedText, FOOTER_FORMED_Y);
     }
 
+    /** Draws a centered subtitle under the main title. */
+    private void drawCenteredSubtitle(GuiGraphicsExtractor graphics, Component text, int y) {
+        int textWidth = this.font.width(text);
+        int x = (IMAGE_WIDTH - textWidth) / 2;
+        graphics.text(this.font, text, this.leftPos + x, this.topPos + y, SUBTITLE_COLOR, false);
+    }
+
     /** Draws a right-aligned component, clipping to MAX_TEXT_WIDTH if needed. */
     private void drawClippedRightAligned(GuiGraphicsExtractor graphics, Component text, int y) {
         int textWidth = this.font.width(text);
@@ -158,9 +179,9 @@ public class ProcessCellScreen extends FabMachineScreen<ProcessCellMenu> {
             if (clipped.length() < full.length()) {
                 clipped = clipped + "...";
             }
-            graphics.text(this.font, Component.literal(clipped), x - this.font.width(clipped), y, LABEL_COLOR, false);
+            graphics.text(this.font, Component.literal(clipped), this.leftPos + x - this.font.width(clipped), this.topPos + y, LABEL_COLOR, false);
         } else {
-            graphics.text(this.font, text, x - textWidth, y, LABEL_COLOR, false);
+            graphics.text(this.font, text, this.leftPos + x - textWidth, this.topPos + y, LABEL_COLOR, false);
         }
     }
 

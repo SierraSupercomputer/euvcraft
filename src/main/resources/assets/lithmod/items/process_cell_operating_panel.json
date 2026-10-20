@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "lithmod:item/process_cell_operating_panel"
+  }
+}
