@@ -590,7 +590,8 @@ public final class M1BoundaryGameTests {
     private static void allHandFed(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         Set<String> expected = new HashSet<>(Set.of("crystal_puller", "wafer_slicer", "pattern_generator",
-                "test_package", "process_cell_controller", "process_cell_casing", "process_cell_power_port", "process_cell_operating_panel"));
+                "test_package", "process_cell_controller", "process_cell_casing", "process_cell_power_port", "process_cell_operating_panel",
+                "boule_purifier", "ebeam_mask_writer", "support_casing", "support_power_port"));
         var registry = net.minecraft.core.registries.BuiltInRegistries.BLOCK;
         Identifier fixture = Identifier.parse("lithmod:test_machine");
         if (registry.containsKey(fixture)) expected.add("test_machine");
@@ -608,7 +609,8 @@ public final class M1BoundaryGameTests {
             helper.assertTrue(be instanceof FabMachineBlockEntity
                     || be instanceof com.euvcraft.lithmod.mc.multiblock.ProcessCellCasingBlockEntity
                     || be instanceof com.euvcraft.lithmod.mc.multiblock.ProcessCellPowerPortBlockEntity
-                    || be instanceof com.euvcraft.lithmod.mc.multiblock.ProcessCellOperatingPanelBlockEntity,
+                    || be instanceof com.euvcraft.lithmod.mc.multiblock.ProcessCellOperatingPanelBlockEntity
+                    || be instanceof com.euvcraft.lithmod.mc.multiblock.support.SupportMemberBlockEntity,
                     "Unexpected registered block type requires explicit audit: " + id);
             for (Direction side : Direction.values()) testCapabilities(helper, be, side);
             testCapabilities(helper, be, null);

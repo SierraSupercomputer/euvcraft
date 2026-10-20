@@ -725,8 +725,6 @@ public final class T3ContentGameTests {
         }
         cell.setStoredEnergy(cell.buffer().getCapacityAsInt());
 
-        FabConfig.LAYER_TICKS_OVERRIDES.set(List.of("T3=3"));
-        EUVCRAFTMod.config().onConfigReload();
 
         // Start and run a few layers
         for (int tick = 0; tick < 20; tick++) {
@@ -740,7 +738,7 @@ public final class T3ContentGameTests {
 
         var contract = privateField(cell, "contract", ProcessCellRunPersistence.Contract.class);
         List<Integer> stronger = new ArrayList<>(frozenRequired.get(SupportLines.SUBSTRATE));
-        stronger.set(2, 3);
+        for (int index = 2; index < stronger.size(); index++) stronger.set(index, Math.max(3, stronger.get(index)));
         Map<String, List<Integer>> changed = new HashMap<>(frozenRequired);
         changed.put(SupportLines.SUBSTRATE, List.copyOf(stronger));
         GenerationMatrix changedMatrix = GenerationMatrix.build(TierDataLoader.getRegistry(), changed, "T3 reload fixture");
@@ -770,51 +768,18 @@ public final class T3ContentGameTests {
     // 8. Forged grade lot fails closed
     // ------------------------------------------------------------------
     private static void t3ForgedGradeLotFails(GameTestHelper helper) {
-        ServerLevel level = helper.getLevel();
-        BlockPos cellPos = new BlockPos(1, 1, 1);
-
-        buildFormedProcessCell(helper, level, cellPos, Direction.NORTH);
-        ProcessCellControllerBlockEntity cell = (ProcessCellControllerBlockEntity)
-            level.getBlockEntity(helper.absolutePos(cellPos));
-        cell.revalidate();
-        helper.assertTrue(cell.isFormed(), "cell must be formed");
-
-        // Create an ORDINARY lot but try to pass it as PURE by forging the grade
-        FoupContents ordinaryLot = FoupContents.of(UUID.randomUUID(), FoupItems.configuredCapacity(),
-            java.util.List.of(Wafer.unprocessed(), Wafer.unprocessed()), WaferSubstrate.ORDINARY);
-        ItemStack foupWithLot = FoupItems.with(ModItems.FOUP_MK1.get(), ordinaryLot);
-        helper.assertTrue(FoupItems.trustedContentsOf(foupWithLot).grade() == WaferSubstrate.ORDINARY, "lot must be ORDINARY");
-
-        // T3 mask with G2 shopGeneration
-        ItemStack maskStack = new ItemStack(ModItems.MASK.get());
-        maskStack.set(ModDataComponents.MASK_DATA.get(),
-            new MaskData(DieTypes.LOGIC, 3, EUVCRAFTMod.settings().maskUses(), 2));
-
-        cell.setSlot(ProcessCellControllerBlockEntity.SLOT_FOUP, foupWithLot);
-        cell.setSlot(ProcessCellControllerBlockEntity.SLOT_MASK, maskStack);
-        cell.setSlot(ProcessCellControllerBlockEntity.SLOT_RESIST, new ItemStack(ModItems.RESIST_T3.get(), 64));
-        Item[] t3Components = {
-            ModItems.KRF_EXCIMER_LASER.get(),
-            ModItems.DUV_PROJECTION_LENS.get(),
-            ModItems.PRECISION_STEPPER_STAGE.get(),
-            ModItems.HEPA_FILTER.get(),
-            ModItems.LASER_INTERFEROMETER.get()
-        };
-        for (int i = 0; i < 5; i++) {
-            cell.setSlot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE + i, new ItemStack(t3Components[i]));
-        }
-        cell.setStoredEnergy(cell.buffer().getCapacityAsInt());
-
-        FabConfig.LAYER_TICKS_OVERRIDES.set(List.of("T3=3"));
-        EUVCRAFTMod.config().onConfigReload();
-
-        // Try to start - must refuse because lot is ORDINARY (generation 1)
+        var cell = admittedCell(helper, 3, WaferSubstrate.PURE, 2);
+        var original = FoupItems.trustedContentsOf(cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP));
+        long energy = cell.buffer().getAmountAsLong();
+        int resist = cell.slot(ProcessCellControllerBlockEntity.SLOT_RESIST).getCount();
+        ItemStack mask = cell.slot(ProcessCellControllerBlockEntity.SLOT_MASK).copy();
+        var forged = new FoupContents(original.lotId(), original.capacity(), original.wafers(), original.run(), WaferSubstrate.ORDINARY);
+        cell.slot(ProcessCellControllerBlockEntity.SLOT_FOUP).set(ModDataComponents.FOUP_CONTENTS.get(), forged);
         cell.serverTick();
-        helper.assertTrue(cell.processState() == ProcessState.IDLE, "forged ORDINARY lot must be refused for T3");
-        helper.assertTrue(cell.lastRefusal() != null, "must have refusal");
-        helper.assertTrue(cell.lastRefusal().code() == RefusalReason.Code.GENERATION_UNMET,
-            "refusal must be GENERATION_UNMET");
-
+        helper.assertTrue(cell.aborted(), "active lot grade tamper latches abort");
+        helper.assertValueEqual(energy, cell.buffer().getAmountAsLong(), "tamper tick consumes no additional FE");
+        helper.assertValueEqual(resist, cell.slot(ProcessCellControllerBlockEntity.SLOT_RESIST).getCount(), "tamper tick consumes no resist");
+        helper.assertTrue(ItemStack.isSameItemSameComponents(mask, cell.slot(ProcessCellControllerBlockEntity.SLOT_MASK)), "tamper tick consumes no mask use");
         helper.succeed();
     }
 
@@ -832,74 +797,53 @@ public final class T3ContentGameTests {
     // 9. Malformed T3 contract fails closed
     // ------------------------------------------------------------------
     private static void t3MalformedContractFails(GameTestHelper helper) {
-        // Test that legacy T1/T2 contract (14 fields, no grade) works for T1/T2
-        // but T3 contract requires grade field
-        ServerLevel level = helper.getLevel();
-        BlockPos cellPos = new BlockPos(1, 1, 1);
-
-        // Test 1: Legacy 14-field contract for T1 should work (defaults to ORDINARY)
-        // We can't easily construct a legacy contract, but we can verify
-        // that the Contract record codec has a default for grade
-        ProcessCellRunPersistence.Contract legacyContract = new ProcessCellRunPersistence.Contract(
-            TierDataLoader.getRegistry().byIndex(1).orElseThrow(),
-            DieTypes.LOGIC, 4, 600, 1, 100,
-            new com.euvcraft.lithmod.core.LineStats(5000, 1000, 75, 1.0, 1, 1, 1),
-            TierDataLoader.getRegistry().all(),
-            requiredGenerationsMap(),
-            new ItemStack(ModItems.MASK.get()),
-            new ArrayList<>(),
-            new ItemStack(ModItems.RESIST_T1.get()),
-            UUID.randomUUID(),
-            new ItemStack(ModItems.FOUP_MK1.get())
-        );
-        helper.assertTrue(legacyContract.grade() == WaferSubstrate.ORDINARY, "legacy contract must default to ORDINARY");
-
-        // Test 2: T3 contract without grade field in NBT should fail
-        // The codec now has optional field with default ORDINARY, but T3 validation
-        // in constructor will reject ORDINARY grade for T3
-        try {
-            ProcessCellRunPersistence.Contract t3ContractBad = new ProcessCellRunPersistence.Contract(
-                TierDataLoader.getRegistry().byIndex(3).orElseThrow(),
-                DieTypes.LOGIC, 4, 100, 1, 100,
-                new com.euvcraft.lithmod.core.LineStats(180, 40, 80, 1.0, 3, 3, 3),
-                TierDataLoader.getRegistry().all(),
-                requiredGenerationsMap(),
-                new ItemStack(ModItems.MASK.get()),
-                new ArrayList<>(),
-                new ItemStack(ModItems.RESIST_T3.get()),
-                UUID.randomUUID(),
-                new ItemStack(ModItems.FOUP_MK1.get()),
-                WaferSubstrate.ORDINARY // ORDINARY grade for T3
-            );
-            helper.fail("T3 contract with ORDINARY grade should have thrown");
-        } catch (IllegalArgumentException e) {
-            helper.assertTrue(e.getMessage().contains("pure wafers"), "T3 must require PURE substrate");
-        }
-
-        // Test 3: T3 contract with PURE grade but G1 mask should fail
-        try {
-            ItemStack maskG1 = new ItemStack(ModItems.MASK.get());
-            maskG1.set(ModDataComponents.MASK_DATA.get(),
-                new MaskData(DieTypes.LOGIC, 3, 4, 1)); // G1 mask
-            ProcessCellRunPersistence.Contract t3ContractBad2 = new ProcessCellRunPersistence.Contract(
-                TierDataLoader.getRegistry().byIndex(3).orElseThrow(),
-                DieTypes.LOGIC, 4, 100, 1, 100,
-                new com.euvcraft.lithmod.core.LineStats(180, 40, 80, 1.0, 3, 3, 3),
-                TierDataLoader.getRegistry().all(),
-                requiredGenerationsMap(),
-                maskG1,
-                new ArrayList<>(),
-                new ItemStack(ModItems.RESIST_T3.get()),
-                UUID.randomUUID(),
-                new ItemStack(ModItems.FOUP_MK1.get()),
-                WaferSubstrate.PURE
-            );
-            helper.fail("T3 contract with G1 mask should have thrown");
-        } catch (IllegalArgumentException e) {
-            helper.assertTrue(e.getMessage().contains("generation-2 mask"), "T3 must require G2 mask");
-        }
-
+        var cell = admittedCell(helper, 3, WaferSubstrate.PURE, 2);
+        var ops = net.minecraft.resources.RegistryOps.create(net.minecraft.nbt.NbtOps.INSTANCE, helper.getLevel().registryAccess());
+        var saved = new ProcessCellRunPersistence.Saved(privateField(cell, "contract", ProcessCellRunPersistence.Contract.class),
+            privateField(cell, "run", ProcessRun.class).snapshot());
+        var encoded = (net.minecraft.nbt.CompoundTag) ProcessCellRunPersistence.CODEC.encodeStart(ops, saved).result().orElseThrow();
+        var decoded = ProcessCellRunPersistence.CODEC.parse(ops, encoded).result().orElseThrow();
+        helper.assertTrue(decoded.contract().grade() == WaferSubstrate.PURE, "actual saved T3 codec preserves pure substrate");
+        var bad = encoded.copy();
+        bad.getCompound("contract").orElseThrow().putString("grade", "unknown");
+        helper.assertTrue(ProcessCellRunPersistence.CODEC.parse(ops, bad).result().isEmpty(), "explicit unknown grade fails closed");
+        bad = encoded.copy();
+        bad.getCompound("contract").orElseThrow().remove("grade");
+        helper.assertTrue(ProcessCellRunPersistence.CODEC.parse(ops, bad).result().isEmpty(), "missing T3 grade cannot downgrade to ordinary");
+        bad = encoded.copy();
+        bad.getCompound("contract").orElseThrow().getCompound("mask").orElseThrow()
+            .getCompound("components").orElseThrow().getCompound("lithmod:mask_data").orElseThrow().putInt("shop_generation", 1);
+        helper.assertTrue(ProcessCellRunPersistence.CODEC.parse(ops, bad).result().isEmpty(), "T3 saved G1 mask fails closed");
+        clearCell(helper, helper.getLevel(), new BlockPos(1, 1, 1));
+        var legacy = admittedCell(helper, 1, WaferSubstrate.ORDINARY, 1);
+        var legacySaved = new ProcessCellRunPersistence.Saved(privateField(legacy, "contract", ProcessCellRunPersistence.Contract.class),
+            privateField(legacy, "run", ProcessRun.class).snapshot());
+        var legacyNbt = (net.minecraft.nbt.CompoundTag) ProcessCellRunPersistence.CODEC.encodeStart(ops, legacySaved).result().orElseThrow();
+        legacyNbt.getCompound("contract").orElseThrow().remove("grade");
+        helper.assertTrue(ProcessCellRunPersistence.CODEC.parse(ops, legacyNbt).result().orElseThrow().contract().grade() == WaferSubstrate.ORDINARY,
+            "legacy T1 save without grade retains ordinary substrate");
         helper.succeed();
+    }
+
+    private static ProcessCellControllerBlockEntity admittedCell(GameTestHelper helper, int tier, WaferSubstrate grade, int maskGeneration) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        buildFormedProcessCell(helper, helper.getLevel(), pos, Direction.NORTH);
+        var cell = (ProcessCellControllerBlockEntity) helper.getLevel().getBlockEntity(helper.absolutePos(pos));
+        cell.revalidate();
+        helper.assertTrue(cell.isFormed(), "fixture cell forms");
+        var lot = FoupContents.of(UUID.randomUUID(), FoupItems.configuredCapacity(), List.of(Wafer.unprocessed()), grade);
+        cell.setSlot(ProcessCellControllerBlockEntity.SLOT_FOUP, FoupItems.with(ModItems.FOUP_MK1.get(), lot));
+        ItemStack mask = new ItemStack(ModItems.MASK.get());
+        mask.set(ModDataComponents.MASK_DATA.get(), new MaskData(DieTypes.LOGIC, tier, 4, maskGeneration));
+        cell.setSlot(ProcessCellControllerBlockEntity.SLOT_MASK, mask);
+        cell.setSlot(ProcessCellControllerBlockEntity.SLOT_RESIST, new ItemStack(ModItems.RESIST_T3.get(), 64));
+        Item[] components = {ModItems.KRF_EXCIMER_LASER.get(), ModItems.DUV_PROJECTION_LENS.get(),
+            ModItems.PRECISION_STEPPER_STAGE.get(), ModItems.HEPA_FILTER.get(), ModItems.LASER_INTERFEROMETER.get()};
+        for (int index = 0; index < components.length; index++) cell.setSlot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE + index, new ItemStack(components[index]));
+        cell.setStoredEnergy(cell.buffer().getCapacityAsInt());
+        cell.serverTick();
+        helper.assertTrue(cell.processState() == ProcessState.RUNNING, "fixture starts a real admitted run");
+        return cell;
     }
 
     // ------------------------------------------------------------------

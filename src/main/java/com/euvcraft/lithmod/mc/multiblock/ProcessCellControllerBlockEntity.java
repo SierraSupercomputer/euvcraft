@@ -368,7 +368,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         if (!(level instanceof ServerLevel server) || contract == null || !inputsMatch()
                 || !Objects.equals(lot, trustedLot())) throw new IllegalStateException("Run inputs changed");
         FoupContents updated = FabYieldService.applyLayerStep(server, lot, contract.tier(),
-            contract.dieType(), null, layer, defectFactor);
+            contract.dieType(), DieTypes.COMPUTE.equals(contract.dieType()) ? 1 : null, layer, defectFactor);
         ItemStack carrier = slot(SLOT_FOUP).copy();
         ItemStack sealed = FoupItems.with(carrier.getItem(), updated);
         carrier.set(ModDataComponents.FOUP_CONTENTS.get(), sealed.get(ModDataComponents.FOUP_CONTENTS.get()));
