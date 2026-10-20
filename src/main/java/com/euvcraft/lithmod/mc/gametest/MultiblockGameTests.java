@@ -816,8 +816,11 @@ public final class MultiblockGameTests {
         }
         String parentId = parent.getAsString();
         if (parentId.startsWith("minecraft:")) {
-            helper.assertTrue(parentId.equals("minecraft:block/cube_all"),
+            String path = parentId.substring(parentId.indexOf(':') + 1);
+            helper.assertTrue(parentId.equals("minecraft:block/cube_all") || parentId.equals("minecraft:block/orientable"),
                 name + " parents to an unexpected vanilla model " + parentId);
+            helper.assertTrue(vanillaResources().contains("assets/minecraft/models/" + path + ".json"),
+                name + " parents to " + parentId + ", which does not exist in vanilla jar");
         } else {
             String path = parentId.substring(parentId.indexOf(':') + 1);
             helper.assertTrue(MultiblockGameTests.class.getResource("/assets/lithmod/models/" + path + ".json") != null,
@@ -859,26 +862,37 @@ public final class MultiblockGameTests {
     }
 
     /**
- * Whether a texture reference resolves to a real vanilla texture file.
+ * Whether a texture reference resolves to a real texture file in the given namespace.
  *
- * *<p>Resolved by opening the Minecraft distribution the server is actually running and looking for
- * the file, because that is the only thing that answers the question the M1-03 report got wrong
- * twice. The server's {@code ResourceManager} is not usable here: it is built from server-side
- * resources and vanilla client assets are masked out of it, so asking it for
- * {@code minecraft:textures/block/iron_block.png} returns nothing even though the file is present.
- * This was confirmed by the first run of this test failing on a texture that does exist.</p>
+ * <p>For {@code minecraft}: opens the Minecraft distribution jar the server is actually running and
+ * looks for {@code assets/minecraft/textures/<path>.png}. The server's {@code ResourceManager} is
+ * not usable: it is built from server-side resources and vanilla client assets are masked out, so
+ * asking it for {@code minecraft:textures/block/iron_block.png} returns nothing even though the
+ * file is present. This was confirmed by the first run of this test failing on a texture that does
+ * exist.</p>
  *
- * <p>Checking "is this a registered block id" instead would be wrong in both directions:
+ * <p>For {@code lithmod}: uses classpath {@code getResource} to check
+ * {@code /assets/lithmod/textures/<path>.png}.</p>
+ *
+ * <p>All other namespaces return {@code false}. Malformed IDs and path traversal attempts are
+ * rejected. Checking "is this a registered block id" would be wrong in both directions:
  * {@code smooth_quartz} is a real block whose textures are {@code smooth_quartz_top} and
- * {@code smooth_quartz_side}, and the legitimate {@code quartz_block_bottom} is not a block at all.</p>
+ * {@code smooth_quartz_side}, and the legitimate {@code quartz_block_bottom} is not a block at all.
  */
     private static boolean resolves(ServerLevel level, String textureId) {
         int colon = textureId.indexOf(':');
         String namespace = colon < 0 ? "minecraft" : textureId.substring(0, colon);
         String path = colon < 0 ? textureId : textureId.substring(colon + 1);
-        // A texture reference is written minecraft:block/foo but lives at assets/minecraft/textures/block/foo.png.
-        return namespace.equals("minecraft")
-            && vanillaResources().contains("assets/minecraft/textures/" + path + ".png");
+        if (path.contains("..") || path.isEmpty()) {
+            return false;
+        }
+        if ("lithmod".equals(namespace)) {
+            return MultiblockGameTests.class.getResource("/assets/lithmod/textures/" + path + ".png") != null;
+        }
+        if ("minecraft".equals(namespace)) {
+            return vanillaResources().contains("assets/minecraft/textures/" + path + ".png");
+        }
+        return false;
     }
 
     /** Every resource path inside the Minecraft jar, read once. */
