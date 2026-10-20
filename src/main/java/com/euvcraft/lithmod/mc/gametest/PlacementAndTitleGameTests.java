@@ -291,6 +291,8 @@ public final class PlacementAndTitleGameTests {
                 h.assertValueEqual("Lithography Machine", lang.get(CONTROLLER_KEY).getAsString(),
                         CONTROLLER_KEY + " must translate to Lithography Machine");
             }
+        } catch (java.io.IOException exception) {
+            throw new IllegalStateException("Could not read the bundled machine-title translation", exception);
         } finally {
             clearPlacedController(h, level, CONTROLLER);
         }
