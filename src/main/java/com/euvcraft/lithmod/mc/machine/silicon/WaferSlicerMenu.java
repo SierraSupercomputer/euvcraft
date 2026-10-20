@@ -55,6 +55,6 @@ public class WaferSlicerMenu extends FabMachineMenu {
             MACHINE_SLOT_X - 18, MACHINE_SLOT_Y));
         addCustomSlot(new EmptyFoupSlot(slots, WaferSlicerBlockEntity.FOUP_SLOT,
             MACHINE_SLOT_X, MACHINE_SLOT_Y));
-        addOutputSlot(WaferSlicerBlockEntity.OUTPUT_SLOT, MACHINE_SLOT_X, MACHINE_SLOT_Y + 36);
+        addOutputSlot(WaferSlicerBlockEntity.OUTPUT_SLOT, MACHINE_SLOT_X + 24, MACHINE_SLOT_Y);
     }
 }

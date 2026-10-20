@@ -28,6 +28,6 @@ public class CrystalPullerMenu extends FabMachineMenu {
     @Override
     protected void addMachineSlots() {
         addMachineSlot(CrystalPullerBlockEntity.INPUT_SLOT, MACHINE_SLOT_X, MACHINE_SLOT_Y);
-        addOutputSlot(CrystalPullerBlockEntity.OUTPUT_SLOT, MACHINE_SLOT_X, MACHINE_SLOT_Y + 36);
+        addOutputSlot(CrystalPullerBlockEntity.OUTPUT_SLOT, MACHINE_SLOT_X + 24, MACHINE_SLOT_Y);
     }
 }
