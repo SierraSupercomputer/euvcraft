@@ -1,4 +1,14 @@
-package com.euvcraft.lithmod.mc.multiblock.support;
+package com.euvcraft.lithmod.mc.gametest;
+
+import com.euvcraft.lithmod.mc.multiblock.support.SupportMachineBlockEntity;
+import com.euvcraft.lithmod.mc.multiblock.support.SupportMachineControllerBlock;
+import com.euvcraft.lithmod.mc.multiblock.support.SupportMachineKind;
+import com.euvcraft.lithmod.mc.multiblock.support.SupportMachineMenu;
+import com.euvcraft.lithmod.mc.multiblock.support.SupportMachines;
+import com.euvcraft.lithmod.mc.multiblock.support.SupportCasingBlock;
+import com.euvcraft.lithmod.mc.multiblock.support.SupportMemberBlockEntity;
+import com.euvcraft.lithmod.mc.multiblock.support.SupportPowerPortBlock;
+import com.euvcraft.lithmod.core.multiblock.SupportStructureMatcher;
 
 import com.euvcraft.lithmod.core.WaterTank;
 import com.euvcraft.lithmod.core.multiblock.StructureShape;
@@ -33,7 +43,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.storage.ProblemReporter;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.level.storage.TagValueInput;
 import net.minecraft.world.level.storage.TagValueOutput;
 import net.neoforged.bus.api.IEventBus;
@@ -165,9 +175,9 @@ public final class SupportMultiblockGameTests {
         int[] right = rightVector(facing);
         int[] back = backVector(facing);
         return new BlockPos(
-            controller.getX() + right[0] * (u - u0) + UP[0] * (v - v0) + back[0] * d,
-            controller.getY() + right[1] * (u - u0) + UP[1] * (v - v0) + back[1] * d,
-            controller.getZ() + right[2] * (u - u0) + UP[2] * (v - v0) + back[2] * d);
+            controller.getX() + right[0] * (u - u0) + UP[0] * v + back[0] * d,
+            controller.getY() + right[1] * (u - u0) + UP[1] * v + back[1] * d,
+            controller.getZ() + right[2] * (u - u0) + UP[2] * v + back[2] * d);
     }
 
     /** Back-left lower cell; never the anchor, because the anchor is always d == 0. */
@@ -555,8 +565,8 @@ public final class SupportMultiblockGameTests {
     private static void purifierWaterFoundation(GameTestHelper h) {
         var registry = MachineDefinitionLoader.getRegistry();
         h.assertTrue(registry != null, "machine definitions must be loaded");
-        var purifierDef = registry == null ? null : registry.byId("boule_purifier");
-        var ebeamDef = registry == null ? null : registry.byId("ebeam_mask_writer");
+        var purifierDef = registry == null ? null : registry.byId("boule_purifier").orElse(null);
+        var ebeamDef = registry == null ? null : registry.byId("ebeam_mask_writer").orElse(null);
         if (purifierDef == null || ebeamDef == null) {
             h.fail("both support definitions must exist");
             return;
@@ -564,7 +574,7 @@ public final class SupportMultiblockGameTests {
         h.assertValueEqual(100000, purifierDef.energyCapacity(), "purifier capacity");
         h.assertValueEqual(10000, purifierDef.maxReceive(), "purifier max receive");
         h.assertValueEqual(80, purifierDef.energyPerTick(), "purifier base FE per tick");
-        h.assertValueEqual(16000, purifierDef.paramOrDefault("water_capacity", -1), "purifier water param");
+        h.assertValueEqual(16000, purifierDef.param("water_capacity").orElse(-1), "purifier water param");
         h.assertValueEqual(4000000, ebeamDef.energyCapacity(), "ebeam capacity");
         h.assertValueEqual(32000, ebeamDef.maxReceive(), "ebeam max receive");
         h.assertValueEqual(2000, ebeamDef.energyPerTick(), "ebeam base FE per tick");
@@ -634,7 +644,7 @@ public final class SupportMultiblockGameTests {
         h.assertTrue(purifier.isFormed(), "purifier must form");
 
         ServerPlayer player = connect(h);
-        SupportMachineMenu menu = SupportMachineMenu.forMachine(1, new Inventory(player), purifier);
+        SupportMachineMenu menu = SupportMachineMenu.forMachine(1, player.getInventory(), purifier);
         h.assertValueEqual(4 + 36, menu.slots.size(), "purifier shell: 4 machine + 36 player slots");
         assertSlot(h, menu, 0, 0, 62, 35, "purifier boule in");
         assertSlot(h, menu, 1, 1, 80, 35, "purifier water bucket in");
@@ -656,7 +666,7 @@ public final class SupportMultiblockGameTests {
         h.assertValueEqual(16000, wire.get(6).get(), "water capacity wire is live");
 
         // The client shells build the same coordinates over the same kind, with no block entity.
-        SupportMachineMenu client = SupportMachineMenu.clientPurifier(9, new Inventory(player), null);
+        SupportMachineMenu client = SupportMachineMenu.clientPurifier(9, player.getInventory(), null);
         h.assertTrue(client.kind() == SupportMachineKind.PURIFIER, "client shell kind from its type");
         for (int i = 0; i < 4; i++) {
             Slot serverSlot = menu.slots.get(i);
@@ -674,7 +684,7 @@ public final class SupportMultiblockGameTests {
             return;
         }
         serverTickN(ebeam, 1);
-        SupportMachineMenu ebeamMenu = SupportMachineMenu.forMachine(2, new Inventory(player), ebeam);
+        SupportMachineMenu ebeamMenu = SupportMachineMenu.forMachine(2, player.getInventory(), ebeam);
         h.assertValueEqual(3 + 36, ebeamMenu.slots.size(), "ebeam shell: 3 machine + 36 player slots");
         assertSlot(h, ebeamMenu, 0, 0, 62, 35, "ebeam blank in");
         assertSlot(h, ebeamMenu, 1, 1, 80, 35, "ebeam redstone in");

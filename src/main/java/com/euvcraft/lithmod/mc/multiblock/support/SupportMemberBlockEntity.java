@@ -63,7 +63,7 @@ public class SupportMemberBlockEntity extends BlockEntity {
      * registered owner. Null for a casing by construction (the capability provider never asks a
      * casing), which is what makes the capability answer null there.</p>
      */
-    public @Nullable net.neoforged.neoforge.transfer.energy.EnergyHandler energy() {
+    public net.neoforged.neoforge.transfer.energy.@Nullable EnergyHandler energy() {
         if (!this.isPowerPort() || !this.isMemberOfFormedMachine()) {
             return null;
         }
