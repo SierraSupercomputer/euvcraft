@@ -32,7 +32,8 @@ import java.util.UUID;
  * <p>Every lot carries a preparation generation (1 = legacy/unprepared/G1, 2 = G2 prepared).
  * This is a separate property from the substrate grade. Existing saved lots without a
  * preparation generation are treated as generation 1. A prepared lot (generation 2)
- * must be non-empty, PURE grade, unstarted, and all wafers at layer 0. Preparation is
+ * must be non-empty and PURE grade. Applying preparation requires unstarted wafers
+ * at layer 0; subsequent lithography retains that preparation. Preparation is
  * preserved through mutations, except that adding ANY fresh wafer(s) to a prepared lot
  * refuses mixing, and removing all wafers resets generation to 1 so an empty carrier
  * cannot transfer preparation.</p>
