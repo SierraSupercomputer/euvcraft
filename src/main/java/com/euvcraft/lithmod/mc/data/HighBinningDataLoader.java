@@ -71,7 +71,7 @@ public final class HighBinningDataLoader
     private static volatile @Nullable Registry resolved;
 
     public HighBinningDataLoader() {
-        super(DIRECTORY, CODEC, HighBinningDataLoader::buildRegistry, EUVCRAFTMod.LOGGER);
+        super(DIRECTORY, CODEC, (entries, source) -> buildRegistry(entries), EUVCRAFTMod.LOGGER);
     }
 
     @SubscribeEvent
