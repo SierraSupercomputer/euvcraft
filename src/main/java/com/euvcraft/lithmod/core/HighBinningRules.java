@@ -270,16 +270,7 @@ public final class HighBinningRules {
             if (baseTicksPerWafer < 1) {
                 throw new IllegalArgumentException("baseTicksPerWafer must be >= 1, got " + baseTicksPerWafer);
             }
-            // Ceil: (base * mult) rounded up
-            // Use long for intermediate to detect overflow before it happens
-            // ceil(a * b) = floor(a * b + (1 - epsilon))
-            // But simpler: compute as long and check
-            double exact = baseTicksPerWafer * ticksMultiplier;
-            long result = (long) StrictMath.ceil(exact);
-            if (result > Integer.MAX_VALUE) {
-                throw new ArithmeticException("scaled ticks per wafer overflow: " + result);
-            }
-            return (int) result;
+            return scaled(baseTicksPerWafer, ticksMultiplier);
         }
 
         /**
@@ -295,12 +286,12 @@ public final class HighBinningRules {
             if (baseEnergyPerTick < 0) {
                 throw new IllegalArgumentException("baseEnergyPerTick must be >= 0, got " + baseEnergyPerTick);
             }
-            double exact = baseEnergyPerTick * energyMultiplier;
-            long result = (long) StrictMath.ceil(exact);
-            if (result > Integer.MAX_VALUE) {
-                throw new ArithmeticException("scaled energy per tick overflow: " + result);
-            }
-            return (int) result;
+            return scaled(baseEnergyPerTick, energyMultiplier);
+        }
+
+        private static int scaled(int base, double multiplier) {
+            return java.math.BigDecimal.valueOf(base).multiply(java.math.BigDecimal.valueOf(multiplier))
+                .setScale(0, java.math.RoundingMode.CEILING).intValueExact();
         }
 
         @Override
