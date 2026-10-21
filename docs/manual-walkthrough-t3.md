@@ -10,7 +10,7 @@ This extends the existing T1/T2 loop. The new GUI and rendered textures still ne
 6. Run each of the four T3 designs and process the completed lot in Test and Package with its normal packaging supplies. Expect the matching T3 logic, memory, compute or NAND chips according to yield; the returned FOUP is empty. T3 compute has one fixed core. Core-count choices still begin at T6; no T4 content is added here.
 7. Check pause/resume by removing power during purification, mask writing and lithography, then restoring it. Also check blocked outputs, save/reload during work, and one-time ingredient consumption. Existing T1/T2 machines and ordinary wafer recipes should continue to work.
 
-The Crystal Puller and Wafer Slicer output slots have moved away from the player inventory. Confirm both screens visually at your normal GUI scale.
+The owner confirms the complete T3 walkthrough and both standalone output-slot arrangements work. This follow-up adds optional pipe-fed water and corrects status-label placement; check those new visual changes at your normal GUI scale.
 
 To refine starter sprites, edit `tools/starter-textures.json`, then run `node tools/generate-starter-textures.mjs` and `node tools/generate-joined-panels.mjs`. Use each script's `--check` mode to check generated assets without writing. Support blocks reuse the existing joined models; edit those shared textures when changing the shared panel style.
 

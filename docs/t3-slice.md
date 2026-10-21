@@ -17,7 +17,7 @@ T3: KrF DUV; 24 layers; 100 ticks per layer.
 
 Both support machines are 2 wide x 2 high x 3 deep. Place one controller in either lower front column, one or two support power ports, and support casings in the other positions. Power enters through a formed owned port.
 
-Buckets add 1,000 mB at a time. Tanks start empty. The water tank is separate from bucket handling so a future fluid capability can reuse it; pipes are not implemented.
+Buckets add 1,000 mB at a time. Tanks start empty. Optional Support Water Inlets replace any purifier casing position and accept ordinary water from Arcforge-compatible pipes on every exposed face. Multiple inlets and buckets share the same tank; existing bucket-only structures remain valid. Item automation remains deferred.
 
 E-beam design selection maps to the named JSON recipe. Press Write mask to start; completion produces a generation-2 mask. The configured mask-use count and recipe costs are captured when the job starts.
 

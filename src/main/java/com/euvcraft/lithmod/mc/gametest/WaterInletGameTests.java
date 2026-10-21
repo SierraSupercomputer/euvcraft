@@ -139,6 +139,9 @@ public final class WaterInletGameTests {
                 h.assertValueEqual(0,a.extract(0,water,500,tx),"extraction prohibited");tx.commit();
             }
             h.assertTrue(!a.isValid(0,FluidResource.of(Fluids.LAVA)),"lava invalid");
+            var decorated = FluidResource.of(Fluids.WATER, net.minecraft.core.component.DataComponentPatch.builder()
+                .set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, net.minecraft.network.chat.Component.literal("marked water")).build());
+            try(var tx=Transaction.openRoot()){h.assertValueEqual(0,a.insert(0,decorated,100,tx),"component-bearing water rejected without destroying metadata");tx.commit();}
             h.assertValueEqual(0,a.getCapacityAsInt(0,FluidResource.of(Fluids.LAVA)),"lava capacity zero");
             int capacity=c.owner.waterCapacity(); h.assertValueEqual(capacity-123,insert(a,capacity-123,true),"partial initial fill");
             h.assertValueEqual(123,insert(b,500,true),"remaining capacity exact");h.assertValueEqual(0,insert(a,1,true),"full tank rejects");
@@ -179,7 +182,10 @@ public final class WaterInletGameTests {
             var saved=TagValueOutput.createWithContext(ProblemReporter.DISCARDING,c.level.registryAccess());c.owner.saveWithId(saved);
             var fresh=SupportMachines.SUPPORT_CONTROLLER_BE.get().create(c.owner.getBlockPos(),c.owner.getBlockState());
             c.level.removeBlockEntity(c.owner.getBlockPos());c.level.setBlockEntity(fresh);
-            fresh.loadWithComponents(TagValueInput.create(ProblemReporter.DISCARDING,c.level.registryAccess(),saved.buildResult()));fresh.revalidate();
+            fresh.loadWithComponents(TagValueInput.create(ProblemReporter.DISCARDING,c.level.registryAccess(),saved.buildResult()));
+            // A live replacement (unlike a world load) leaves old ephemeral member links until their next tick.
+            for(var pos:c.positions)if(c.level.getBlockEntity(pos) instanceof SupportMemberBlockEntity member)member.serverTick();
+            fresh.revalidate();
             h.assertValueEqual(1000,fresh.waterAmount(),"water survives BE reload");h.assertValueEqual(0,insert(handler,100,true),"old owner lens fails after replacement");
             h.assertValueEqual(500,insert(cap(h,c,c.inlet(),null),500,true),"reloaded owner receives water");h.assertValueEqual(1500,fresh.waterAmount(),"new shared tank amount");
             for(int i=0;i<fresh.slotCount();i++)fresh.clearSlot(i);
@@ -198,7 +204,9 @@ public final class WaterInletGameTests {
                 pipeBE.setSetting(Direction.UP,SideSetting.OUTPUT);pipeBE.setSetting(Direction.DOWN,SideSetting.INPUT);
                 net.zagdrath.arcforge.block.conduit.ConduitBlock.refreshConnections(c.level,pipePos);
                 var source=c.level.getCapability(Capabilities.Fluid.BLOCK,tankPos,Direction.UP);h.assertTrue(source!=null,"real tank input capability");
-                h.assertValueEqual(1000,insert(source,1000,true),"fill actual Arcforge source tank");
+                int supplied=0;
+                for(int i=0;i<4&&supplied<1000;i++)supplied+=insert(source,1000-supplied,true);
+                h.assertValueEqual(1000,supplied,"fill actual Arcforge source tank respecting its per-operation rate");
                 h.assertTrue(ConduitCapabilities.canConnect(c.level,pipePos,Direction.DOWN,ConduitType.FLUID),"Arcforge discovers inlet capability");
                 var manager=ConduitNetworkManager.get(c.level);manager.markDirty(pipePos);
                 for(int i=0;i<80;i++)manager.tick();

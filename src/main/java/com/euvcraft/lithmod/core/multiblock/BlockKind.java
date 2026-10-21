@@ -13,12 +13,12 @@ public enum BlockKind {
     /** Power port block - at least 1, at most 2 required. */
     POWER_PORT,
 
-    /** Water inlet block - optional, replaces casing in purifier only. */
-    WATER_INLET,
-
     /** Any other block - causes match failure. */
     OTHER,
 
     /** Operating panel block - exactly one required, directly above the controller. */
-    OPERATING_PANEL
+    OPERATING_PANEL,
+
+    /** Water inlet block - optional, replaces casing in purifier only. Appended to retain old ordinals. */
+    WATER_INLET
 }
