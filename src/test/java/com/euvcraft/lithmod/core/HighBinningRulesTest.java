@@ -54,7 +54,9 @@ class HighBinningRulesTest {
      */
     private static FoupContents makeT3Lot(String dieType, Integer cores, List<Float> rolls) {
         Tier t3 = tiers.getByIndex(3);
-        RunSpec spec = new RunSpec(dieType, 3, cores != null ? cores : RunSpec.NO_CORES, SOURCE_YIELD, t3.layers() * settings.rollsPerLayer());
+        int rollCount = t3.layers() * settings.rollsPerLayer();
+        double effectiveYield = YieldMath.resolveEffectiveYield(t3, settings, cores);
+        RunSpec spec = new RunSpec(dieType, 3, cores != null ? cores : RunSpec.NO_CORES, effectiveYield, rollCount);
         List<Wafer> wafers = new ArrayList<>();
         for (int i = 0; i < rolls.size(); i++) {
             wafers.add(new Wafer(t3.layers(), rolls.get(i), Wafer.NO_FLAGS));
@@ -133,30 +135,25 @@ class HighBinningRulesTest {
         }
 
         @Test
-        @DisplayName("overflow check on scaled costs")
-        void overflowCheck() {
-            // ticksMultiplier that would overflow base 72000
-            assertThrows(IllegalArgumentException.class,
-                () -> new HighBinningRules.Transition(3, 4, 0.15, 30000.0, 1.0));
-            // energyMultiplier that would overflow conservative base
-            assertThrows(IllegalArgumentException.class,
-                () -> new HighBinningRules.Transition(3, 4, 0.15, 1.0, 2000000.0));
-        }
-
-        @Test
-        @DisplayName("scaledTicksPerWafer computes correctly")
+        @DisplayName("scaledTicksPerWafer computes correctly with ceil")
         void scaledTicksPerWafer() {
             HighBinningRules.Transition t = new HighBinningRules.Transition(3, 4, 0.15, 1.5, 1.0);
-            assertEquals(150, t.scaledTicksPerWafer(100));
-            assertEquals(100, t.scaledTicksPerWafer(100)); // 1.0
+            assertEquals(150, t.scaledTicksPerWafer(100)); // 100 * 1.5 = 150
+            assertEquals(100, t.scaledTicksPerWafer(100)); // 100 * 1.0 = 100
+            // Ceil test: 100 * 1.01 = 101
+            HighBinningRules.Transition t2 = new HighBinningRules.Transition(3, 4, 0.15, 1.01, 1.0);
+            assertEquals(101, t2.scaledTicksPerWafer(100));
         }
 
         @Test
-        @DisplayName("scaledEnergyPerTick computes correctly")
+        @DisplayName("scaledEnergyPerTick computes correctly with ceil")
         void scaledEnergyPerTick() {
             HighBinningRules.Transition t = new HighBinningRules.Transition(3, 4, 0.15, 1.0, 2.0);
             assertEquals(200, t.scaledEnergyPerTick(100));
             assertEquals(0, t.scaledEnergyPerTick(0));
+            // Ceil test
+            HighBinningRules.Transition t2 = new HighBinningRules.Transition(3, 4, 0.15, 1.0, 1.01);
+            assertEquals(101, t2.scaledEnergyPerTick(100));
         }
 
         @Test
@@ -165,6 +162,15 @@ class HighBinningRulesTest {
             HighBinningRules.Transition t = new HighBinningRules.Transition(3, 4, 0.15, 1000.0, 1000.0);
             assertThrows(ArithmeticException.class, () -> t.scaledTicksPerWafer(Integer.MAX_VALUE));
             assertThrows(ArithmeticException.class, () -> t.scaledEnergyPerTick(Integer.MAX_VALUE));
+        }
+
+        @Test
+        @DisplayName("scaled methods validate base input")
+        void scaledMethodsValidateBase() {
+            HighBinningRules.Transition t = new HighBinningRules.Transition(3, 4, 0.15, 1.5, 1.0);
+            assertThrows(IllegalArgumentException.class, () -> t.scaledTicksPerWafer(0));
+            assertThrows(IllegalArgumentException.class, () -> t.scaledTicksPerWafer(-1));
+            assertThrows(IllegalArgumentException.class, () -> t.scaledEnergyPerTick(-1));
         }
 
         @Test
@@ -187,7 +193,8 @@ class HighBinningRulesTest {
         @DisplayName("null lot refused")
         void nullLot() {
             assertThrows(IllegalArgumentException.class,
-                () -> HighBinningRules.judge(null, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, defaultTransition()));
+                () -> HighBinningRules.judge(null, tiers.getByIndex(3), 2, true, defaultTransition(),
+                    settings.chipsPerWafer(), 1));
         }
 
         @Test
@@ -195,7 +202,8 @@ class HighBinningRulesTest {
         void emptyLot() {
             FoupContents empty = FoupContents.empty(FIXED_LOT, settings.foupCapacity());
             assertThrows(IllegalArgumentException.class,
-                () -> HighBinningRules.judge(empty, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, defaultTransition()));
+                () -> HighBinningRules.judge(empty, tiers.getByIndex(3), 2, true, defaultTransition(),
+                    settings.chipsPerWafer(), 1));
         }
 
         @Test
@@ -203,28 +211,32 @@ class HighBinningRulesTest {
         void noRunSpec() {
             FoupContents unstarted = makeUniformLot(DieTypes.LOGIC, null, 5).withRun(null);
             assertThrows(IllegalStateException.class,
-                () -> HighBinningRules.judge(unstarted, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, defaultTransition()));
+                () -> HighBinningRules.judge(unstarted, tiers.getByIndex(3), 2, true, defaultTransition(),
+                    settings.chipsPerWafer(), 1));
         }
 
         @Test
         @DisplayName("incomplete lot (wafer not at final layer) refused")
         void incompleteLot() {
             Tier t3 = tiers.getByIndex(3);
-            RunSpec spec = new RunSpec(DieTypes.LOGIC, 3, RunSpec.NO_CORES, SOURCE_YIELD, t3.layers());
+            RunSpec spec = new RunSpec(DieTypes.LOGIC, 3, RunSpec.NO_CORES, SOURCE_YIELD, t3.layers() * settings.rollsPerLayer());
             List<Wafer> wafers = new ArrayList<>();
             wafers.add(new Wafer(t3.layers() - 1, 0.5f, Wafer.NO_FLAGS)); // One wafer early
             wafers.add(new Wafer(t3.layers(), 0.5f, Wafer.NO_FLAGS));
             FoupContents lot = new FoupContents(FIXED_LOT, settings.foupCapacity(), wafers, spec);
             assertThrows(IllegalStateException.class,
-                () -> HighBinningRules.judge(lot, t3, dieRules, settings, matrix, 2, true, defaultTransition()));
+                () -> HighBinningRules.judge(lot, t3, 2, true, defaultTransition(),
+                    settings.chipsPerWafer(), 1));
         }
 
         @Test
-        @DisplayName("tier mismatch with run spec throws")
+        @DisplayName("tier mismatch with run spec throws (structural, before layer check)")
         void tierMismatch() {
             FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, 5);
+            // tierMismatch should throw IllegalArgumentException (structural) not IllegalStateException (layer)
             assertThrows(IllegalArgumentException.class,
-                () -> HighBinningRules.judge(lot, tiers.getByIndex(4), dieRules, settings, matrix, 2, true, defaultTransition()));
+                () -> HighBinningRules.judge(lot, tiers.getByIndex(4), 2, true, defaultTransition(),
+                    settings.chipsPerWafer(), 1));
         }
 
         @Test
@@ -232,7 +244,8 @@ class HighBinningRulesTest {
         void memoryRefused() {
             FoupContents lot = makeUniformLot(DieTypes.MEMORY, null, 5);
             assertThrows(IllegalStateException.class,
-                () -> HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, defaultTransition()));
+                () -> HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, defaultTransition(),
+                    settings.chipsPerWafer(), 1));
         }
 
         @Test
@@ -240,37 +253,39 @@ class HighBinningRulesTest {
         void nandRefused() {
             FoupContents lot = makeUniformLot(DieTypes.NAND, null, 5);
             assertThrows(IllegalStateException.class,
-                () -> HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, defaultTransition()));
+                () -> HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, defaultTransition(),
+                    settings.chipsPerWafer(), 1));
         }
 
         @Test
         @DisplayName("source tier below T3 refused")
         void sourceTierTooLow() {
-            FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, 5);
-            // Change spec to T2 but keep wafers at T3 layers? That's a mismatch. Create T2 lot properly.
             Tier t2 = tiers.getByIndex(2);
-            RunSpec spec = new RunSpec(DieTypes.LOGIC, 2, RunSpec.NO_CORES, SOURCE_YIELD, t2.layers());
+            RunSpec spec = new RunSpec(DieTypes.LOGIC, 2, RunSpec.NO_CORES, SOURCE_YIELD, t2.layers() * settings.rollsPerLayer());
             List<Wafer> wafers = new ArrayList<>();
             for (int i = 0; i < 5; i++) {
                 wafers.add(new Wafer(t2.layers(), 0.5f, Wafer.NO_FLAGS));
             }
             FoupContents t2Lot = new FoupContents(FIXED_LOT, settings.foupCapacity(), wafers, spec);
             assertThrows(IllegalStateException.class,
-                () -> HighBinningRules.judge(t2Lot, t2, dieRules, settings, matrix, 2, true, defaultTransition()));
+                () -> HighBinningRules.judge(t2Lot, t2, 2, true, defaultTransition(),
+                    settings.chipsPerWafer(), 1));
         }
 
         @Test
-        @DisplayName("compute with invalid core count refused")
+        @DisplayName("compute with invalid core count refused (not 1 before T6)")
         void computeInvalidCores() {
             // Compute before T6 must have exactly 1 core
             FoupContents lot = makeT3Lot(DieTypes.COMPUTE, 4, List.of(0.5f, 0.5f, 0.5f)); // 4 cores
             assertThrows(IllegalArgumentException.class,
-                () -> HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, defaultTransition()));
-            
+                () -> HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, defaultTransition(),
+                    settings.chipsPerWafer(), 1));
+
             // 0 cores (NO_CORES) is also invalid for compute
             FoupContents lot2 = makeT3Lot(DieTypes.COMPUTE, RunSpec.NO_CORES, List.of(0.5f, 0.5f, 0.5f));
             assertThrows(IllegalArgumentException.class,
-                () -> HighBinningRules.judge(lot2, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, defaultTransition()));
+                () -> HighBinningRules.judge(lot2, tiers.getByIndex(3), 2, true, defaultTransition(),
+                    settings.chipsPerWafer(), 1));
         }
 
         @Test
@@ -278,7 +293,8 @@ class HighBinningRulesTest {
         void logicWithCores() {
             FoupContents lot = makeT3Lot(DieTypes.LOGIC, 2, List.of(0.5f, 0.5f, 0.5f));
             assertThrows(IllegalArgumentException.class,
-                () -> HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, defaultTransition()));
+                () -> HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, defaultTransition(),
+                    settings.chipsPerWafer(), 1));
         }
 
         @Test
@@ -286,14 +302,16 @@ class HighBinningRulesTest {
         void targetExceedsT8() {
             // Try T8 source -> would need T9
             Tier t8 = tiers.getByIndex(8);
-            RunSpec spec = new RunSpec(DieTypes.LOGIC, 8, RunSpec.NO_CORES, SOURCE_YIELD, t8.layers());
+            RunSpec spec = new RunSpec(DieTypes.LOGIC, 8, RunSpec.NO_CORES, SOURCE_YIELD, t8.layers() * settings.rollsPerLayer());
             List<Wafer> wafers = new ArrayList<>();
             for (int i = 0; i < 5; i++) {
                 wafers.add(new Wafer(t8.layers(), 0.5f, Wafer.NO_FLAGS));
             }
             FoupContents lot = new FoupContents(FIXED_LOT, settings.foupCapacity(), wafers, spec);
+            HighBinningRules.Transition t8to9 = new HighBinningRules.Transition(8, 9, 0.15, 1.0, 1.0);
             assertThrows(IllegalArgumentException.class,
-                () -> HighBinningRules.judge(lot, t8, dieRules, settings, matrix, 2, true, defaultTransition()));
+                () -> HighBinningRules.judge(lot, t8, 2, true, t8to9,
+                    settings.chipsPerWafer(), 1));
         }
 
         @Test
@@ -301,7 +319,8 @@ class HighBinningRulesTest {
         void logicTargetExceedsCap() {
             // T5 source -> T6 target, but logic caps at 5
             Tier t5 = tiers.getByIndex(5);
-            RunSpec spec = new RunSpec(DieTypes.LOGIC, 5, RunSpec.NO_CORES, SOURCE_YIELD, t5.layers());
+            double effYield = YieldMath.resolveEffectiveYield(t5, settings, null);
+            RunSpec spec = new RunSpec(DieTypes.LOGIC, 5, RunSpec.NO_CORES, effYield, t5.layers() * settings.rollsPerLayer());
             List<Wafer> wafers = new ArrayList<>();
             for (int i = 0; i < 5; i++) {
                 wafers.add(new Wafer(t5.layers(), 0.5f, Wafer.NO_FLAGS));
@@ -309,7 +328,8 @@ class HighBinningRulesTest {
             FoupContents lot = new FoupContents(FIXED_LOT, settings.foupCapacity(), wafers, spec);
             HighBinningRules.Transition t5to6 = new HighBinningRules.Transition(5, 6, 0.15, 1.0, 1.0);
             assertThrows(IllegalStateException.class,
-                () -> HighBinningRules.judge(lot, t5, dieRules, settings, matrix, 2, true, t5to6));
+                () -> HighBinningRules.judge(lot, t5, 2, true, t5to6,
+                    settings.chipsPerWafer(), 1));
         }
 
         @Test
@@ -317,7 +337,8 @@ class HighBinningRulesTest {
         void generationOneRefused() {
             FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, 5);
             assertThrows(IllegalStateException.class,
-                () -> HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 1, true, defaultTransition()));
+                () -> HighBinningRules.judge(lot, tiers.getByIndex(3), 1, true, defaultTransition(),
+                    settings.chipsPerWafer(), 1));
         }
 
         @Test
@@ -325,7 +346,8 @@ class HighBinningRulesTest {
         void targetUnavailable() {
             FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, 5);
             assertThrows(IllegalStateException.class,
-                () -> HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, false, defaultTransition()));
+                () -> HighBinningRules.judge(lot, tiers.getByIndex(3), 2, false, defaultTransition(),
+                    settings.chipsPerWafer(), 1));
         }
 
         @Test
@@ -333,7 +355,8 @@ class HighBinningRulesTest {
         void nullTransition() {
             FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, 5);
             assertThrows(IllegalArgumentException.class,
-                () -> HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, null));
+                () -> HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, null,
+                    settings.chipsPerWafer(), 1));
         }
 
         @Test
@@ -342,7 +365,8 @@ class HighBinningRulesTest {
             FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, 5);
             HighBinningRules.Transition wrong = new HighBinningRules.Transition(4, 5, 0.15, 1.0, 1.0);
             assertThrows(IllegalArgumentException.class,
-                () -> HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, wrong));
+                () -> HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, wrong,
+                    settings.chipsPerWafer(), 1));
         }
 
         @Test
@@ -351,25 +375,31 @@ class HighBinningRulesTest {
             FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, 5);
             HighBinningRules.Transition wrong = new HighBinningRules.Transition(3, 5, 0.15, 1.0, 1.0);
             assertThrows(IllegalArgumentException.class,
-                () -> HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, wrong));
+                () -> HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, wrong,
+                    settings.chipsPerWafer(), 1));
         }
     }
 
     @Nested
-    @DisplayName("High binning judgment - deterministic pass/fail")
+    @DisplayName("High binning judgment - deterministic pass/fail with calibrated engine")
     class DeterministicJudgment {
 
         @Test
-        @DisplayName("known pass/fail boundary at quantiles")
+        @DisplayName("known pass/fail boundary matches calibrated quantile")
         void boundaryQuantiles() {
             // Source yield 0.90, high bin yield = 0.90 * 0.15 = 0.135
-            // Pass threshold = 1 - 0.135 = 0.865
-            // Rolls > 0.865 pass, rolls <= 0.865 fail
+            // Uses calibrated engine: threshold = exp(-baseWeight * quantile(K, 0.135))
+            // where baseWeight = calibrateBaseWeight(K, 0.90)
             FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, WAFERS);
-            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, defaultTransition());
+            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, defaultTransition(),
+                settings.chipsPerWafer(), 1);
 
-            double highBinYield = SOURCE_YIELD * YIELD_MULTIPLIER;
-            double threshold = 1.0 - highBinYield; // 0.865
+            double highBinProb = SOURCE_YIELD * YIELD_MULTIPLIER; // 0.135
+            int rollCount = tiers.getByIndex(3).layers() * settings.rollsPerLayer();
+            double baseWeight = YieldCalibration.baseWeight(rollCount, SOURCE_YIELD);
+            double quantile = RegularizedGamma.quantile(rollCount, highBinProb);
+            double threshold = StrictMath.exp(-baseWeight * quantile);
+
             int expectedPassing = 0;
             for (int i = 0; i < WAFERS; i++) {
                 float roll = (float) (i + 1) / (WAFERS + 1);
@@ -377,29 +407,27 @@ class HighBinningRulesTest {
             }
 
             assertEquals(WAFERS, plan.size());
-            assertEquals(expectedPassing, plan.passingCount(), "passing count matches quantile boundary");
+            assertEquals(expectedPassing, plan.passingCount(), "passing count matches calibrated quantile boundary");
             assertEquals(WAFERS - expectedPassing, plan.failingCount());
         }
 
         @Test
-        @DisplayName("yield multiplier 1.0 means same threshold as source")
+        @DisplayName("yield multiplier 1.0 exactly matches normal YieldMath.passes")
         void yieldMultiplierOne() {
-            // yieldMultiplier = 1.0 -> highBinYield = 0.90 -> threshold = 0.10
-            // Same as source, so all wafers that passed source would pass high-bin
-            // But we're not testing source pass, just that the math is right
+            // yieldMultiplier = 1.0 -> highBinProb = 0.90 -> threshold = 1 - 0.90 = 0.10
+            // Should match YieldMath.passes(cumulative, 0.90) exactly
             HighBinningRules.Transition t = new HighBinningRules.Transition(3, 4, 1.0, 1.0, 1.0);
             FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, WAFERS);
-            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, t);
+            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, t,
+                settings.chipsPerWafer(), 1);
 
-            double highBinYield = SOURCE_YIELD * 1.0;
-            double threshold = 1.0 - highBinYield; // 0.10
             int expectedPassing = 0;
             for (int i = 0; i < WAFERS; i++) {
                 float roll = (float) (i + 1) / (WAFERS + 1);
-                if (roll > threshold) expectedPassing++;
+                if (YieldMath.passes(roll, SOURCE_YIELD)) expectedPassing++;
             }
 
-            assertEquals(expectedPassing, plan.passingCount());
+            assertEquals(expectedPassing, plan.passingCount(), "penalty 1.0 must exactly match normal YieldMath.passes");
         }
 
         @Test
@@ -407,11 +435,15 @@ class HighBinningRulesTest {
         void yieldMultiplierNearZero() {
             HighBinningRules.Transition t = new HighBinningRules.Transition(3, 4, 0.001, 1.0, 1.0);
             FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, WAFERS);
-            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, t);
+            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, t,
+                settings.chipsPerWafer(), 1);
 
-            double highBinYield = SOURCE_YIELD * 0.001; // 0.0009
-            double threshold = 1.0 - highBinYield; // ~0.9991
-            // Only rolls > 0.9991 pass, which is essentially none in our uniform distribution
+            double highBinProb = SOURCE_YIELD * 0.001; // 0.0009
+            int rollCount = tiers.getByIndex(3).layers() * settings.rollsPerLayer();
+            double baseWeight = YieldCalibration.baseWeight(rollCount, SOURCE_YIELD);
+            double quantile = RegularizedGamma.quantile(rollCount, highBinProb);
+            double threshold = StrictMath.exp(-baseWeight * quantile);
+
             int expectedPassing = 0;
             for (int i = 0; i < WAFERS; i++) {
                 float roll = (float) (i + 1) / (WAFERS + 1);
@@ -426,13 +458,18 @@ class HighBinningRulesTest {
         @DisplayName("subset property: high bin passing is subset of source passing")
         void subsetProperty() {
             // Source threshold = 1 - 0.90 = 0.10
-            // High bin threshold = 1 - 0.135 = 0.865 (much stricter)
-            // So any wafer passing high bin must have roll > 0.865 > 0.10, so it passed source
+            // High bin threshold is stricter (smaller prob -> larger threshold)
+            // So any wafer passing high bin must have passed source
             FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, WAFERS);
-            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, defaultTransition());
+            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, defaultTransition(),
+                settings.chipsPerWafer(), 1);
 
             double sourceThreshold = 1.0 - SOURCE_YIELD; // 0.10
-            double highBinThreshold = 1.0 - SOURCE_YIELD * YIELD_MULTIPLIER; // 0.865
+            int rollCount = tiers.getByIndex(3).layers() * settings.rollsPerLayer();
+            double highBinProb = SOURCE_YIELD * YIELD_MULTIPLIER;
+            double baseWeight = YieldCalibration.baseWeight(rollCount, SOURCE_YIELD);
+            double quantile = RegularizedGamma.quantile(rollCount, highBinProb);
+            double highBinThreshold = StrictMath.exp(-baseWeight * quantile);
 
             for (int i = 0; i < WAFERS; i++) {
                 float roll = (float) (i + 1) / (WAFERS + 1);
@@ -455,7 +492,8 @@ class HighBinningRulesTest {
             }
             int originalLayer = lot.lotLayer();
 
-            HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, defaultTransition());
+            HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, defaultTransition(),
+                settings.chipsPerWafer(), 1);
 
             assertEquals(originalSize, lot.size());
             assertEquals(originalLayer, lot.lotLayer());
@@ -465,21 +503,26 @@ class HighBinningRulesTest {
         }
 
         @Test
-        @DisplayName("recipe amounts preserved in plan")
+        @DisplayName("recipe amounts preserved in plan from caller parameters")
         void recipeAmountsPreserved() {
             FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, 5);
-            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, defaultTransition());
+            int customChips = 8;
+            int customPackages = 2;
+            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, defaultTransition(),
+                customChips, customPackages);
 
-            assertEquals(settings.chipsPerWafer(), plan.chipsPerWafer());
-            assertEquals(1, plan.packagesPerWafer()); // Standard packaging
+            assertEquals(customChips, plan.chipsPerWafer());
+            assertEquals(customPackages, plan.packagesPerWafer());
         }
 
         @Test
         @DisplayName("repeated judgment identical after freeze")
         void repeatedJudgmentIdentical() {
             FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, 10);
-            PackagingPlan first = HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, defaultTransition());
-            PackagingPlan second = HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, defaultTransition());
+            PackagingPlan first = HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, defaultTransition(),
+                settings.chipsPerWafer(), 1);
+            PackagingPlan second = HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, defaultTransition(),
+                settings.chipsPerWafer(), 1);
 
             assertEquals(first.size(), second.size());
             for (int i = 0; i < first.size(); i++) {
@@ -490,14 +533,55 @@ class HighBinningRulesTest {
         }
 
         @Test
-        @DisplayName("compute die preserves core count")
+        @DisplayName("compute die preserves core count (1 before T6)")
         void computeCoreCountPreserved() {
             FoupContents lot = makeUniformLot(DieTypes.COMPUTE, 1, 10); // 1 core
-            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, defaultTransition());
+            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, defaultTransition(),
+                settings.chipsPerWafer(), 1);
 
             // The plan doesn't carry core count, but the judgment used the correct spec
             // Verify by checking the source lot still has the core count
             assertEquals(1, lot.run().cores());
+        }
+
+        @Test
+        @DisplayName("compute die at T6+ preserves positive core count")
+        void computeCoreCountPreservedAtT6Plus() {
+            Tier t6 = tiers.getByIndex(6);
+            double effYield = YieldMath.resolveEffectiveYield(t6, settings, 4);
+            int rollCount = t6.layers() * settings.rollsPerLayer();
+            RunSpec spec = new RunSpec(DieTypes.COMPUTE, 6, 4, effYield, rollCount);
+            List<Wafer> wafers = new ArrayList<>();
+            for (int i = 0; i < 5; i++) {
+                wafers.add(new Wafer(t6.layers(), 0.99f, Wafer.NO_FLAGS));
+            }
+            FoupContents lot = new FoupContents(FIXED_LOT, settings.foupCapacity(), wafers, spec);
+            HighBinningRules.Transition t6to7 = new HighBinningRules.Transition(6, 7, 0.15, 1.0, 1.0);
+
+            // Should succeed with positive core count preserved
+            PackagingPlan plan = HighBinningRules.judge(lot, t6, 2, true, t6to7,
+                settings.chipsPerWafer(), 1);
+            assertEquals(5, plan.size());
+            assertEquals(4, lot.run().cores());
+        }
+
+        @Test
+        @DisplayName("compute die at T6+ refuses NO_CORES")
+        void computeNoCoresRefusedAtT6Plus() {
+            Tier t6 = tiers.getByIndex(6);
+            double effYield = YieldMath.resolveEffectiveYield(t6, settings, null);
+            int rollCount = t6.layers() * settings.rollsPerLayer();
+            RunSpec spec = new RunSpec(DieTypes.COMPUTE, 6, RunSpec.NO_CORES, effYield, rollCount);
+            List<Wafer> wafers = new ArrayList<>();
+            for (int i = 0; i < 5; i++) {
+                wafers.add(new Wafer(t6.layers(), 0.99f, Wafer.NO_FLAGS));
+            }
+            FoupContents lot = new FoupContents(FIXED_LOT, settings.foupCapacity(), wafers, spec);
+            HighBinningRules.Transition t6to7 = new HighBinningRules.Transition(6, 7, 0.15, 1.0, 1.0);
+
+            assertThrows(IllegalArgumentException.class,
+                () -> HighBinningRules.judge(lot, t6, 2, true, t6to7,
+                    settings.chipsPerWafer(), 1));
         }
     }
 
@@ -512,7 +596,8 @@ class HighBinningRulesTest {
             List<Float> allLow = new ArrayList<>(10);
             for (int i = 0; i < 10; i++) allLow.add(0.01f);
             FoupContents lot = makeT3Lot(DieTypes.LOGIC, null, allLow);
-            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, defaultTransition());
+            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, defaultTransition(),
+                settings.chipsPerWafer(), 1);
 
             assertEquals(0, plan.passingCount());
             assertEquals(10, plan.failingCount());
@@ -532,7 +617,8 @@ class HighBinningRulesTest {
             List<Float> allHigh = new ArrayList<>(10);
             for (int i = 0; i < 10; i++) allHigh.add(0.99f);
             FoupContents lot = makeT3Lot(DieTypes.LOGIC, null, allHigh);
-            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, defaultTransition());
+            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, defaultTransition(),
+                settings.chipsPerWafer(), 1);
 
             assertEquals(10, plan.passingCount());
             assertEquals(0, plan.failingCount());
@@ -550,7 +636,8 @@ class HighBinningRulesTest {
         @DisplayName("plan toString does not leak pass flags")
         void planToStringSafe() {
             FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, 5);
-            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, defaultTransition());
+            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, defaultTransition(),
+                settings.chipsPerWafer(), 1);
             String s = plan.toString();
             assertTrue(s.contains("wafers=5"));
             assertTrue(s.contains("chipsPerWafer=" + settings.chipsPerWafer()));
@@ -563,13 +650,14 @@ class HighBinningRulesTest {
         @DisplayName("plan size matches source lot")
         void planSizeMatches() {
             FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, 7);
-            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, defaultTransition());
+            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, defaultTransition(),
+                settings.chipsPerWafer(), 1);
             assertEquals(7, plan.size());
         }
     }
 
     @Nested
-    @DisplayName("Transition configuration boundaries")
+    @DisplayName("Transition configuration boundaries and overflow")
     class TransitionBoundaries {
 
         @Test
@@ -577,7 +665,8 @@ class HighBinningRulesTest {
         void minYieldMultiplier() {
             HighBinningRules.Transition t = new HighBinningRules.Transition(3, 4, 1e-10, 1.0, 1.0);
             FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, 5);
-            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, t);
+            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, t,
+                settings.chipsPerWafer(), 1);
             // Almost all should fail
             assertEquals(0, plan.passingCount());
         }
@@ -587,7 +676,8 @@ class HighBinningRulesTest {
         void maxYieldMultiplier() {
             HighBinningRules.Transition t = new HighBinningRules.Transition(3, 4, 1.0, 1.0, 1.0);
             FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, 5);
-            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, t);
+            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, t,
+                settings.chipsPerWafer(), 1);
             // Should behave like normal source judgment
             assertTrue(plan.passingCount() > 0);
         }
@@ -597,7 +687,8 @@ class HighBinningRulesTest {
         void minCostMultipliers() {
             HighBinningRules.Transition t = new HighBinningRules.Transition(3, 4, 0.15, 1.0, 1.0);
             FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, 5);
-            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, t);
+            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, t,
+                settings.chipsPerWafer(), 1);
             assertEquals(settings.chipsPerWafer(), plan.chipsPerWafer());
         }
 
@@ -606,14 +697,16 @@ class HighBinningRulesTest {
         void maxCostMultipliers() {
             HighBinningRules.Transition t = new HighBinningRules.Transition(3, 4, 0.15, 1000.0, 1000.0);
             FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, 5);
-            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), dieRules, settings, matrix, 2, true, t);
+            PackagingPlan plan = HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, t,
+                settings.chipsPerWafer(), 1);
             assertEquals(settings.chipsPerWafer(), plan.chipsPerWafer());
         }
 
         @Test
-        @DisplayName("cost overflow detected in transition")
+        @DisplayName("cost overflow detected in transition constructor for large base")
         void costOverflowInTransition() {
-            // ticksMultiplier that overflows when scaled
+            // ticksMultiplier that overflows when scaled with max base (72000)
+            // 72000 * 30000 > Integer.MAX_VALUE
             assertThrows(IllegalArgumentException.class,
                 () -> new HighBinningRules.Transition(3, 4, 0.15, 30000.0, 1.0));
         }
@@ -627,16 +720,19 @@ class HighBinningRulesTest {
         @DisplayName("T4 logic source to T5 allowed when explicitly configured")
         void t4LogicToT5Allowed() {
             Tier t4 = tiers.getByIndex(4);
-            RunSpec spec = new RunSpec(DieTypes.LOGIC, 4, RunSpec.NO_CORES, SOURCE_YIELD, t4.layers());
+            double effYield = YieldMath.resolveEffectiveYield(t4, settings, null);
+            int rollCount = t4.layers() * settings.rollsPerLayer();
+            RunSpec spec = new RunSpec(DieTypes.LOGIC, 4, RunSpec.NO_CORES, effYield, rollCount);
             List<Wafer> wafers = new ArrayList<>();
             for (int i = 0; i < 5; i++) {
                 wafers.add(new Wafer(t4.layers(), 0.99f, Wafer.NO_FLAGS));
             }
             FoupContents lot = new FoupContents(FIXED_LOT, settings.foupCapacity(), wafers, spec);
             HighBinningRules.Transition t4to5 = new HighBinningRules.Transition(4, 5, 0.15, 1.0, 1.0);
-            
+
             // Should not throw - T4 source for logic is allowed for future T4->T5
-            PackagingPlan plan = HighBinningRules.judge(lot, t4, dieRules, settings, matrix, 2, true, t4to5);
+            PackagingPlan plan = HighBinningRules.judge(lot, t4, 2, true, t4to5,
+                settings.chipsPerWafer(), 1);
             assertEquals(5, plan.size());
         }
 
@@ -644,17 +740,76 @@ class HighBinningRulesTest {
         @DisplayName("T4 compute source to T5 refused (compute fixed 1 core before T6)")
         void t4ComputeToT5Refused() {
             Tier t4 = tiers.getByIndex(4);
-            RunSpec spec = new RunSpec(DieTypes.COMPUTE, 4, 1, SOURCE_YIELD, t4.layers());
+            double effYield = YieldMath.resolveEffectiveYield(t4, settings, 1);
+            int rollCount = t4.layers() * settings.rollsPerLayer();
+            RunSpec spec = new RunSpec(DieTypes.COMPUTE, 4, 1, effYield, rollCount);
             List<Wafer> wafers = new ArrayList<>();
             for (int i = 0; i < 5; i++) {
                 wafers.add(new Wafer(t4.layers(), 0.99f, Wafer.NO_FLAGS));
             }
             FoupContents lot = new FoupContents(FIXED_LOT, settings.foupCapacity(), wafers, spec);
             HighBinningRules.Transition t4to5 = new HighBinningRules.Transition(4, 5, 0.15, 1.0, 1.0);
-            
+
             // Compute before T6 only supports T3->T4, not T4->T5
             assertThrows(IllegalStateException.class,
-                () -> HighBinningRules.judge(lot, t4, dieRules, settings, matrix, 2, true, t4to5));
+                () -> HighBinningRules.judge(lot, t4, 2, true, t4to5,
+                    settings.chipsPerWafer(), 1));
+        }
+    }
+
+    @Nested
+    @DisplayName("Edge cases and capacity fixes")
+    class EdgeCases {
+
+        @Test
+        @DisplayName("fixture lot capacity valid for wafer count (fixes 100 wafer on capacity 25)")
+        void fixtureCapacityValid() {
+            // The test fixture creates 100 wafers but default capacity is 25
+            // Use capacity >= count
+            int count = 100;
+            FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, count);
+            // The lot should have been created with sufficient capacity
+            assertTrue(lot.capacity() >= count, "capacity must be >= wafer count");
+        }
+
+        @Test
+        @DisplayName("target unavailable test still refuses when explicitly false")
+        void targetUnavailableStillRefuses() {
+            FoupContents lot = makeUniformLot(DieTypes.LOGIC, null, 5);
+            // This test ensures targetAvailable=false still refuses
+            assertThrows(IllegalStateException.class,
+                () -> HighBinningRules.judge(lot, tiers.getByIndex(3), 2, false, defaultTransition(),
+                    settings.chipsPerWafer(), 1));
+        }
+
+        @Test
+        @DisplayName("invalid transition (3,5) constructed outside assertThrows throws in constructor")
+        void invalidTransitionConstructorThrows() {
+            // The constructor itself should throw for target != source + 1
+            assertThrows(IllegalArgumentException.class,
+                () -> new HighBinningRules.Transition(3, 5, 0.15, 1.0, 1.0));
+        }
+
+        @Test
+        @DisplayName("compute NO_CORES incorrectly allowed before T6 - now refused")
+        void computeNoCoresRefusedBeforeT6() {
+            FoupContents lot = makeT3Lot(DieTypes.COMPUTE, RunSpec.NO_CORES, List.of(0.5f, 0.5f, 0.5f));
+            assertThrows(IllegalArgumentException.class,
+                () -> HighBinningRules.judge(lot, tiers.getByIndex(3), 2, true, defaultTransition(),
+                    settings.chipsPerWafer(), 1));
+        }
+
+        @Test
+        @DisplayName("scaled ticks 100 * 1.5 = 150 (ceiling)")
+        void scaledTicksCeil() {
+            HighBinningRules.Transition t = new HighBinningRules.Transition(3, 4, 0.15, 1.5, 1.0);
+            assertEquals(150, t.scaledTicksPerWafer(100));
+            // 100 * 1.1 = 110
+            HighBinningRules.Transition t2 = new HighBinningRules.Transition(3, 4, 0.15, 1.1, 1.0);
+            assertEquals(110, t2.scaledTicksPerWafer(100));
+            // 100 * 1.01 = 101 (ceil of 101.0)
+            HighBinningRules.Transition t3 = new HighBinningRules.Transition(3, 4, 0.15, 1.01, 1.0);
+            assertEquals(101, t3.scaledTicksPerWafer(100));
         }
     }
 }

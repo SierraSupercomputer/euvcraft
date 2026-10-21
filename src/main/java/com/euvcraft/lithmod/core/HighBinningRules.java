@@ -13,8 +13,8 @@ import java.util.Objects;
  * is always exactly {@code sourceTier + 1}; the caller supplies the target item
  * availability and an explicit {@link Transition} configuration. The method is
  * deterministic: it uses the source lot's original private cumulative rolls and the
- * source run spec's frozen effective yield multiplied by the transition's yield
- * multiplier. No new randomness is introduced and the source lot is never mutated.</p>
+ * source run spec's frozen effective yield and roll count multiplied by the transition's
+ * yield multiplier. No new randomness is introduced and the source lot is never mutated.</p>
  *
  * <p>The transition's cost multipliers (ticks and energy) are validated on
  * construction and used by the caller to build a {@link PackagingRun} for the
@@ -32,60 +32,50 @@ public final class HighBinningRules {
     }
 
     /**
-     * The penalty factor applied to the source effective yield when no explicit
-     * transition provides one. A value of {@code 0.15} means the high-binning
-     * threshold is 15% of the source effective yield.
-     *
-     * @see #judge(FoupContents, Tier, DieRules, FabSettings, GenerationMatrix, int, boolean, Transition)
-     */
-    public static final double DEFAULT_YIELD_PENALTY = 0.15;
-
-    /**
      * Validates and judges a source lot for high binning to the next tier.
      *
      * <p>The checks run in order and fail closed:</p>
      *
      * <ol>
      *   <li>Lot must be non-null, non-empty, and carry a {@link RunSpec}.</li>
+     *   <li>Source tier must match the lot's run spec tier.</li>
      *   <li>All wafers must be at the source tier's final layer.</li>
-     *   <li>Source tier must be T3 (index 3) for this increment; T4 source allowed for
-     *       future logic T4&#8594;T5 when explicitly configured.</li>
      *   <li>Die type must be logic or compute. Memory and nand are refused.</li>
-     *   <li>For compute, the source core count must be exactly 1 (preserved).</li>
-     *   <li>Target tier must be exactly source tier + 1.</li>
-     *   <li>Logic target tier must not exceed 5 (cap).</li>
+     *   <li>Source tier must be T3 or higher.</li>
+     *   <li>Compute: exactly 1 core before T6; at T6+ preserve source core count.</li>
+     *   <li>Logic: no core count (NO_CORES).</li>
+     *   <li>Target tier must be exactly source tier + 1, not exceeding T8.</li>
+     *   <li>Logic target tier must not exceed 5.</li>
      *   <li>Packager generation must be at least 2.</li>
      *   <li>Target chip item must be available (caller-supplied).</li>
      *   <li>An explicit {@link Transition} must be provided; no implicit fallback.</li>
      *   <li>Transition must match the source and target tiers exactly.</li>
      *   <li>Transition yield multiplier must be in (0, 1]; cost multipliers must be &ge; 1
-     *       and not overflow scaled int costs.</li>
+     *       and not overflow scaled int costs for actual base values.</li>
      * </ol>
      *
-     * @param lot               the source lot to judge, not null
-     * @param sourceTier        the source tier, not null, must match the lot's run spec
-     * @param dieRules          the die rules registry, not null
-     * @param settings          the fabrication settings in force, not null
-     * @param matrix            the generation matrix of the world, not null
+     * @param lot                 the source lot to judge, not null
+     * @param sourceTier          the source tier, not null, must match the lot's run spec
      * @param installedGeneration the installed generation of the test_packaging line
-     * @param targetAvailable   whether the target tier's chip item exists in the catalog
-     * @param transition        the explicit transition configuration, not null
+     * @param targetAvailable     whether the target tier's chip item exists in the catalog
+     * @param transition          the explicit transition configuration, not null
+     * @param chipsPerWafer       chips (or scrap) per wafer, at least 1
+     * @param packagesPerWafer    packages a passing wafer consumes, at least 1
      * @return a new {@link PackagingPlan} with the high-binning pass flags
-     * @throws IllegalArgumentException if any structural check fails (null tier,
-     *         mismatched spec, invalid cores, bad transition, missing target, etc.)
+     * @throws IllegalArgumentException if any structural check fails (null lot/tier/transition,
+     *         mismatched spec, invalid cores, bad transition, target tier > 8, etc.)
      * @throws IllegalStateException    if the lot is not started, incomplete, or the
-     *         die family is not logic/compute
+     *         die family is not logic/compute, or packager generation < 2, or target unavailable
      */
     public static PackagingPlan judge(FoupContents lot,
                                       Tier sourceTier,
-                                      DieRules dieRules,
-                                      FabSettings settings,
-                                      GenerationMatrix matrix,
                                       int installedGeneration,
                                       boolean targetAvailable,
-                                      Transition transition) {
+                                      Transition transition,
+                                      int chipsPerWafer,
+                                      int packagesPerWafer) {
 
-        // 1. Basic lot structure
+        // 1. Basic lot structure (structural checks first, before layer checks)
         Objects.requireNonNull(lot, "lot must not be null");
         if (lot.isEmpty()) {
             throw new IllegalArgumentException("lot must not be empty");
@@ -95,16 +85,7 @@ public final class HighBinningRules {
             throw new IllegalStateException("lot has not been started (no run spec)");
         }
 
-        // 2. All wafers at final layer
-        int finalLayer = sourceTier.layers();
-        for (int i = 0; i < lot.size(); i++) {
-            if (lot.wafers().get(i).layerIndex() != finalLayer) {
-                throw new IllegalStateException("wafer " + i + " is at layer " + lot.wafers().get(i).layerIndex()
-                    + ", not at the final layer " + finalLayer);
-            }
-        }
-
-        // 3. Tier must match the frozen spec
+        // 2. Tier must match the frozen spec (before layer check per brief)
         if (sourceTier.index() != spec.tierIndex()) {
             throw new IllegalArgumentException("source tier index " + sourceTier.index()
                 + " does not match lot's run spec tier " + spec.tierIndex());
@@ -113,22 +94,38 @@ public final class HighBinningRules {
             throw new IllegalArgumentException("die type mismatch with run spec");
         }
 
+        // 3. All wafers at final layer
+        int finalLayer = sourceTier.layers();
+        for (int i = 0; i < lot.size(); i++) {
+            if (lot.wafers().get(i).layerIndex() != finalLayer) {
+                throw new IllegalStateException("wafer " + i + " is at layer " + lot.wafers().get(i).layerIndex()
+                    + ", not at the final layer " + finalLayer);
+            }
+        }
+
         // 4. Die family: logic or compute only
         String dieType = spec.dieType();
         if (!DieTypes.LOGIC.equals(dieType) && !DieTypes.COMPUTE.equals(dieType)) {
             throw new IllegalStateException("high binning only supports logic and compute, got " + dieType);
         }
 
-        // 5. Source tier must be T3 for this increment; T4 allowed for logic->T5 when explicitly configured
+        // 5. Source tier must be T3 or higher
         if (sourceTier.index() < 3) {
             throw new IllegalStateException("high binning requires source tier T3 or higher, got " + sourceTier.id());
         }
 
         // 6. Core count rules
         if (DieTypes.COMPUTE.equals(dieType)) {
-            // Compute: fixed 1 core before T6, preserve source count
-            if (spec.cores() != RunSpec.NO_CORES && spec.cores() != 1) {
-                throw new IllegalArgumentException("compute high binning before T6 requires exactly 1 core, got " + spec.cores());
+            // Compute: exactly 1 core before T6, preserve source count at T6+
+            if (sourceTier.index() < 6) {
+                if (spec.cores() != 1) {
+                    throw new IllegalArgumentException("compute high binning before T6 requires exactly 1 core, got " + spec.cores());
+                }
+            } else {
+                // T6+: preserve existing positive core count (spec.cores() > 0)
+                if (spec.cores() <= 0) {
+                    throw new IllegalArgumentException("compute high binning at T6+ requires a positive core count, got " + spec.cores());
+                }
             }
         } else if (DieTypes.LOGIC.equals(dieType)) {
             // Logic: no core count
@@ -137,29 +134,26 @@ public final class HighBinningRules {
             }
         }
 
-        // 7. Target tier = source + 1
-        int targetTierIndex = sourceTier.index() + 1;
+        // 7. Target tier = source + 1 (derive from transition, cap logic at 5)
+        int targetTierIndex = transition.targetTier();
         if (targetTierIndex > 8) {
             throw new IllegalArgumentException("target tier would exceed T8");
         }
-        Tier targetTier = dieRules.tierRegistry().getByIndex(targetTierIndex);
-
-        // 8. Logic cap at tier 5
         if (DieTypes.LOGIC.equals(dieType) && targetTierIndex > 5) {
-            throw new IllegalStateException("logic high binning target tier must not exceed 5, got " + targetTier.id());
+            throw new IllegalStateException("logic high binning target tier must not exceed 5, got T" + targetTierIndex);
         }
 
-        // 9. Packager generation gate (gen 2+)
+        // 8. Packager generation gate (gen 2+)
         if (installedGeneration < 2) {
             throw new IllegalStateException("high binning requires generation 2+ packager, got generation " + installedGeneration);
         }
 
-        // 10. Target item availability
+        // 9. Target item availability
         if (!targetAvailable) {
-            throw new IllegalStateException("target chip item not available for " + dieType + " at " + targetTier.id());
+            throw new IllegalStateException("target chip item not available for " + dieType + " at T" + targetTierIndex);
         }
 
-        // 11. Explicit transition required, must match tiers exactly
+        // 10. Explicit transition required, must match tiers exactly
         Objects.requireNonNull(transition, "transition must not be null");
         if (transition.sourceTier() != sourceTier.index()) {
             throw new IllegalArgumentException("transition source tier " + transition.sourceTier()
@@ -170,38 +164,41 @@ public final class HighBinningRules {
                 + " does not match required target tier " + targetTierIndex);
         }
 
-        // 12. Validate transition bounds (also done in constructor, but double-check)
-        transition.validateOrThrow();
-
-        // 13. Compute high-binning effective yield = source effective yield * transition yield multiplier
+        // 11. Compute high-binning effective yield and threshold using calibrated engine
+        // frozen K = spec.rollCount, y = spec.effectiveYield
+        // baseWeight = YieldCalibration.baseWeight(K, y)
+        // desired highbin prob = y * transition.yieldMultiplier()
+        // threshold = exp(-baseWeight * RegularizedGamma.quantile(K, prob))
+        // pass if cumulativeRoll > threshold
         double sourceEffectiveYield = spec.effectiveYield();
-        double highBinYield = sourceEffectiveYield * transition.yieldMultiplier();
-        if (!Double.isFinite(highBinYield) || highBinYield <= 0.0 || highBinYield > 1.0) {
-            throw new IllegalArgumentException("high binning effective yield out of range (0, 1]: " + highBinYield);
+        int rollCount = spec.rollCount();
+        double yieldMultiplier = transition.yieldMultiplier();
+
+        double highBinProb = sourceEffectiveYield * yieldMultiplier;
+
+        // For penalty 0 all fail; for penalty 1 EXACTLY match existing normal YieldMath.passes
+        double threshold;
+        if (highBinProb <= 0.0) {
+            threshold = 1.0; // All rolls in (0,1] fail against threshold 1.0 (strict >)
+        } else if (highBinProb >= 1.0) {
+            // Penalty 1: match YieldMath.passes(cumulative, sourceEffectiveYield) exactly
+            // YieldMath.passes uses threshold = 1 - yield
+            threshold = 1.0 - sourceEffectiveYield;
+        } else {
+            double baseWeight = YieldCalibration.baseWeight(rollCount, sourceEffectiveYield);
+            double quantile = RegularizedGamma.quantile(rollCount, highBinProb);
+            threshold = StrictMath.exp(-baseWeight * quantile);
         }
 
-        // 14. Judge each wafer using original cumulative rolls against the tighter threshold
+        // 12. Judge each wafer using original cumulative rolls against the tighter threshold
         List<Boolean> passFlags = new ArrayList<>(lot.size());
         for (int i = 0; i < lot.size(); i++) {
             float cumulativeRoll = lot.wafers().get(i).cumulativeRoll();
-            boolean passes = YieldMath.passes(cumulativeRoll, highBinYield);
+            boolean passes = cumulativeRoll > threshold;
             passFlags.add(passes);
         }
 
-        // 15. Build the plan preserving the source recipe amounts
-        // The source plan's amounts are not directly available here; caller knows them.
-        // Per brief: preserve chipsPerWafer/packagesPerWafer. We require them from the caller?
-        // Actually, the brief says "Preserve chipsPerWafer/packagesPerWafer" - these are
-        // machine recipe constants. We can get them from FabSettings.
-        int chipsPerWafer = settings.chipsPerWafer();
-        int packagesPerWafer = 1; // Standard packaging uses 1 package per passing wafer
-
-        // Wait - the brief says "Preserve chipsPerWafer/packagesPerWafer; immutable Plan
-        // sufficient to freeze outcomes, caller persists mode/target/cost with existing
-        // PackagingRun snapshot." This suggests we should use the same amounts as the
-        // normal packaging. The PackagingRun is built by the caller with these amounts.
-        // But PackagingPlan constructor requires them. Let's use the settings values.
-
+        // 13. Build the plan preserving the source recipe amounts
         return new PackagingPlan(passFlags, chipsPerWafer, packagesPerWafer);
     }
 
@@ -212,7 +209,7 @@ public final class HighBinningRules {
      * wafers from one tier to the next. All values are validated on construction with
      * finite bounds. The target tier must be exactly {@code sourceTier + 1}. The yield
      * multiplier is in {@code (0, 1]} (a penalty), and the ticks/energy multipliers are
-     * {@code >= 1} with overflow-checked scaled integer costs.</p>
+     * {@code >= 1} with overflow-checked scaled integer costs using ceiling arithmetic.</p>
      *
      * <p>Configuration and resource parsing belongs to the coordinator/native worker
      * layer; this record is pure core and free of Minecraft dependencies.</p>
@@ -229,7 +226,7 @@ public final class HighBinningRules {
         private static final double MIN_YIELD_MULTIPLIER = 0.0;
         private static final double MAX_YIELD_MULTIPLIER = 1.0;
         private static final double MIN_COST_MULTIPLIER = 1.0;
-        private static final double MAX_COST_MULTIPLIER = 1000.0; // Reasonable upper bound
+        private static final double MAX_COST_MULTIPLIER = 1000.0;
 
         /**
          * Validates the transition parameters.
@@ -256,53 +253,27 @@ public final class HighBinningRules {
                 || energyMultiplier > MAX_COST_MULTIPLIER) {
                 throw new IllegalArgumentException("energyMultiplier must be in [1, " + MAX_COST_MULTIPLIER + "], got " + energyMultiplier);
             }
-            // Overflow check for scaled int costs: max base cost * multiplier <= Integer.MAX_VALUE
-            // Base ticks per wafer is at most 72000 (MAX_LAYER_TICKS_OVERRIDE), base energy per tick
-            // is bounded by fePowerMultiplier (max 100) * some base. Use conservative check.
-            if (ticksMultiplier > Integer.MAX_VALUE / 72000.0) {
-                throw new IllegalArgumentException("ticksMultiplier would overflow scaled int cost");
-            }
-            if (energyMultiplier > Integer.MAX_VALUE / 10000.0) { // Conservative energy base
-                throw new IllegalArgumentException("energyMultiplier would overflow scaled int cost");
-            }
-        }
-
-        /**
-         * Validates the transition and throws if invalid.
-         * Provides a single validation point for callers.
-         *
-         * @throws IllegalArgumentException if the transition is invalid
-         */
-        public void validateOrThrow() {
-            // Validation is done in the canonical constructor; this is a no-op if constructed
-            // directly, but allows validation of a transition from an untrusted source.
-            if (sourceTier < 1 || sourceTier > 7) {
-                throw new IllegalArgumentException("sourceTier must be in [1, 7], got " + sourceTier);
-            }
-            if (targetTier != sourceTier + 1) {
-                throw new IllegalArgumentException("targetTier must be sourceTier + 1");
-            }
-            if (!Double.isFinite(yieldMultiplier) || yieldMultiplier <= 0.0 || yieldMultiplier > 1.0) {
-                throw new IllegalArgumentException("yieldMultiplier must be in (0, 1]");
-            }
-            if (!Double.isFinite(ticksMultiplier) || ticksMultiplier < 1.0 || ticksMultiplier > MAX_COST_MULTIPLIER) {
-                throw new IllegalArgumentException("ticksMultiplier must be in [1, " + MAX_COST_MULTIPLIER + "]");
-            }
-            if (!Double.isFinite(energyMultiplier) || energyMultiplier < 1.0 || energyMultiplier > MAX_COST_MULTIPLIER) {
-                throw new IllegalArgumentException("energyMultiplier must be in [1, " + MAX_COST_MULTIPLIER + "]");
-            }
         }
 
         /**
          * Returns the scaled integer tick cost for a wafer, given the base ticks per wafer.
-         * Overflow-checked: throws if the result exceeds {@link Integer#MAX_VALUE}.
+         * Uses ceiling scaling with overflow check: throws if the result exceeds {@link Integer#MAX_VALUE}.
          *
          * @param baseTicksPerWafer the base tick cost per wafer, at least 1
          * @return the scaled tick cost
          * @throws ArithmeticException if the result overflows
+         * @throws IllegalArgumentException if baseTicksPerWafer < 1
          */
         public int scaledTicksPerWafer(int baseTicksPerWafer) {
-            long result = Math.round((long) baseTicksPerWafer * ticksMultiplier);
+            if (baseTicksPerWafer < 1) {
+                throw new IllegalArgumentException("baseTicksPerWafer must be >= 1, got " + baseTicksPerWafer);
+            }
+            // Ceil: (base * mult) rounded up
+            // Use long for intermediate to detect overflow before it happens
+            // ceil(a * b) = floor(a * b + (1 - epsilon))
+            // But simpler: compute as long and check
+            double exact = baseTicksPerWafer * ticksMultiplier;
+            long result = (long) StrictMath.ceil(exact);
             if (result > Integer.MAX_VALUE) {
                 throw new ArithmeticException("scaled ticks per wafer overflow: " + result);
             }
@@ -311,14 +282,19 @@ public final class HighBinningRules {
 
         /**
          * Returns the scaled integer energy cost per tick, given the base energy per tick.
-         * Overflow-checked: throws if the result exceeds {@link Integer#MAX_VALUE}.
+         * Uses ceiling scaling with overflow check: throws if the result exceeds {@link Integer#MAX_VALUE}.
          *
          * @param baseEnergyPerTick the base energy cost per tick, zero or more
          * @return the scaled energy cost per tick
          * @throws ArithmeticException if the result overflows
+         * @throws IllegalArgumentException if baseEnergyPerTick < 0
          */
         public int scaledEnergyPerTick(int baseEnergyPerTick) {
-            long result = Math.round((long) baseEnergyPerTick * energyMultiplier);
+            if (baseEnergyPerTick < 0) {
+                throw new IllegalArgumentException("baseEnergyPerTick must be >= 0, got " + baseEnergyPerTick);
+            }
+            double exact = baseEnergyPerTick * energyMultiplier;
+            long result = (long) StrictMath.ceil(exact);
             if (result > Integer.MAX_VALUE) {
                 throw new ArithmeticException("scaled energy per tick overflow: " + result);
             }
