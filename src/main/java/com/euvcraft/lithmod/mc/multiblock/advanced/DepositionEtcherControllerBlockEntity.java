@@ -47,7 +47,7 @@ public final class DepositionEtcherControllerBlockEntity extends AdvancedControl
             int nextDuration=definition.param("duration").orElse(0);
             int silicon=definition.param("silicon_per_lot").orElse(0);
             int nextCost=definition.energyPerTick(null,EUVCRAFTMod.settings());
-            if(nextDuration<1||nextDuration>72000||silicon<1||silicon>64||nextCost<1
+            if(nextDuration<1||nextDuration>72000||silicon<1||silicon>64||nextCost<0
                 ||nextCost>buffer().getCapacityAsInt()||buffer().getAmountAsLong()<nextCost
                 ||!slot(2).isEmpty()||eligible(slot(0))==null
                 ||!slot(1).is(ModItems.SILICON.get())||slot(1).getCount()<silicon){syncJob();return;}
@@ -82,9 +82,9 @@ public final class DepositionEtcherControllerBlockEntity extends AdvancedControl
     @Override protected void loadAdditional(ValueInput input){
         super.loadAdditional(input);
         pending=input.read("t4_pending",ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
-        duration=input.getInt("t4_duration").orElse(0);perTick=input.getInt("t4_cost").orElse(0);
+        duration=input.getInt("t4_duration").orElse(0);perTick=input.getInt("t4_cost").orElse(-1);
         progress=input.getInt("t4_progress").orElse(0);recovery=input.getBooleanOr("t4_recovery",false);
-        if(!pending.isEmpty()&&(eligible(pending)==null||duration<1||duration>72000||perTick<1||progress<0||progress>=duration))
+        if(!pending.isEmpty()&&(eligible(pending)==null||duration<1||duration>72000||perTick<0||progress<0||progress>=duration))
             recovery=true;
         syncJob();
     }

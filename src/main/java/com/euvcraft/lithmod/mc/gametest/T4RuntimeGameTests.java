@@ -161,7 +161,9 @@ public final class T4RuntimeGameTests {
   var lot=FoupItems.trustedContentsOf(source);var spec=lot.run();
   if(!high)return YieldRollEngine.countPassing(YieldRollEngine.evaluate(lot,TierDataLoader.getRegistry().getByIndex(spec.tierIndex()),spec.dieType(),spec.coresOrNull()));
   var transition=HighBinningDataLoader.getRegistry().orElseThrow().forSource(spec.dieType(),spec.tierIndex()).orElseThrow().transition();
-  double threshold=StrictMath.exp(-YieldCalibration.baseWeight(spec.rollCount(),spec.effectiveYield())*RegularizedGamma.quantile(spec.rollCount(),spec.effectiveYield()*transition.yieldMultiplier()));
+  double probability=spec.effectiveYield()*transition.yieldMultiplier();
+  double quantile=-StrictMath.log1p(-probability)/YieldCalibration.calibrateBaseWeight(spec.rollCount(),probability);
+  double threshold=StrictMath.exp(-YieldCalibration.baseWeight(spec.rollCount(),spec.effectiveYield())*quantile);
   return (int)lot.wafers().stream().filter(w->w.cumulativeRoll()>threshold).count();
  }
  private static void binning(GameTestHelper h,String family){
