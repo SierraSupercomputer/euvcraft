@@ -68,11 +68,15 @@ final class T4FullChainGameTests {
     check(h,machine.processState()==ProcessState.IDLE&&machine.lastRefusal()!=null,"Unprepared PURE wafer lot cannot bypass deposition");
     eq(h,maskData.usesRemaining(),machine.slot(ProcessCellControllerBlockEntity.SLOT_MASK).get(ModDataComponents.MASK_DATA.get()).usesRemaining(),"Refused source consumes no mask use");
     machine.setSlot(ProcessCellControllerBlockEntity.SLOT_FOUP,foup);replenish(machine);machine.serverTick();
-    var saved=save(fixture.level(),machine);var blockState=fixture.level().getBlockState(fixture.anchor());fixture.level().removeBlockEntity(fixture.anchor());
-    for(var memberPos:fixture.positions())if(fixture.level().getBlockEntity(memberPos) instanceof ProcessCellMemberBlockEntity member)member.serverTick();
-    var restored=ModMultiblocks.PROCESS_CELL_CONTROLLER_BE.get().create(fixture.anchor(),blockState);fixture.level().setBlockEntity(restored);load(fixture.level(),restored,saved);restored.revalidate();machine=restored;
+    // Recreate every member, as an actual chunk reload does: ephemeral owner links are not saved.
+    var oldMembers=fixture.positions().stream().map(p0->fixture.level().getBlockEntity(p0)).toList();
+    var savedMembers=new HashMap<BlockPos,net.minecraft.nbt.CompoundTag>();
+    for(var member:oldMembers)savedMembers.put(member.getBlockPos(),save(fixture.level(),member));
+    for(var member:oldMembers)fixture.level().removeBlockEntity(member.getBlockPos());
+    for(var member:oldMembers){var restored=member.getType().create(member.getBlockPos(),fixture.level().getBlockState(member.getBlockPos()));fixture.level().setBlockEntity(restored);load(fixture.level(),restored,savedMembers.get(member.getBlockPos()));}
+    machine=(ProcessCellControllerBlockEntity)fixture.level().getBlockEntity(fixture.anchor());machine.revalidate();
     for(int tick=0;tick<1000&&machine.processState()!=ProcessState.FINISHED;tick++){replenish(machine);machine.serverTick();}
-    check(h,machine.processState()==ProcessState.FINISHED,"Actual T4 lithography completes "+family+" state="+machine.processState()+" refusal="+machine.lastRefusal());
+    check(h,machine.processState()==ProcessState.FINISHED,"Actual T4 lithography completes "+family+" state="+machine.processState()+" refusal="+machine.lastRefusal()+" formed="+machine.isFormed()+" reason="+machine.failureReason());
     foup=machine.slot(ProcessCellControllerBlockEntity.SLOT_FOUP).copy();
     var remaining=machine.slot(ProcessCellControllerBlockEntity.SLOT_MASK).get(ModDataComponents.MASK_DATA.get());
     check(h,remaining!=null&&remaining.usesRemaining()==maskData.usesRemaining()-1,"One mask use per full lot");
