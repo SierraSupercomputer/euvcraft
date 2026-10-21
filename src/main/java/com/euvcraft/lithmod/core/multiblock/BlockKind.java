@@ -13,6 +13,9 @@ public enum BlockKind {
     /** Power port block - at least 1, at most 2 required. */
     POWER_PORT,
 
+    /** Water inlet block - optional, replaces casing in purifier only. */
+    WATER_INLET,
+
     /** Any other block - causes match failure. */
     OTHER,
 

@@ -91,6 +91,9 @@ public final class SupportStructureMatcher {
                         return MatchResult.failure("operating panel not allowed in support structure at " + worldPos);
                     } else if (kind == BlockKind.POWER_PORT) {
                         powerPortCount++;
+                    } else if (kind == BlockKind.WATER_INLET) {
+                        // Water inlet is treated as casing for structure purposes
+                        // The controller validates machine-kind-specific rules separately
                     } else if (kind != BlockKind.CASING) {
                         return MatchResult.failure("missing block at " + worldPos);
                     }

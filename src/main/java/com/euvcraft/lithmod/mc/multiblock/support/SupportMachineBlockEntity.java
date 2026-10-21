@@ -899,12 +899,20 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
             if (member.isMemberOfFormedMachine() && member.controller() != this) {
                 return BlockKind.OTHER;
             }
-            return state.getBlock() instanceof SupportPowerPortBlock
-                    ? BlockKind.POWER_PORT
-                    : BlockKind.CASING;
+            if (state.getBlock() instanceof SupportPowerPortBlock) {
+                return BlockKind.POWER_PORT;
+            }
+            if (state.getBlock() instanceof SupportWaterInletBlock) {
+                // Water inlet only valid for purifier; e-beam rejects it
+                return kind() == SupportMachineKind.PURIFIER ? BlockKind.WATER_INLET : BlockKind.OTHER;
+            }
+            return BlockKind.CASING;
         }
         if (state.getBlock() instanceof SupportPowerPortBlock) {
             return BlockKind.POWER_PORT;
+        }
+        if (state.getBlock() instanceof SupportWaterInletBlock) {
+            return kind() == SupportMachineKind.PURIFIER ? BlockKind.WATER_INLET : BlockKind.OTHER;
         }
         if (state.getBlock() instanceof SupportCasingBlock) {
             return BlockKind.CASING;

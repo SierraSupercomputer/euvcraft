@@ -161,7 +161,7 @@ public class ProcessCellScreen extends FabMachineScreen<ProcessCellMenu> {
     private void drawCenteredSubtitle(GuiGraphicsExtractor graphics, Component text, int y) {
         int textWidth = this.font.width(text);
         int x = (IMAGE_WIDTH - textWidth) / 2;
-        graphics.text(this.font, text, this.leftPos + x, this.topPos + y, SUBTITLE_COLOR, false);
+        graphics.text(this.font, text, x, y, SUBTITLE_COLOR, false);
     }
 
     /** Draws a right-aligned component, clipping to MAX_TEXT_WIDTH if needed. */
@@ -179,9 +179,9 @@ public class ProcessCellScreen extends FabMachineScreen<ProcessCellMenu> {
             if (clipped.length() < full.length()) {
                 clipped = clipped + "...";
             }
-            graphics.text(this.font, Component.literal(clipped), this.leftPos + x - this.font.width(clipped), this.topPos + y, LABEL_COLOR, false);
+            graphics.text(this.font, Component.literal(clipped), x - this.font.width(clipped), y, LABEL_COLOR, false);
         } else {
-            graphics.text(this.font, text, this.leftPos + x - textWidth, this.topPos + y, LABEL_COLOR, false);
+            graphics.text(this.font, text, x - textWidth, y, LABEL_COLOR, false);
         }
     }
 

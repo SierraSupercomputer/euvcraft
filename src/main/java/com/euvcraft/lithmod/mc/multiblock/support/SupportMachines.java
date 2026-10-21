@@ -7,6 +7,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
@@ -72,6 +73,11 @@ public final class SupportMachines {
             BLOCKS.registerBlock("support_power_port", SupportPowerPortBlock::new,
                     properties -> properties.strength(2.5f, 5.0f).requiresCorrectToolForDrops());
 
+    /** Support water inlet: optional member that replaces casing in the purifier only; exposes fluid capability. */
+    public static final DeferredBlock<SupportWaterInletBlock> SUPPORT_WATER_INLET =
+            BLOCKS.registerBlock("support_water_inlet", SupportWaterInletBlock::new,
+                    properties -> properties.strength(2.5f, 5.0f).requiresCorrectToolForDrops());
+
     // ---------------------------------------------------------------- block entity types
 
     /**
@@ -84,12 +90,12 @@ public final class SupportMachines {
                     SupportMachineBlockEntity::new,
                     SupportMachines.BOULE_PURIFIER.get(), SupportMachines.E_BEAM_MASK_WRITER.get()));
 
-    /** ONE shared member BE type, valid for the casing block and the power port block. */
+    /** ONE shared member BE type, valid for the casing block, the power port block, and the water inlet block. */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SupportMemberBlockEntity>>
             SUPPORT_MEMBER_BE = BLOCK_ENTITIES.register("support_member",
             () -> new BlockEntityType<SupportMemberBlockEntity>(
                     SupportMemberBlockEntity::new,
-                    SupportMachines.SUPPORT_CASING.get(), SupportMachines.SUPPORT_POWER_PORT.get()));
+                    SupportMachines.SUPPORT_CASING.get(), SupportMachines.SUPPORT_POWER_PORT.get(), SupportMachines.SUPPORT_WATER_INLET.get()));
 
     // ---------------------------------------------------------------- menu types
 
@@ -115,17 +121,20 @@ public final class SupportMachines {
     /**
      * The FE capability, filtered on the actual block state.
      *
-     * <p>The shared member BE type holds one registration, and because casing and port share it,
+     * <p>The shared member BE type holds one registration, and because casing, port, and inlet share it,
      * the provider must be the filter: a casing position answers null on every side, an unformed
      * or unowned port answers null, and a formed owned port hands over the controller's buffer
-     * lens ({@link SupportMemberBlockEntity#energy()}). No controller capability and no item or
-     * fluid capability exists anywhere in this package.</p>
+     * lens ({@link SupportMemberBlockEntity#energy()}). The water inlet exposes fluid capability
+     * instead of energy. No controller capability and no item capability exists anywhere in this package.</p>
      */
     private static void registerCapabilities(RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(Capabilities.Energy.BLOCK, SUPPORT_MEMBER_BE.get(),
             (blockEntity, side) -> blockEntity instanceof SupportMemberBlockEntity member
                     ? member.energy()   // null unless a formed, owned power port
                     : null);
+
+        // Fluid capability for water inlet (handled by SupportWaterInletBlockEntity)
+        SupportWaterInletBlockEntity.registerCapabilities(event);
     }
 
     /**
@@ -138,6 +147,9 @@ public final class SupportMachines {
         }
         if (state.getBlock() instanceof SupportPowerPortBlock) {
             return BlockKind.POWER_PORT;
+        }
+        if (state.getBlock() instanceof SupportWaterInletBlock) {
+            return BlockKind.WATER_INLET;
         }
         if (state.getBlock() instanceof SupportCasingBlock) {
             return BlockKind.CASING;
