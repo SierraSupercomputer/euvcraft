@@ -1,4 +1,9 @@
 package com.euvcraft.lithmod.mc.multiblock.advanced;
+import net.minecraft.world.level.block.state.properties.*;
+import com.euvcraft.lithmod.core.multiblock.*;
+import com.euvcraft.lithmod.mc.multiblock.EnergyBufferProvider;
+import com.euvcraft.lithmod.mc.machine.packaging.TestPackageBlockEntity;
+import com.euvcraft.lithmod.mc.registry.ModItems;
 
 import com.euvcraft.lithmod.core.FoupContents;
 import com.euvcraft.lithmod.core.MachineDefinition;

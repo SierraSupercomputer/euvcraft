@@ -1,4 +1,5 @@
 package com.euvcraft.lithmod.mc.registry;
+import com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedMachines;
 
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.euvcraft.lithmod.mc.FoupItem;

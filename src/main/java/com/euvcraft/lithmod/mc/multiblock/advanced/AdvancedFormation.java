@@ -1,4 +1,9 @@
 package com.euvcraft.lithmod.mc.multiblock.advanced;
+import net.minecraft.world.level.block.state.properties.*;
+import com.euvcraft.lithmod.core.multiblock.*;
+import com.euvcraft.lithmod.mc.multiblock.EnergyBufferProvider;
+import com.euvcraft.lithmod.mc.machine.packaging.TestPackageBlockEntity;
+import com.euvcraft.lithmod.mc.registry.ModItems;
 
 import com.euvcraft.lithmod.core.multiblock.BlockKind;
 import com.euvcraft.lithmod.core.multiblock.MatchResult;
@@ -59,7 +64,7 @@ public final class AdvancedFormation {
 
         // Delegate to StructureMatcher which already implements the correct geometry rules
         // for controller-on-front-face with operating panel above, 1-2 power ports, rest casing.
-        return StructureMatcher.match(controllerPos, facing, shape, blockKindAt);
+        return PanelStructureMatcher.match(controllerPos, facing, shape, blockKindAt);
     }
 
     /**
@@ -78,27 +83,23 @@ public final class AdvancedFormation {
      * Range: 0..44 for deposition_etcher, 0..11 for advanced_test_package.
      * When unformed, always 0.
      */
-    public static final com.euvcraft.lithmod.mc.multiblock.ProcessCellVisualProperties.PartProperty PART_PROPERTY =
-            new com.euvcraft.lithmod.mc.multiblock.ProcessCellVisualProperties.PartProperty();
+    public static final IntegerProperty PART_PROPERTY = AdvancedVisualProperties.PART;
 
     /**
      * The visual formed property shared by all advanced multiblock members.
      * Default false.
      */
-    public static final com.euvcraft.lithmod.mc.multiblock.ProcessCellVisualProperties.FormedProperty FORMED_PROPERTY =
-            new com.euvcraft.lithmod.mc.multiblock.ProcessCellVisualProperties.FormedProperty();
+    public static final BooleanProperty FORMED_PROPERTY = AdvancedVisualProperties.FORMED;
 
     /**
      * The visual facing property shared by all advanced multiblock members.
      * Only meaningful when formed; default NORTH when unformed.
      */
-    public static final com.euvcraft.lithmod.mc.multiblock.ProcessCellVisualProperties.FacingProperty FACING_PROPERTY =
-            new com.euvcraft.lithmod.mc.multiblock.ProcessCellVisualProperties.FacingProperty();
+    public static final Property<Direction> FACING_PROPERTY = AdvancedVisualProperties.FACING;
 
     /**
      * The LARGE boolean property: true for deposition_etcher (3x3x5), false for advanced_test_package (2x2x3).
      * Used later for joined panel rendering.
      */
-    public static final com.euvcraft.lithmod.mc.multiblock.ProcessCellVisualProperties.LargeProperty LARGE_PROPERTY =
-            new com.euvcraft.lithmod.mc.multiblock.ProcessCellVisualProperties.LargeProperty();
+    public static final BooleanProperty LARGE_PROPERTY = AdvancedVisualProperties.LARGE;
 }

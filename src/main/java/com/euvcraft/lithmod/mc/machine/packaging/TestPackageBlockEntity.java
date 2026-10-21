@@ -190,8 +190,14 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
     private boolean paused;
 
     public TestPackageBlockEntity(BlockPos pos, BlockState state) {
-        super(PackagingMachines.TEST_PACKAGE_BE.get(), pos, state, INPUT_SLOTS, OUTPUT_SLOTS);
+        this(PackagingMachines.TEST_PACKAGE_BE.get(), pos, state, INPUT_SLOTS, OUTPUT_SLOTS);
     }
+
+    protected TestPackageBlockEntity(net.minecraft.world.level.block.entity.BlockEntityType<?> type, BlockPos pos, BlockState state, int inputs, int outputs) {
+        super(type,pos,state,inputs,outputs);
+    }
+    protected int installedGeneration() { return INSTALLED_GENERATION; }
+    protected boolean processingAllowed() { return true; }
 
     @Override
     protected String machineId() {
@@ -284,6 +290,7 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
             return;
         }
         refreshDefinition();
+        if (!processingAllowed()) { this.paused=isQueueActive(); publish(); return; }
 
         boolean changed;
         if (isQueueActive()) {
@@ -410,7 +417,7 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
      *            wafer
      * @return {@code null} when the lot may be judged, otherwise the refusal reason
      */
-    private static PackagingRefusalReason admissionRefusal(FoupContents lot) {
+    private PackagingRefusalReason admissionRefusal(FoupContents lot) {
         RunSpec spec = lot.run();
         if (spec == null) {
             return PackagingRefusalReason.NO_SPEC;
@@ -421,7 +428,7 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
             return PackagingRefusalReason.GENERATION_UNMET;
         }
         boolean chipItemAvailable = ChipCatalog.chipFor(spec.dieType(), spec.tierIndex()).isPresent();
-        return PackagingRules.validate(lot, tier, chipItemAvailable, matrix, INSTALLED_GENERATION);
+        return PackagingRules.validate(lot, tier, chipItemAvailable, matrix, installedGeneration());
     }
 
     /**

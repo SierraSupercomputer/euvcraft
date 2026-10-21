@@ -1,4 +1,9 @@
 package com.euvcraft.lithmod.mc.multiblock.advanced;
+import net.minecraft.world.level.block.state.properties.*;
+import com.euvcraft.lithmod.core.multiblock.*;
+import com.euvcraft.lithmod.mc.multiblock.EnergyBufferProvider;
+import com.euvcraft.lithmod.mc.machine.packaging.TestPackageBlockEntity;
+import com.euvcraft.lithmod.mc.registry.ModItems;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -35,13 +40,13 @@ import org.jspecify.annotations.Nullable;
 public class AdvancedOperatingPanelBlock extends BaseEntityBlock {
 
     /** True while this panel is part of a formed advanced multiblock. */
-    public static final BooleanProperty FORMED = ProcessCellVisualProperties.FORMED;
+    public static final BooleanProperty FORMED = AdvancedVisualProperties.FORMED;
     /** Visual part index 0..44 for formed members, 0 when unformed. */
-    public static final IntegerProperty PART = ProcessCellVisualProperties.PART;
+    public static final IntegerProperty PART = AdvancedVisualProperties.PART;
     /** Horizontal facing of the cell this member belongs to. */
-    public static final Property<Direction> FACING = ProcessCellVisualProperties.FACING;
+    public static final Property<Direction> FACING = AdvancedVisualProperties.FACING;
     /** True for deposition_etcher (3x3x5), false for advanced_test_package (2x2x3). */
-    public static final BooleanProperty LARGE = ProcessCellVisualProperties.LARGE;
+    public static final BooleanProperty LARGE = AdvancedVisualProperties.LARGE;
 
     public AdvancedOperatingPanelBlock(BlockBehaviour.Properties properties) {
         super(properties);
