@@ -327,4 +327,30 @@ class FoupContentsCodecTest {
                 "the persistent form is not compact: " + bytes.size() + " bytes for " + wafers + " wafers");
         }
     }
+
+    @Test void preparationRoundTripsPrivatelyAndPubliclyWithoutAuthority() {
+        var source=FoupContents.of(LOT,25,List.of(Wafer.unprocessed()),WaferSubstrate.PURE).withPreparationGeneration(2);
+        var saved=FoupContentsCodec.CODEC.encodeStart(NbtOps.INSTANCE,source).getOrThrow();
+        assertEquals(source,FoupContentsCodec.CODEC.parse(NbtOps.INSTANCE,saved).getOrThrow());
+        ByteBuf buffer=Unpooled.buffer();
+        try {
+            FoupContentsCodec.STREAM_CODEC.encode(buffer,source);
+            var client=FoupContentsCodec.STREAM_CODEC.decode(buffer);
+            assertEquals(source.publicView(),client.publicView());
+            assertTrue(FoupContentsCodec.isClientView(client));
+            assertEquals(null,client.run());
+        } finally {buffer.release();}
+    }
+    @Test void missingPreparationIsLegacyButMalformedExplicitPreparationFails() {
+        var source=FoupContents.of(LOT,25,List.of(Wafer.unprocessed()),WaferSubstrate.PURE).withPreparationGeneration(2);
+        var saved=(CompoundTag)FoupContentsCodec.CODEC.encodeStart(NbtOps.INSTANCE,source).getOrThrow();
+        saved.remove(FoupContentsCodec.KEY_PREPARATION);
+        assertEquals(1,FoupContentsCodec.CODEC.parse(NbtOps.INSTANCE,saved).getOrThrow().preparationGeneration());
+        for(int invalid:new int[]{0,3,Integer.MAX_VALUE}) {
+            saved.putInt(FoupContentsCodec.KEY_PREPARATION,invalid);
+            assertTrue(FoupContentsCodec.CODEC.parse(NbtOps.INSTANCE,saved).error().isPresent());
+        }
+        saved.putString(FoupContentsCodec.KEY_PREPARATION,"two");
+        assertTrue(FoupContentsCodec.CODEC.parse(NbtOps.INSTANCE,saved).error().isPresent());
+    }
 }
