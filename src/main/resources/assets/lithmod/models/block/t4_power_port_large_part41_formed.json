@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "north": "lithmod:block/t4_marking_power_port",
+    "south": "lithmod:block/t4_marking_power_port",
+    "west": "lithmod:block/t4_marking_power_port",
+    "east": "lithmod:block/t4_marking_power_port",
+    "up": "lithmod:block/t4_marking_power_port",
+    "down": "lithmod:block/t4_marking_power_port",
+    "particle": "lithmod:block/t4_marking_power_port"
+  }
+}

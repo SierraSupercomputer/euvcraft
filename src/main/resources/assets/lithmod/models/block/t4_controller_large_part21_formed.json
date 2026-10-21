@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "north": "lithmod:block/t4_marking_controller_front",
+    "south": "lithmod:block/t4_large_south_tx1_ty1",
+    "west": "lithmod:block/t4_large_west_tx1_ty1",
+    "east": "lithmod:block/t4_large_east_tx3_ty1",
+    "up": "lithmod:block/t4_large_up_tx1_ty1",
+    "down": "lithmod:block/t4_large_down_tx1_ty3",
+    "particle": "lithmod:block/t4_marking_controller_front"
+  }
+}
