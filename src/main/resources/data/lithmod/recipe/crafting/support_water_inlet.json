@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "CBC",
+    "LWL",
+    "CBC"
+  ],
+  "key": {
+    "C": "minecraft:copper_ingot",
+    "B": "lithmod:support_casing",
+    "L": "lithmod:logic_chip_t2",
+    "W": "minecraft:water_bucket"
+  },
+  "result": {
+    "id": "lithmod:support_water_inlet",
+    "count": 1
+  }
+}
