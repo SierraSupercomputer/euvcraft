@@ -75,6 +75,17 @@ public class SupportMemberBlockEntity extends BlockEntity {
         return owner.energy();
     }
 
+    /** Only a formed purifier inlet exposes its insertion lens. No storage lives in a member. */
+    public net.neoforged.neoforge.transfer.@Nullable ResourceHandler<net.neoforged.neoforge.transfer.fluid.FluidResource> waterInput() {
+        if (!(getBlockState().getBlock() instanceof SupportWaterInletBlock) || !formed || controller == null
+                || controller.kind() != SupportMachineKind.PURIFIER || !controller.isFormed()
+                || isRemoved() || level == null || level.isClientSide()
+                || level.getBlockEntity(worldPosition) != this || controller.isRemoved()
+                || level.getBlockEntity(controller.getBlockPos()) != controller
+                || !controller.members().contains(worldPosition)) return null;
+        return new SupportWaterInletHandler(this, controller);
+    }
+
     /**
      * Records a new formed state, controller link, part index, and facing. Called by the controller, never by a player.
      *
@@ -93,6 +104,7 @@ public class SupportMemberBlockEntity extends BlockEntity {
         this.part = formed ? part : 0;
         this.facing = formed ? facing : null;
         setChanged();
+        if (level != null && !level.isClientSide()) level.invalidateCapabilities(worldPosition);
     }
 
     /**

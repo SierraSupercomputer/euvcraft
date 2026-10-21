@@ -10,7 +10,8 @@ import java.util.function.Function;
  * <p>The structure is a 2 wide x 2 tall x 3 deep box. The controller sits on the front face
  * (d = 0) at the lower row (v = 0), in either column (u = 0 or u = 1). There is no operating
  * panel. There must be exactly one controller at the anchor, 1 or 2 power ports anywhere in the
- * structure, and all other cells must be casing. Any other block kind (including OPERATING_PANEL
+ * structure, and all other cells must be casing or optional water inlets. The native caller must
+ * report water inlets as OTHER for machines that do not support them. Any other block kind (including OPERATING_PANEL
  * and extra CONTROLLER) causes a match failure.
  *
  * <p>The match searches the two valid anchor offsets deterministically: (u0=0, v0=0) then

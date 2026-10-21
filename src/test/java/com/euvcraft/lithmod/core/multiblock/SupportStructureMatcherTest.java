@@ -440,6 +440,21 @@ class SupportStructureMatcherTest {
         }
     }
 
+    @ParameterizedTest @EnumSource(MultiblockDirection.class)
+    void optionalInletsReplaceEveryCasingWithoutReplacingRequiredBlocks(MultiblockDirection facing) {
+        for (int column=0; column<2; column++) {
+            var layout=validLayout(column, PORT_A);
+            for (var cell : new ArrayList<>(layout.keySet())) {
+                if (layout.get(cell)!=BlockKind.CASING) continue;
+                layout.put(cell,BlockKind.WATER_INLET);
+                assertTrue(SupportStructureMatcher.match(CONTROLLER,facing,worldAt(CONTROLLER,facing,column,0,layout)).success());
+                // Retain previous inlets, so the same test proves multiple inlet admission.
+            }
+            layout.put(PORT_A,BlockKind.WATER_INLET);
+            assertFalse(SupportStructureMatcher.match(CONTROLLER,facing,worldAt(CONTROLLER,facing,column,0,layout)).success(),"water inlet cannot replace the required power port");
+        }
+    }
+
     // ---------------------------------------------------------------- invariants
 
     @Test

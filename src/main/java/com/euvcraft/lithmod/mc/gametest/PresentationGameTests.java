@@ -366,6 +366,7 @@ public final class PresentationGameTests {
             ModItems.E_BEAM_MASK_WRITER.get(),
             ModItems.SUPPORT_CASING.get(),
             ModItems.SUPPORT_POWER_PORT.get(),
+            ModItems.SUPPORT_WATER_INLET.get(),
             ModItems.FOUP_MK1.get(),
             ModItems.FOUP_MK2.get(),
             ModItems.SILICON.get(),
@@ -406,8 +407,8 @@ public final class PresentationGameTests {
         );
 
         // Verify exact 48 stacks in order
-        h.assertValueEqual(48, actualEntries.size(), "MAIN tab exact entry count");
-        for (int i = 0; i < 48; i++) {
+        h.assertValueEqual(49, actualEntries.size(), "MAIN tab exact entry count");
+        for (int i = 0; i < 49; i++) {
             Item expected = expectedItems.get(i);
             Item actual = actualEntries.get(i).getItem();
             h.assertTrue(actual == expected,
@@ -415,13 +416,13 @@ public final class PresentationGameTests {
         }
 
         // Verify the three mask entries have correct designs
-        MaskData d1 = actualEntries.get(18).get(ModDataComponents.MASK_DATA.get());
+        MaskData d1 = actualEntries.get(19).get(ModDataComponents.MASK_DATA.get());
         h.assertTrue(d1 != null && DieTypes.LOGIC.equals(d1.dieType()) && d1.tierIndex() == 1,
             "Entry 18 (mask 0) not logic T1: " + d1);
-        MaskData d2 = actualEntries.get(19).get(ModDataComponents.MASK_DATA.get());
+        MaskData d2 = actualEntries.get(20).get(ModDataComponents.MASK_DATA.get());
         h.assertTrue(d2 != null && DieTypes.LOGIC.equals(d2.dieType()) && d2.tierIndex() == 2,
             "Entry 19 (mask 1) not logic T2: " + d2);
-        MaskData d3 = actualEntries.get(20).get(ModDataComponents.MASK_DATA.get());
+        MaskData d3 = actualEntries.get(21).get(ModDataComponents.MASK_DATA.get());
         h.assertTrue(d3 != null && DieTypes.MEMORY.equals(d3.dieType()) && d3.tierIndex() == 2,
             "Entry 20 (mask 2) not memory T2: " + d3);
 

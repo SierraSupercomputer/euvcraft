@@ -7,7 +7,6 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
@@ -133,8 +132,8 @@ public final class SupportMachines {
                     ? member.energy()   // null unless a formed, owned power port
                     : null);
 
-        // Fluid capability for water inlet (handled by SupportWaterInletBlockEntity)
-        SupportWaterInletBlockEntity.registerCapabilities(event);
+        event.registerBlockEntity(Capabilities.Fluid.BLOCK, SUPPORT_MEMBER_BE.get(),
+            (blockEntity, side) -> blockEntity instanceof SupportMemberBlockEntity member ? member.waterInput() : null);
     }
 
     /**

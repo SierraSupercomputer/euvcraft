@@ -209,6 +209,10 @@ public final class ModItems {
         ITEMS.registerSimpleBlockItem("support_casing",
             () -> com.euvcraft.lithmod.mc.multiblock.support.SupportMachines.SUPPORT_CASING.get());
 
+    public static final DeferredItem<BlockItem> SUPPORT_WATER_INLET =
+        ITEMS.registerSimpleBlockItem("support_water_inlet",
+            () -> com.euvcraft.lithmod.mc.multiblock.support.SupportMachines.SUPPORT_WATER_INLET.get());
+
     public static final DeferredItem<BlockItem> SUPPORT_POWER_PORT =
         ITEMS.registerSimpleBlockItem("support_power_port",
             () -> com.euvcraft.lithmod.mc.multiblock.support.SupportMachines.SUPPORT_POWER_PORT.get());

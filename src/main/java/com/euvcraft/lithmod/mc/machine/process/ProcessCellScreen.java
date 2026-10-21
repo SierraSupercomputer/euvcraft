@@ -159,9 +159,13 @@ public class ProcessCellScreen extends FabMachineScreen<ProcessCellMenu> {
 
     /** Draws a centered subtitle under the main title. */
     private void drawCenteredSubtitle(GuiGraphicsExtractor graphics, Component text, int y) {
-        int textWidth = this.font.width(text);
-        int x = (IMAGE_WIDTH - textWidth) / 2;
-        graphics.text(this.font, text, x, y, SUBTITLE_COLOR, false);
+        String label = text.getString();
+        if (this.font.width(label) > MAX_TEXT_WIDTH) {
+            while (!label.isEmpty() && this.font.width(label + "...") > MAX_TEXT_WIDTH) label = label.substring(0, label.length() - 1);
+            label += "...";
+        }
+        int x = (IMAGE_WIDTH - this.font.width(label)) / 2;
+        graphics.text(this.font, label, x, y, SUBTITLE_COLOR, false);
     }
 
     /** Draws a right-aligned component, clipping to MAX_TEXT_WIDTH if needed. */

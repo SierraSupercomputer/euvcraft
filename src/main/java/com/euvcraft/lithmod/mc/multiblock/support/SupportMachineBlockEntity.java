@@ -88,6 +88,7 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
 
     /** The purifier's water; null on the e-beam, which owns no functional water. */
     private @Nullable WaterTank water;
+    final SupportWaterInletHandler.TankJournal waterJournal = new SupportWaterInletHandler.TankJournal(this);
     private int formationChanges;
 
     // ---------------------------------------------------------------- purifier job state

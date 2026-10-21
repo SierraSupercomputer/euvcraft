@@ -11,6 +11,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Unit tests for {@link WaterTank}. */
 class WaterTankTest {
+    @org.junit.jupiter.api.Test void transactionAmountRestorePreservesCapacityAndRetainedWater() {
+        WaterTank tank=new WaterTank(16000,12000);
+        tank.resize(1000);
+        tank.restoreAmount(11000);
+        org.junit.jupiter.api.Assertions.assertEquals(1000,tank.capacity());
+        org.junit.jupiter.api.Assertions.assertEquals(11000,tank.amount());
+        org.junit.jupiter.api.Assertions.assertEquals(0,tank.fill(1,false));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,()->tank.restoreAmount(-1));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,()->tank.restoreAmount(WaterTank.MAX_CAPACITY+1));
+        org.junit.jupiter.api.Assertions.assertEquals(11000,tank.amount());
+    }
 
     private static final int MAX = WaterTank.MAX_CAPACITY;
 

@@ -60,7 +60,7 @@ public final class M1ShippingGameTests {
         Identifier.parse("lithmod:boule_purifier"),
         Identifier.parse("lithmod:ebeam_mask_writer"),
         Identifier.parse("lithmod:support_casing"),
-        Identifier.parse("lithmod:support_power_port"));
+        Identifier.parse("lithmod:support_power_port"), Identifier.parse("lithmod:support_water_inlet"));
     private static final List<Identifier> PRODUCTION_ITEMS = List.of(
         Identifier.parse("lithmod:foup_mk1"),
         Identifier.parse("lithmod:silicon"),

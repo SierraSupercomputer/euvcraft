@@ -162,6 +162,12 @@ public final class WaterTank {
         this.capacity = newCapacity;
     }
 
+    /** Restores a transaction checkpoint without clamping water after a capacity shrink. */
+    public void restoreAmount(int restored) {
+        if (restored < 0 || restored > MAX_CAPACITY) throw new IllegalArgumentException("invalid restored water amount");
+        this.amount = restored;
+    }
+
     /**
      * Returns an immutable snapshot of the tank state for pure state round-trip.
      * No codecs or core game imports.
