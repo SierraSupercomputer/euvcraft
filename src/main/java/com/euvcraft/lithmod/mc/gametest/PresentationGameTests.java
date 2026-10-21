@@ -165,7 +165,7 @@ public final class PresentationGameTests {
     }
     private static void recipeRegistry(GameTestHelper h) {
         var vanilla = resources(h, "recipe");
-        h.assertValueEqual(35, vanilla.size(), "M1 vanilla recipe inventory");
+        h.assertValueEqual(36, vanilla.size(), "M1 vanilla recipe inventory");
         for (var entry : vanilla.entrySet()) {
             JsonObject source = json(entry.getValue());
             expectedOutput(h, source, assemble(h, entry.getKey(), source), entry.getKey().toString());
@@ -210,7 +210,7 @@ public final class PresentationGameTests {
                 cooking++;
             }
         }
-        h.assertValueEqual(33, crafting, "Crafting lookup inventory");
+        h.assertValueEqual(34, crafting, "Crafting lookup inventory");
         h.assertValueEqual(2, cooking, "Cooking lookup inventory");
         var sand = manager.getRecipeFor(RecipeType.SMELTING, new SingleRecipeInput(new ItemStack(Items.SAND)), h.getLevel()).orElseThrow();
         h.assertTrue(sand.value().assemble(new SingleRecipeInput(new ItemStack(Items.SAND))).is(Items.GLASS), "Sand must still smelt to glass");
@@ -337,7 +337,7 @@ public final class PresentationGameTests {
      * Validates the entry order of the unified EUVCRAFT creative tab.
      *
      * <p>This test ensures that the MAIN creative tab entry order is stable and matches the
-     * intended presentation order. The 48 entries (33 M1 + 15 T3) are validated against their
+     * intended presentation order. The 49 entries are validated against their
      * expected item sequence. Also verifies that all lithmod items (except test_machine)
      * appear exactly once in the tab, and that only one lithmod CreativeModeTab is registered.
      * </p>
@@ -351,7 +351,7 @@ public final class PresentationGameTests {
         mainTab.buildContents(params);
         List<ItemStack> actualEntries = new ArrayList<>(mainTab.getDisplayItems());
 
-        // Expected 48 stacks in exact order (33 M1 + 10 T3 appended)
+        // Expected 49 stacks in exact order
         List<Item> expectedItems = List.of(
             // M1 items
             ModItems.CRYSTAL_PULLER.get(),
@@ -406,7 +406,7 @@ public final class PresentationGameTests {
             ModItems.NAND_CHIP_T3.get()
         );
 
-        // Verify exact 48 stacks in order
+        // Verify exact 49 stacks in order
         h.assertValueEqual(49, actualEntries.size(), "MAIN tab exact entry count");
         for (int i = 0; i < 49; i++) {
             Item expected = expectedItems.get(i);
