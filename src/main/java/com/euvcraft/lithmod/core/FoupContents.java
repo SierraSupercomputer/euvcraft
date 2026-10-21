@@ -49,6 +49,11 @@ import java.util.UUID;
  */
 public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec run, WaferSubstrate grade, int preparationGeneration) {
 
+    /** Saved/source compatibility with pre-T4 lots. */
+    public FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec run, WaferSubstrate grade) {
+        this(lotId, capacity, wafers, run, grade, PREPARATION_LEGACY);
+    }
+
     /** The legacy preparation generation value (unprepared/G1). */
     public static final int PREPARATION_LEGACY = 1;
 
@@ -127,6 +132,9 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
             throw new IllegalArgumentException("preparationGeneration must be " + PREPARATION_LEGACY + " or " + PREPARATION_G2 + ", got " + preparationGeneration);
         }
         wafers = List.copyOf(wafers);
+        if (preparationGeneration == PREPARATION_G2 && (wafers.isEmpty() || grade != WaferSubstrate.PURE)) {
+            throw new IllegalArgumentException("G2 preparation requires nonempty pure wafers");
+        }
         if (wafers.size() > capacity) {
             throw new IllegalArgumentException(
                 "a lot of capacity " + capacity + " cannot hold " + wafers.size() + " wafers");

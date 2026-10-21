@@ -52,7 +52,11 @@ public final class PanelStructureMatcher {
     public static MatchResult match(MultiblockPos controllerPos, MultiblockDirection facing,
             StructureShape shape, Function<MultiblockPos, BlockKind> blockKindAt) {
 
-        if (shape != PANEL_2x2x3 && shape != PANEL_3x3x5) {
+        java.util.Objects.requireNonNull(controllerPos);
+        java.util.Objects.requireNonNull(facing);
+        java.util.Objects.requireNonNull(shape);
+        java.util.Objects.requireNonNull(blockKindAt);
+        if (!shape.equals(PANEL_2x2x3) && !shape.equals(PANEL_3x3x5)) {
             throw new IllegalArgumentException("unsupported panel shape: " + shape.width() + "x"
                     + shape.height() + "x" + shape.length() + "; only 2x2x3 and 3x3x5 are allowed");
         }

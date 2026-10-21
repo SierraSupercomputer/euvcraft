@@ -220,6 +220,7 @@ public final class FoupContentsCodec {
         WaferSubstrate safeGrade = WaferSubstrate.fromIdOrDefault(gradeId);
         int safePreparation = (preparationGeneration >= FoupContents.PREPARATION_LEGACY && preparationGeneration <= FoupContents.PREPARATION_G2)
             ? preparationGeneration : FoupContents.PREPARATION_LEGACY;
+        if (safeCount == 0 || safeGrade != WaferSubstrate.PURE) safePreparation = FoupContents.PREPARATION_LEGACY;
 
         List<Wafer> placeholders = new ArrayList<>(safeCount);
         for (int i = 0; i < safeCount; i++) {

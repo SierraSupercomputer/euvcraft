@@ -74,6 +74,9 @@ public record FoupPublicView(int capacity, int waferCount, int lotLayer, WaferSu
             throw new IllegalArgumentException("lotLayer must be >= 0, got " + lotLayer);
         }
         Objects.requireNonNull(grade, "grade must not be null");
+        if (preparationGeneration == PREPARATION_G2 && (waferCount == 0 || grade != WaferSubstrate.PURE)) {
+            throw new IllegalArgumentException("G2 preparation requires nonempty pure wafers");
+        }
         if (preparationGeneration < PREPARATION_LEGACY || preparationGeneration > PREPARATION_G2) {
             throw new IllegalArgumentException("preparationGeneration must be " + PREPARATION_LEGACY + " or " + PREPARATION_G2 + ", got " + preparationGeneration);
         }
