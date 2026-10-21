@@ -76,7 +76,9 @@ public final class HighBinningRules {
                                       int packagesPerWafer) {
 
         // 1. Basic lot structure (structural checks first, before layer checks)
-        Objects.requireNonNull(lot, "lot must not be null");
+        if (lot == null || sourceTier == null || transition == null) {
+            throw new IllegalArgumentException("lot, source tier and transition are required");
+        }
         if (lot.isEmpty()) {
             throw new IllegalArgumentException("lot must not be empty");
         }
@@ -180,7 +182,7 @@ public final class HighBinningRules {
         double threshold;
         if (highBinProb <= 0.0) {
             threshold = 1.0; // All rolls in (0,1] fail against threshold 1.0 (strict >)
-        } else if (highBinProb >= 1.0) {
+        } else if (yieldMultiplier == 1.0) {
             // Penalty 1: match YieldMath.passes(cumulative, sourceEffectiveYield) exactly
             // YieldMath.passes uses threshold = 1 - yield
             threshold = 1.0 - sourceEffectiveYield;
