@@ -176,5 +176,20 @@
   "label.lithmod.ebeam.ingredients": "Blank: %s  Redstone: %s",
   "label.lithmod.ebeam.unavailable": "Recipe unavailable",
   "label.lithmod.ebeam.running": "Writing mask",
-  "label.lithmod.ebeam.paused": "Writing paused"
+  "label.lithmod.ebeam.paused": "Writing paused",
+  "block.lithmod.deposition_etcher": "Deposition / Etch Chamber",
+  "item.lithmod.deposition_etcher": "Deposition / Etch Chamber",
+  "block.lithmod.advanced_test_package": "Advanced Test and Package",
+  "item.lithmod.advanced_test_package": "Advanced Test and Package",
+  "block.lithmod.advanced_casing": "Advanced Fab Casing",
+  "item.lithmod.advanced_casing": "Advanced Fab Casing",
+  "block.lithmod.advanced_power_port": "Advanced Power Port",
+  "item.lithmod.advanced_power_port": "Advanced Power Port",
+  "block.lithmod.advanced_operating_panel": "Advanced Operating Panel",
+  "item.lithmod.advanced_operating_panel": "Advanced Operating Panel",
+  "label.lithmod.t4.cabinet": "Equipment cabinet",
+  "label.lithmod.t4.binning_hint": "Logic/compute; reduced yield",
+  "button.lithmod.t4.high_binning": "High binning: %s",
+  "state.lithmod.t4.on": "On",
+  "state.lithmod.t4.off": "Off"
 }

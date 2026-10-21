@@ -16,6 +16,11 @@
     "lithmod:ebeam_mask_writer",
     "lithmod:support_casing",
     "lithmod:support_power_port",
-    "lithmod:support_water_inlet"
+    "lithmod:support_water_inlet",
+    "lithmod:deposition_etcher",
+    "lithmod:advanced_test_package",
+    "lithmod:advanced_casing",
+    "lithmod:advanced_power_port",
+    "lithmod:advanced_operating_panel"
   ]
 }

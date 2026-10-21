@@ -18,7 +18,7 @@ public final class AdvancedOperatingPanelScreen extends AdvancedMachineScreen<Ad
  @Override protected void containerTick(){
   super.containerTick();
   if(binning!=null){
-   binning.active=!menu.active();
+   binning.active=menu.formed()&&!menu.active();
    binning.setMessage(Component.translatable("button.lithmod.t4.high_binning",Component.translatable(menu.highBinning()?"state.lithmod.t4.on":"state.lithmod.t4.off")));
   }
  }

@@ -65,7 +65,7 @@ class T4ContentResourcesTest {
     @Test
     @DisplayName("All 10 T4 items have registry entries in ModItems.java source")
     void t4ItemsRegisteredInSource() throws Exception {
-        URL modItemsUrl = T4ContentResourcesTest.class.getResource("/com/euvcraft/lithmod/mc/registry/ModItems.java");
+        URL modItemsUrl = source("com/euvcraft/lithmod/mc/registry/ModItems.java");
         assertNotNull(modItemsUrl, "ModItems.java source not found on classpath");
         String source = readAll(modItemsUrl);
         
@@ -84,7 +84,7 @@ class T4ContentResourcesTest {
     @Test
     @DisplayName("T4 line components use five kind/tier4 constructors in ModItems.java")
     void t4LineComponentsKindAndTierInSource() throws Exception {
-        URL modItemsUrl = T4ContentResourcesTest.class.getResource("/com/euvcraft/lithmod/mc/registry/ModItems.java");
+        URL modItemsUrl = source("com/euvcraft/lithmod/mc/registry/ModItems.java");
         assertNotNull(modItemsUrl, "ModItems.java source not found on classpath");
         String source = readAll(modItemsUrl);
 
@@ -99,7 +99,7 @@ class T4ContentResourcesTest {
     @Test
     @DisplayName("RESIST_T4 carries RESIST_TIER=4 component in ModItems.java")
     void resistT4HasTierComponentInSource() throws Exception {
-        URL modItemsUrl = T4ContentResourcesTest.class.getResource("/com/euvcraft/lithmod/mc/registry/ModItems.java");
+        URL modItemsUrl = source("com/euvcraft/lithmod/mc/registry/ModItems.java");
         assertNotNull(modItemsUrl, "ModItems.java source not found on classpath");
         String source = readAll(modItemsUrl);
 
@@ -110,7 +110,7 @@ class T4ContentResourcesTest {
     @Test
     @DisplayName("ChipCatalog contains all 4 T4 chip entries")
     void chipCatalogHasT4Entries() throws Exception {
-        URL chipCatalogUrl = T4ContentResourcesTest.class.getResource("/com/euvcraft/lithmod/mc/ChipCatalog.java");
+        URL chipCatalogUrl = source("com/euvcraft/lithmod/mc/ChipCatalog.java");
         assertNotNull(chipCatalogUrl, "ChipCatalog.java source not found on classpath");
         String source = readAll(chipCatalogUrl);
 
@@ -134,7 +134,9 @@ class T4ContentResourcesTest {
             URL recipeUrl = T4ContentResourcesTest.class.getResource(CRAFTING_RECIPES + recipeFile);
             assertNotNull(recipeUrl, "Missing crafting recipe: " + recipeFile);
             
-            String json = readAll(recipeUrl);
+            var parsed=JsonParser.parseString(readAll(recipeUrl)).getAsJsonObject();
+            String json=parsed.getAsJsonObject("key").toString();
+            assertEquals("lithmod:"+recipeFile.replace(".json",""),parsed.getAsJsonObject("result").get("id").getAsString());
             
             // Verify no T4 ingredient IDs appear in the key section
             for (String t4Id : T4_ITEM_IDS) {
@@ -207,7 +209,7 @@ class T4ContentResourcesTest {
     @Test
     @DisplayName("Previous T3 chip catalog entries unchanged")
     void previousChipCatalogEntriesUnchanged() throws Exception {
-        URL chipCatalogUrl = T4ContentResourcesTest.class.getResource("/com/euvcraft/lithmod/mc/ChipCatalog.java");
+        URL chipCatalogUrl = source("com/euvcraft/lithmod/mc/ChipCatalog.java");
         assertNotNull(chipCatalogUrl, "ChipCatalog.java source not found on classpath");
         String source = readAll(chipCatalogUrl);
 
@@ -252,5 +254,10 @@ class T4ContentResourcesTest {
             }
             return sb.toString();
         }
+    }
+    private static URL source(String path) throws Exception {
+        var file=java.nio.file.Path.of("src/main/java").resolve(path);
+        assertTrue(java.nio.file.Files.isRegularFile(file),"Missing actual source: "+file);
+        return file.toUri().toURL();
     }
 }

@@ -46,13 +46,12 @@ public class AdvancedOperatingPanelMenu extends FabMachineMenu {
  public boolean deposition(){return deposition;}
  public boolean formed(){return formation.get(0)==1;}
  public boolean highBinning(){return mode.get(0)==1;}
- public boolean active(){return !deposition&&queue.get(0)==TestPackageBlockEntity.STATE_RUNNING
-     ||!deposition&&queue.get(0)==TestPackageBlockEntity.STATE_PAUSED;}
+ public boolean active(){return !deposition&&wafersTotal()>wafersDone();}
  public int state(){return queue.get(0);}
  public int wafersDone(){return queue.get(1);}
  public int wafersTotal(){return queue.get(2);}
  @Override public boolean clickMenuButton(Player player,int button){
-  if(button!=1||!stillValid(player)||!(blockEntity instanceof AdvancedTestPackageControllerBlockEntity pack))return false;
+  if(button!=1||!(player instanceof net.minecraft.server.level.ServerPlayer)||player.containerMenu!=this||!formed()||!stillValid(player)||!(blockEntity instanceof AdvancedTestPackageControllerBlockEntity pack))return false;
   return pack.toggleHighBinning();
  }
  @Override public boolean stillValid(Player player){

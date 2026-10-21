@@ -26,11 +26,11 @@ public class SupportMachineScreen extends FabMachineScreen<SupportMachineMenu> {
         if (menu.kind() != SupportMachineKind.EBEAM) return;
         previous = addRenderableWidget(Button.builder(Component.literal("<"), b -> {
             int selected = menu.ebeamSelectedDesign();
-            send(selected <= 0 ? 6 : selected - 1);
+            send(selected <= 0 ? SupportMachineMenu.EBEAM_DESIGN_COUNT-1 : selected - 1);
         }).bounds(leftPos + 8, topPos + 180, 20, 16).build());
         next = addRenderableWidget(Button.builder(Component.literal(">"), b -> {
             int selected = menu.ebeamSelectedDesign();
-            send(selected < 0 ? 0 : (selected + 1) % 7);
+            send(selected < 0 ? 0 : (selected + 1) % SupportMachineMenu.EBEAM_DESIGN_COUNT);
         }).bounds(leftPos + 148, topPos + 180, 20, 16).build());
         start = addRenderableWidget(Button.builder(Component.translatable("button.lithmod.ebeam.start"),
             b -> send(SupportMachineMenu.EBEAM_START_BUTTON))
