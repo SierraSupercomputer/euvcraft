@@ -29,19 +29,35 @@ import java.util.UUID;
  * when the lot is created and preserved through every mutation. Existing saved lots
  * without a grade are treated as ORDINARY.</p>
  *
+ * <p>Every lot carries a preparation generation (1 = legacy/unprepared/G1, 2 = G2 prepared).
+ * This is a separate property from the substrate grade. Existing saved lots without a
+ * preparation generation are treated as generation 1. A prepared lot (generation 2)
+ * must be non-empty, PURE grade, unstarted, and all wafers at layer 0. Preparation is
+ * preserved through mutations, except that adding ANY fresh wafer(s) to a prepared lot
+ * refuses mixing, and removing all wafers resets generation to 1 so an empty carrier
+ * cannot transfer preparation.</p>
+ *
  * <p>This record has no Minecraft or NeoForge dependencies.</p>
  *
- * @param lotId    server-assigned identifier of the sealed lot
- * @param capacity maximum number of wafers this lot holds, {@code >= 1}
- * @param wafers   wafers in the lot, in slot order, at most {@code capacity} entries
- * @param run      the parameters the lot was processed under, or {@code null} when it
- *                 has not been started
- * @param grade    the wafer substrate grade of this lot, never null
+ * @param lotId                server-assigned identifier of the sealed lot
+ * @param capacity             maximum number of wafers this lot holds, {@code >= 1}
+ * @param wafers               wafers in the lot, in slot order, at most {@code capacity} entries
+ * @param run                  the parameters the lot was processed under, or {@code null} when it
+ *                             has not been started
+ * @param grade                the wafer substrate grade of this lot, never null
+ * @param preparationGeneration the preparation generation: 1 = legacy/unprepared, 2 = G2 prepared
  */
-public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec run, WaferSubstrate grade) {
+public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec run, WaferSubstrate grade, int preparationGeneration) {
+
+    /** The legacy preparation generation value (unprepared/G1). */
+    public static final int PREPARATION_LEGACY = 1;
+
+    /** The G2 prepared generation value. */
+    public static final int PREPARATION_G2 = 2;
 
     /**
      * Creates a lot that has not been started, which is the common case for a fresh FOUP.
+     * Uses legacy preparation generation (1).
      *
      * @param lotId    server-assigned identifier of the sealed lot
      * @param capacity maximum number of wafers this lot holds, {@code >= 1}
@@ -52,12 +68,12 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
      *                                  more wafers than its capacity
      */
     public FoupContents(UUID lotId, int capacity, List<Wafer> wafers) {
-        this(lotId, capacity, wafers, null, WaferSubstrate.ORDINARY);
+        this(lotId, capacity, wafers, null, WaferSubstrate.ORDINARY, PREPARATION_LEGACY);
     }
 
     /**
-     * Legacy constructor that creates a lot with a run spec but default ORDINARY grade.
-     * Kept for source compatibility.
+     * Legacy constructor that creates a lot with a run spec but default ORDINARY grade
+     * and legacy preparation generation (1). Kept for source compatibility.
      *
      * @param lotId    server-assigned identifier of the sealed lot
      * @param capacity maximum number of wafers this lot holds, {@code >= 1}
@@ -69,11 +85,12 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
      *                                  more wafers than its capacity
      */
     public FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec run) {
-        this(lotId, capacity, wafers, run, WaferSubstrate.ORDINARY);
+        this(lotId, capacity, wafers, run, WaferSubstrate.ORDINARY, PREPARATION_LEGACY);
     }
 
     /**
      * Creates a lot that has not been started, with an explicit substrate grade.
+     * Uses legacy preparation generation (1).
      * Static factory to avoid ambiguity with the legacy 4-arg (RunSpec) constructor.
      *
      * @param lotId    server-assigned identifier of the sealed lot
@@ -87,7 +104,7 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
      *                                  more wafers than its capacity
      */
     public static FoupContents of(UUID lotId, int capacity, List<Wafer> wafers, WaferSubstrate grade) {
-        return new FoupContents(lotId, capacity, wafers, null, grade);
+        return new FoupContents(lotId, capacity, wafers, null, grade, PREPARATION_LEGACY);
     }
 
     /**
@@ -95,8 +112,9 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
      *
      * @throws NullPointerException     if {@code lotId} or {@code wafers} is null, or
      *                                  the wafer list holds a null entry
-     * @throws IllegalArgumentException if the capacity is below one or the lot holds
-     *                                  more wafers than its capacity
+     * @throws IllegalArgumentException if the capacity is below one, the lot holds
+     *                                  more wafers than its capacity, or preparationGeneration
+     *                                  is not 1 or 2
      */
     public FoupContents {
         Objects.requireNonNull(lotId, "lotId must not be null");
@@ -104,6 +122,9 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
         Objects.requireNonNull(grade, "grade must not be null");
         if (capacity < 1) {
             throw new IllegalArgumentException("capacity must be >= 1, got " + capacity);
+        }
+        if (preparationGeneration < PREPARATION_LEGACY || preparationGeneration > PREPARATION_G2) {
+            throw new IllegalArgumentException("preparationGeneration must be " + PREPARATION_LEGACY + " or " + PREPARATION_G2 + ", got " + preparationGeneration);
         }
         wafers = List.copyOf(wafers);
         if (wafers.size() > capacity) {
@@ -113,18 +134,18 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
     }
 
     /**
-     * Creates an empty lot with ordinary substrate.
+     * Creates an empty lot with ordinary substrate and legacy preparation generation (1).
      *
      * @param lotId    server-assigned identifier of the sealed lot
      * @param capacity maximum number of wafers the lot holds
      * @return a lot with no wafers in it
      */
     public static FoupContents empty(UUID lotId, int capacity) {
-        return new FoupContents(lotId, capacity, List.of(), null, WaferSubstrate.ORDINARY);
+        return new FoupContents(lotId, capacity, List.of(), null, WaferSubstrate.ORDINARY, PREPARATION_LEGACY);
     }
 
     /**
-     * Creates an empty lot with the given substrate grade.
+     * Creates an empty lot with the given substrate grade and legacy preparation generation (1).
      *
      * @param lotId    server-assigned identifier of the sealed lot
      * @param capacity maximum number of wafers the lot holds
@@ -133,7 +154,7 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
      */
     public static FoupContents empty(UUID lotId, int capacity, WaferSubstrate grade) {
         Objects.requireNonNull(grade, "grade must not be null");
-        return new FoupContents(lotId, capacity, List.of(), null, grade);
+        return new FoupContents(lotId, capacity, List.of(), null, grade, PREPARATION_LEGACY);
     }
 
     /**
@@ -165,41 +186,51 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
 
     /**
      * Returns a copy of this lot with one more wafer appended.
+     * Preserves preparation generation, except refuses to add ANY wafer to a prepared lot (generation 2).
      *
      * @param wafer the wafer to add, not null
-     * @return a new lot with the wafer appended, carrying the same run spec and grade
-     * @throws IllegalStateException if the lot is already full
+     * @return a new lot with the wafer appended, carrying the same run spec, grade and preparation generation
+     * @throws IllegalStateException if the lot is already full, or if this is a prepared lot (generation 2)
      */
     public FoupContents withWafer(Wafer wafer) {
         Objects.requireNonNull(wafer, "wafer must not be null");
         if (isFull()) {
             throw new IllegalStateException("the lot is already full (" + this.capacity + " wafers)");
         }
+        if (preparationGeneration == PREPARATION_G2) {
+            throw new IllegalStateException("cannot add wafers to a prepared lot (generation 2)");
+        }
         List<Wafer> grown = new ArrayList<>(this.wafers);
         grown.add(wafer);
-        return new FoupContents(this.lotId, this.capacity, grown, this.run, this.grade);
+        return new FoupContents(this.lotId, this.capacity, grown, this.run, this.grade, this.preparationGeneration);
     }
 
     /**
      * Returns a copy of this lot with the given wafers appended.
+     * Preserves preparation generation, except refuses to add ANY wafers to a prepared lot (generation 2).
      *
      * @param newWafers the wafers to add, no null entries
-     * @return a new lot with the wafers appended, carrying the same run spec and grade
-     * @throws IllegalStateException if the result would exceed the capacity
+     * @return a new lot with the wafers appended, carrying the same run spec, grade and preparation generation
+     * @throws IllegalStateException if the result would exceed the capacity, or if this is a prepared lot (generation 2)
      */
     public FoupContents withWafers(List<Wafer> newWafers) {
         Objects.requireNonNull(newWafers, "newWafers must not be null");
+        if (preparationGeneration == PREPARATION_G2) {
+            throw new IllegalStateException("cannot add wafers to a prepared lot (generation 2)");
+        }
         if (newWafers.size() > this.capacity - this.wafers.size()) {
             throw new IllegalStateException("cannot add " + newWafers.size() + " wafers to a lot holding "
                 + this.wafers.size() + " of " + this.capacity);
         }
         List<Wafer> grown = new ArrayList<>(this.wafers);
         grown.addAll(newWafers);
-        return new FoupContents(this.lotId, this.capacity, grown, this.run, this.grade);
+        return new FoupContents(this.lotId, this.capacity, grown, this.run, this.grade, this.preparationGeneration);
     }
 
     /**
      * Returns a copy of this lot without the wafer at the given slot.
+     * Preserves preparation generation, except if removing the last wafer resets generation to 1
+     * so an empty carrier cannot transfer preparation.
      *
      * @param index slot to clear, {@code 0 <= index < size()}
      * @return a new lot with that wafer removed, carrying the same run spec and grade
@@ -212,7 +243,11 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
         }
         List<Wafer> shrunk = new ArrayList<>(this.wafers);
         shrunk.remove(index);
-        return new FoupContents(this.lotId, this.capacity, shrunk, this.run, this.grade);
+        int newPreparation = this.preparationGeneration;
+        if (shrunk.isEmpty()) {
+            newPreparation = PREPARATION_LEGACY;
+        }
+        return new FoupContents(this.lotId, this.capacity, shrunk, this.run, this.grade, newPreparation);
     }
 
     /**
@@ -233,10 +268,44 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
      * not what has happened to it.</p>
      *
      * @param run the run spec to store, or {@code null} to clear it
-     * @return a new lot with the spec attached, preserving the grade
+     * @return a new lot with the spec attached, preserving the grade and preparation generation
      */
     public FoupContents withRun(RunSpec run) {
-        return new FoupContents(this.lotId, this.capacity, this.wafers, run, this.grade);
+        return new FoupContents(this.lotId, this.capacity, this.wafers, run, this.grade, this.preparationGeneration);
+    }
+
+    /**
+     * Returns a copy of this lot with the given preparation generation.
+     * Only allows setting generation 2 on trusted fresh nonempty pure unstarted lots
+     * where all wafers are at layer 0. Refuses processed or already-prepared lots.
+     *
+     * @param generation the preparation generation to set (must be 2)
+     * @return a new lot with the preparation generation set
+     * @throws IllegalArgumentException if generation is not 2, or the lot is empty, not PURE grade,
+     *                                  already started, already prepared, or any wafer is not at layer 0
+     */
+    public FoupContents withPreparationGeneration(int generation) {
+        if (generation != PREPARATION_G2) {
+            throw new IllegalArgumentException("only generation " + PREPARATION_G2 + " can be set via this method");
+        }
+        if (this.preparationGeneration == PREPARATION_G2) {
+            throw new IllegalArgumentException("lot is already prepared (generation 2)");
+        }
+        if (isEmpty()) {
+            throw new IllegalArgumentException("cannot prepare an empty lot");
+        }
+        if (this.grade != WaferSubstrate.PURE) {
+            throw new IllegalArgumentException("only PURE grade lots can be prepared");
+        }
+        if (isStarted()) {
+            throw new IllegalArgumentException("cannot prepare a lot that has already been started");
+        }
+        for (Wafer wafer : this.wafers) {
+            if (wafer.layerIndex() != Wafer.UNPROCESSED_LAYER) {
+                throw new IllegalArgumentException("all wafers must be at layer 0 (unprocessed) to prepare");
+            }
+        }
+        return new FoupContents(this.lotId, this.capacity, this.wafers, this.run, this.grade, PREPARATION_G2);
     }
 
     /**
@@ -256,14 +325,15 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
     /**
      * Returns everything about this lot that may leave the server.
      *
-     * <p>The result carries the capacity, the wafer count, the lot layer and the
-     * wafer substrate grade. It never carries a {@link Wafer#cumulativeRoll()} or a
-     * {@link Wafer#flags()} value, and neither can be recovered from it.</p>
+     * <p>The result carries the capacity, the wafer count, the lot layer, the wafer
+     * substrate grade, and the preparation generation. It never carries a
+     * {@link Wafer#cumulativeRoll()} or a {@link Wafer#flags()} value, and neither
+     * can be recovered from it.</p>
      *
      * @return the client-safe view of this lot
      */
     public FoupPublicView publicView() {
-        return new FoupPublicView(this.capacity, this.wafers.size(), lotLayer(), this.grade);
+        return new FoupPublicView(this.capacity, this.wafers.size(), lotLayer(), this.grade, this.preparationGeneration);
     }
 
     /**
@@ -276,6 +346,7 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
     public String toString() {
         FoupPublicView view = publicView();
         return "FoupContents[lot=" + this.lotId + ", capacity=" + view.capacity()
-            + ", wafers=" + view.waferCount() + ", layer=" + view.lotLayer() + ", grade=" + view.grade().id() + "]";
+            + ", wafers=" + view.waferCount() + ", layer=" + view.lotLayer()
+            + ", grade=" + view.grade().id() + ", preparation=" + view.preparationGeneration() + "]";
     }
 }

@@ -90,8 +90,9 @@ public final class ProcessRun implements ProcessStartResult {
         if (next == null || next.lotLayer() != currentLayer || !next.lotId().equals(lot.lotId())
                 || next.capacity() != lot.capacity() || next.size() != lot.size()
                 || next.run() == null || !next.run().matches(request.tier(), request.dieType(), request.cores())
-                || !next.grade().equals(lot.grade())) {
-            throw new IllegalStateException("applyLayer returned a different lot, did not apply the requested layer, or changed the wafer grade");
+                || !next.grade().equals(lot.grade())
+                || next.preparationGeneration() != lot.preparationGeneration()) {
+            throw new IllegalStateException("applyLayer returned a different lot, did not apply the requested layer, or changed the wafer grade or preparation generation");
         }
         lot = next;
         events.add(ProcessRunEvent.layerCompleted(currentLayer));
