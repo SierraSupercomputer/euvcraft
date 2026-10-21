@@ -17,6 +17,7 @@ public class AdvancedCasingBlock extends BaseEntityBlock {
     }
     @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> builder){builder.add(FORMED,LARGE,PART,FACING);}
     @Override public BlockState getStateForPlacement(BlockPlaceContext context){return defaultBlockState().setValue(FACING,context.getHorizontalDirection().getOpposite());}
+    @Override protected BlockState rotate(BlockState state,Rotation rotation){return state.setValue(FACING,rotation.rotate(state.getValue(FACING)));}
     @Override public BlockEntity newBlockEntity(BlockPos pos,BlockState state){return new AdvancedMemberBlockEntity(pos,state);}
     @Override public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level level,BlockState state,BlockEntityType<T> type){
         return level.isClientSide()?null:(l,p,s,b)->{if(b instanceof AdvancedMemberBlockEntity member)member.serverTick();};
