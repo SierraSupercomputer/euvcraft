@@ -342,7 +342,7 @@ public final class ProcessCellRunPersistence {
             Map<String, Integer> installedGenerations = Map.of(
                 SupportLines.SUBSTRATE, this.grade.generation(),
                 SupportLines.MASK_SHOP, maskData.shopGeneration(),
-                SupportLines.DEPOSITION_ETCH, 1,
+                SupportLines.DEPOSITION_ETCH, preparationGeneration,
                 SupportLines.UTILITIES, 1,
                 SupportLines.TEST_PACKAGING, 1);
 

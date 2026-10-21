@@ -229,7 +229,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         Map<String, Integer> installedGenerations = Map.of(
             SupportLines.SUBSTRATE, substrateGen,
             SupportLines.MASK_SHOP, maskShopGen,
-            SupportLines.DEPOSITION_ETCH, 1,
+            SupportLines.DEPOSITION_ETCH, lot.preparationGeneration(),
             SupportLines.UTILITIES, 1,
             SupportLines.TEST_PACKAGING, 1
         );

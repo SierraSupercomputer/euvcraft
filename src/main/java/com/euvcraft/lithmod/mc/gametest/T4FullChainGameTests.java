@@ -40,7 +40,7 @@ final class T4FullChainGameTests {
     for(int tick=0;tick<10_000&&slicer.slot(2).isEmpty();tick++){replenish(slicer);slicer.serverTick();}
     check(h,!slicer.slot(2).isEmpty(),"Actual slicer produces carrier");foup=slicer.slot(2).copy();
    }finally{slicer.clearContent();h.getLevel().setBlock(pos,Blocks.AIR.defaultBlockState(),3);}
-   var initial=FoupItems.trustedContentsOf(foup);eq(h,3,initial.size(),"Real sliced wafer count");
+   var unprepared=foup.copy();var initial=FoupItems.trustedContentsOf(foup);eq(h,3,initial.size(),"Real sliced wafer count");
    check(h,initial.grade()==WaferSubstrate.PURE&&initial.preparationGeneration()==1,"Purity does not invent preparation");
    try(var fixture=build(h,Kind.DEPOSITION)){
     var machine=(DepositionEtcherControllerBlockEntity)fixture.machine();machine.setSlot(0,foup);
@@ -64,6 +64,12 @@ final class T4FullChainGameTests {
     Item[] components={ModItems.ARF_EXCIMER_LASER.get(),ModItems.ARF_DRY_LENS.get(),ModItems.NANOPOSITIONING_STAGE.get(),ModItems.ULPA_FILTER.get(),ModItems.PRECISION_OVERLAY_SCOPE.get()};
     for(int n=0;n<5;n++)machine.setSlot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE+n,new ItemStack(components[n]));
     machine.setSlot(ProcessCellControllerBlockEntity.SLOT_FOUP,foup);machine.setSlot(ProcessCellControllerBlockEntity.SLOT_MASK,mask);machine.setSlot(ProcessCellControllerBlockEntity.SLOT_RESIST,new ItemStack(ModItems.RESIST_T4.get(),64));
+    machine.setSlot(ProcessCellControllerBlockEntity.SLOT_FOUP,unprepared);replenish(machine);machine.serverTick();
+    check(h,machine.processState()==ProcessState.IDLE&&machine.lastRefusal()!=null,"Unprepared PURE wafer lot cannot bypass deposition");
+    eq(h,maskData.usesRemaining(),machine.slot(ProcessCellControllerBlockEntity.SLOT_MASK).get(ModDataComponents.MASK_DATA.get()).usesRemaining(),"Refused source consumes no mask use");
+    machine.setSlot(ProcessCellControllerBlockEntity.SLOT_FOUP,foup);replenish(machine);machine.serverTick();
+    var saved=save(fixture.level(),machine);var blockState=fixture.level().getBlockState(fixture.anchor());fixture.level().removeBlockEntity(fixture.anchor());
+    var restored=ModMultiblocks.PROCESS_CELL_CONTROLLER_BE.get().create(fixture.anchor(),blockState);fixture.level().setBlockEntity(restored);load(fixture.level(),restored,saved);restored.revalidate();machine=restored;
     for(int tick=0;tick<1000&&machine.processState()!=ProcessState.FINISHED;tick++){replenish(machine);machine.serverTick();}
     check(h,machine.processState()==ProcessState.FINISHED,"Actual T4 lithography completes "+family+" state="+machine.processState()+" refusal="+machine.lastRefusal());
     foup=machine.slot(ProcessCellControllerBlockEntity.SLOT_FOUP).copy();
