@@ -208,7 +208,7 @@ function crop(raw, w, tx, ty) {
 export function computeT4Panels(cfg) {
   // Validate config schema
   if (!cfg || cfg.version !== 1 ||
-      Object.keys(cfg).some(k => !['version', 'palette', 'faceRecipes', 'markings', 'unformedRecipes'].includes(k))) {
+      Object.keys(cfg).some(k => !['$comment', 'version', 'palette', 'faceRecipes', 'markings', 'unformedRecipes'].includes(k))) {
     throw new Error('Invalid t4-panels schema');
   }
   if (!cfg.palette || typeof cfg.palette !== 'object') throw new Error('T4 palette missing');
