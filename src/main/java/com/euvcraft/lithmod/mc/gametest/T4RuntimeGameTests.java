@@ -141,6 +141,11 @@ public final class T4RuntimeGameTests {
    var replacement=AdvancedMachines.DEPOSITION_ETCHER_CONTROLLER_BE.get().create(c.anchor(),state);
    c.level().setBlockEntity(replacement);load(c.level(),replacement,tag);replacement.revalidate();
    eq(h,progress,replacement.jobProgress(),"Pending progress survives reload");eq(h,duration,replacement.jobDuration(),"Frozen duration survives reload");
+   try{
+    var apply=HighBinningDataLoader.class.getDeclaredMethod("apply",Map.class,net.minecraft.server.packs.resources.ResourceManager.class,net.minecraft.util.profiling.ProfilerFiller.class);
+    apply.setAccessible(true);apply.invoke(new HighBinningDataLoader(),Map.of(),null,null);
+   }catch(ReflectiveOperationException e){throw new RuntimeException(e);}
+   check(h,HighBinningDataLoader.getRegistry().orElseThrow().forSource(DieTypes.LOGIC,3).isEmpty(),"Actual empty reload removes new-job transition");
    replacement.setStoredEnergy(0);replacement.serverTick();eq(h,progress,replacement.jobProgress(),"Out of power pauses");
    replenish(replacement);replacement.setSlot(2,new ItemStack(Items.STONE));int energy=replacement.buffer().getAmountAsInt();
    replacement.serverTick();eq(h,progress,replacement.jobProgress(),"Full output pauses");eq(h,energy,replacement.buffer().getAmountAsInt(),"Blocked tick costs no FE");
@@ -205,6 +210,8 @@ public final class T4RuntimeGameTests {
  }
  private static void binningReload(GameTestHelper h){
   double oldPower=FabConfig.FE_POWER_MULTIPLIER.get();int oldChips=FabConfig.CHIPS_PER_WAFER.get();
+  var registryField=binningRegistryField();Object originalRegistry;
+  try{originalRegistry=registryField.get(null);}catch(ReflectiveOperationException e){throw new RuntimeException(e);}
   try(var c=build(h,Kind.PACKAGING)){
    var machine=(AdvancedTestPackageControllerBlockEntity)c.machine();machine.toggleHighBinning();
    var source=complete(3,DieTypes.LOGIC,0);int passes=expectedPassing(source,true),count=FoupItems.trustedContentsOf(source).size();
@@ -217,8 +224,13 @@ public final class T4RuntimeGameTests {
    var result=packageAll(h,replacement,ModItems.LOGIC_CHIP_T4.get(),count);
    eq(h,passes*oldChips,result.chips(),"Config reload cannot reroll or change frozen output amounts");
    eq(h,(count-passes)*oldChips,result.scrap(),"Saved failures remain failures");
-  } finally {FabConfig.FE_POWER_MULTIPLIER.set(oldPower);FabConfig.CHIPS_PER_WAFER.set(oldChips);EUVCRAFTMod.config().onConfigReload();}
+   replacement.setSlot(0,complete(3,DieTypes.LOGIC,0));replenish(replacement);replacement.serverTick();
+   check(h,!replacement.isQueueActive()&&!FoupItems.trustedContentsOf(replacement.slot(0)).isEmpty(),"Removed transition blocks subsequent jobs without consuming source");
+  } finally {try{registryField.set(null,originalRegistry);}catch(ReflectiveOperationException e){throw new RuntimeException(e);}FabConfig.FE_POWER_MULTIPLIER.set(oldPower);FabConfig.CHIPS_PER_WAFER.set(oldChips);EUVCRAFTMod.config().onConfigReload();}
   h.succeed();
+ }
+ private static java.lang.reflect.Field binningRegistryField(){
+  try{var field=HighBinningDataLoader.class.getDeclaredField("resolved");field.setAccessible(true);return field;}catch(ReflectiveOperationException e){throw new RuntimeException(e);}
  }
  private T4RuntimeGameTests(){}
 }
