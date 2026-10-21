@@ -62,12 +62,12 @@ final class T4FullChainGameTests {
    try(var fixture=build(h,Kind.LITHOGRAPHY)){
     var machine=(ProcessCellControllerBlockEntity)fixture.machine();
     Item[] components={ModItems.ARF_EXCIMER_LASER.get(),ModItems.ARF_DRY_LENS.get(),ModItems.NANOPOSITIONING_STAGE.get(),ModItems.ULPA_FILTER.get(),ModItems.PRECISION_OVERLAY_SCOPE.get()};
-    for(int n=0;n<5;n++)machine.setSlot(n,new ItemStack(components[n]));
-    machine.setSlot(5,foup);machine.setSlot(6,mask);machine.setSlot(7,new ItemStack(ModItems.RESIST_T4.get(),64));
+    for(int n=0;n<5;n++)machine.setSlot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE+n,new ItemStack(components[n]));
+    machine.setSlot(ProcessCellControllerBlockEntity.SLOT_FOUP,foup);machine.setSlot(ProcessCellControllerBlockEntity.SLOT_MASK,mask);machine.setSlot(ProcessCellControllerBlockEntity.SLOT_RESIST,new ItemStack(ModItems.RESIST_T4.get(),64));
     for(int tick=0;tick<1000&&machine.processState()!=ProcessState.FINISHED;tick++){replenish(machine);machine.serverTick();}
-    check(h,machine.processState()==ProcessState.FINISHED,"Actual T4 lithography completes "+family+" state="+machine.processState());
-    foup=machine.slot(5).copy();
-    var remaining=machine.slot(6).get(ModDataComponents.MASK_DATA.get());
+    check(h,machine.processState()==ProcessState.FINISHED,"Actual T4 lithography completes "+family+" state="+machine.processState()+" refusal="+machine.lastRefusal());
+    foup=machine.slot(ProcessCellControllerBlockEntity.SLOT_FOUP).copy();
+    var remaining=machine.slot(ProcessCellControllerBlockEntity.SLOT_MASK).get(ModDataComponents.MASK_DATA.get());
     check(h,remaining!=null&&remaining.usesRemaining()==maskData.usesRemaining()-1,"One mask use per full lot");
    }
    var completed=FoupItems.trustedContentsOf(foup);
@@ -95,4 +95,5 @@ final class T4FullChainGameTests {
  }
  private T4FullChainGameTests(){}
 }
+
 
