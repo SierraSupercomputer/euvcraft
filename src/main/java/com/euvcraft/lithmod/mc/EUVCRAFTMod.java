@@ -126,6 +126,7 @@ modEventBus.addListener(ComponentTooltipAppenders::register);
         NeoForge.EVENT_BUS.register(MachineDefinitionLoader.class);
         NeoForge.EVENT_BUS.register(MachineRecipeLoader.class);
         NeoForge.EVENT_BUS.register(SupportRecipeLoader.class);
+        NeoForge.EVENT_BUS.register(com.euvcraft.lithmod.mc.data.HighBinningDataLoader.class);
 
         LOGGER.info("EUVCRAFT mod loading...");
     }

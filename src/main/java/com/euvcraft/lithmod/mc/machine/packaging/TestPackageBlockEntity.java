@@ -198,6 +198,9 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
     }
     protected int installedGeneration() { return INSTALLED_GENERATION; }
     protected boolean processingAllowed() { return true; }
+    protected boolean highBinningEnabled() { return false; }
+    private boolean acceptedHighBinning;
+    private int acceptedSourceTier;
 
     @Override
     protected String machineId() {
@@ -428,7 +431,16 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
             return PackagingRefusalReason.GENERATION_UNMET;
         }
         boolean chipItemAvailable = ChipCatalog.chipFor(spec.dieType(), spec.tierIndex()).isPresent();
-        return PackagingRules.validate(lot, tier, chipItemAvailable, matrix, installedGeneration());
+        PackagingRefusalReason refusal=PackagingRules.validate(lot, tier, chipItemAvailable, matrix, installedGeneration());
+        if(refusal!=null)return refusal;
+        if(highBinningEnabled()){
+            var recipe=com.euvcraft.lithmod.mc.data.HighBinningDataLoader.getRegistry()
+                .flatMap(registry->registry.forSource(spec.dieType(),spec.tierIndex()));
+            if(installedGeneration()<2||recipe.isEmpty()
+                ||ChipCatalog.chipFor(spec.dieType(),recipe.get().transition().targetTier()).isEmpty())
+                return PackagingRefusalReason.NO_CHIP_FOR_DIE;
+        }
+        return null;
     }
 
     /**
@@ -450,15 +462,26 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
         RunSpec spec = lot.run();
         PackagingPlan judged;
         PackagingRun queue;
+        int outputTier=spec.tierIndex();
+        boolean high=highBinningEnabled();
         try {
-            boolean[] flags = FabYieldService.evaluateLot(serverLevel, lot, tier,
-                spec.dieType(), spec.coresOrNull());
-            List<Boolean> passFlags = new ArrayList<>(flags.length);
-            for (boolean flag : flags) {
-                passFlags.add(flag);
+            if(high){
+                var recipe=com.euvcraft.lithmod.mc.data.HighBinningDataLoader.getRegistry()
+                    .flatMap(registry->registry.forSource(spec.dieType(),spec.tierIndex())).orElseThrow();
+                var transition=recipe.transition();
+                int cost=transition.scaledEnergyPerTick(perTick);
+                if(cost>buffer().getCapacityAsInt()||buffer().getAmountAsLong()<cost){paused=true;return false;}
+                judged=com.euvcraft.lithmod.core.HighBinningRules.judge(lot,tier,installedGeneration(),
+                    ChipCatalog.chipFor(spec.dieType(),transition.targetTier()).isPresent(),transition,
+                    params.chipsPerWafer(),params.packagesPerWafer());
+                queue=new PackagingRun(judged,transition.scaledTicksPerWafer(params.ticksPerWafer()),cost);
+                outputTier=transition.targetTier();
+            }else{
+                boolean[] flags=FabYieldService.evaluateLot(serverLevel,lot,tier,spec.dieType(),spec.coresOrNull());
+                List<Boolean> values=new ArrayList<>(flags.length);for(boolean flag:flags)values.add(flag);
+                judged=new PackagingPlan(values,params.chipsPerWafer(),params.packagesPerWafer());
+                queue=new PackagingRun(judged,params.ticksPerWafer(),perTick);
             }
-            judged = new PackagingPlan(passFlags, params.chipsPerWafer(), params.packagesPerWafer());
-            queue = new PackagingRun(judged, params.ticksPerWafer(), perTick);
         } catch (RuntimeException unrepresentable) {
             // A lot the gate let through but the judgment or the plan could not express is
             // left untouched rather than half-consumed.
@@ -470,7 +493,8 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
         this.plan = judged;
         this.run = queue;
         this.designDieType = spec.dieType();
-        this.designTierIndex = spec.tierIndex();
+        this.designTierIndex = outputTier;
+        this.acceptedSourceTier=spec.tierIndex();this.acceptedHighBinning=high;
         this.refusal = null;
         this.paused = false;
 
@@ -714,6 +738,8 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
         state.putInt(PAID_TICKS_KEY, snapshot.paidTicks());
         state.putString(DIE_TYPE_KEY, this.designDieType);
         state.putInt(TIER_KEY, this.designTierIndex);
+        state.putBoolean("high_binning",acceptedHighBinning);
+        state.putInt("source_tier",acceptedSourceTier);
     }
 
     /**
@@ -763,6 +789,13 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
                     "a packaging snapshot must name a die type the catalog resolves");
             }
 
+            boolean high=state.getBooleanOr("high_binning",false);
+            int sourceTier=state.getIntOr("source_tier",tierIndex);
+            if(high&&(installedGeneration()<2||sourceTier<3||tierIndex!=sourceTier+1
+                ||!(DieTypes.LOGIC.equals(dieType)||DieTypes.COMPUTE.equals(dieType))
+                ||DieTypes.LOGIC.equals(dieType)&&tierIndex>5))throw new IllegalArgumentException("Invalid binning snapshot");
+            if(!high&&sourceTier!=tierIndex)throw new IllegalArgumentException("Invalid normal snapshot");
+            this.acceptedHighBinning=high;this.acceptedSourceTier=sourceTier;
             this.plan = restoredPlan;
             this.run = restoredRun;
             this.designDieType = dieType;
