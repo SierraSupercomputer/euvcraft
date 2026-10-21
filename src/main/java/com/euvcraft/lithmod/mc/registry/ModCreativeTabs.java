@@ -107,6 +107,17 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.MEMORY_CHIP_T3.get());
                 output.accept(ModItems.COMPUTE_CHIP_T3.get());
                 output.accept(ModItems.NAND_CHIP_T3.get());
+                // T4 additions retain the existing order above.
+                output.accept(ModItems.ARF_EXCIMER_LASER.get());
+                output.accept(ModItems.ARF_DRY_LENS.get());
+                output.accept(ModItems.NANOPOSITIONING_STAGE.get());
+                output.accept(ModItems.ULPA_FILTER.get());
+                output.accept(ModItems.PRECISION_OVERLAY_SCOPE.get());
+                output.accept(ModItems.RESIST_T4.get());
+                output.accept(ModItems.LOGIC_CHIP_T4.get());
+                output.accept(ModItems.MEMORY_CHIP_T4.get());
+                output.accept(ModItems.COMPUTE_CHIP_T4.get());
+                output.accept(ModItems.NAND_CHIP_T4.get());
             })
             .build()
     );

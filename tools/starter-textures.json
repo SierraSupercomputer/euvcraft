@@ -282,6 +282,15 @@
       "light": "#B994CA",
       "accent": "#DBBEE8",
       "trim": "#F0DFF8"
+    },
+    "T4": {
+      "outline": "#003D4D",
+      "dark": "#006B7A",
+      "mid": "#0099A8",
+      "light": "#4DD0D8",
+      "accent": "#80E4DD",
+      "trim": "#C8F6F0",
+      "glow": "#80E4DD"
     }
   },
   "shapes": {
@@ -2624,6 +2633,56 @@
       "palette": "T3",
       "shape": "bottle",
       "note": "T3 photoresist bottle"
+    },
+    "logic_chip_t4": {
+      "palette": "T4",
+      "shape": "chip",
+      "note": "T4 logic die"
+    },
+    "memory_chip_t4": {
+      "palette": "T4",
+      "shape": "chip_mem",
+      "note": "T4 memory die with dense cell bars"
+    },
+    "compute_chip_t4": {
+      "palette": "T4",
+      "shape": "chip",
+      "note": "T4 compute die, single core"
+    },
+    "nand_chip_t4": {
+      "palette": "T4",
+      "shape": "chip_mem",
+      "note": "T4 NAND die"
+    },
+    "arf_excimer_laser": {
+      "palette": "T4",
+      "shape": "lamp",
+      "note": "T4 ArF excimer light source"
+    },
+    "arf_dry_lens": {
+      "palette": "T4",
+      "shape": "lens",
+      "note": "T4 ArF dry lens"
+    },
+    "nanopositioning_stage": {
+      "palette": "T4",
+      "shape": "stage",
+      "note": "T4 nanopositioning stage"
+    },
+    "ulpa_filter": {
+      "palette": "T4",
+      "shape": "filter",
+      "note": "T4 ULPA cleanroom filter"
+    },
+    "precision_overlay_scope": {
+      "palette": "T4",
+      "shape": "scope",
+      "note": "T4 precision overlay scope"
+    },
+    "resist_t4": {
+      "palette": "T4",
+      "shape": "bottle",
+      "note": "T4 photoresist bottle"
     }
   },
   "blocks": {
@@ -2778,7 +2837,17 @@
       "precision_stepper_stage",
       "hepa_filter",
       "laser_interferometer",
-      "resist_t3"
+      "resist_t3",
+      "logic_chip_t4",
+      "memory_chip_t4",
+      "compute_chip_t4",
+      "nand_chip_t4",
+      "arf_excimer_laser",
+      "arf_dry_lens",
+      "nanopositioning_stage",
+      "ulpa_filter",
+      "precision_overlay_scope",
+      "resist_t4"
     ],
     "blockModelsToUpdate": [
       "crystal_puller",

@@ -21,7 +21,7 @@ import { computeSupportAssets } from './lib/support-assets.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-// Exact expected production asset sets (M1 plus T3). Anything extra/missing in the manifest fails.
+// Exact expected production asset sets (M1 plus T3, plus T4 seed). Anything extra/missing in the manifest fails.
 const EXPECTED_ITEM_IDS = [
   'foup_mk1', 'foup_mk2', 'logic_chip_t1', 'logic_chip_t2', 'memory_chip_t2',
   'chip_scrap', 'silicon', 'silicon_boule', 'resist_t1', 'resist_t2',
@@ -39,6 +39,16 @@ const EXPECTED_ITEM_IDS = [
   'hepa_filter',
   'laser_interferometer',
   'resist_t3',
+  'logic_chip_t4',
+  'memory_chip_t4',
+  'compute_chip_t4',
+  'nand_chip_t4',
+  'arf_excimer_laser',
+  'arf_dry_lens',
+  'nanopositioning_stage',
+  'ulpa_filter',
+  'precision_overlay_scope',
+  'resist_t4',
 ];
 // Ten block models. Controller state suffixes are matched exactly ('_formed'/'_unformed'),
 // never via a loose endsWith('formed') which would also hit 'unformed'.
