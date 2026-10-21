@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "north": "lithmod:block/t4_small_north_tx0_ty0",
+    "south": "lithmod:block/t4_small_south_tx1_ty0",
+    "west": "lithmod:block/t4_small_west_tx1_ty0",
+    "east": "lithmod:block/t4_small_east_tx1_ty0",
+    "up": "lithmod:block/t4_small_up_tx1_ty1",
+    "down": "lithmod:block/t4_small_down_tx1_ty1",
+    "particle": "lithmod:block/t4_small_north_tx0_ty0"
+  }
+}

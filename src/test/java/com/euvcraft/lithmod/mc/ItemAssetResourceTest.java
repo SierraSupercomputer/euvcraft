@@ -50,9 +50,8 @@ class ItemAssetResourceTest {
         Map<String, String> lang = langEntries();
         List<String> definitions = resourceNames(ITEM_DEFINITIONS, ".json");
 
-        assertTrue(definitions.size() >= 9,
-            "expected the two FOUP variants and the seven items this milestone registers, found "
-                + definitions.size() + " item definitions");
+        assertTrue(definitions.size() >= 44,
+            "expected all production items including T4, found " + definitions.size() + " item definitions");
 
         for (String id : definitions) {
             assertNotNull(ItemAssetResourceTest.class.getResource(ITEM_MODELS + id + ".json"),
@@ -68,7 +67,7 @@ class ItemAssetResourceTest {
         List<String> definitions = resourceNames(ITEM_DEFINITIONS, ".json");
         List<String> models = resourceNames(ITEM_MODELS, ".json");
 
-        assertTrue(models.size() >= 9, "expected at least nine item models, found " + models.size());
+        assertTrue(models.size() >= 44, "expected at least all production item models, found " + models.size());
         for (String id : models) {
             assertTrue(definitions.contains(id), "item model " + id + " has no client item definition");
         }
@@ -80,7 +79,8 @@ class ItemAssetResourceTest {
         Map<String, String> lang = langEntries();
 
         for (String key : List.of("itemGroup.lithmod", "itemGroup.lithmod.chips", "tooltip.lithmod.chip",
-            "dieType.lithmod.logic", "dieType.lithmod.memory", "tier.lithmod.t1", "tier.lithmod.t2")) {
+            "dieType.lithmod.logic", "dieType.lithmod.memory", "dieType.lithmod.compute", "dieType.lithmod.nand",
+            "tier.lithmod.t1", "tier.lithmod.t2", "tier.lithmod.t3", "tier.lithmod.t4")) {
             assertTrue(lang.containsKey(key), "missing language entry " + key);
         }
     }

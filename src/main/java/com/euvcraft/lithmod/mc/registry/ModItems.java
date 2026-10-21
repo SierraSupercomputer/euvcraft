@@ -1,4 +1,5 @@
 package com.euvcraft.lithmod.mc.registry;
+import com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedMachines;
 
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.euvcraft.lithmod.mc.FoupItem;
@@ -218,6 +219,33 @@ public final class ModItems {
             () -> com.euvcraft.lithmod.mc.multiblock.support.SupportMachines.SUPPORT_POWER_PORT.get());
 
     /**
+     * The T4 advanced multiblock block items.
+     *
+     * <p>Two independent multiblocks: deposition_etcher (3x3x5) and advanced_test_package (2x2x3).
+     * Each has a lower controller and upper operating panel. They share casing and power port blocks.
+     * Same {@code registerSimpleBlockItem} rule as other multiblocks.</p>
+     */
+    public static final DeferredItem<BlockItem> DEPOSITION_ETCHER_CONTROLLER =
+        ITEMS.registerSimpleBlockItem("deposition_etcher",
+            () -> AdvancedMachines.DEPOSITION_ETCHER_CONTROLLER.get());
+
+    public static final DeferredItem<BlockItem> ADVANCED_OPERATING_PANEL =
+        ITEMS.registerSimpleBlockItem("advanced_operating_panel", () -> AdvancedMachines.ADVANCED_OPERATING_PANEL.get());
+
+    public static final DeferredItem<BlockItem> ADVANCED_TEST_PACKAGE_CONTROLLER =
+        ITEMS.registerSimpleBlockItem("advanced_test_package",
+            () -> AdvancedMachines.ADVANCED_TEST_PACKAGE_CONTROLLER.get());
+
+
+    public static final DeferredItem<BlockItem> ADVANCED_CASING =
+        ITEMS.registerSimpleBlockItem("advanced_casing",
+            () -> AdvancedMachines.ADVANCED_CASING.get());
+
+    public static final DeferredItem<BlockItem> ADVANCED_POWER_PORT =
+        ITEMS.registerSimpleBlockItem("advanced_power_port",
+            () -> AdvancedMachines.ADVANCED_POWER_PORT.get());
+
+    /**
      * The test-only machine's block item.
      *
      * <p>Added by M1-02c. Without a block item the machine cannot drop itself at all, so a
@@ -293,6 +321,34 @@ public final class ModItems {
         properties -> new LineComponentItem(properties, "cleanroom", 3), properties -> properties.stacksTo(1));
     public static final DeferredItem<LineComponentItem> LASER_INTERFEROMETER = ITEMS.registerItem("laser_interferometer",
         properties -> new LineComponentItem(properties, "metrology", 3), properties -> properties.stacksTo(1));
+
+    // T4 products and line components. Recipes remain in editable JSON.
+    public static final DeferredItem<Item> LOGIC_CHIP_T4 = ITEMS.registerSimpleItem("logic_chip_t4");
+    public static final DeferredItem<Item> MEMORY_CHIP_T4 = ITEMS.registerSimpleItem("memory_chip_t4");
+    public static final DeferredItem<Item> COMPUTE_CHIP_T4 = ITEMS.registerSimpleItem("compute_chip_t4");
+    public static final DeferredItem<Item> NAND_CHIP_T4 = ITEMS.registerSimpleItem("nand_chip_t4");
+    public static final DeferredItem<Item> RESIST_T4 = ITEMS.registerSimpleItem("resist_t4",
+        properties -> properties.component(ModDataComponents.RESIST_TIER, 4));
+
+    /** Line component: ArF excimer laser, light_source, node tier 4. */
+    public static final DeferredItem<LineComponentItem> ARF_EXCIMER_LASER = ITEMS.registerItem("arf_excimer_laser",
+        properties -> new LineComponentItem(properties, "light_source", 4), properties -> properties.stacksTo(1));
+
+    /** Line component: ArF dry lens, optics, node tier 4. */
+    public static final DeferredItem<LineComponentItem> ARF_DRY_LENS = ITEMS.registerItem("arf_dry_lens",
+        properties -> new LineComponentItem(properties, "optics", 4), properties -> properties.stacksTo(1));
+
+    /** Line component: nanopositioning stage, stage, node tier 4. */
+    public static final DeferredItem<LineComponentItem> NANOPOSITIONING_STAGE = ITEMS.registerItem("nanopositioning_stage",
+        properties -> new LineComponentItem(properties, "stage", 4), properties -> properties.stacksTo(1));
+
+    /** Line component: ULPA filter, cleanroom, node tier 4. */
+    public static final DeferredItem<LineComponentItem> ULPA_FILTER = ITEMS.registerItem("ulpa_filter",
+        properties -> new LineComponentItem(properties, "cleanroom", 4), properties -> properties.stacksTo(1));
+
+    /** Line component: precision overlay scope, metrology, node tier 4. */
+    public static final DeferredItem<LineComponentItem> PRECISION_OVERLAY_SCOPE = ITEMS.registerItem("precision_overlay_scope",
+        properties -> new LineComponentItem(properties, "metrology", 4), properties -> properties.stacksTo(1));
 
     private ModItems() {
     }

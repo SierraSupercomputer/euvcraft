@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "III",
+    "CLC",
+    "III"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "C": "lithmod:support_casing",
+    "L": "lithmod:logic_chip_t3"
+  },
+  "result": {
+    "id": "lithmod:advanced_casing",
+    "count": 8
+  }
+}

@@ -195,7 +195,7 @@ public class SupportMachineMenu extends FabMachineMenu {
     }
 
     public boolean ebeamDesignAvailable(int index) {
-        return index >= 0 && index < 7 && (extraData.get(WIRE_EBEAM_AVAILABLE) & (1 << index)) != 0;
+        return index >= 0 && index < EBEAM_DESIGN_COUNT && (extraData.get(WIRE_EBEAM_AVAILABLE) & (1 << index)) != 0;
     }
     public int ebeamBlankCost() { return extraData.get(WIRE_EBEAM_BLANK); }
     public int ebeamRedstoneCost() { return extraData.get(WIRE_EBEAM_REDSTONE); }
@@ -231,7 +231,8 @@ public class SupportMachineMenu extends FabMachineMenu {
     /** Button IDs for design selection (0-6). */
     public static final int EBEAM_DESIGN_BUTTON_BASE = 0;
     /** Button ID for WriteMask Start. */
-    public static final int EBEAM_START_BUTTON = 7;
+    public static final int EBEAM_DESIGN_COUNT=11;
+    public static final int EBEAM_START_BUTTON = EBEAM_DESIGN_COUNT;
 
     @Override
     public boolean clickMenuButton(Player player, int buttonId) {

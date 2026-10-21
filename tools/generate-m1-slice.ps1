@@ -259,8 +259,8 @@ foreach ($catName in $expectedConfig.Keys) {
 $machineDir = Join-Path $Root 'src\main\resources\data\lithmod\machines'
 Assert-Dir $machineDir
 $machineNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($machineDir, '*.json'))
-if ($machineNames.Count -ne 6) {
-    Fail "expected 6 machine definition files in data/lithmod/machines, found $($machineNames.Count)"
+if ($machineNames.Count -ne 10) {
+    Fail "expected 10 machine definition files in data/lithmod/machines, found $($machineNames.Count)"
 }
 $machineDefs = New-Object 'System.Collections.Generic.List[object]'
 $fixtureMachineId = 'test_machine'
@@ -288,8 +288,8 @@ $craftingNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($craftingDir, '*.
 $cookingNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($recipeRoot, '*.json'))
 $machineRecipeNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($mrDir, '*.json'))
 $totalRecipes = $craftingNames.Count + $cookingNames.Count + $machineRecipeNames.Count
-if ($totalRecipes -ne 31) {
-    Fail "expected 31 recipe resources (29 production + 2 fixture-gated), found $totalRecipes"
+if ($totalRecipes -ne 53) {
+    Fail "expected 53 recipe resources (51 production + 2 fixture-gated), found $totalRecipes"
 }
 if ($machineRecipeNames.Count -ne 6) {
     Fail "expected 6 machine recipe files in data/lithmod/machine_recipes, found $($machineRecipeNames.Count)"
@@ -337,8 +337,8 @@ foreach ($rFile in $machineRecipeNames) {
 if ($fixtureRecipeCount -ne 2) {
     Fail "expected the two '$fixtureMachineId' fixture recipes to be payload-gated, found $fixtureRecipeCount"
 }
-if (($totalRecipes - $fixtureRecipeCount) -ne 29) {
-    Fail 'production recipe count is not 29'
+if (($totalRecipes - $fixtureRecipeCount) -ne 51) {
+    Fail 'production recipe count is not 51'
 }
 
 # ---- loader directory strings + codec sources (derived from tracked source) --
@@ -706,3 +706,4 @@ Emit '| Block Tags | data/lithmod/tags/block/machine.json + data/minecraft/tags/
 Emit '| Runtime Config | run/config/lithmod-local.toml (ModConfig.Type.LOCAL, registered in EUVCRAFTMod.java) |'
 Emit '| Fixture_gate | JVM system property lithmodFixtures AND non-production (GameTestFixtures.java); -PlithmodFixtures=false with -PlithmodShippingProbe=true registers one off-mode case |'
 Emit-Blank
+

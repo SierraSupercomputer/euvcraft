@@ -143,7 +143,8 @@ class FoupSubstrateCodecTest {
         net.minecraft.network.codec.ByteBufCodecs.VAR_INT.encode(buffer, 25); // capacity
         net.minecraft.network.codec.ByteBufCodecs.VAR_INT.encode(buffer, 10); // waferCount
         net.minecraft.network.codec.ByteBufCodecs.VAR_INT.encode(buffer, 3);  // lotLayer
-        net.minecraft.network.codec.ByteBufCodecs.STRING_UTF8.encode(buffer, "invalid_grade"); // grade
+        net.minecraft.network.codec.ByteBufCodecs.STRING_UTF8.encode(buffer, "invalid_grade");
+        net.minecraft.network.codec.ByteBufCodecs.VAR_INT.encode(buffer, 1); // grade
 
         FoupContents received = FoupContentsCodec.STREAM_CODEC.decode(buffer);
         assertEquals(WaferSubstrate.ORDINARY, received.grade());
@@ -252,8 +253,8 @@ class FoupSubstrateCodecTest {
         FoupContentsCodec.STREAM_CODEC.encode(bufPure, pure);
 
         // Three one-byte counts plus length-prefixed approved grade string.
-        assertEquals(12, bufOrdinary.readableBytes());
-        assertEquals(8, bufPure.readableBytes());
+        assertEquals(13, bufOrdinary.readableBytes());
+        assertEquals(9, bufPure.readableBytes());
         // But the difference should be small (just the string length difference)
         assertEquals("ordinary".length() - "pure".length(),
             bufOrdinary.readableBytes() - bufPure.readableBytes());

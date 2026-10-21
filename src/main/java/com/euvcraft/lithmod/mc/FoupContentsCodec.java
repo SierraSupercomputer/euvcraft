@@ -6,6 +6,7 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 import com.euvcraft.lithmod.core.FoupContents;
+import com.euvcraft.lithmod.core.FoupPublicView;
 import com.euvcraft.lithmod.core.RunSpec;
 import com.euvcraft.lithmod.core.Wafer;
 import com.euvcraft.lithmod.core.WaferPacking;
@@ -25,19 +26,22 @@ import net.minecraft.network.codec.StreamCodec;
  * safe to send to a client.
  *
  * <p><strong>{@link #CODEC} (persistent)</strong> writes the whole lot: the lot id,
- * the capacity, the wafer substrate grade, and the three packed wafer arrays, rolls
- * and flags included. This is what a world save, a chest or a shulker box store.
- * The grade field is optional; when missing it defaults to ORDINARY for backward
- * compatibility. An explicitly present but invalid grade is rejected.</p>
+ * the capacity, the wafer substrate grade, the preparation generation, and the three
+ * packed wafer arrays, rolls and flags included. This is what a world save, a chest
+ * or a shulker box store. The grade field is optional; when missing it defaults to
+ * ORDINARY for backward compatibility. An explicitly present but invalid grade is
+ * rejected. The preparationGeneration field is optional; when missing it defaults
+ * to 1 (legacy) ONLY when absent. Unknown, malformed, or out-of-range values fail
+ * closed.</p>
  *
  * <p><strong>{@link #STREAM_CODEC} (network)</strong> writes
  * {@link FoupContents#publicView()} and nothing else: capacity, wafer count, lot
- * layer and wafer substrate grade. A client therefore never receives a
- * {@link Wafer#cumulativeRoll()} or a {@link Wafer#flags()} value. The other
- * direction rebuilds a placeholder lot through {@link #fromPublicView(int, int, int)}
- * or {@link #fromPublicView(int, int, int, String)}, which is a display value and
- * must never be treated as authoritative: see the creative-mode spike in the M0-08
- * report.</p>
+ * layer, wafer substrate grade, and preparation generation. A client therefore never
+ * receives a {@link Wafer#cumulativeRoll()} or a {@link Wafer#flags()} value. The
+ * other direction rebuilds a placeholder lot through {@link #fromPublicView(int, int, int)}
+ * or {@link #fromPublicView(int, int, int, String)} or the new overload with preparation
+ * generation, which is a display value and must never be treated as authoritative: see
+ * the creative-mode spike in the M0-08 report.</p>
  *
  * <p>The persistent form stores the rolls as raw IEEE-754 bits in an integer array,
  * next to two more integer arrays, so a lot costs three NBT int arrays and no
@@ -65,6 +69,9 @@ public final class FoupContentsCodec {
 
     /** Field holding the wafer substrate grade (optional, new in T3 substrate foundation). */
     public static final String KEY_GRADE = "grade";
+
+    /** Field holding the preparation generation (optional, new in T4 preparation). */
+    public static final String KEY_PREPARATION = "preparation";
 
     /**
      * Lot id used by {@link #fromPublicView(int, int, int)} and
@@ -100,7 +107,15 @@ public final class FoupContentsCodec {
             : DataResult.success(grade);
     }, WaferSubstrate::id);
 
-    /** Persistent private state plus a backwards-compatible public substrate field. */
+    /** Preparation generation codec: optional, defaults to 1 ONLY when absent; unknown/malformed/out-of-range fail closed. */
+    private static final Codec<Integer> PREPARATION_CODEC = Codec.INT.validate(i -> {
+        if (i < FoupContents.PREPARATION_LEGACY || i > FoupContents.PREPARATION_G2) {
+            return DataResult.error(() -> "Invalid preparation generation: " + i + " (must be 1 or 2)");
+        }
+        return DataResult.success(i);
+    });
+
+    /** Persistent private state plus backwards-compatible public substrate and preparation fields. */
     public static final Codec<FoupContents> CODEC = RecordCodecBuilder.create(instance -> instance.group(
         UUIDUtil.CODEC.fieldOf(KEY_LOT).forGetter(FoupContents::lotId),
         Codec.INT.fieldOf(KEY_CAPACITY).forGetter(FoupContents::capacity),
@@ -108,14 +123,15 @@ public final class FoupContentsCodec {
         INT_ARRAY.fieldOf(KEY_ROLLS).forGetter(contents -> WaferPacking.packRollBits(contents.wafers())),
         INT_ARRAY.fieldOf(KEY_FLAGS).forGetter(contents -> WaferPacking.packFlags(contents.wafers())),
         RunSpecCodec.CODEC.optionalFieldOf(KEY_RUN_SPEC).forGetter(c -> java.util.Optional.ofNullable(c.run())),
-        GRADE_CODEC.optionalFieldOf(KEY_GRADE, WaferSubstrate.ORDINARY).forGetter(FoupContents::grade)
-    ).apply(instance, (lotId, capacity, layers, rollBits, flags, runSpec, grade) ->
+        GRADE_CODEC.optionalFieldOf(KEY_GRADE, WaferSubstrate.ORDINARY).forGetter(FoupContents::grade),
+        PREPARATION_CODEC.optionalFieldOf(KEY_PREPARATION, FoupContents.PREPARATION_LEGACY).forGetter(FoupContents::preparationGeneration)
+    ).apply(instance, (lotId, capacity, layers, rollBits, flags, runSpec, grade, preparationGeneration) ->
         new FoupContents(lotId, capacity,
             WaferPacking.unpack(layers, WaferPacking.unpackRollBits(rollBits), flags),
-            runSpec.orElse(null), grade)));
+            runSpec.orElse(null), grade, preparationGeneration)));
 
     /**
-     * Network form: the public view only including the wafer substrate grade.
+     * Network form: the public view only including the wafer substrate grade and preparation generation.
      *
      * <p>Typed on {@link ByteBuf} rather than on the registry aware buffer because it
      * needs no registry lookup at all; a registry aware buffer is still a
@@ -126,6 +142,7 @@ public final class FoupContentsCodec {
         ByteBufCodecs.VAR_INT, contents -> contents.size(),
         ByteBufCodecs.VAR_INT, contents -> contents.lotLayer(),
         ByteBufCodecs.STRING_UTF8, contents -> contents.grade().id(),
+        ByteBufCodecs.VAR_INT, contents -> contents.preparationGeneration(),
         FoupContentsCodec::fromPublicView
     );
 
@@ -135,7 +152,7 @@ public final class FoupContentsCodec {
 
     /**
      * Rebuilds the placeholder lot a client holds from the three numbers the network
-     * form carries (legacy overload without grade, defaults to ORDINARY).
+     * form carries (legacy overload without grade, defaults to ORDINARY, legacy preparation).
      *
      * <p>The result is not a real lot: it has {@link #CLIENT_VIEW_LOT_ID} and every
      * wafer is at the lot layer with {@link #CLIENT_VIEW_ROLL}. Only
@@ -151,12 +168,12 @@ public final class FoupContentsCodec {
      * @return the placeholder lot
      */
     public static FoupContents fromPublicView(int capacity, int waferCount, int lotLayer) {
-        return fromPublicView(capacity, waferCount, lotLayer, WaferSubstrate.ORDINARY.id());
+        return fromPublicView(capacity, waferCount, lotLayer, WaferSubstrate.ORDINARY.id(), FoupContents.PREPARATION_LEGACY);
     }
 
     /**
      * Rebuilds the placeholder lot a client holds from the four numbers the network
-     * form carries (including grade).
+     * form carries (including grade, legacy preparation).
      *
      * <p>The result is not a real lot: it has {@link #CLIENT_VIEW_LOT_ID} and every
      * wafer is at the lot layer with {@link #CLIENT_VIEW_ROLL}. Only
@@ -172,17 +189,44 @@ public final class FoupContentsCodec {
      * @param gradeId   transmitted grade ID
      * @return the placeholder lot
      */
-    static FoupContents fromPublicView(int capacity, int waferCount, int lotLayer, String gradeId) {
+    public static FoupContents fromPublicView(int capacity, int waferCount, int lotLayer, String gradeId) {
+        return fromPublicView(capacity, waferCount, lotLayer, gradeId, FoupContents.PREPARATION_LEGACY);
+    }
+
+    /**
+     * Rebuilds the placeholder lot a client holds from the five numbers the network
+     * form carries (including grade and preparation generation).
+     *
+     * <p>The result is not a real lot: it has {@link #CLIENT_VIEW_LOT_ID} and every
+     * wafer is at the lot layer with {@link #CLIENT_VIEW_ROLL}. Only
+     * {@link FoupContents#publicView()} of it is meaningful.</p>
+     *
+     * <p>Out-of-range values from a malformed or hostile buffer are clamped instead of
+     * rejected: this is a display value and must never cost a player their
+     * connection. An invalid grade string is clamped to ORDINARY. An invalid preparation
+     * generation is clamped to 1 (legacy).</p>
+     *
+     * @param capacity              transmitted capacity
+     * @param waferCount            transmitted wafer count
+     * @param lotLayer              transmitted lot layer
+     * @param gradeId               transmitted grade ID
+     * @param preparationGeneration transmitted preparation generation
+     * @return the placeholder lot
+     */
+    static FoupContents fromPublicView(int capacity, int waferCount, int lotLayer, String gradeId, int preparationGeneration) {
         int safeCapacity = Math.max(1, capacity);
         int safeCount = Math.min(Math.max(0, waferCount), safeCapacity);
         int safeLayer = Math.max(Wafer.UNPROCESSED_LAYER, lotLayer);
         WaferSubstrate safeGrade = WaferSubstrate.fromIdOrDefault(gradeId);
+        int safePreparation = (preparationGeneration >= FoupContents.PREPARATION_LEGACY && preparationGeneration <= FoupContents.PREPARATION_G2)
+            ? preparationGeneration : FoupContents.PREPARATION_LEGACY;
+        if (safeCount == 0 || safeGrade != WaferSubstrate.PURE) safePreparation = FoupContents.PREPARATION_LEGACY;
 
         List<Wafer> placeholders = new ArrayList<>(safeCount);
         for (int i = 0; i < safeCount; i++) {
             placeholders.add(new Wafer(safeLayer, CLIENT_VIEW_ROLL, Wafer.NO_FLAGS));
         }
-        return new FoupContents(CLIENT_VIEW_LOT_ID, safeCapacity, placeholders, null, safeGrade);
+        return new FoupContents(CLIENT_VIEW_LOT_ID, safeCapacity, placeholders, null, safeGrade, safePreparation);
     }
 
     /**

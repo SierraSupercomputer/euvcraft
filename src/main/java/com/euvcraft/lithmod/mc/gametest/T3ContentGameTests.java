@@ -199,7 +199,7 @@ public final class T3ContentGameTests {
 
         // No T4 entries
         for (Tier tier : TierDataLoader.getRegistry().all()) {
-            if (tier.index() >= 4) {
+            if (tier.index() >= 5) {
                 for (String dieType : List.of(DieTypes.LOGIC, DieTypes.MEMORY, DieTypes.COMPUTE, DieTypes.NAND)) {
                     helper.assertTrue(ChipCatalog.chipFor(dieType, tier.index()).isEmpty(),
                         "ChipCatalog must not have " + dieType + " at " + tier.id());

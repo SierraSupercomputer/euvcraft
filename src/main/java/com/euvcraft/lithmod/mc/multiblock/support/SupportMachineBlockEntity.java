@@ -109,15 +109,16 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
 
     /** The seven supported e-beam designs in selector order. */
     private static final String[] EBEAM_DESIGNS = {
-        "logic_t1", "logic_t2", "memory_t2", "logic_t3", "memory_t3", "compute_t3", "nand_t3"
+        "logic_t1", "logic_t2", "memory_t2", "logic_t3", "memory_t3", "compute_t3", "nand_t3", "logic_t4", "memory_t4", "compute_t4", "nand_t4"
     };
     /** Die type for each design index. */
     private static final String[] EBEAM_DIE_TYPES = {
         DieTypes.LOGIC, DieTypes.LOGIC, DieTypes.MEMORY,
+        DieTypes.LOGIC, DieTypes.MEMORY, DieTypes.COMPUTE, DieTypes.NAND,
         DieTypes.LOGIC, DieTypes.MEMORY, DieTypes.COMPUTE, DieTypes.NAND
     };
     /** Tier index for each design index. */
-    private static final int[] EBEAM_TIER_INDICES = { 1, 2, 2, 3, 3, 3, 3 };
+    private static final int[] EBEAM_TIER_INDICES = { 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4 };
 
     /** Currently selected design index (0-6), or -1 for no selection. */
     private int selectedDesign = -1;

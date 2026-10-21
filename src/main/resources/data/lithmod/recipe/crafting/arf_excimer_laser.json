@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " A ",
+    "CLC",
+    " D "
+  ],
+  "key": {
+    "A": "lithmod:krf_excimer_laser",
+    "C": "minecraft:diamond",
+    "L": "lithmod:logic_chip_t3",
+    "D": "minecraft:netherite_ingot"
+  },
+  "result": {
+    "id": "lithmod:arf_excimer_laser",
+    "count": 1
+  }
+}

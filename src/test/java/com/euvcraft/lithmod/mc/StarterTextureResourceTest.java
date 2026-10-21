@@ -53,7 +53,7 @@ class StarterTextureResourceTest {
     private static final String ITEM_TEXTURES = "/assets/" + MODID + "/textures/item/";
     private static final String BLOCK_TEXTURES = "/assets/" + MODID + "/textures/block/";
 
-    // 34 non-block production items that must have custom textures
+    // 44 non-block production items that must have custom textures (34 original + 10 T4)
     private static final Set<String> PRODUCTION_ITEMS = Set.of(
         "foup_mk1", "foup_mk2",
         "logic_chip_t1", "logic_chip_t2", "memory_chip_t2",
@@ -75,7 +75,11 @@ class StarterTextureResourceTest {
         "precision_stepper_stage",
         "hepa_filter",
         "laser_interferometer",
-        "resist_t3"
+        "resist_t3",
+        // T4 items (10)
+        "logic_chip_t4", "memory_chip_t4", "compute_chip_t4", "nand_chip_t4",
+        "resist_t4",
+        "arf_excimer_laser", "arf_dry_lens", "nanopositioning_stage", "ulpa_filter", "precision_overlay_scope"
     );
 
     // 10 production block models (test_machine excluded — preserved untouched)
@@ -99,6 +103,11 @@ class StarterTextureResourceTest {
         }
         ids.add("process_cell_operating_panel_unformed");
         ids.add("process_cell_water_inlet_unformed");
+        for(String role:List.of("controller","casing","power_port","operating_panel")){
+            ids.add("t4_"+role+"_unformed");
+            for(int part=0;part<45;part++)ids.add("t4_"+role+"_large_part"+part+"_formed");
+            for(int part=0;part<12;part++)ids.add("t4_"+role+"_small_part"+part+"_formed");
+        }
         return Set.copyOf(ids);
     }
 
@@ -295,6 +304,7 @@ class StarterTextureResourceTest {
         for (String modelFile : modelFiles) {
             String id = modelFile.substring(0, modelFile.length() - 5); // strip .json
             if (PRODUCTION_ITEMS.contains(id)) continue;
+            if(Set.of("deposition_etcher","advanced_test_package","advanced_casing","advanced_power_port","advanced_operating_panel").contains(id)) continue;
             if (Set.of("test_machine", "crystal_puller", "wafer_slicer", "test_package",
                 "pattern_generator", "process_cell_controller", "process_cell_casing",
                 "process_cell_power_port", "process_cell_operating_panel", "boule_purifier",

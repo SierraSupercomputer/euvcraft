@@ -41,7 +41,10 @@ public final class ProcessRun implements ProcessStartResult {
         if (!request.dieMakeable()) return RefusalReason.DIE_NOT_MAKEABLE;
         if (!request.lineCanRunTier()) return RefusalReason.LINE_CANNOT_RUN_TIER;
         List<String> unmet = request.generationMatrix()
-            .unmetLines(request.installedGenerations(), tier).stream().map(UnmetLine::lineId).toList();
+            .unmetLines(request.installedGenerations(), tier).stream()
+            // Packaging validates its own downstream tool when the completed lot arrives.
+            .filter(line -> !SupportLines.TEST_PACKAGING.equals(line.lineId()))
+            .map(UnmetLine::lineId).toList();
         return unmet.isEmpty() ? null : RefusalReason.generationUnmet(unmet);
     }
 
@@ -90,8 +93,9 @@ public final class ProcessRun implements ProcessStartResult {
         if (next == null || next.lotLayer() != currentLayer || !next.lotId().equals(lot.lotId())
                 || next.capacity() != lot.capacity() || next.size() != lot.size()
                 || next.run() == null || !next.run().matches(request.tier(), request.dieType(), request.cores())
-                || !next.grade().equals(lot.grade())) {
-            throw new IllegalStateException("applyLayer returned a different lot, did not apply the requested layer, or changed the wafer grade");
+                || !next.grade().equals(lot.grade())
+                || next.preparationGeneration() != lot.preparationGeneration()) {
+            throw new IllegalStateException("applyLayer returned a different lot, did not apply the requested layer, or changed the wafer grade or preparation generation");
         }
         lot = next;
         events.add(ProcessRunEvent.layerCompleted(currentLayer));

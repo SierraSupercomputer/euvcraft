@@ -215,7 +215,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         }
         var registry = TierDataLoader.getRegistry();
         Tier tier = registry.byIndex(mask.tierIndex()).orElse(null);
-        if (tier == null || tier.index() > 3) { lastRefusal = RefusalReason.NO_MASK; return; }
+        if (tier == null || tier.index() > 4) { lastRefusal = RefusalReason.NO_MASK; return; }
         LineLoadout loadout = LineLoadoutReader.read(slot(SLOT_LIGHT_SOURCE), slot(SLOT_OPTICS),
             slot(SLOT_STAGE), slot(SLOT_CLEANROOM), slot(SLOT_METROLOGY), slot(SLOT_RESIST), mask.tierIndex());
         DefaultStatRules rules = new DefaultStatRules(registry);
@@ -229,12 +229,12 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         Map<String, Integer> installedGenerations = Map.of(
             SupportLines.SUBSTRATE, substrateGen,
             SupportLines.MASK_SHOP, maskShopGen,
-            SupportLines.DEPOSITION_ETCH, 1,
+            SupportLines.DEPOSITION_ETCH, lot.preparationGeneration(),
             SupportLines.UTILITIES, 1,
             SupportLines.TEST_PACKAGING, 1
         );
 
-        Integer cores = (tier.index() == 3 && DieTypes.COMPUTE.equals(mask.dieType())) ? 1 : null;
+        Integer cores = (tier.index() >= 3 && tier.index() <= 4 && DieTypes.COMPUTE.equals(mask.dieType())) ? 1 : null;
         ProcessRunRequest request = new ProcessRunRequest(lot, mask.dieType(), tier, cores,
             mask.usesRemaining(), rules.stats(loadout.toLineComponents(), tier.index()),
             rules.canRunTier(loadout.toLineComponents(), tier.index()),
@@ -252,7 +252,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         try {
             contract = new Contract(tier, mask.dieType(), mask.usesRemaining(), tier.layerTicks(settings),
                 settings.resistPerLayer(), request.energyPerTick(), request.lineStats(), registry.all(),
-                required, maskStack.copy(), components, slot(SLOT_RESIST).copyWithCount(1), lot.lotId(), carrier, lot.grade());
+                required, maskStack.copy(), components, slot(SLOT_RESIST).copyWithCount(1), lot.lotId(), carrier, lot.grade(), lot.preparationGeneration());
             run = (ProcessRun) result;
             lastRefusal = null;
             setChanged();

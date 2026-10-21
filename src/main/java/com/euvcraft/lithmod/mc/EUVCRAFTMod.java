@@ -47,6 +47,7 @@ import com.euvcraft.lithmod.mc.machine.packaging.PackagingMachines;
 import com.euvcraft.lithmod.mc.machine.silicon.SiliconMachines;
 import com.euvcraft.lithmod.mc.machine.test.ModMachines;
 import com.euvcraft.lithmod.mc.multiblock.ModMultiblocks;
+import com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedMachines;
 import com.euvcraft.lithmod.mc.multiblock.support.SupportMachines;
 
 @Mod(EUVCRAFTMod.MODID)
@@ -66,6 +67,7 @@ public class EUVCRAFTMod {
         PackagingMachines.register(modEventBus);
         ModMultiblocks.register(modEventBus);
         SupportMachines.register(modEventBus);
+        AdvancedMachines.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(FoupTooltipAppenders::register);
@@ -99,6 +101,7 @@ modEventBus.addListener(ComponentTooltipAppenders::register);
             PlacementAndTitleGameTests.register(modEventBus);
             SupportMultiblockGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.WaterInletGameTests.register(modEventBus);
+            com.euvcraft.lithmod.mc.gametest.T4RuntimeGameTests.register(modEventBus);
             T3ContentGameTests.register(modEventBus);
             T3PurificationGameTests.register(modEventBus);
             T3MaskWriterGameTests.register(modEventBus);
@@ -124,6 +127,7 @@ modEventBus.addListener(ComponentTooltipAppenders::register);
         NeoForge.EVENT_BUS.register(MachineDefinitionLoader.class);
         NeoForge.EVENT_BUS.register(MachineRecipeLoader.class);
         NeoForge.EVENT_BUS.register(SupportRecipeLoader.class);
+        NeoForge.EVENT_BUS.register(com.euvcraft.lithmod.mc.data.HighBinningDataLoader.class);
 
         LOGGER.info("EUVCRAFT mod loading...");
     }
