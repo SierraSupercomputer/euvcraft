@@ -1,75 +1,64 @@
 package com.euvcraft.lithmod.mc.multiblock.advanced;
-import net.minecraft.world.level.block.state.properties.*;
-import com.euvcraft.lithmod.core.multiblock.*;
-import com.euvcraft.lithmod.mc.multiblock.EnergyBufferProvider;
+import com.euvcraft.lithmod.mc.machine.*;
 import com.euvcraft.lithmod.mc.machine.packaging.TestPackageBlockEntity;
 import com.euvcraft.lithmod.mc.registry.ModItems;
-
-import com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity;
-import com.euvcraft.lithmod.mc.machine.FabMachineMenu;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.entity.player.*;
+import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
-
-/**
- * Menu for the Advanced Operating Panel (upper panel of two-panel machine).
- * Shows the operational slots for both deposition_etcher and advanced_test_package.
- * The actual slot layout is determined by the controller's machine type.
- */
+import org.jspecify.annotations.Nullable;
+/** Upper panel owns no extra inventory. Slot counts are identical on both sides. */
 public class AdvancedOperatingPanelMenu extends FabMachineMenu {
-
-    private final BlockPos controllerPos;
-
-    public AdvancedOperatingPanelMenu(int containerId, Inventory playerInventory,
-                                       AdvancedControllerBlockEntity machine, BlockPos controllerPos) {
-        super(AdvancedMachines.ADVANCED_OPERATING_PANEL_MENU.get(), containerId, playerInventory, machine,
-              machine.inputSlotCount(), machine.slotCount());
-        this.controllerPos = controllerPos;
-    }
-
-    public AdvancedOperatingPanelMenu(int containerId, Inventory playerInventory,
-                                       RegistryFriendlyByteBuf buffer) {
-        this(containerId, playerInventory, null, BlockPos.ZERO);
-    }
-
-    @Override
-    protected void addMachineSlots() {
-        AdvancedControllerBlockEntity controller = (AdvancedControllerBlockEntity) machine;
-        if (controller == null) return;
-
-        // Layout depends on machine type
-        String machineId = controller.machineId();
-        
-        if ("deposition_etcher".equals(machineId)) {
-            // Deposition Etcher: FOUP input, silicon reagent, prepared FOUP output
-            addFoupSlot(DepositionEtcherControllerBlockEntity.SLOT_FOUP_INPUT, 30, 35);
-            addCustomSlot(new Slot(machineSlots(), DepositionEtcherControllerBlockEntity.SLOT_SILICON_REAGENT,
-                    66, 35) {
-                @Override
-                public boolean mayPlace(ItemStack stack) {
-                    return stack.is(ModItems.SILICON.get());
-                }
-            });
-            addOutputSlot(DepositionEtcherControllerBlockEntity.SLOT_PREPARED_FOUP_OUTPUT, 122, 53);
-        } else if ("advanced_test_package".equals(machineId)) {
-            // Advanced Test Package: same layout as TestPackageMenu but from multiblock
-            // FOUP slot (0), Package slot (1), 4 chip outputs (2-5), 2 scrap outputs (6-7)
-            addFoupSlot(TestPackageBlockEntity.FOUP_SLOT, 30, 35);
-            addCustomSlot(new Slot(machineSlots(), TestPackageBlockEntity.PACKAGE_SLOT, 30, 53) {
-                @Override
-                public boolean mayPlace(ItemStack stack) {
-                    return TestPackageBlockEntity.isPackage(stack);
-                }
-            });
-            for (int slot = 0; slot < TestPackageBlockEntity.CHIP_SLOT_COUNT; slot++) {
-                addOutputSlot(TestPackageBlockEntity.CHIP_SLOT_FIRST + slot, 70 + slot * 18, 35);
-            }
-            for (int slot = 0; slot < TestPackageBlockEntity.SCRAP_SLOT_COUNT; slot++) {
-                addOutputSlot(TestPackageBlockEntity.SCRAP_SLOT_FIRST + slot, 70 + slot * 18, 53);
-            }
-        }
-    }
+ private final BlockPos corePos;
+ private final @Nullable AdvancedMemberBlockEntity panel;
+ private final ContainerData formation,queue,mode;
+ private final boolean deposition;
+ private record Description(BlockPos core,boolean deposition){}
+ public AdvancedOperatingPanelMenu(int id,Inventory inventory,@Nullable FabMachineBlockEntity machine,BlockPos core){
+  this(id,inventory,machine,new Description(core,machine instanceof DepositionEtcherControllerBlockEntity));
+ }
+ private AdvancedOperatingPanelMenu(int id,Inventory inventory,@Nullable FabMachineBlockEntity machine,Description description){
+  super(AdvancedMachines.ADVANCED_OPERATING_PANEL_MENU.get(),id,inventory,machine,2,description.deposition()?3:8);
+  corePos=description.core().immutable();deposition=description.deposition();
+  panel=machine!=null&&machine.getLevel().getBlockEntity(corePos.above()) instanceof AdvancedMemberBlockEntity p?p:null;
+  formation=machine instanceof AdvancedOwner owner?owner.formation().data():new SimpleContainerData(1);
+  queue=machine instanceof TestPackageBlockEntity pack?pack.queueData():new SimpleContainerData(3);
+  mode=machine instanceof AdvancedTestPackageControllerBlockEntity pack?pack.binningData():new SimpleContainerData(1);
+  addDataSlots(formation);addDataSlots(queue);addDataSlots(mode);
+ }
+ public AdvancedOperatingPanelMenu(int id,Inventory inventory,RegistryFriendlyByteBuf buffer){
+  this(id,inventory,null,new Description(buffer.readBlockPos().below(),buffer.readBoolean()));
+ }
+ @Override protected void addMachineSlots(){
+  addFoupSlot(0,38,35);
+  addCustomSlot(new Slot(machineSlots(),1,38,53){
+   @Override public boolean mayPlace(ItemStack stack){
+    return machineSlots().getContainerSize()==3?stack.is(ModItems.SILICON.get()):TestPackageBlockEntity.isPackage(stack);
+   }
+  });
+  if(machineSlots().getContainerSize()==3)addOutputSlot(2,98,44);
+  else {
+   for(int n=0;n<4;n++)addOutputSlot(2+n,70+n*18,35);
+   for(int n=0;n<2;n++)addOutputSlot(6+n,70+n*18,53);
+  }
+ }
+ public boolean deposition(){return deposition;}
+ public boolean formed(){return formation.get(0)==1;}
+ public boolean highBinning(){return mode.get(0)==1;}
+ public boolean active(){return !deposition&&queue.get(0)==TestPackageBlockEntity.STATE_RUNNING
+     ||!deposition&&queue.get(0)==TestPackageBlockEntity.STATE_PAUSED;}
+ public int state(){return queue.get(0);}
+ public int wafersDone(){return queue.get(1);}
+ public int wafersTotal(){return queue.get(2);}
+ @Override public boolean clickMenuButton(Player player,int button){
+  if(button!=1||!stillValid(player)||!(blockEntity instanceof AdvancedTestPackageControllerBlockEntity pack))return false;
+  return pack.toggleHighBinning();
+ }
+ @Override public boolean stillValid(Player player){
+  return super.stillValid(player)&&panel!=null&&blockEntity.getBlockPos().equals(corePos)
+   &&blockEntity.getLevel().getBlockEntity(corePos.above())==panel
+   &&panel.getBlockState().getBlock()==AdvancedMachines.ADVANCED_OPERATING_PANEL.get()
+   &&player.distanceToSqr(corePos.getX()+.5,corePos.getY()+1.5,corePos.getZ()+.5)<=64;
+ }
 }

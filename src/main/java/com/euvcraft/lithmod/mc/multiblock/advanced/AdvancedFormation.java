@@ -1,105 +1,91 @@
 package com.euvcraft.lithmod.mc.multiblock.advanced;
-import net.minecraft.world.level.block.state.properties.*;
+
 import com.euvcraft.lithmod.core.multiblock.*;
-import com.euvcraft.lithmod.mc.multiblock.EnergyBufferProvider;
-import com.euvcraft.lithmod.mc.machine.packaging.TestPackageBlockEntity;
-import com.euvcraft.lithmod.mc.registry.ModItems;
+import java.util.*;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.SimpleContainerData;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 
-import com.euvcraft.lithmod.core.multiblock.BlockKind;
-import com.euvcraft.lithmod.core.multiblock.MatchResult;
-import com.euvcraft.lithmod.core.multiblock.MultiblockDirection;
-import com.euvcraft.lithmod.core.multiblock.MultiblockPos;
-import com.euvcraft.lithmod.core.multiblock.StructureMatcher;
-import com.euvcraft.lithmod.core.multiblock.StructureShape;
-
-import java.util.List;
-import java.util.function.Function;
-
-/**
- * Shared geometry helper for T4 advanced multiblocks.
- *
- * <p>Two multiblocks share the same geometry rules: a lower controller (Equipment Cabinet)
- * with a required upper operating panel directly above it, any front column and all four
- * horizontal facings, 1-2 power ports anywhere else, and the rest casing. The only difference
- * is the shape: deposition_etcher is 3 wide x 3 tall x 5 deep (45 blocks), and
- * advanced_test_package is 2 wide x 2 tall x 3 deep (12 blocks).</p>
- *
- * <p>This class provides a common interface for matching both shapes via composition with
- * {@link StructureMatcher}. It defines the shared property objects once: FORMED, FACING,
- * PART 0..44, LARGE boolean. Default false/unformed and part 0 — no undefined states.</p>
- */
+/** Formation is shared by composition so G2 packaging keeps the original queue implementation. */
 public final class AdvancedFormation {
-
-    private AdvancedFormation() {}
-
-    /** Deposition Etcher: 3 wide x 3 tall x 5 deep = 45 blocks. */
-    public static final StructureShape DEPOSITION_ETCHER_SHAPE = new StructureShape(3, 3, 5);
-
-    /** Advanced Test Package: 2 wide x 2 tall x 3 deep = 12 blocks. */
-    public static final StructureShape ADVANCED_TEST_PACKAGE_SHAPE = new StructureShape(2, 2, 3);
-
-    /**
-     * Matches an advanced multiblock structure using {@link StructureMatcher}.
-     *
-     * <p>The controller sits on the front face (d=0) at the lower row (v=0), in any column
-     * (u=0..width-1). The operating panel must be directly above the controller at
-     * (u, v+1, 0), which requires v=0 (controller on bottom row) for both shapes.
-     * There must be 1-2 power ports anywhere in the structure. All other cells must be
-     * casing. No other block kinds allowed.</p>
-     *
-     * @param controllerPos the position of the controller block
-     * @param facing the horizontal facing of the controller
-     * @param shape the shape to match (DEPOSITION_ETCHER_SHAPE or ADVANCED_TEST_PACKAGE_SHAPE)
-     * @param blockKindAt reports the kind of block at a world position
-     * @param controllerKind the BlockKind to report for the controller block
-     * @param panelKind the BlockKind to report for the operating panel block
-     * @param powerPortKind the BlockKind to report for power port blocks
-     * @param casingKind the BlockKind to report for casing blocks
-     * @return the match result with member positions in canonical order on success
-     */
-    public static MatchResult match(MultiblockPos controllerPos, MultiblockDirection facing,
-                                     StructureShape shape, Function<MultiblockPos, BlockKind> blockKindAt,
-                                     BlockKind controllerKind, BlockKind panelKind,
-                                     BlockKind powerPortKind, BlockKind casingKind) {
-
-        // Delegate to StructureMatcher which already implements the correct geometry rules
-        // for controller-on-front-face with operating panel above, 1-2 power ports, rest casing.
-        return PanelStructureMatcher.match(controllerPos, facing, shape, blockKindAt);
+    public static final StructureShape DEPOSITION_ETCHER_SHAPE=new StructureShape(3,3,5);
+    public static final StructureShape ADVANCED_TEST_PACKAGE_SHAPE=new StructureShape(2,2,3);
+    private final AdvancedOwner owner;
+    private final ContainerData data=new SimpleContainerData(1);
+    private List<BlockPos> members=List.of();
+    private boolean formed, validating;
+    private String failure="Unformed";
+    public AdvancedFormation(AdvancedOwner owner) { this.owner=owner; }
+    public boolean formed(){return formed;}
+    public String failureReason(){return failure;}
+    public List<BlockPos> members(){return members;}
+    public ContainerData data(){return data;}
+    public void validate() {
+        var machine=owner.machine();var level=machine.getLevel();
+        if(validating||level==null||level.isClientSide()||machine.isRemoved())return;
+        validating=true;
+        try {
+            var anchor=machine.getBlockPos();
+            if(level.getBlockEntity(anchor)!=machine){detach();return;}
+            var state=level.getBlockState(anchor);
+            if(!(state.getBlock() instanceof AdvancedControllerBlock)){detach();return;}
+            Direction facing=state.getValue(AdvancedVisualProperties.FACING);
+            var shape=owner.large()?DEPOSITION_ETCHER_SHAPE:ADVANCED_TEST_PACKAGE_SHAPE;
+            var result=PanelStructureMatcher.match(new MultiblockPos(anchor.getX(),anchor.getY(),anchor.getZ()),
+                MultiblockDirection.valueOf(facing.name()),shape,p->kind(new BlockPos(p.x(),p.y(),p.z())));
+            if(!result.success()){failure=result.failureReason();detach();return;}
+            var next=result.memberPositions().stream().map(p->new BlockPos(p.x(),p.y(),p.z())).toList();
+            for(var old:members)if(!next.contains(old))clear(old);
+            members=next;formed=true;data.set(0,1);failure="";
+            for(int i=0;i<members.size();i++){
+                var pos=members.get(i);
+                if(level.getBlockEntity(pos) instanceof AdvancedMemberBlockEntity member)
+                    member.attach(owner,true);
+                visual(pos,true,i,facing);
+            }
+        } finally {validating=false;}
     }
-
-    /**
-     * The canonical member position order: u*volume_per_u + v*shape.length() + d
-     * where volume_per_u = shape.height() * shape.length().
-     *
-     * <p>For deposition_etcher (3x3x5): u*15 + v*5 + d, indices 0..44.
-     * For advanced_test_package (2x2x3): u*6 + v*3 + d, indices 0..11.</p>
-     */
-    public static int partIndex(StructureShape shape, int u, int v, int d) {
-        return u * shape.height() * shape.length() + v * shape.length() + d;
+    private BlockKind kind(BlockPos pos) {
+        var machine=owner.machine();var level=machine.getLevel();
+        if(level==null||!level.hasChunkAt(pos))return BlockKind.OTHER;
+        BlockEntity entity=level.getBlockEntity(pos);
+        var block=level.getBlockState(pos).getBlock();
+        if(pos.equals(machine.getBlockPos()))return entity==machine?BlockKind.CONTROLLER:BlockKind.OTHER;
+        if(!(entity instanceof AdvancedMemberBlockEntity member))return BlockKind.OTHER;
+        var other=member.controller();
+        if(other!=null&&other!=owner&&other.isFormed()&&!other.machine().isRemoved()
+                &&level.getBlockEntity(other.machine().getBlockPos())==other.machine())return BlockKind.OTHER;
+        if(block==AdvancedMachines.ADVANCED_POWER_PORT.get())return BlockKind.POWER_PORT;
+        if(block==AdvancedMachines.ADVANCED_OPERATING_PANEL.get())return BlockKind.OPERATING_PANEL;
+        if(block==AdvancedMachines.ADVANCED_CASING.get())return BlockKind.CASING;
+        return BlockKind.OTHER;
     }
-
-    /**
-     * The visual part property shared by all advanced multiblock members.
-     * Range: 0..44 for deposition_etcher, 0..11 for advanced_test_package.
-     * When unformed, always 0.
-     */
-    public static final IntegerProperty PART_PROPERTY = AdvancedVisualProperties.PART;
-
-    /**
-     * The visual formed property shared by all advanced multiblock members.
-     * Default false.
-     */
-    public static final BooleanProperty FORMED_PROPERTY = AdvancedVisualProperties.FORMED;
-
-    /**
-     * The visual facing property shared by all advanced multiblock members.
-     * Only meaningful when formed; default NORTH when unformed.
-     */
-    public static final Property<Direction> FACING_PROPERTY = AdvancedVisualProperties.FACING;
-
-    /**
-     * The LARGE boolean property: true for deposition_etcher (3x3x5), false for advanced_test_package (2x2x3).
-     * Used later for joined panel rendering.
-     */
-    public static final BooleanProperty LARGE_PROPERTY = AdvancedVisualProperties.LARGE;
+    public void detach() {
+        formed=false;data.set(0,0);
+        for(var pos:members)clear(pos);
+        members=List.of();
+        var machine=owner.machine();
+        if(machine.getLevel()!=null&&machine.getLevel().getBlockEntity(machine.getBlockPos())==machine)
+            visual(machine.getBlockPos(),false,0,Direction.NORTH);
+    }
+    private void clear(BlockPos pos) {
+        var level=owner.machine().getLevel();if(level==null||!level.hasChunkAt(pos))return;
+        if(level.getBlockEntity(pos) instanceof AdvancedMemberBlockEntity member&&member.controller()==owner){
+            member.attach(null,false);visual(pos,false,0,Direction.NORTH);
+        }
+    }
+    private void visual(BlockPos pos,boolean formed,int part,Direction facing) {
+        var level=owner.machine().getLevel();if(level==null)return;
+        BlockState state=level.getBlockState(pos);
+        if(!state.hasProperty(AdvancedVisualProperties.FORMED))return;
+        var next=state.setValue(AdvancedVisualProperties.FORMED,formed)
+            .setValue(AdvancedVisualProperties.PART,formed?part:0)
+            .setValue(AdvancedVisualProperties.LARGE,formed&&owner.large());
+        // Keep a controller's chosen orientation while unformed.
+        if(formed)next=next.setValue(AdvancedVisualProperties.FACING,facing);
+        if(next!=state)level.setBlock(pos,next,2);
+    }
 }

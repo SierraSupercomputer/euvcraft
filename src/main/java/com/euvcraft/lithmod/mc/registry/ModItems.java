@@ -226,20 +226,16 @@ public final class ModItems {
      * Same {@code registerSimpleBlockItem} rule as other multiblocks.</p>
      */
     public static final DeferredItem<BlockItem> DEPOSITION_ETCHER_CONTROLLER =
-        ITEMS.registerSimpleBlockItem("deposition_etcher_controller",
+        ITEMS.registerSimpleBlockItem("deposition_etcher",
             () -> AdvancedMachines.DEPOSITION_ETCHER_CONTROLLER.get());
 
-    public static final DeferredItem<BlockItem> DEPOSITION_ETCHER_OPERATING_PANEL =
-        ITEMS.registerSimpleBlockItem("deposition_etcher_operating_panel",
-            () -> AdvancedMachines.DEPOSITION_ETCHER_OPERATING_PANEL.get());
+    public static final DeferredItem<BlockItem> ADVANCED_OPERATING_PANEL =
+        ITEMS.registerSimpleBlockItem("advanced_operating_panel", () -> AdvancedMachines.ADVANCED_OPERATING_PANEL.get());
 
     public static final DeferredItem<BlockItem> ADVANCED_TEST_PACKAGE_CONTROLLER =
-        ITEMS.registerSimpleBlockItem("advanced_test_package_controller",
+        ITEMS.registerSimpleBlockItem("advanced_test_package",
             () -> AdvancedMachines.ADVANCED_TEST_PACKAGE_CONTROLLER.get());
 
-    public static final DeferredItem<BlockItem> ADVANCED_TEST_PACKAGE_OPERATING_PANEL =
-        ITEMS.registerSimpleBlockItem("advanced_test_package_operating_panel",
-            () -> AdvancedMachines.ADVANCED_TEST_PACKAGE_OPERATING_PANEL.get());
 
     public static final DeferredItem<BlockItem> ADVANCED_CASING =
         ITEMS.registerSimpleBlockItem("advanced_casing",
