@@ -444,7 +444,7 @@ class HighBinningRulesTest {
             }
 
             assertEquals(expectedPassing, plan.passingCount());
-            assertEquals(WAFERS, plan.failingCount());
+            assertEquals(WAFERS - expectedPassing, plan.failingCount());
         }
 
         @Test
