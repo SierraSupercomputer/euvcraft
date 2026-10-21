@@ -403,7 +403,7 @@ export function computeT4Panels(cfg) {
     }
 
     modelCache.set(
-      A + 'blockstates/t4_' + blockId + '.json',
+      A + 'blockstates/' + blockId + '.json',
       json({ variants })
     );
   }
@@ -413,13 +413,13 @@ export function computeT4Panels(cfg) {
     const role = BLOCK_ROLES[blockId][0];
     // Block item model (referenced by item)
     modelCache.set(
-      A + 'models/item/t4_' + blockId + '.json',
+      A + 'models/item/' + blockId + '.json',
       json({ parent: 'lithmod:block/t4_' + role + '_unformed' })
     );
     // Client item reference
     modelCache.set(
-      A + 'items/t4_' + blockId + '.json',
-      json({ model: { type: 'minecraft:model', model: 'lithmod:item/t4_' + blockId } })
+      A + 'items/' + blockId + '.json',
+      json({ model: { type: 'minecraft:model', model: 'lithmod:item/' + blockId } })
     );
   }
 

@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "lithmod:item/t4_deposition_etcher"
+    "model": "lithmod:item/deposition_etcher"
   }
 }
