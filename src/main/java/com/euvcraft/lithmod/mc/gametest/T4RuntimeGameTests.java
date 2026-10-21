@@ -30,6 +30,10 @@ import io.netty.buffer.Unpooled;
 public final class T4RuntimeGameTests {
  private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS=DeferredRegister.create(Registries.TEST_FUNCTION,"lithmod");
  static {
+  FUNCTIONS.register("t4_full_chain_logic",()->h->T4FullChainGameTests.run(h,DieTypes.LOGIC,7));
+  FUNCTIONS.register("t4_full_chain_memory",()->h->T4FullChainGameTests.run(h,DieTypes.MEMORY,8));
+  FUNCTIONS.register("t4_full_chain_compute",()->h->T4FullChainGameTests.run(h,DieTypes.COMPUTE,9));
+  FUNCTIONS.register("t4_full_chain_nand",()->h->T4FullChainGameTests.run(h,DieTypes.NAND,10));
   FUNCTIONS.register("t4_advanced_geometry",()->T4RuntimeGameTests::geometry);
   FUNCTIONS.register("t4_advanced_capabilities",()->T4RuntimeGameTests::capabilities);
   FUNCTIONS.register("t4_preparation_conservation",()->T4RuntimeGameTests::preparation);
@@ -45,7 +49,7 @@ public final class T4RuntimeGameTests {
   FUNCTIONS.register(bus);bus.addListener((Consumer<RegisterGameTestsEvent>)event->{
    Holder<TestEnvironmentDefinition<?>> env=event.registerEnvironment(Identifier.parse("lithmod:t4_runtime"),new TestEnvironmentDefinition[0]);
    var data=new TestData<>(env,Level.OVERWORLD,Identifier.withDefaultNamespace("empty"),300,0,true,Rotation.NONE,false,1,1,false,0);
-   for(String name:List.of("t4_advanced_geometry","t4_advanced_capabilities","t4_preparation_conservation",
+   for(String name:List.of("t4_full_chain_logic","t4_full_chain_memory","t4_full_chain_compute","t4_full_chain_nand","t4_advanced_geometry","t4_advanced_capabilities","t4_preparation_conservation",
      "t4_preparation_refusals","t4_preparation_pause_reload","t4_preparation_break","t4_high_binning_logic",
      "t4_high_binning_compute","t4_high_binning_refusals","t4_high_binning_frozen_reload")){
     var id=Identifier.fromNamespaceAndPath("lithmod",name);
