@@ -1,198 +1,198 @@
 {
   "variants": {
     "facing=north,formed=false": {
-      "model": "lithmod:block/process_cell_casing_part0_unformed"
+      "model": "lithmod:block/process_cell_water_inlet_part0_unformed"
     },
     "facing=north,formed=true,part=0": {
-      "model": "lithmod:block/process_cell_casing_part0_formed"
+      "model": "lithmod:block/process_cell_water_inlet_part0_formed"
     },
     "facing=north,formed=true,part=1": {
-      "model": "lithmod:block/process_cell_casing_part1_formed"
+      "model": "lithmod:block/process_cell_water_inlet_part1_formed"
     },
     "facing=north,formed=true,part=2": {
-      "model": "lithmod:block/process_cell_casing_part2_formed"
+      "model": "lithmod:block/process_cell_water_inlet_part2_formed"
     },
     "facing=north,formed=true,part=3": {
-      "model": "lithmod:block/process_cell_casing_part3_formed"
+      "model": "lithmod:block/process_cell_water_inlet_part3_formed"
     },
     "facing=north,formed=true,part=4": {
-      "model": "lithmod:block/process_cell_casing_part4_formed"
+      "model": "lithmod:block/process_cell_water_inlet_part4_formed"
     },
     "facing=north,formed=true,part=5": {
-      "model": "lithmod:block/process_cell_casing_part5_formed"
+      "model": "lithmod:block/process_cell_water_inlet_part5_formed"
     },
     "facing=north,formed=true,part=6": {
-      "model": "lithmod:block/process_cell_casing_part6_formed"
+      "model": "lithmod:block/process_cell_water_inlet_part6_formed"
     },
     "facing=north,formed=true,part=7": {
-      "model": "lithmod:block/process_cell_casing_part7_formed"
+      "model": "lithmod:block/process_cell_water_inlet_part7_formed"
     },
     "facing=north,formed=true,part=8": {
-      "model": "lithmod:block/process_cell_casing_part8_formed"
+      "model": "lithmod:block/process_cell_water_inlet_part8_formed"
     },
     "facing=north,formed=true,part=9": {
-      "model": "lithmod:block/process_cell_casing_part9_formed"
+      "model": "lithmod:block/process_cell_water_inlet_part9_formed"
     },
     "facing=north,formed=true,part=10": {
-      "model": "lithmod:block/process_cell_casing_part10_formed"
+      "model": "lithmod:block/process_cell_water_inlet_part10_formed"
     },
     "facing=north,formed=true,part=11": {
-      "model": "lithmod:block/process_cell_casing_part11_formed"
+      "model": "lithmod:block/process_cell_water_inlet_part11_formed"
     },
     "facing=east,formed=false": {
-      "model": "lithmod:block/process_cell_casing_part0_unformed",
+      "model": "lithmod:block/process_cell_water_inlet_part0_unformed",
       "y": 90
     },
     "facing=east,formed=true,part=0": {
-      "model": "lithmod:block/process_cell_casing_part0_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part0_formed",
       "y": 90
     },
     "facing=east,formed=true,part=1": {
-      "model": "lithmod:block/process_cell_casing_part1_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part1_formed",
       "y": 90
     },
     "facing=east,formed=true,part=2": {
-      "model": "lithmod:block/process_cell_casing_part2_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part2_formed",
       "y": 90
     },
     "facing=east,formed=true,part=3": {
-      "model": "lithmod:block/process_cell_casing_part3_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part3_formed",
       "y": 90
     },
     "facing=east,formed=true,part=4": {
-      "model": "lithmod:block/process_cell_casing_part4_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part4_formed",
       "y": 90
     },
     "facing=east,formed=true,part=5": {
-      "model": "lithmod:block/process_cell_casing_part5_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part5_formed",
       "y": 90
     },
     "facing=east,formed=true,part=6": {
-      "model": "lithmod:block/process_cell_casing_part6_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part6_formed",
       "y": 90
     },
     "facing=east,formed=true,part=7": {
-      "model": "lithmod:block/process_cell_casing_part7_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part7_formed",
       "y": 90
     },
     "facing=east,formed=true,part=8": {
-      "model": "lithmod:block/process_cell_casing_part8_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part8_formed",
       "y": 90
     },
     "facing=east,formed=true,part=9": {
-      "model": "lithmod:block/process_cell_casing_part9_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part9_formed",
       "y": 90
     },
     "facing=east,formed=true,part=10": {
-      "model": "lithmod:block/process_cell_casing_part10_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part10_formed",
       "y": 90
     },
     "facing=east,formed=true,part=11": {
-      "model": "lithmod:block/process_cell_casing_part11_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part11_formed",
       "y": 90
     },
     "facing=south,formed=false": {
-      "model": "lithmod:block/process_cell_casing_part0_unformed",
+      "model": "lithmod:block/process_cell_water_inlet_part0_unformed",
       "y": 180
     },
     "facing=south,formed=true,part=0": {
-      "model": "lithmod:block/process_cell_casing_part0_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part0_formed",
       "y": 180
     },
     "facing=south,formed=true,part=1": {
-      "model": "lithmod:block/process_cell_casing_part1_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part1_formed",
       "y": 180
     },
     "facing=south,formed=true,part=2": {
-      "model": "lithmod:block/process_cell_casing_part2_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part2_formed",
       "y": 180
     },
     "facing=south,formed=true,part=3": {
-      "model": "lithmod:block/process_cell_casing_part3_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part3_formed",
       "y": 180
     },
     "facing=south,formed=true,part=4": {
-      "model": "lithmod:block/process_cell_casing_part4_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part4_formed",
       "y": 180
     },
     "facing=south,formed=true,part=5": {
-      "model": "lithmod:block/process_cell_casing_part5_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part5_formed",
       "y": 180
     },
     "facing=south,formed=true,part=6": {
-      "model": "lithmod:block/process_cell_casing_part6_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part6_formed",
       "y": 180
     },
     "facing=south,formed=true,part=7": {
-      "model": "lithmod:block/process_cell_casing_part7_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part7_formed",
       "y": 180
     },
     "facing=south,formed=true,part=8": {
-      "model": "lithmod:block/process_cell_casing_part8_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part8_formed",
       "y": 180
     },
     "facing=south,formed=true,part=9": {
-      "model": "lithmod:block/process_cell_casing_part9_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part9_formed",
       "y": 180
     },
     "facing=south,formed=true,part=10": {
-      "model": "lithmod:block/process_cell_casing_part10_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part10_formed",
       "y": 180
     },
     "facing=south,formed=true,part=11": {
-      "model": "lithmod:block/process_cell_casing_part11_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part11_formed",
       "y": 180
     },
     "facing=west,formed=false": {
-      "model": "lithmod:block/process_cell_casing_part0_unformed",
+      "model": "lithmod:block/process_cell_water_inlet_part0_unformed",
       "y": 270
     },
     "facing=west,formed=true,part=0": {
-      "model": "lithmod:block/process_cell_casing_part0_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part0_formed",
       "y": 270
     },
     "facing=west,formed=true,part=1": {
-      "model": "lithmod:block/process_cell_casing_part1_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part1_formed",
       "y": 270
     },
     "facing=west,formed=true,part=2": {
-      "model": "lithmod:block/process_cell_casing_part2_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part2_formed",
       "y": 270
     },
     "facing=west,formed=true,part=3": {
-      "model": "lithmod:block/process_cell_casing_part3_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part3_formed",
       "y": 270
     },
     "facing=west,formed=true,part=4": {
-      "model": "lithmod:block/process_cell_casing_part4_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part4_formed",
       "y": 270
     },
     "facing=west,formed=true,part=5": {
-      "model": "lithmod:block/process_cell_casing_part5_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part5_formed",
       "y": 270
     },
     "facing=west,formed=true,part=6": {
-      "model": "lithmod:block/process_cell_casing_part6_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part6_formed",
       "y": 270
     },
     "facing=west,formed=true,part=7": {
-      "model": "lithmod:block/process_cell_casing_part7_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part7_formed",
       "y": 270
     },
     "facing=west,formed=true,part=8": {
-      "model": "lithmod:block/process_cell_casing_part8_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part8_formed",
       "y": 270
     },
     "facing=west,formed=true,part=9": {
-      "model": "lithmod:block/process_cell_casing_part9_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part9_formed",
       "y": 270
     },
     "facing=west,formed=true,part=10": {
-      "model": "lithmod:block/process_cell_casing_part10_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part10_formed",
       "y": 270
     },
     "facing=west,formed=true,part=11": {
-      "model": "lithmod:block/process_cell_casing_part11_formed",
+      "model": "lithmod:block/process_cell_water_inlet_part11_formed",
       "y": 270
     }
   }

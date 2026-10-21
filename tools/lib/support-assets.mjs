@@ -1,6 +1,6 @@
 // Pure deterministic aliases: support cells reuse the approved fixed 2x2x3 panel art.
 const A='src/main/resources/assets/lithmod/',D='src/main/resources/data/lithmod/';
-const blocks={boule_purifier:'controller',ebeam_mask_writer:'controller',support_casing:'casing',support_power_port:'power_port',support_water_inlet:'casing'};
+const blocks={boule_purifier:'controller',ebeam_mask_writer:'controller',support_casing:'casing',support_power_port:'power_port',support_water_inlet:'water_inlet'};
 const items=["pure_silicon_boule","logic_chip_t3","memory_chip_t3","compute_chip_t3","nand_chip_t3","krf_excimer_laser","duv_projection_lens","precision_stepper_stage","hepa_filter","laser_interferometer","resist_t3"];
 export function computeSupportAssets(){
   const out=new Map(),put=(path,value)=>{if(out.has(path))throw Error('Duplicate support output '+path);out.set(path,JSON.stringify(value,null,2)+'\n');};

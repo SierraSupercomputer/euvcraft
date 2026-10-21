@@ -1,7 +1,7 @@
 // Fixed-cell joined asset generation. Pure computation: no filesystem writes or import-time execution.
 import {deflateSync,crc32} from 'node:zlib';
 const A='src/main/resources/assets/lithmod/',D='src/main/resources/data/lithmod/';
-const roles=['controller','casing','power_port','operating_panel'];
+const roles=['controller','casing','power_port','operating_panel','water_inlet'];
 const sizes={north:[32,32],south:[32,32],west:[48,32],east:[48,32],up:[32,48],down:[32,48]};
 const rotations={north:0,east:90,south:180,west:270};
 const json=x=>JSON.stringify(x,null,2)+'\n';
@@ -18,20 +18,23 @@ export function computeJoinedPanels(cfg){
   if(!cfg||cfg.version!==1||Object.keys(cfg).some(k=>!['version','palette','faces','markings','unformedPanel'].includes(k)))throw Error('Invalid joinedPanels schema');
   if(!cfg.palette||typeof cfg.palette!=='object')throw Error('Joined palette missing');const palette=Object.fromEntries(Object.entries(cfg.palette).map(([k,v])=>[k,color(v)]));if(!palette.steel)throw Error('Joined steel base color missing');
   if(!cfg.faces||Object.keys(cfg.faces).sort().join(',')!==Object.keys(sizes).sort().join(','))throw Error('Exactly six joined face recipes required');
-  if(!cfg.markings||Object.keys(cfg.markings).sort().join(',')!=='controller,operating_panel,power_port')throw Error('Exactly three functional markings required');
+  if(!cfg.markings||Object.keys(cfg.markings).sort().join(',')!=='controller,operating_panel,power_port,water_inlet')throw Error('Exactly four functional markings required');
   const canvases={};for(const [face,[w,h]]of Object.entries(sizes))canvases[face]=draw(fill(w,h,palette.steel),w,h,cfg.faces[face],palette);
   // Validate ALL role recipes before creating outputs, even a currently hidden/internal role tile.
-  for(const role of ['controller','operating_panel','power_port'])draw(fill(16,16,palette.steel),16,16,cfg.markings[role],palette);
+  for(const role of ['controller','operating_panel','power_port','water_inlet'])draw(fill(16,16,palette.steel),16,16,cfg.markings[role],palette);
   const unformed=draw(fill(16,16,palette.steel),16,16,cfg.unformedPanel,palette),pngs=new Map(),models=new Map(),tiles=new Map();
-  const getTile=(role,face,x,y)=>{const special=role==='power_port'||face==='north'&&(role==='controller'||role==='operating_panel'),key=(special?role:'shell')+'_'+face+'_u'+x+'v'+y;if(!tiles.has(key)){const[w,h]=sizes[face];if(x<0||y<0||x>=w/16||y>=h/16)throw Error('Joined tile outside canonical face');const raw=crop(canvases[face],w,x,y);if(special)draw(raw,16,16,cfg.markings[role],palette);tiles.set(key,raw);pngs.set(A+'textures/block/joined_'+key+'.png',png(raw,16,16));}return{ref:'lithmod:block/joined_'+key,raw:tiles.get(key)};};
+  const getTile=(role,face,x,y)=>{const special=role==='power_port'||role==='water_inlet'||face==='north'&&(role==='controller'||role==='operating_panel'),key=(special?role:'shell')+'_'+face+'_u'+x+'v'+y;if(!tiles.has(key)){const[w,h]=sizes[face];if(x<0||y<0||x>=w/16||y>=h/16)throw Error('Joined tile outside canonical face');const raw=crop(canvases[face],w,x,y);if(special)draw(raw,16,16,cfg.markings[role],palette);tiles.set(key,raw);pngs.set(A+'textures/block/joined_'+key+'.png',png(raw,16,16));}return{ref:'lithmod:block/joined_'+key,raw:tiles.get(key)};};
   for(const role of roles){
     for(let part=0;part<12;part++){const u=Math.floor(part/6),v=Math.floor(part%6/3),d=part%3,textures={};for(const face of Object.keys(sizes)){const[x,y]=uv(face,u,v,d);textures[face]=getTile(role,face,x,y).ref;}textures.particle=textures.north;
       models.set(A+'models/block/process_cell_'+role+'_part'+part+'_formed.json',json({parent:'minecraft:block/cube',textures}));
       models.set(A+'models/block/process_cell_'+role+'_part'+part+'_unformed.json',json({parent:'lithmod:block/process_cell_'+role+'_unformed'}));
     }
     const variants={};for(const[facing,rotation]of Object.entries(rotations)){const rotated=model=>rotation?{model,y:rotation}:{model};variants['facing='+facing+',formed=false']=rotated('lithmod:block/process_cell_'+role+'_part0_unformed');for(let part=0;part<12;part++)variants['facing='+facing+',formed=true,part='+part]=rotated('lithmod:block/process_cell_'+role+'_part'+part+'_formed');}
-    models.set(A+'blockstates/process_cell_'+role+'.json',json({variants}));
+    if(role!=='water_inlet')models.set(A+'blockstates/process_cell_'+role+'.json',json({variants}));
   }
+  const waterUnformed=draw(unformed.slice(),16,16,cfg.markings.water_inlet,palette);
+  pngs.set(A+'textures/block/joined_water_inlet_unformed.png',png(waterUnformed,16,16));
+  models.set(A+'models/block/process_cell_water_inlet_unformed.json',json({parent:'minecraft:block/cube_all',textures:{all:'lithmod:block/joined_water_inlet_unformed'}}));
   pngs.set(A+'textures/block/joined_operating_panel_unformed_front.png',png(unformed,16,16));
   models.set(A+'models/block/process_cell_operating_panel_unformed.json',json({parent:'minecraft:block/orientable',textures:{top:'lithmod:block/process_cell_casing_unformed',bottom:'lithmod:block/process_cell_casing_unformed',side:'lithmod:block/process_cell_casing_unformed',front:'lithmod:block/joined_operating_panel_unformed_front',particle:'lithmod:block/process_cell_casing_unformed'}}));
   models.set(A+'models/item/process_cell_operating_panel.json',json({parent:'lithmod:block/process_cell_operating_panel_unformed'}));

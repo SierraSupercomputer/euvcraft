@@ -15,6 +15,7 @@
     "lithmod:boule_purifier",
     "lithmod:ebeam_mask_writer",
     "lithmod:support_casing",
-    "lithmod:support_power_port"
+    "lithmod:support_power_port",
+    "lithmod:support_water_inlet"
   ]
 }
