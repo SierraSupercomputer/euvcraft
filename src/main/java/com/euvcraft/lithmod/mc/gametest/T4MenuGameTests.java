@@ -34,10 +34,10 @@ final class T4MenuGameTests {
    for(int n=2;n<machineSlots;n++)check(h,!panel.getSlot(n).mayPlace(new ItemStack(Items.DIRT)),"Output insertion refused");
    if(kind==Kind.PACKAGING){
     var machine=(AdvancedTestPackageControllerBlockEntity)c.machine();
-    check(h,panel.clickMenuButton(player,1)&&machine.highBinning(),"Open owned server panel can toggle high binning");
-    player.containerMenu=player.inventoryMenu;check(h,!panel.clickMenuButton(player,1)&&machine.highBinning(),"Closed panel cannot mutate mode");player.containerMenu=panel;
+    check(h,panel.clickMenuButton(player,1)&&machine.highBinningEnabled(),"Open owned server panel can toggle high binning");
+    player.containerMenu=player.inventoryMenu;check(h,!panel.clickMenuButton(player,1)&&machine.highBinningEnabled(),"Closed panel cannot mutate mode");player.containerMenu=panel;
     machine.setSlot(0,complete(3,DieTypes.LOGIC,0));machine.setSlot(1,new ItemStack(ModItems.CHIP_PACKAGE.get(),64));replenish(machine);machine.serverTick();
-    check(h,machine.isQueueActive()&&!panel.clickMenuButton(player,1)&&machine.highBinning(),"Active queue locks mode through actual menu RPC");
+    check(h,machine.isQueueActive()&&!panel.clickMenuButton(player,1)&&machine.highBinningEnabled(),"Active queue locks mode through actual menu RPC");
    }
    c.level().setBlock(c.anchor().above(),Blocks.AIR.defaultBlockState(),3);
    check(h,!panel.stillValid(player)&&!panel.clickMenuButton(player,1),"Removed panel invalidates retained menu");
@@ -46,3 +46,4 @@ final class T4MenuGameTests {
  }
  private T4MenuGameTests(){}
 }
+
