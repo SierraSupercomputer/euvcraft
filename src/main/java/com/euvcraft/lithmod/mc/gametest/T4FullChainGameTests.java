@@ -36,7 +36,7 @@ final class T4FullChainGameTests {
    h.getLevel().setBlock(pos,SiliconMachines.WAFER_SLICER.get().defaultBlockState(),3);
    var slicer=(WaferSlicerBlockEntity)h.getLevel().getBlockEntity(pos);
    try{
-    slicer.setSlot(0,boule);slicer.setSlot(1,FoupItems.with(ModItems.FOUP_MK1.get(),FoupContents.empty(25)));
+    slicer.setSlot(0,boule);slicer.setSlot(1,FoupItems.with(ModItems.FOUP_MK1.get(),FoupContents.empty(UUID.randomUUID(),25)));
     for(int tick=0;tick<10_000&&slicer.slot(2).isEmpty();tick++){replenish(slicer);slicer.serverTick();}
     check(h,!slicer.slot(2).isEmpty(),"Actual slicer produces carrier");foup=slicer.slot(2).copy();
    }finally{slicer.clearContent();h.getLevel().setBlock(pos,Blocks.AIR.defaultBlockState(),3);}
@@ -95,3 +95,4 @@ final class T4FullChainGameTests {
  }
  private T4FullChainGameTests(){}
 }
+
