@@ -1,6 +1,8 @@
 package com.euvcraft.lithmod.mc;
 
 import com.euvcraft.lithmod.mc.data.HighBinningDataLoader;
+import java.util.Map;
+import java.util.List;
 
 import com.euvcraft.lithmod.core.HighBinningRules;
 import com.euvcraft.lithmod.mc.recipe.HighBinningRecipe;
