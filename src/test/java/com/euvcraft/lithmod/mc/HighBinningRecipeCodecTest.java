@@ -1,5 +1,7 @@
 package com.euvcraft.lithmod.mc;
 
+import com.euvcraft.lithmod.mc.data.HighBinningDataLoader;
+
 import com.euvcraft.lithmod.core.HighBinningRules;
 import com.euvcraft.lithmod.mc.recipe.HighBinningRecipe;
 import com.mojang.serialization.DataResult;
