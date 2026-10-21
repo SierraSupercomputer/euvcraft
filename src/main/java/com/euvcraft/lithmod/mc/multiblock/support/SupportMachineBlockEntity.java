@@ -269,8 +269,8 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
      * <p>Gated on formation as the routine consistent choice: an unformed cell exchanges
      * nothing, so a work bench someone re-equipped mid-repair cannot quietly fill the tank.
      * Filling and draining the tank through {@link WaterTank} are independent of this path,
-     * so future pipes can adapt without touching this code, and there is deliberately no
-     * fluid and no item capability registered behind it.</p>
+     * so the water inlet uses the same tank without changing bucket exchange. No item
+     * capability is registered.</p>
      */
     private void tryBucketRefill() {
         if (!this.formed || this.water == null) {

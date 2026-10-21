@@ -15,9 +15,9 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
- * Registers the shared support-machine foundation: four blocks (two controllers, one casing, one
- * power port), TWO block entity types (one controller BE type valid for both controller blocks,
- * one shared member BE type valid for casing and port), two menu types (one per shell), and the
+ * Registers the shared support-machine foundation: five blocks (two controllers, one casing, one
+ * power port, one optional water inlet), TWO block entity types (one controller BE type valid for both controller blocks,
+ * one shared member BE type valid for casing, power port and water inlet), two menu types (one per shell), and the
  * FE capability.
  *
  * <p>Every line follows the pattern the Process Cell registry ({@code ModMultiblocks}) and the M1
@@ -37,8 +37,8 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  * provider filters on the actual block state: only a {@link SupportPowerPortBlock} position gets
  * the handler, and only while it belongs to a formed machine whose live controller is the
  * registered owner. So: FE reaches the world from a formed, owned power port — never from a
- * controller, never from a casing, never while unformed. No item and no fluid capability is
- * registered for any support block entity type, so those lookups answer null on every side.</p>
+ * controller, never from a casing, never while unformed. No item capability is registered. Fluid insertion is exposed only by a formed purifier water inlet,
+ * on all faces, through the same controller tank used by bucket handling.</p>
  */
 public final class SupportMachines {
 

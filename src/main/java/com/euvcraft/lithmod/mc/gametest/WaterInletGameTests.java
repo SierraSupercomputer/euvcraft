@@ -195,7 +195,8 @@ public final class WaterInletGameTests {
             try {
                 var pipeBE=(ConduitBlockEntity)c.level.getBlockEntity(pipePos);
                 for(var side:Direction.values())pipeBE.setSetting(side,SideSetting.DISABLED);
-                pipeBE.setSetting(Direction.UP,SideSetting.INPUT);pipeBE.setSetting(Direction.DOWN,SideSetting.OUTPUT);
+                pipeBE.setSetting(Direction.UP,SideSetting.OUTPUT);pipeBE.setSetting(Direction.DOWN,SideSetting.INPUT);
+                net.zagdrath.arcforge.block.conduit.ConduitBlock.refreshConnections(c.level,pipePos);
                 var source=c.level.getCapability(Capabilities.Fluid.BLOCK,tankPos,Direction.UP);h.assertTrue(source!=null,"real tank input capability");
                 h.assertValueEqual(1000,insert(source,1000,true),"fill actual Arcforge source tank");
                 h.assertTrue(ConduitCapabilities.canConnect(c.level,pipePos,Direction.DOWN,ConduitType.FLUID),"Arcforge discovers inlet capability");

@@ -8,9 +8,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Shared behaviour of the two support members that are not the controller — casing and power port
+ * Shared behaviour of the support members that are not the controller — casing, power port and water inlet
  * share the ONE member block entity type ({@code SupportMachines.SUPPORT_MEMBER_BE}), which is
- * registered against both support member blocks.
+ * registered against all three support member blocks.
  *
  * <p>A member never decides whether it is part of a formed machine: the controller does, and pushes
  * the answer here. The controller link is deliberately not persisted; it is rebuilt by the next
