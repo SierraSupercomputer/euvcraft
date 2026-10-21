@@ -53,7 +53,7 @@ class StarterTextureResourceTest {
     private static final String ITEM_TEXTURES = "/assets/" + MODID + "/textures/item/";
     private static final String BLOCK_TEXTURES = "/assets/" + MODID + "/textures/block/";
 
-    // 34 non-block production items that must have custom textures
+    // 44 non-block production items that must have custom textures (34 original + 10 T4)
     private static final Set<String> PRODUCTION_ITEMS = Set.of(
         "foup_mk1", "foup_mk2",
         "logic_chip_t1", "logic_chip_t2", "memory_chip_t2",
@@ -75,7 +75,11 @@ class StarterTextureResourceTest {
         "precision_stepper_stage",
         "hepa_filter",
         "laser_interferometer",
-        "resist_t3"
+        "resist_t3",
+        // T4 items (10)
+        "logic_chip_t4", "memory_chip_t4", "compute_chip_t4", "nand_chip_t4",
+        "resist_t4",
+        "arf_excimer_laser", "arf_dry_lens", "nanopositioning_stage", "ulpa_filter", "precision_overlay_scope"
     );
 
     // 10 production block models (test_machine excluded — preserved untouched)
