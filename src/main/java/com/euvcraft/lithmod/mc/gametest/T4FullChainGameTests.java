@@ -69,6 +69,7 @@ final class T4FullChainGameTests {
     eq(h,maskData.usesRemaining(),machine.slot(ProcessCellControllerBlockEntity.SLOT_MASK).get(ModDataComponents.MASK_DATA.get()).usesRemaining(),"Refused source consumes no mask use");
     machine.setSlot(ProcessCellControllerBlockEntity.SLOT_FOUP,foup);replenish(machine);machine.serverTick();
     var saved=save(fixture.level(),machine);var blockState=fixture.level().getBlockState(fixture.anchor());fixture.level().removeBlockEntity(fixture.anchor());
+    for(var memberPos:fixture.positions())if(fixture.level().getBlockEntity(memberPos) instanceof ProcessCellMemberBlockEntity member)member.serverTick();
     var restored=ModMultiblocks.PROCESS_CELL_CONTROLLER_BE.get().create(fixture.anchor(),blockState);fixture.level().setBlockEntity(restored);load(fixture.level(),restored,saved);restored.revalidate();machine=restored;
     for(int tick=0;tick<1000&&machine.processState()!=ProcessState.FINISHED;tick++){replenish(machine);machine.serverTick();}
     check(h,machine.processState()==ProcessState.FINISHED,"Actual T4 lithography completes "+family+" state="+machine.processState()+" refusal="+machine.lastRefusal());

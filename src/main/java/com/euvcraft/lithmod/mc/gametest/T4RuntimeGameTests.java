@@ -141,11 +141,7 @@ public final class T4RuntimeGameTests {
    var replacement=AdvancedMachines.DEPOSITION_ETCHER_CONTROLLER_BE.get().create(c.anchor(),state);
    c.level().setBlockEntity(replacement);load(c.level(),replacement,tag);replacement.revalidate();
    eq(h,progress,replacement.jobProgress(),"Pending progress survives reload");eq(h,duration,replacement.jobDuration(),"Frozen duration survives reload");
-   try{
-    var apply=HighBinningDataLoader.class.getDeclaredMethod("apply",Map.class,net.minecraft.server.packs.resources.ResourceManager.class,net.minecraft.util.profiling.ProfilerFiller.class);
-    apply.setAccessible(true);apply.invoke(new HighBinningDataLoader(),Map.of(),null,null);
-   }catch(ReflectiveOperationException e){throw new RuntimeException(e);}
-   check(h,HighBinningDataLoader.getRegistry().orElseThrow().forSource(DieTypes.LOGIC,3).isEmpty(),"Actual empty reload removes new-job transition");
+
    replacement.setStoredEnergy(0);replacement.serverTick();eq(h,progress,replacement.jobProgress(),"Out of power pauses");
    replenish(replacement);replacement.setSlot(2,new ItemStack(Items.STONE));int energy=replacement.buffer().getAmountAsInt();
    replacement.serverTick();eq(h,progress,replacement.jobProgress(),"Full output pauses");eq(h,energy,replacement.buffer().getAmountAsInt(),"Blocked tick costs no FE");
@@ -220,6 +216,11 @@ public final class T4RuntimeGameTests {
    var replacement=AdvancedMachines.ADVANCED_TEST_PACKAGE_CONTROLLER_BE.get().create(c.anchor(),state);c.level().setBlockEntity(replacement);
    load(c.level(),replacement,tag);replacement.revalidate();check(h,replacement.isQueueActive(),"Accepted plan survives actual save/load");
    FabConfig.FE_POWER_MULTIPLIER.set(oldPower<99?oldPower+1:oldPower-1);FabConfig.CHIPS_PER_WAFER.set(oldChips==1?2:1);EUVCRAFTMod.config().onConfigReload();
+   try{
+    var apply=HighBinningDataLoader.class.getDeclaredMethod("apply",Map.class,net.minecraft.server.packs.resources.ResourceManager.class,net.minecraft.util.profiling.ProfilerFiller.class);
+    apply.setAccessible(true);apply.invoke(new HighBinningDataLoader(),Map.of(),null,null);
+   }catch(ReflectiveOperationException e){throw new RuntimeException(e);}
+   check(h,HighBinningDataLoader.getRegistry().orElseThrow().forSource(DieTypes.LOGIC,3).isEmpty(),"Actual empty reload removes new-job transition");
    replacement.setStoredEnergy(0);replacement.serverTick();check(h,replacement.isPaused(),"Reloaded queue pauses without power");
    var result=packageAll(h,replacement,ModItems.LOGIC_CHIP_T4.get(),count);
    eq(h,passes*oldChips,result.chips(),"Config reload cannot reroll or change frozen output amounts");
