@@ -1,0 +1,13 @@
+{
+  "id": "advanced_test_package",
+  "energy_capacity": 1000000,
+  "max_receive": 20000,
+  "energy_per_tick": 100,
+  "per_tier_energy_per_tick": {},
+  "params": {
+    "ticks_per_wafer": 10,
+    "package_per_wafer": 1,
+    "input_slots": 2,
+    "output_slots": 6
+  }
+}

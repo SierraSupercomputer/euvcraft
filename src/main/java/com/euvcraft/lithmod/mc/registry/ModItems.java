@@ -218,6 +218,37 @@ public final class ModItems {
             () -> com.euvcraft.lithmod.mc.multiblock.support.SupportMachines.SUPPORT_POWER_PORT.get());
 
     /**
+     * The T4 advanced multiblock block items.
+     *
+     * <p>Two independent multiblocks: deposition_etcher (3x3x5) and advanced_test_package (2x2x3).
+     * Each has a lower controller and upper operating panel. They share casing and power port blocks.
+     * Same {@code registerSimpleBlockItem} rule as other multiblocks.</p>
+     */
+    public static final DeferredItem<BlockItem> DEPOSITION_ETCHER_CONTROLLER =
+        ITEMS.registerSimpleBlockItem("deposition_etcher_controller",
+            () -> AdvancedMachines.DEPOSITION_ETCHER_CONTROLLER.get());
+
+    public static final DeferredItem<BlockItem> DEPOSITION_ETCHER_OPERATING_PANEL =
+        ITEMS.registerSimpleBlockItem("deposition_etcher_operating_panel",
+            () -> AdvancedMachines.DEPOSITION_ETCHER_OPERATING_PANEL.get());
+
+    public static final DeferredItem<BlockItem> ADVANCED_TEST_PACKAGE_CONTROLLER =
+        ITEMS.registerSimpleBlockItem("advanced_test_package_controller",
+            () -> AdvancedMachines.ADVANCED_TEST_PACKAGE_CONTROLLER.get());
+
+    public static final DeferredItem<BlockItem> ADVANCED_TEST_PACKAGE_OPERATING_PANEL =
+        ITEMS.registerSimpleBlockItem("advanced_test_package_operating_panel",
+            () -> AdvancedMachines.ADVANCED_TEST_PACKAGE_OPERATING_PANEL.get());
+
+    public static final DeferredItem<BlockItem> ADVANCED_CASING =
+        ITEMS.registerSimpleBlockItem("advanced_casing",
+            () -> AdvancedMachines.ADVANCED_CASING.get());
+
+    public static final DeferredItem<BlockItem> ADVANCED_POWER_PORT =
+        ITEMS.registerSimpleBlockItem("advanced_power_port",
+            () -> AdvancedMachines.ADVANCED_POWER_PORT.get());
+
+    /**
      * The test-only machine's block item.
      *
      * <p>Added by M1-02c. Without a block item the machine cannot drop itself at all, so a

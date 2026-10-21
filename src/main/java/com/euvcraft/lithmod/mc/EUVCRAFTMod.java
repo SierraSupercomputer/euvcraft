@@ -47,6 +47,7 @@ import com.euvcraft.lithmod.mc.machine.packaging.PackagingMachines;
 import com.euvcraft.lithmod.mc.machine.silicon.SiliconMachines;
 import com.euvcraft.lithmod.mc.machine.test.ModMachines;
 import com.euvcraft.lithmod.mc.multiblock.ModMultiblocks;
+import com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedMachines;
 import com.euvcraft.lithmod.mc.multiblock.support.SupportMachines;
 
 @Mod(EUVCRAFTMod.MODID)
@@ -66,6 +67,7 @@ public class EUVCRAFTMod {
         PackagingMachines.register(modEventBus);
         ModMultiblocks.register(modEventBus);
         SupportMachines.register(modEventBus);
+        AdvancedMachines.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(FoupTooltipAppenders::register);

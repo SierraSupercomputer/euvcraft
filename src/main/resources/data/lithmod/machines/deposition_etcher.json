@@ -1,0 +1,11 @@
+{
+  "id": "deposition_etcher",
+  "energy_capacity": 1000000,
+  "max_receive": 20000,
+  "energy_per_tick": 1000,
+  "per_tier_energy_per_tick": {},
+  "params": {
+    "duration": 1200,
+    "silicon_per_lot": 4
+  }
+}

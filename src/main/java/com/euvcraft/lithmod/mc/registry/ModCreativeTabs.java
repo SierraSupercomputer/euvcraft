@@ -63,6 +63,13 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.SUPPORT_CASING.get());
                 output.accept(ModItems.SUPPORT_POWER_PORT.get());
                 output.accept(ModItems.SUPPORT_WATER_INLET.get());
+                // T4 advanced multiblocks (appended after T3 support multiblocks)
+                output.accept(ModItems.DEPOSITION_ETCHER_CONTROLLER.get());
+                output.accept(ModItems.DEPOSITION_ETCHER_OPERATING_PANEL.get());
+                output.accept(ModItems.ADVANCED_TEST_PACKAGE_CONTROLLER.get());
+                output.accept(ModItems.ADVANCED_TEST_PACKAGE_OPERATING_PANEL.get());
+                output.accept(ModItems.ADVANCED_CASING.get());
+                output.accept(ModItems.ADVANCED_POWER_PORT.get());
                 // FOUP variants via FoupItems.emptyFoup (real sealed lots)
                 output.accept(FoupItems.emptyFoup(ModItems.FOUP_MK1.get()));
                 output.accept(FoupItems.emptyFoup(ModItems.FOUP_MK2.get()));
