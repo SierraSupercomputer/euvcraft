@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 class JoinedPanelResourceTest {
     private static final String ROOT="/assets/lithmod/";
     private static final List<String> ROLES=List.of("controller","casing","power_port","operating_panel");
+    private static final List<String> MODEL_ROLES=List.of("controller","casing","power_port","operating_panel","water_inlet");
     private static final List<String> FACES=List.of("north","south","west","east","up","down");
     private static final Map<String,Integer> ROTATIONS=Map.of("north",0,"east",90,"south",180,"west",270);
     private static final Set<String> KEYS=Set.of("north","south","west","east","up","down","particle");
@@ -33,9 +34,9 @@ class JoinedPanelResourceTest {
         var url=getClass().getResource(directory);assertNotNull(url);try(var stream=Files.list(Path.of(url.toURI()))){return stream.map(p->p.getFileName().toString()).filter(n->n.endsWith(suffix)).map(n->n.substring(0,n.length()-suffix.length())).collect(Collectors.toSet());}
     }
     private static int[] dimensions(String f){return switch(f){case"north","south"->new int[]{2,2};case"west","east"->new int[]{3,2};default->new int[]{2,3};};}
-    private static Set<String> modelIds(){Set<String> ids=new HashSet<>();for(String r:ROLES)for(int p=0;p<12;p++)for(String s:List.of("formed","unformed"))ids.add("process_cell_"+r+"_part"+p+"_"+s);return ids;}
-    private static Set<String> tileIds(){Set<String> ids=new HashSet<>();for(String f:FACES){int[] size=dimensions(f);for(int y=0;y<size[1];y++)for(int x=0;x<size[0];x++)for(String r:List.of("shell","power_port"))ids.add("joined_"+r+"_"+f+"_u"+x+"v"+y);}
-        for(int y=0;y<2;y++)for(int x=0;x<2;x++)for(String r:List.of("controller","operating_panel"))ids.add("joined_"+r+"_north_u"+x+"v"+y);ids.add("joined_operating_panel_unformed_front");return ids;}
+    private static Set<String> modelIds(){Set<String> ids=new HashSet<>();for(String r:MODEL_ROLES)for(int p=0;p<12;p++)for(String s:List.of("formed","unformed"))ids.add("process_cell_"+r+"_part"+p+"_"+s);return ids;}
+    private static Set<String> tileIds(){Set<String> ids=new HashSet<>();for(String f:FACES){int[] size=dimensions(f);for(int y=0;y<size[1];y++)for(int x=0;x<size[0];x++)for(String r:List.of("shell","power_port","water_inlet"))ids.add("joined_"+r+"_"+f+"_u"+x+"v"+y);}
+        for(int y=0;y<2;y++)for(int x=0;x<2;x++)for(String r:List.of("controller","operating_panel"))ids.add("joined_"+r+"_north_u"+x+"v"+y);ids.add("joined_operating_panel_unformed_front");ids.add("joined_water_inlet_unformed");return ids;}
     private Map<String,String> textures(String id,Set<String> seen)throws Exception {
         assertTrue(seen.add(id),"inheritance cycle");JsonObject j=model(id);Map<String,String> result=new HashMap<>();String parent=j.get("parent").getAsString();
         if(parent.startsWith("lithmod:block/"))result.putAll(textures(parent.substring(14),seen));else assertTrue(Set.of("minecraft:block/cube","minecraft:block/cube_all","minecraft:block/orientable").contains(parent),parent);
@@ -44,14 +45,14 @@ class JoinedPanelResourceTest {
     }
     /** Literal FaceBakery oracle, independent of JavaScript generation. */
     private static String expected(String r,int p,String f){int u=p/6,v=p%6/3,d=p%3;int[]xy=switch(f){case"north"->new int[]{1-u,1-v};case"south"->new int[]{u,1-v};case"west"->new int[]{d,1-v};case"east"->new int[]{2-d,1-v};case"up"->new int[]{u,d};case"down"->new int[]{u,2-d};default->throw new AssertionError(f);};
-        String tile=r.equals("power_port")||f.equals("north")&&(r.equals("controller")||r.equals("operating_panel"))?r:"shell";return"lithmod:block/joined_"+tile+"_"+f+"_u"+xy[0]+"v"+xy[1];}
+        String tile=r.equals("power_port")||r.equals("water_inlet")||f.equals("north")&&(r.equals("controller")||r.equals("operating_panel"))?r:"shell";return"lithmod:block/joined_"+tile+"_"+f+"_u"+xy[0]+"v"+xy[1];}
     private static boolean differ(BufferedImage a,BufferedImage b){for(int y=0;y<16;y++)for(int x=0;x<16;x++)if(a.getRGB(x,y)!=b.getRGB(x,y))return true;return false;}
 
     @Test void joinedPanelTilesExistAndValid()throws Exception {
-        Set<String> names=tileIds();assertEquals(73,names.size());assertEquals(names,files(ROOT+"textures/block/",".png").stream().filter(n->n.startsWith("joined_")).collect(Collectors.toSet()));for(String n:names)image("lithmod:block/"+n);
+        Set<String> names=tileIds();assertEquals(106,names.size());assertEquals(names,files(ROOT+"textures/block/",".png").stream().filter(n->n.startsWith("joined_")).collect(Collectors.toSet()));for(String n:names)image("lithmod:block/"+n);
     }
     @Test void joinedPanelBlockModelsValid()throws Exception {
-        assertEquals(96,modelIds().size());for(String r:ROLES)for(int p=0;p<12;p++){JsonObject j=model("process_cell_"+r+"_part"+p+"_formed");assertEquals("minecraft:block/cube",j.get("parent").getAsString());JsonObject t=j.getAsJsonObject("textures");assertEquals(KEYS,t.keySet());
+        assertEquals(120,modelIds().size());for(String r:MODEL_ROLES)for(int p=0;p<12;p++){JsonObject j=model("process_cell_"+r+"_part"+p+"_formed");assertEquals("minecraft:block/cube",j.get("parent").getAsString());JsonObject t=j.getAsJsonObject("textures");assertEquals(KEYS,t.keySet());
             for(String f:FACES){assertEquals(expected(r,p,f),t.get(f).getAsString());image(t.get(f).getAsString());}assertEquals(t.get("north"),t.get("particle"));String id="process_cell_"+r+"_part"+p+"_unformed";
             assertEquals("lithmod:block/process_cell_"+r+"_unformed",model(id).get("parent").getAsString());Map<String,String> inherited=textures(id,new HashSet<>());assertFalse(inherited.isEmpty());for(String ref:new HashSet<>(inherited.values()))image(ref);}
     }
@@ -78,7 +79,7 @@ class JoinedPanelResourceTest {
     @Test void noExtraJoinedPanelBlockModels()throws Exception {assertEquals(modelIds(),files(ROOT+"models/block/",".json").stream().filter(n->n.startsWith("process_cell_")&&n.contains("_part")).collect(Collectors.toSet()));}
     @Test void noExtraJoinedPanelBlockstates()throws Exception {assertEquals(ROLES.stream().map(r->"process_cell_"+r).collect(Collectors.toSet()),files(ROOT+"blockstates/",".json").stream().filter(n->n.startsWith("process_cell_")).collect(Collectors.toSet()));}
     @Test void tileUVMappingIndependentVerification()throws Exception {
-        for(String r:ROLES)for(int p=0;p<12;p++)for(String f:FACES)assertEquals(expected(r,p,f),model("process_cell_"+r+"_part"+p+"_formed").getAsJsonObject("textures").get(f).getAsString());
+        for(String r:MODEL_ROLES)for(int p=0;p<12;p++)for(String f:FACES)assertEquals(expected(r,p,f),model("process_cell_"+r+"_part"+p+"_formed").getAsJsonObject("textures").get(f).getAsString());
         JsonObject manifest=JsonParser.parseString(Files.readString(Path.of("tools/starter-textures.json"))).getAsJsonObject();int edge=0xff000000|Integer.parseInt(manifest.getAsJsonObject("joinedPanels").getAsJsonObject("palette").get("edge").getAsString().substring(1),16);
         for(String f:FACES){int[]size=dimensions(f);int w=size[0]*16,h=size[1]*16;BufferedImage canvas=new BufferedImage(w,h,BufferedImage.TYPE_INT_ARGB);
             for(int ty=0;ty<size[1];ty++)for(int tx=0;tx<size[0];tx++){BufferedImage tile=image("lithmod:block/joined_shell_"+f+"_u"+tx+"v"+ty);for(int y=0;y<16;y++)for(int x=0;x<16;x++)canvas.setRGB(tx*16+x,ty*16+y,tile.getRGB(x,y));}

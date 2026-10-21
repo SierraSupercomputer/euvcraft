@@ -91,13 +91,14 @@ class StarterTextureResourceTest {
     private static final Set<String> JOINED_PANEL_BLOCKS = joinedPanelBlockIds();
     private static Set<String> joinedPanelBlockIds() {
         Set<String> ids = new HashSet<>();
-        for (String role : List.of("controller", "casing", "power_port", "operating_panel")) {
+        for (String role : List.of("controller", "casing", "power_port", "operating_panel", "water_inlet")) {
             for (int part = 0; part < 12; part++) {
                 ids.add("process_cell_" + role + "_part" + part + "_formed");
                 ids.add("process_cell_" + role + "_part" + part + "_unformed");
             }
         }
         ids.add("process_cell_operating_panel_unformed");
+        ids.add("process_cell_water_inlet_unformed");
         return Set.copyOf(ids);
     }
 
@@ -238,12 +239,12 @@ class StarterTextureResourceTest {
     }
 
     @Test
-    @DisplayName("Twelve block item models reference existing production block models")
+    @DisplayName("Thirteen block item models reference existing production block models")
     void blockItemModelsParentToBlockModels() throws Exception {
         List<String> blockItems = List.of(
             "crystal_puller", "wafer_slicer", "test_package", "pattern_generator",
             "process_cell_controller", "process_cell_casing", "process_cell_power_port", "process_cell_operating_panel",
-            "boule_purifier", "ebeam_mask_writer", "support_casing", "support_power_port");
+            "boule_purifier", "ebeam_mask_writer", "support_casing", "support_power_port", "support_water_inlet");
         for (String id : blockItems) {
             URL modelUrl = StarterTextureResourceTest.class.getResource(ITEM_MODELS + id + ".json");
             assertNotNull(modelUrl, "Missing block item model: " + id);
@@ -252,6 +253,7 @@ class StarterTextureResourceTest {
                 case "boule_purifier", "ebeam_mask_writer" -> "process_cell_controller_unformed";
                 case "support_casing" -> "process_cell_casing_unformed";
                 case "support_power_port" -> "process_cell_power_port_unformed";
+                case "support_water_inlet" -> "process_cell_water_inlet_unformed";
                 default -> id.startsWith("process_cell_") ? id + "_unformed" : id;
             };
             assertEquals("lithmod:block/" + blockModelId, model.get("parent").getAsString(),
@@ -296,7 +298,7 @@ class StarterTextureResourceTest {
             if (Set.of("test_machine", "crystal_puller", "wafer_slicer", "test_package",
                 "pattern_generator", "process_cell_controller", "process_cell_casing",
                 "process_cell_power_port", "process_cell_operating_panel", "boule_purifier",
-                "ebeam_mask_writer", "support_casing", "support_power_port").contains(id)) continue; // block items + joined panel item
+                "ebeam_mask_writer", "support_casing", "support_power_port", "support_water_inlet").contains(id)) continue; // block items + joined panel item
             fail("Unexpected production item model: " + id);
         }
     }

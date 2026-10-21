@@ -17,5 +17,8 @@ public enum BlockKind {
     OTHER,
 
     /** Operating panel block - exactly one required, directly above the controller. */
-    OPERATING_PANEL
+    OPERATING_PANEL,
+
+    /** Water inlet block - optional, replaces casing in purifier only. Appended to retain old ordinals. */
+    WATER_INLET
 }

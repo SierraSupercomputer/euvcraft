@@ -72,17 +72,25 @@ public class SupportMachineScreen extends FabMachineScreen<SupportMachineMenu> {
             : Component.translatable("label.lithmod.ebeam.design",
                 Component.translatable("dieType.lithmod." + SupportMachineMenu.intToDieType(menu.ebeamSelectedDieType())),
                 menu.ebeamSelectedTier());
-        graphics.text(font, design, leftPos + (176 - font.width(design)) / 2, topPos + 184, COLOR, false);
+        String selectedLabel = clipped(design, 116);
+        graphics.text(font, selectedLabel, (176 - font.width(selectedLabel)) / 2, 184, COLOR, false);
         if (selected >= 0) {
             Component ingredients = menu.ebeamDesignAvailable(selected) || menu.ebeamJobRunning()
                 ? Component.translatable("label.lithmod.ebeam.ingredients", menu.ebeamBlankCost(), menu.ebeamRedstoneCost())
                 : Component.translatable("label.lithmod.ebeam.unavailable");
-            graphics.text(font, ingredients, leftPos + 26, topPos + 58, COLOR, false);
+            graphics.text(font, clipped(ingredients, 116), 26, 58, COLOR, false);
             right(graphics, Component.literal(compact(menu.ebeamTotalEnergy()) + " FE"), 204);
         }
     }
     private void right(GuiGraphicsExtractor graphics, Component text, int y) {
-        graphics.text(font, text, leftPos + 168 - font.width(text), topPos + y, COLOR, false);
+        String label = clipped(text, y == 204 ? 68 : 160);
+        graphics.text(font, label, 168 - font.width(label), y, COLOR, false);
+    }
+    private String clipped(Component text, int width) {
+        String value = text.getString();
+        if (font.width(value) <= width) return value;
+        while (!value.isEmpty() && font.width(value + "...") > width) value = value.substring(0, value.length() - 1);
+        return value + "...";
     }
     private static String compact(long value) {
         if (value >= 1_000_000_000_000L) return String.format(Locale.ROOT, "%.1fT", value / 1e12);

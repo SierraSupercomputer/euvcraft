@@ -165,7 +165,7 @@ public final class PresentationGameTests {
     }
     private static void recipeRegistry(GameTestHelper h) {
         var vanilla = resources(h, "recipe");
-        h.assertValueEqual(35, vanilla.size(), "M1 vanilla recipe inventory");
+        h.assertValueEqual(36, vanilla.size(), "M1 vanilla recipe inventory");
         for (var entry : vanilla.entrySet()) {
             JsonObject source = json(entry.getValue());
             expectedOutput(h, source, assemble(h, entry.getKey(), source), entry.getKey().toString());
@@ -210,7 +210,7 @@ public final class PresentationGameTests {
                 cooking++;
             }
         }
-        h.assertValueEqual(33, crafting, "Crafting lookup inventory");
+        h.assertValueEqual(34, crafting, "Crafting lookup inventory");
         h.assertValueEqual(2, cooking, "Cooking lookup inventory");
         var sand = manager.getRecipeFor(RecipeType.SMELTING, new SingleRecipeInput(new ItemStack(Items.SAND)), h.getLevel()).orElseThrow();
         h.assertTrue(sand.value().assemble(new SingleRecipeInput(new ItemStack(Items.SAND))).is(Items.GLASS), "Sand must still smelt to glass");
@@ -337,7 +337,7 @@ public final class PresentationGameTests {
      * Validates the entry order of the unified EUVCRAFT creative tab.
      *
      * <p>This test ensures that the MAIN creative tab entry order is stable and matches the
-     * intended presentation order. The 48 entries (33 M1 + 15 T3) are validated against their
+     * intended presentation order. The 49 entries are validated against their
      * expected item sequence. Also verifies that all lithmod items (except test_machine)
      * appear exactly once in the tab, and that only one lithmod CreativeModeTab is registered.
      * </p>
@@ -351,7 +351,7 @@ public final class PresentationGameTests {
         mainTab.buildContents(params);
         List<ItemStack> actualEntries = new ArrayList<>(mainTab.getDisplayItems());
 
-        // Expected 48 stacks in exact order (33 M1 + 10 T3 appended)
+        // Expected 49 stacks in exact order
         List<Item> expectedItems = List.of(
             // M1 items
             ModItems.CRYSTAL_PULLER.get(),
@@ -366,6 +366,7 @@ public final class PresentationGameTests {
             ModItems.E_BEAM_MASK_WRITER.get(),
             ModItems.SUPPORT_CASING.get(),
             ModItems.SUPPORT_POWER_PORT.get(),
+            ModItems.SUPPORT_WATER_INLET.get(),
             ModItems.FOUP_MK1.get(),
             ModItems.FOUP_MK2.get(),
             ModItems.SILICON.get(),
@@ -405,9 +406,9 @@ public final class PresentationGameTests {
             ModItems.NAND_CHIP_T3.get()
         );
 
-        // Verify exact 48 stacks in order
-        h.assertValueEqual(48, actualEntries.size(), "MAIN tab exact entry count");
-        for (int i = 0; i < 48; i++) {
+        // Verify exact 49 stacks in order
+        h.assertValueEqual(49, actualEntries.size(), "MAIN tab exact entry count");
+        for (int i = 0; i < 49; i++) {
             Item expected = expectedItems.get(i);
             Item actual = actualEntries.get(i).getItem();
             h.assertTrue(actual == expected,
@@ -415,13 +416,13 @@ public final class PresentationGameTests {
         }
 
         // Verify the three mask entries have correct designs
-        MaskData d1 = actualEntries.get(18).get(ModDataComponents.MASK_DATA.get());
+        MaskData d1 = actualEntries.get(19).get(ModDataComponents.MASK_DATA.get());
         h.assertTrue(d1 != null && DieTypes.LOGIC.equals(d1.dieType()) && d1.tierIndex() == 1,
             "Entry 18 (mask 0) not logic T1: " + d1);
-        MaskData d2 = actualEntries.get(19).get(ModDataComponents.MASK_DATA.get());
+        MaskData d2 = actualEntries.get(20).get(ModDataComponents.MASK_DATA.get());
         h.assertTrue(d2 != null && DieTypes.LOGIC.equals(d2.dieType()) && d2.tierIndex() == 2,
             "Entry 19 (mask 1) not logic T2: " + d2);
-        MaskData d3 = actualEntries.get(20).get(ModDataComponents.MASK_DATA.get());
+        MaskData d3 = actualEntries.get(21).get(ModDataComponents.MASK_DATA.get());
         h.assertTrue(d3 != null && DieTypes.MEMORY.equals(d3.dieType()) && d3.tierIndex() == 2,
             "Entry 20 (mask 2) not memory T2: " + d3);
 

@@ -62,6 +62,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.E_BEAM_MASK_WRITER.get());
                 output.accept(ModItems.SUPPORT_CASING.get());
                 output.accept(ModItems.SUPPORT_POWER_PORT.get());
+                output.accept(ModItems.SUPPORT_WATER_INLET.get());
                 // FOUP variants via FoupItems.emptyFoup (real sealed lots)
                 output.accept(FoupItems.emptyFoup(ModItems.FOUP_MK1.get()));
                 output.accept(FoupItems.emptyFoup(ModItems.FOUP_MK2.get()));
