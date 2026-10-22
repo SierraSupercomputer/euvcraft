@@ -150,7 +150,7 @@ public final class M1ShippingGameTests {
         }
 
         SupportRecipeLoader.Registry support = SupportRecipeLoader.getRegistry();
-        helper.assertValueEqual(12, support.size(), "shipping support recipe inventory");
+        helper.assertValueEqual(16, support.size(), "shipping support recipe inventory");
         helper.assertValueEqual(1, support.forMachine("boule_purifier").size(), "shipping purifier recipe");
         helper.assertValueEqual(15, support.forMachine("ebeam_mask_writer").size(), "shipping mask designs");
         var binning=com.euvcraft.lithmod.mc.data.HighBinningDataLoader.getRegistry().orElseThrow();

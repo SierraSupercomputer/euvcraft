@@ -104,7 +104,7 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
  }
  @Override protected int utilityGeneration(){return immersion?2:1;}
  @Override protected boolean supportsTier(Tier tier){return tier.index()==4||tier.index()==5;}
- @Override protected boolean readyForAdmission(){return operatingCalibrated()&&validParameters()&&(maskTier()!=5||immersion&&diagnosticParams()&&waterPerTick()>0&&pureWater.amount()>=waterPerTick());}
+ @Override protected boolean readyForAdmission(){return operatingCalibrated()&&validParameters()&&(maskTier()!=5||immersion&&diagnosticParams()&&waterPerTick()>0&&waterPerTick()<=pureWater.capacity()&&pureWater.amount()>=waterPerTick());}
  @Override protected double admissionYieldMultiplier(){acceptedHardware=hardware;setChanged();return acceptedMultiplier*(maskTier()==5?diagnosticMultiplier:1.0);}
 
  @Override public boolean structureFormed(){return isFormed()&&definition().isPresent()&&hardwareValidated&&(!inputsLocked()||hardware.equals(acceptedHardware))&&(tierIndex()!=5||waterPerTick()>=1&&waterPerTick()<=pureWater.capacity()&&pureWater.amount()>=waterPerTick());}
