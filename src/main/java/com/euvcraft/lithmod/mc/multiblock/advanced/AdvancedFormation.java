@@ -61,6 +61,12 @@ public final class AdvancedFormation {
                 &&level.getBlockEntity(other.machine().getBlockPos())==other.machine())return BlockKind.OTHER;
         return member.structureKind();
     }
+    /** Removal may run after this chunk left the loaded map. Never query or mutate the world here.
+     * Loaded members discard stale links on their next tick; capability lenses reject removed owners.
+     * Normal structure failures still use detach() to refresh loaded visuals immediately. */
+    public void unload() {
+        formed=false;data.set(0,0);members=List.of();
+    }
     public void detach() {
         formed=false;data.set(0,0);
         for(var pos:members)clear(pos);

@@ -23,5 +23,5 @@ public abstract class AdvancedControllerBlockEntity extends FabMachineBlockEntit
     @Override protected AbstractContainerMenu createMachineMenu(int id,Inventory inventory,FabMachineBlockEntity ignored){
         return new DepositionEtcherMenu(id,inventory,this);
     }
-    @Override public void setRemoved(){formation.detach();super.setRemoved();}
+    @Override public void setRemoved(){formation.unload();super.setRemoved();}
 }

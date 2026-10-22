@@ -8,6 +8,6 @@ public final class AssemblyControllerBlockEntity extends FabMachineBlockEntity i
  @Override public FabMachineBlockEntity machine(){return this;}@Override public AdvancedFormation formation(){return formation;}@Override public boolean large(){return false;}
  @Override public MatchResult matchStructure(MultiblockPos p,MultiblockDirection f,java.util.function.Function<MultiblockPos,BlockKind> lookup){return AssemblyStructureMatcher.match(p,f,lookup);}
  @Override public void serverTick(){if(level==null||level.isClientSide())return;revalidate();refreshDefinition();if(isFormed())super.serverTick();}
- @Override public void setRemoved(){formation.detach();super.setRemoved();}
+ @Override public void setRemoved(){formation.unload();super.setRemoved();}
  @Override protected AbstractContainerMenu createMachineMenu(int id,Inventory inv,FabMachineBlockEntity machine){return new AssemblyMenu(id,inv,this);}
 }
