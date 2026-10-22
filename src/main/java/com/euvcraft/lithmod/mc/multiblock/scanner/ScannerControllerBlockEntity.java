@@ -118,7 +118,7 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
  }
  @Override public void serverTick(){revalidate();pureWater.resize(Math.clamp(definition().map(d->d.paramOrDefault("pure_capacity_mb",16000)).orElse(16000),1,1000000));super.serverTick();}
  @Override protected void dropExtraContents(net.minecraft.world.level.Level level,BlockPos pos){super.dropExtraContents(level,pos);dropContainer(level,pos,diagnosticPaper);}
- @Override public void setRemoved(){formation.detach();super.setRemoved();}
+ @Override public void setRemoved(){formation.unload();super.setRemoved();}
  @Override protected AbstractContainerMenu createMachineMenu(int id,Inventory inventory,FabMachineBlockEntity machine){return new ScannerDashboardMenu(id,inventory,this,worldPosition,false);}
  @Override protected void loadAdditional(ValueInput input){
   super.loadAdditional(input);hardware=input.getString("scannerHardware").orElse("");calibratedHardware=input.getString("scannerCalibratedHardware").orElse("");acceptedHardware=input.getString("scannerAcceptedHardware").orElse("");

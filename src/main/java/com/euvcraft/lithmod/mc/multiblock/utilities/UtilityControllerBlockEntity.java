@@ -30,7 +30,7 @@ public final class UtilityControllerBlockEntity extends FabMachineBlockEntity im
   }else if(pure.capacity()-pure.amount()>=pendingOutput&&energySource().draw(cost)==cost){progress++;if(progress>=duration){pure.fill(pendingOutput,false);pendingOutput=0;progress=0;}setChanged();}sync();
  }
  private void sync(){data().set(DATA_ENERGY,buffer().getAmountAsInt());data().set(DATA_CAPACITY,buffer().getCapacityAsInt());data().set(DATA_PROGRESS,progress);data().set(DATA_TICKS,pendingOutput==0?0:duration);}
- @Override public void setRemoved(){formation.detach();super.setRemoved();}
+ @Override public void setRemoved(){formation.unload();super.setRemoved();}
  @Override protected AbstractContainerMenu createMachineMenu(int id,Inventory inv,FabMachineBlockEntity machine){return new UtilityMenu(id,inv,this);}
  @Override protected void saveAdditional(ValueOutput o){super.saveAdditional(o);o.putInt("rawMb",raw.amount());o.putInt("pureMb",pure.amount());o.putInt("utilityProgress",progress);o.putInt("utilityDuration",duration);o.putInt("utilityCost",cost);o.putInt("utilityPending",pendingOutput);}
  @Override protected void loadAdditional(ValueInput i){super.loadAdditional(i);raw.restoreAmount(Math.clamp(i.getIntOr("rawMb",0),0,1000000));pure.restoreAmount(Math.clamp(i.getIntOr("pureMb",0),0,1000000));progress=i.getIntOr("utilityProgress",0);duration=i.getIntOr("utilityDuration",0);cost=i.getIntOr("utilityCost",0);pendingOutput=i.getIntOr("utilityPending",0);if(pendingOutput<0||pendingOutput>1000000||progress<0||progress>=duration||duration>72000||cost<=0){progress=0;duration=0;cost=0;pendingOutput=0;}if(pendingOutput==0){progress=0;duration=0;cost=0;}sync();}
