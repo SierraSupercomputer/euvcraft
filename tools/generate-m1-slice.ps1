@@ -288,8 +288,8 @@ $craftingNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($craftingDir, '*.
 $cookingNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($recipeRoot, '*.json'))
 $machineRecipeNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($mrDir, '*.json'))
 $totalRecipes = $craftingNames.Count + $cookingNames.Count + $machineRecipeNames.Count
-if ($totalRecipes -ne 91) {
-    Fail "expected 91 recipe resources (89 production + 2 fixture-gated), found $totalRecipes"
+if ($totalRecipes -ne 93) {
+    Fail "expected 93 recipe resources (91 production + 2 fixture-gated), found $totalRecipes"
 }
 if ($machineRecipeNames.Count -ne 18) {
     Fail "expected 18 machine recipe files in data/lithmod/machine_recipes, found $($machineRecipeNames.Count)"
@@ -337,8 +337,8 @@ foreach ($rFile in $machineRecipeNames) {
 if ($fixtureRecipeCount -ne 2) {
     Fail "expected the two '$fixtureMachineId' fixture recipes to be payload-gated, found $fixtureRecipeCount"
 }
-if (($totalRecipes - $fixtureRecipeCount) -ne 89) {
-    Fail 'production recipe count is not 89'
+if (($totalRecipes - $fixtureRecipeCount) -ne 91) {
+    Fail 'production recipe count is not 91'
 }
 
 # ---- loader directory strings + codec sources (derived from tracked source) --
@@ -706,5 +706,6 @@ Emit '| Block Tags | data/lithmod/tags/block/machine.json + data/minecraft/tags/
 Emit '| Runtime Config | run/config/lithmod-local.toml (ModConfig.Type.LOCAL, registered in EUVCRAFTMod.java) |'
 Emit '| Fixture_gate | JVM system property lithmodFixtures AND non-production (GameTestFixtures.java); -PlithmodFixtures=false with -PlithmodShippingProbe=true registers one off-mode case |'
 Emit-Blank
+
 
 

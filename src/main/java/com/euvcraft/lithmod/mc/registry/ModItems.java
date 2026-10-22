@@ -361,6 +361,8 @@ public final class ModItems {
         properties -> new LineComponentItem(properties, "metrology", 4), properties -> properties.stacksTo(1));
 
 
+    public static final DeferredItem<BlockItem> ASSEMBLY_CASING=ITEMS.registerSimpleBlockItem("assembly_casing",()->com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMachines.CASING.get());
+    public static final DeferredItem<BlockItem> ASSEMBLY_POWER_PORT=ITEMS.registerSimpleBlockItem("assembly_power_port",()->com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMachines.POWER_PORT.get());
     // T5 utilities and common assembly carriers.
     public static final DeferredItem<BlockItem> UTILITY_PLANT = ITEMS.registerSimpleBlockItem("utility_plant", () -> com.euvcraft.lithmod.mc.multiblock.utilities.UtilityMachines.CONTROLLER.get());
     public static final DeferredItem<BlockItem> UTILITY_WATER_INLET = ITEMS.registerSimpleBlockItem("utility_water_inlet", () -> com.euvcraft.lithmod.mc.multiblock.utilities.UtilityMachines.WATER_INLET.get());
@@ -400,4 +402,5 @@ public final class ModItems {
     private ModItems() {
     }
 }
+
 

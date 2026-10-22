@@ -32,7 +32,7 @@ final class T4RuntimeFixtures {
  record Cell(ServerLevel level,List<BlockPos> positions,BlockPos anchor,FabMachineBlockEntity machine) implements AutoCloseable {
   BlockPos port(){return positions.stream().filter(p->level.getBlockState(p).getBlock()==AdvancedMachines.ADVANCED_POWER_PORT.get()
       ||level.getBlockState(p).getBlock()==ModMultiblocks.PROCESS_CELL_POWER_PORT.get()
-      ||level.getBlockState(p).getBlock()==SupportMachines.SUPPORT_POWER_PORT.get()).findFirst().orElseThrow();}
+      ||level.getBlockState(p).getBlock()==com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMachines.POWER_PORT.get()||level.getBlockState(p).getBlock()==SupportMachines.SUPPORT_POWER_PORT.get()).findFirst().orElseThrow();}
   @Override public void close(){
    int minX=Integer.MAX_VALUE,minY=Integer.MAX_VALUE,minZ=Integer.MAX_VALUE,maxX=Integer.MIN_VALUE,maxY=Integer.MIN_VALUE,maxZ=Integer.MIN_VALUE;
    for(var pos:positions){
@@ -128,3 +128,4 @@ final class T4RuntimeFixtures {
  }
  private T4RuntimeFixtures(){}
 }
+

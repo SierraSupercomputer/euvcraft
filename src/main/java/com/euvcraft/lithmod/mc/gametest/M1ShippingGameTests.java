@@ -157,7 +157,7 @@ public final class M1ShippingGameTests {
         helper.assertValueEqual(4,binning.size(),"Shipping high bin transition inventory");
         helper.assertTrue(binning.forSource("logic",3).isPresent()&&binning.forSource("compute",3).isPresent(),"Shipping T3 to T4 transitions resolve");
         helper.assertTrue(binning.forSource("logic",4).isPresent()&&binning.forSource("compute",4).isPresent(),"Shipping T4 to T5 transitions resolve");
-        for(String id:java.util.List.of("utility_plant","utility_water_inlet","utility_pure_outlet","pick_and_place","scanner_diagnostic_panel","scanner_water_inlet","scanner_immersion_module"))helper.assertTrue(BuiltInRegistries.BLOCK.containsKey(Identifier.fromNamespaceAndPath("lithmod",id)),"Shipping T5 block "+id);
+        for(String id:java.util.List.of("utility_plant","utility_water_inlet","utility_pure_outlet","pick_and_place","scanner_diagnostic_panel","scanner_water_inlet","scanner_immersion_module","assembly_casing","assembly_power_port"))helper.assertTrue(BuiltInRegistries.BLOCK.containsKey(Identifier.fromNamespaceAndPath("lithmod",id)),"Shipping T5 block "+id);
         helper.assertTrue(BuiltInRegistries.FLUID.containsKey(Identifier.parse("lithmod:ultrapure_water")),"Shipping UPW fluid");
         assertCreativeAbsence(helper);
     }
@@ -209,4 +209,5 @@ public final class M1ShippingGameTests {
         helper.succeed();
     }
 }
+
 

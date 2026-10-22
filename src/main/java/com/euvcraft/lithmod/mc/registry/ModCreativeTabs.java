@@ -134,6 +134,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.UTILITY_WATER_INLET.get());
                 output.accept(ModItems.UTILITY_PURE_OUTLET.get());
                 output.accept(ModItems.PICK_AND_PLACE.get());
+                output.accept(ModItems.ASSEMBLY_CASING.get());
+                output.accept(ModItems.ASSEMBLY_POWER_PORT.get());
                 output.accept(ModItems.SCANNER_DIAGNOSTIC_PANEL.get());
                 output.accept(ModItems.SCANNER_WATER_INLET.get());
                 output.accept(ModItems.SCANNER_IMMERSION_MODULE.get());
@@ -201,4 +203,5 @@ public final class ModCreativeTabs {
     private ModCreativeTabs() {
     }
 }
+
 

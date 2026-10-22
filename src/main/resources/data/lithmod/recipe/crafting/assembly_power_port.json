@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "ICI",
+    "RLR",
+    "III"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "C": "lithmod:assembly_casing",
+    "R": "minecraft:redstone",
+    "L": "lithmod:logic_chip_t1"
+  },
+  "result": {
+    "id": "lithmod:assembly_power_port",
+    "count": 1
+  }
+}

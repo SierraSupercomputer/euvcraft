@@ -45,11 +45,11 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
  public boolean acceptDiagnostic(){if(level==null||level.isClientSide())return false;revalidate();if(!isFormed()||!immersion||inputsLocked()||!diagnosticParams()||!diagnosticPlotted||diagnostic.quality()<diagnosticMinimum())return false;diagnosticHardware=hardware;diagnosticQuality=diagnostic.quality();diagnosticMultiplier=diagnosticPreview();setChanged();return true;}
  private int maskTier(){var mask=slot(SLOT_MASK).get(com.euvcraft.lithmod.mc.registry.ModDataComponents.MASK_DATA.get());return mask==null?0:mask.tierIndex();}
  public boolean operatingCalibrated(){return calibrated()&&(maskTier()!=5||diagnosed());}
- private int waterPerTick(){return definition().map(d->d.paramOrDefault("pure_water_per_tick_mb",2)).orElse(0);}
+ public int waterPerTick(){return definition().map(d->d.paramOrDefault("pure_water_per_tick_mb",2)).orElse(0);}
  @Override public int extractEnergy(int amount,boolean simulate){
-  if(tierIndex()!=5)return super.extractEnergy(amount,simulate);
+  if(amount<0)return 0;if(tierIndex()!=5)return super.extractEnergy(amount,simulate);
   int water=waterPerTick();if(water<1||water>pureWater.capacity()||pureWater.amount()<water)return 0;
-  int drawn=super.extractEnergy(amount,simulate);if(!simulate&&drawn==amount&&drawn>0){pureWater.drainExact(water,false);setChanged();}return drawn;
+  int drawn=super.extractEnergy(amount,simulate);if(!simulate&&drawn==amount){pureWater.drainExact(water,false);setChanged();}return drawn;
  }
  static final class PureJournal extends net.neoforged.neoforge.transfer.transaction.SnapshotJournal<Integer>{final ScannerControllerBlockEntity owner;PureJournal(ScannerControllerBlockEntity owner){this.owner=owner;}@Override protected Integer createSnapshot(){return owner.pureWater.amount();}@Override protected void revertToSnapshot(Integer n){owner.pureWater.restoreAmount(n);}@Override protected void onRootCommit(Integer n){owner.setChanged();}}
 
@@ -107,7 +107,7 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
  @Override protected boolean readyForAdmission(){return operatingCalibrated()&&validParameters()&&(maskTier()!=5||immersion&&diagnosticParams()&&waterPerTick()>0&&pureWater.amount()>=waterPerTick());}
  @Override protected double admissionYieldMultiplier(){acceptedHardware=hardware;setChanged();return acceptedMultiplier*(maskTier()==5?diagnosticMultiplier:1.0);}
 
- @Override public boolean structureFormed(){return isFormed()&&definition().isPresent()&&hardwareValidated&&(!inputsLocked()||hardware.equals(acceptedHardware));}
+ @Override public boolean structureFormed(){return isFormed()&&definition().isPresent()&&hardwareValidated&&(!inputsLocked()||hardware.equals(acceptedHardware))&&(tierIndex()!=5||waterPerTick()>=1&&waterPerTick()<=pureWater.capacity()&&pureWater.amount()>=waterPerTick());}
  @Override protected boolean inputsTemporarilyUnavailable(){return !isFormed();}
  @Override protected ItemStack equipment(int logicalSlot){
   BlockKind kind=switch(logicalSlot){case 3->BlockKind.EXPOSURE_MODULE;case 4->BlockKind.OPTICS_MODULE;case 5->BlockKind.STAGE_MODULE;case 6->BlockKind.FILTRATION_MODULE;case 7->BlockKind.METROLOGY_MODULE;default->BlockKind.OTHER;};
@@ -137,6 +137,7 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
   out.putInt("scannerX",alignment.x());out.putInt("scannerY",alignment.y());out.putInt("scannerFocus",alignment.focus());out.putInt("scannerTargetX",alignment.targetX());out.putInt("scannerTargetY",alignment.targetY());out.putInt("scannerTargetFocus",alignment.targetFocus());
  }
 }
+
 
 
 

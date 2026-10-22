@@ -28,6 +28,7 @@ public final class ScannerOperatingScreen extends AdvancedMachineScreen<ScannerO
   line(g,Component.literal("Layer "+menu.currentLayer()+" / "+menu.totalLayers()+(menu.immersion()?"  UPW: "+menu.water()+" mB":"")),8,214,160);
  }
  private Component statusText(){
+  if(menu.tierIndex()==5&&menu.inputsLocked()&&menu.water()<menu.waterCost())return Component.literal("Paused: supply ultrapure water");
   int status=menu.status();
   if(menu.aborted())return Component.translatable("state.lithmod.process_cell.stopped_after_abort");
   if(status==com.euvcraft.lithmod.mc.machine.process.ProcessCellMenu.STATUS_DEFINITION_MISSING)return Component.translatable("state.lithmod.process_cell.missing_definition");
@@ -37,4 +38,5 @@ public final class ScannerOperatingScreen extends AdvancedMachineScreen<ScannerO
   return Component.translatable("state.lithmod.process_cell."+(status>=0&&status<com.euvcraft.lithmod.core.ProcessState.values().length?com.euvcraft.lithmod.core.ProcessState.values()[status]:com.euvcraft.lithmod.core.ProcessState.IDLE).name().toLowerCase(java.util.Locale.ROOT));
  }
 }
+
 
