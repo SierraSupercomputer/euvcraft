@@ -337,7 +337,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
             SupportLines.SUBSTRATE, substrateGen,
             SupportLines.MASK_SHOP, maskShopGen,
             SupportLines.DEPOSITION_ETCH, lot.preparationGeneration(),
-            SupportLines.UTILITIES, 1,
+            SupportLines.UTILITIES, utilityGeneration(),
             SupportLines.TEST_PACKAGING, 1
         );
 
@@ -700,5 +700,6 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
     }
 
 }
+
 
 

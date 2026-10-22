@@ -247,5 +247,12 @@
   "item.lithmod.immersion_stage": "Immersion Stage",
   "item.lithmod.immersion_filtration": "Immersion Filtration",
   "item.lithmod.immersion_metrology": "Immersion Metrology",
-  "fluid.lithmod.ultrapure_water": "Ultrapure Water"
+  "fluid.lithmod.ultrapure_water": "Ultrapure Water",
+  "item.lithmod.utility_plant": "Utility Plant",
+  "item.lithmod.utility_water_inlet": "Utility Water Inlet",
+  "item.lithmod.utility_pure_outlet": "Utility Pure Outlet",
+  "item.lithmod.pick_and_place": "Pick And Place",
+  "item.lithmod.scanner_diagnostic_panel": "Scanner Diagnostic Panel",
+  "item.lithmod.scanner_water_inlet": "Scanner Water Inlet",
+  "item.lithmod.scanner_immersion_module": "Scanner Immersion Module"
 }

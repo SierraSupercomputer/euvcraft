@@ -203,7 +203,7 @@ class DiagnosticFitTest {
         var perfect = new DiagnosticFit(10, 20, 30, 10, 20, 30);
         assertEquals(100, perfect.quality());
         assertEquals(1.0, perfect.multiplier(0.5, 1.0));
-        assertEquals(0.75, perfect.multiplier(0.5, 1.0));
+        assertEquals(0.75, new DiagnosticFit(0,0,200,0,0,0).multiplier(0.5,1.0));
         assertEquals(0.5, perfect.multiplier(0.5, 0.5));
 
         // Imperfect fit with known quality

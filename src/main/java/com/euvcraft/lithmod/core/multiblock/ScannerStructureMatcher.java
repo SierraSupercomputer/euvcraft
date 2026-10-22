@@ -81,7 +81,7 @@ public final class ScannerStructureMatcher {
                     if(kind==BlockKind.DIAGNOSTIC_PANEL){diagnostic++;if(pos.y()!=controllerPos.y()+1)return MatchResult.failure("Diagnostic panel must be in middle layer");}
                     if(kind==BlockKind.WATER_INLET)inlet++;
                 }
-                if(diagnostic>1||inlet>1||diagnostic!=inlet)return MatchResult.failure("Install one diagnostic panel and one ultrapure-water inlet together");
+                if(diagnostic>1||inlet>1||diagnostic!=inlet)return MatchResult.failure("water inlet not allowed without exactly one diagnostic panel, and vice versa");
                 return result;
             }
             if (firstFailure == null) {
@@ -211,3 +211,4 @@ public final class ScannerStructureMatcher {
                 .add(facing.back().multiply(d));
     }
 }
+

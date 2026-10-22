@@ -304,7 +304,7 @@ class StarterTextureResourceTest {
         List<String> modelFiles = listResources(ITEM_MODELS, ".json");
         for (String modelFile : modelFiles) {
             String id = modelFile.substring(0, modelFile.length() - 5); // strip .json
-            if (PRODUCTION_ITEMS.contains(id)) continue;
+            if (PRODUCTION_ITEMS.contains(id)||T5AssetResourceTest.ITEMS.contains(id)||T5AssetResourceTest.BLOCKS.contains(id)) continue;
             if(Set.of("deposition_etcher","advanced_test_package","advanced_casing","advanced_power_port","advanced_operating_panel","scanner_controller","scanner_operating_panel","scanner_calibration_panel","scanner_exposure_module","scanner_optics_module","scanner_stage_module","scanner_filtration_module","scanner_metrology_module").contains(id)) continue;
             if (Set.of("test_machine", "crystal_puller", "wafer_slicer", "test_package",
                 "pattern_generator", "process_cell_controller", "process_cell_casing",
@@ -320,7 +320,7 @@ class StarterTextureResourceTest {
         List<String> modelFiles = listResources(BLOCK_MODELS, ".json");
         for (String modelFile : modelFiles) {
             String id = modelFile.substring(0, modelFile.length() - 5);
-            if (PRODUCTION_BLOCKS.contains(id)) continue;
+            if (PRODUCTION_BLOCKS.contains(id)||T5AssetResourceTest.BLOCKS.contains(id)) continue;
             if (JOINED_PANEL_BLOCKS.contains(id)) continue; // joined panels validated separately
             if (Set.of("test_machine").contains(id)) continue; // preserved
             fail("Unexpected production block model: " + id + " (not in PRODUCTION_BLOCKS, JOINED_PANEL_BLOCKS, or preserve list)");
@@ -415,3 +415,4 @@ class StarterTextureResourceTest {
         return names;
     }
 }
+
