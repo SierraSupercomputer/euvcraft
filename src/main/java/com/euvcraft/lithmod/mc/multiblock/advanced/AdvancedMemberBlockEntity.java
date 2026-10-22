@@ -45,14 +45,16 @@ public class AdvancedMemberBlockEntity extends BlockEntity implements MenuProvid
             level.setBlock(worldPosition,state,2);
         }
     }
+    /** Common advanced frames/FE ports are reusable; role-specific members narrow this. */
+    public boolean supportsOwner(AdvancedOwner candidate){return getBlockState().getBlock()!=AdvancedMachines.ADVANCED_OPERATING_PANEL.get()||candidate instanceof DepositionEtcherControllerBlockEntity||candidate instanceof AdvancedTestPackageControllerBlockEntity;}
     public @Nullable AdvancedOwner belowOwner(){
         if(level==null)return null;
-        return level.getBlockEntity(worldPosition.below()) instanceof AdvancedOwner candidate?candidate:null;
+        return level.getBlockEntity(worldPosition.below()) instanceof AdvancedOwner candidate&&supportsOwner(candidate)?candidate:null;
     }
     protected boolean energyPort(){return getBlockState().getBlock()==AdvancedMachines.ADVANCED_POWER_PORT.get();}
     private boolean valid(AdvancedOwner expected){
         if(level==null||level.isClientSide()||isRemoved()||level.getBlockEntity(worldPosition)!=this
-            ||!energyPort()
+            ||!energyPort()||!supportsOwner(expected)
             ||expected.machine().isRemoved()||level.getBlockEntity(expected.machine().getBlockPos())!=expected.machine())return false;
         expected.revalidate();
         return owner==expected&&formed&&expected.isFormed()&&expected.members().contains(worldPosition);
@@ -77,4 +79,5 @@ public class AdvancedMemberBlockEntity extends BlockEntity implements MenuProvid
         return below==null?null:new AdvancedOperatingPanelMenu(id,inventory,below.machine(),worldPosition.below());
     }
 }
+
 

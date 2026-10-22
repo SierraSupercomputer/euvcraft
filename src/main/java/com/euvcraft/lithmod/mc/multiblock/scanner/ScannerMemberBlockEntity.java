@@ -10,6 +10,8 @@ import net.minecraft.world.level.storage.*;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 public final class ScannerMemberBlockEntity extends AdvancedMemberBlockEntity {
+ @Override public boolean supportsOwner(com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOwner candidate){return candidate instanceof ScannerControllerBlockEntity;}
+
  private @Nullable UUID installation;
  public ScannerMemberBlockEntity(BlockPos pos,BlockState state){super(ScannerMachines.MEMBER_BE.get(),pos,state);}
  @Override public BlockKind structureKind(){return getBlockState().getBlock() instanceof ScannerMemberBlock block?block.kind():BlockKind.OTHER;}
@@ -32,5 +34,6 @@ public final class ScannerMemberBlockEntity extends AdvancedMemberBlockEntity {
  @Override protected void loadAdditional(ValueInput input){super.loadAdditional(input);try{installation=UUID.fromString(input.getString("installation").orElse(""));}catch(IllegalArgumentException e){installation=null;}}
  @Override protected void saveAdditional(ValueOutput output){super.saveAdditional(output);if(installation!=null)output.putString("installation",installation.toString());}
 }
+
 
 
