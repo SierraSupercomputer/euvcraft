@@ -1,4 +1,4 @@
-package com.euvcraft.lithmod.mc;
+package com.euvcraft.lithmod.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import com.euvcraft.lithmod.core.FabSettings;
 import com.euvcraft.lithmod.core.FoupContents;
-import com.euvcraft.lithmod.core.ReferenceTiers;
+
 import com.euvcraft.lithmod.core.RollSource;
 import com.euvcraft.lithmod.core.Tier;
 import com.euvcraft.lithmod.core.Wafer;
