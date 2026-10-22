@@ -2395,6 +2395,7 @@ protected java.lang.Object createSnapshot();
 ```java
 public boolean immersion();
 public com.euvcraft.lithmod.core.DiagnosticFit diagnostic();
+public boolean diagnosticPlotted();
 public int diagnosticQuality();
 public int diagnosticMinimum();
 public double diagnosticPreview();
