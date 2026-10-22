@@ -464,7 +464,7 @@ public final class PresentationGameTests {
             ModItems.MASK.get()
         );
 
-        // Verify exact 49 stacks in order
+        // Verify all112 current stacks in order
         h.assertValueEqual(112, actualEntries.size(), "MAIN tab exact entry count");
         for (int i = 0; i < 112; i++) {
             Item expected = expectedItems.get(i);

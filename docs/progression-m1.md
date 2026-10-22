@@ -98,7 +98,7 @@ Both views show shared coarse status, FE, and progress. Only the upper view has 
 
 ## 7. Creative Tab (M1-11)
 
-There is one EUVCRAFT creative tab, registered as lithmod:0_main. Its current source includes later T3–T5 machines, materials, assembly products and mask variants; the historical32-stack M1 census is no longer the full tab. The authoritative ordering is ModCreativeTabs.MAIN displayItems, checked against CreativeCatalog by the presentation tests. Fixture test_machine is excluded from normal production play. Do not derive a current total by adding historical item groups or confusing unique item types with mask variants.
+There is one EUVCRAFT creative tab, registered as lithmod:0_main. Its current source includes later T3–T5 machines, materials, assembly products and mask variants; the historical32-stack M1 census is no longer the full tab. The current tab has112 stacks, including distinct mask variants. ModCreativeTabs.MAIN displayItems defines its ordering; PresentationGameTests asserts the actual tab contains exactly112 entries and compares each item against its explicit expected list. Fixture test_machine is excluded from normal production play. Do not derive a current total by adding historical item groups or confusing unique item types with mask variants.
 
 ## 8. Later generations and deferred features
 

@@ -2178,6 +2178,7 @@ public java.lang.String failureReason();
 public java.util.List<net.minecraft.core.BlockPos> members();
 public net.minecraft.world.inventory.ContainerData data();
 public void validate();
+public void unload();
 public void detach();
 ```
 
