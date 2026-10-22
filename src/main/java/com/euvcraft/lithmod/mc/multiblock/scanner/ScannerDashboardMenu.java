@@ -12,7 +12,7 @@ public final class ScannerDashboardMenu extends AbstractContainerMenu {
  private final BlockPos consolePos;
  private final boolean calibration;
  private final ContainerData values;
- private long lastControlTick=Long.MIN_VALUE;
+
  public ScannerDashboardMenu(int id,Inventory inventory,@Nullable ScannerControllerBlockEntity scanner,BlockPos pos,boolean calibration){
   super(ScannerMachines.DASHBOARD_MENU.get(),id);this.scanner=scanner;this.calibration=calibration;consolePos=pos.immutable();
   panel=scanner!=null&&scanner.getLevel()!=null&&scanner.getLevel().getBlockEntity(pos) instanceof ScannerMemberBlockEntity m?m:null;
@@ -30,8 +30,7 @@ public final class ScannerDashboardMenu extends AbstractContainerMenu {
  }
  @Override public boolean clickMenuButton(Player player,int id){
   if(!calibration||!(player instanceof net.minecraft.server.level.ServerPlayer)||player.containerMenu!=this||!stillValid(player)||id<0||id>6)return false;
-  long tick=player.level().getGameTime();if(tick==lastControlTick)return false;
-  lastControlTick=tick;return scanner.calibrationControl(id);
+  return scanner.calibrationControl(id);
  }
  @Override public ItemStack quickMoveStack(Player player,int index){return ItemStack.EMPTY;}
 }

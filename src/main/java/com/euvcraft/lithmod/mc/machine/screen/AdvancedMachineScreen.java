@@ -6,7 +6,10 @@ import net.minecraft.world.entity.player.Inventory;
 /** All status text remains inside the opaque window, below the player's fixed inventory. */
 public abstract class AdvancedMachineScreen<M extends FabMachineMenu> extends FabMachineScreen<M> {
  protected AdvancedMachineScreen(M menu,Inventory inventory,Component title){
-  super(menu,inventory,title,176,238);inventoryLabelY=72;
+  this(menu,inventory,title,238);
+ }
+ protected AdvancedMachineScreen(M menu,Inventory inventory,Component title,int height){
+  super(menu,inventory,title,176,height);inventoryLabelY=72;
  }
  protected abstract boolean formed();
  protected boolean cabinet(){return true;}

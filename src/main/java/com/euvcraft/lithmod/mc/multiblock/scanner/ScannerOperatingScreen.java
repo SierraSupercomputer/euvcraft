@@ -6,7 +6,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 public final class ScannerOperatingScreen extends AdvancedMachineScreen<ScannerOperatingMenu> {
  private Button abort;
- public ScannerOperatingScreen(ScannerOperatingMenu menu,Inventory inventory,Component title){super(menu,inventory,title);imageHeight=260;}
+ public ScannerOperatingScreen(ScannerOperatingMenu menu,Inventory inventory,Component title){super(menu,inventory,title,260);}
  @Override protected boolean formed(){return menu.formed()!=0;}
  @Override protected boolean cabinet(){return false;}
  @Override protected void init(){super.init();abort=addRenderableWidget(Button.builder(Component.translatable("button.lithmod.process_cell.abort"),b->{if(minecraft!=null&&minecraft.gameMode!=null)minecraft.gameMode.handleInventoryButtonClick(menu.containerId,0);}).bounds(leftPos+8,topPos+232,160,20).build());}

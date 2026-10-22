@@ -47,7 +47,7 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
    alignment=BeamAlignment.create(next.hashCode());setChanged();
   }
  }
- public boolean calibrated(){return hardwareValidated&&!hardware.isEmpty()&&hardware.equals(calibratedHardware)&&acceptedQuality>=minimumQuality()&&acceptedMultiplier>0&&acceptedMultiplier<=1;}
+ public boolean calibrated(){return hardwareValidated&&!hardware.isEmpty()&&hardware.equals(calibratedHardware)&&acceptedQuality>=minimumQuality()&&acceptedQuality<=100&&acceptedMultiplier>0&&acceptedMultiplier<=1;}
  public int calibrationQuality(){return acceptedQuality;}
  public double calibratedMultiplier(){return calibrated()?acceptedMultiplier:0;}
  public BeamAlignment alignment(){return alignment;}
@@ -76,6 +76,7 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
   return switch(kind){case EXPOSURE_MODULE->new ItemStack(ModItems.ARF_EXCIMER_LASER.get());case OPTICS_MODULE->new ItemStack(ModItems.ARF_DRY_LENS.get());case STAGE_MODULE->new ItemStack(ModItems.NANOPOSITIONING_STAGE.get());case FILTRATION_MODULE->new ItemStack(ModItems.ULPA_FILTER.get());case METROLOGY_MODULE->new ItemStack(ModItems.PRECISION_OVERLAY_SCOPE.get());default->ItemStack.EMPTY;};
  }
  @Override public void serverTick(){revalidate();super.serverTick();}
+ @Override public void setRemoved(){formation.detach();super.setRemoved();}
  @Override protected AbstractContainerMenu createMachineMenu(int id,Inventory inventory,FabMachineBlockEntity machine){return new ScannerDashboardMenu(id,inventory,this,worldPosition,false);}
  @Override protected void loadAdditional(ValueInput input){
   super.loadAdditional(input);hardware=input.getString("scannerHardware").orElse("");calibratedHardware=input.getString("scannerCalibratedHardware").orElse("");acceptedHardware=input.getString("scannerAcceptedHardware").orElse("");

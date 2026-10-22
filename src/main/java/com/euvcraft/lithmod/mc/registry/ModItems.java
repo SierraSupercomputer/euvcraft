@@ -40,6 +40,11 @@ import net.neoforged.neoforge.registries.DeferredRegister.Items;
  * block items use their normal defaults.</p>
  */
 public final class ModItems {
+
+
+    /** Registry of EUVCRAFT items. */
+    public static final Items ITEMS = DeferredRegister.createItems(EUVCRAFTMod.MODID);
+
     public static final DeferredItem<BlockItem> SCANNER_CONTROLLER = ITEMS.registerSimpleBlockItem("scanner_controller", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.CONTROLLER.get());
     public static final DeferredItem<BlockItem> SCANNER_OPERATING_PANEL = ITEMS.registerSimpleBlockItem("scanner_operating_panel", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.OPERATING_PANEL.get());
     public static final DeferredItem<BlockItem> SCANNER_CALIBRATION_PANEL = ITEMS.registerSimpleBlockItem("scanner_calibration_panel", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.CALIBRATION_PANEL.get());
@@ -48,10 +53,6 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> SCANNER_STAGE_MODULE = ITEMS.registerSimpleBlockItem("scanner_stage_module", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.STAGE_MODULE.get());
     public static final DeferredItem<BlockItem> SCANNER_FILTRATION_MODULE = ITEMS.registerSimpleBlockItem("scanner_filtration_module", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.FILTRATION_MODULE.get());
     public static final DeferredItem<BlockItem> SCANNER_METROLOGY_MODULE = ITEMS.registerSimpleBlockItem("scanner_metrology_module", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.METROLOGY_MODULE.get());
-
-
-    /** Registry of EUVCRAFT items. */
-    public static final Items ITEMS = DeferredRegister.createItems(EUVCRAFTMod.MODID);
 
     /** FOUP Mk1: the basic sealed lot carrier. */
     public static final DeferredItem<Item> FOUP_MK1 = ITEMS.registerItem("foup_mk1", FoupItem::new, properties -> properties.stacksTo(1));

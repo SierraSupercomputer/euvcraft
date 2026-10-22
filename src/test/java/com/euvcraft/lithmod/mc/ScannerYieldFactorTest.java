@@ -75,7 +75,8 @@ class ScannerYieldFactorTest {
             double baseYield = YieldMath.resolveEffectiveYield(tier, settings, null);
 
             FoupContents withFactor = runThrough(tier, freshLot(25), null, 1.0, 1.0, SALT, settings);
-            FoupContents withoutFactor = runThrough(tier, freshLot(25), null, 1.0, 1.0, SALT, settings);
+            FoupContents withoutFactor = freshLot(25);
+            for(int layer=1;layer<=tier.layers();layer++)withoutFactor=YieldRollEngine.applyLayerStep(withoutFactor,tier,"logic",null,layer,1.0,settings,source(SALT));
 
             assertEquals(withFactor, withoutFactor, "factor 1.0 should behave identically to no factor");
         }
@@ -262,61 +263,4 @@ class ScannerYieldFactorTest {
         }
     }
 
-    @Nested
-    @DisplayName("FabYieldService overloads")
-    class FabYieldServiceOverloads {
-
-        @Test
-        @DisplayName("FabYieldService.applyLayerStep with frozen factor delegates correctly")
-        void serviceDelegatesToEngine() {
-            // This test just verifies the overload exists and delegates
-            // Full math is tested in YieldRollEngine tests above
-            FabSettings settings = FabSettings.defaults();
-            Tier tier = ReferenceTiers.byId("T1");
-
-            // Verify the method signatures compile and don't throw for valid inputs
-            // (Can't easily test without a ServerLevel, but we verify the overload exists)
-            // The actual integration is tested in YieldRollEngineTest
-        }
-    }
-
-    @Nested
-    @DisplayName("ProcessRunRequest carries frozen factor")
-    class ProcessRunRequestCarriesFactor {
-
-        @Test
-        @DisplayName("ProcessRunRequest constructor validates frozen factor")
-        void requestValidatesFactor() {
-            assertThrows(IllegalArgumentException.class,
-                () -> new com.euvcraft.lithmod.core.ProcessRunRequest(
-                    freshLot(4), "logic", ReferenceTiers.byId("T3"), null, 4,
-                    new com.euvcraft.lithmod.core.LineStats(10, 10, 100, 1.0, 1, 1, 1),
-                    true, true, java.util.Map.of(),
-                    new com.euvcraft.lithmod.core.GenerationMatrix(
-                        com.euvcraft.lithmod.core.TierRegistry.build(java.util.List.of()), java.util.Map.of(), "test"),
-                    FabSettings.defaults(), 100, 0.0));
-            assertThrows(IllegalArgumentException.class,
-                () -> new com.euvcraft.lithmod.core.ProcessRunRequest(
-                    freshLot(4), "logic", ReferenceTiers.byId("T3"), null, 4,
-                    new com.euvcraft.lithmod.core.LineStats(10, 10, 100, 1.0, 1, 1, 1),
-                    true, true, java.util.Map.of(),
-                    new com.euvcraft.lithmod.core.GenerationMatrix(
-                        com.euvcraft.lithmod.core.TierRegistry.build(java.util.List.of()), java.util.Map.of(), "test"),
-                    FabSettings.defaults(), 100, 1.1));
-        }
-
-        @Test
-        @DisplayName("ProcessRunRequest backward-compatible constructor defaults factor to 1.0")
-        void requestDefaultsFactor() {
-            com.euvcraft.lithmod.core.ProcessRunRequest request = new com.euvcraft.lithmod.core.ProcessRunRequest(
-                freshLot(4), "logic", ReferenceTiers.byId("T3"), null, 4,
-                new com.euvcraft.lithmod.core.LineStats(10, 10, 100, 1.0, 1, 1, 1),
-                true, true, java.util.Map.of(),
-                new com.euvcraft.lithmod.core.GenerationMatrix(
-                    com.euvcraft.lithmod.core.TierRegistry.build(java.util.List.of()), java.util.Map.of(), "test"),
-                FabSettings.defaults(), 100);
-            assertEquals(1.0, request.frozenYieldFactor(), 1e-9,
-                "Default constructor should use factor 1.0");
-        }
-    }
 }

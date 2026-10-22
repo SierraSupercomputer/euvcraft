@@ -21,6 +21,14 @@
     "lithmod:advanced_test_package",
     "lithmod:advanced_casing",
     "lithmod:advanced_power_port",
-    "lithmod:advanced_operating_panel"
+    "lithmod:advanced_operating_panel",
+    "lithmod:scanner_controller",
+    "lithmod:scanner_operating_panel",
+    "lithmod:scanner_calibration_panel",
+    "lithmod:scanner_exposure_module",
+    "lithmod:scanner_optics_module",
+    "lithmod:scanner_stage_module",
+    "lithmod:scanner_filtration_module",
+    "lithmod:scanner_metrology_module"
   ]
 }

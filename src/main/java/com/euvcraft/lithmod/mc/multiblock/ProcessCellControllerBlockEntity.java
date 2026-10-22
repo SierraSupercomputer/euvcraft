@@ -264,7 +264,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
             FoupContents current = trustedLot();
             if (!Objects.equals(current, run.lot())) { run = null; contract = null; }
         }
-        if (run == null && !abortLatched && formed && definition().isPresent()) tryStartRun();
+        if (run == null && !abortLatched && isFormed() && definition().isPresent()) tryStartRun();
         if (run != null && run.state() != ProcessState.FINISHED) {
             if (!inputsMatch()) stopInvalidRun();
             else {
@@ -368,7 +368,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         if (!ItemStack.isSameItemSameComponents(carrier, contract.foupTemplate())
                 || !sameSingleton(slot(SLOT_MASK), contract.mask())) return false;
         for (int i = 0; i < 5; i++)
-            if (!sameSingleton(slot(SLOT_LIGHT_SOURCE + i), contract.components().get(i))) return false;
+            if (!sameSingleton(equipment(SLOT_LIGHT_SOURCE + i), contract.components().get(i))) return false;
         return slot(SLOT_RESIST).isEmpty() || canTopUpResist(slot(SLOT_RESIST));
     }
 

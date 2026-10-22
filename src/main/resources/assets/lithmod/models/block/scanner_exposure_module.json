@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "lithmod:block/t4_unformed_casing",
+    "down": "lithmod:block/t4_unformed_casing",
+    "up": "lithmod:block/t4_unformed_casing",
+    "north": "lithmod:item/arf_excimer_laser",
+    "south": "lithmod:item/arf_excimer_laser",
+    "east": "lithmod:item/arf_excimer_laser",
+    "west": "lithmod:item/arf_excimer_laser"
+  }
+}

@@ -19,7 +19,7 @@ public final class ScannerMemberBlock extends AdvancedCasingBlock {
   if(kind!=BlockKind.OPERATING_PANEL&&kind!=BlockKind.CALIBRATION_PANEL)return InteractionResult.PASS;
   if(!level.isClientSide()&&level.getBlockEntity(pos) instanceof ScannerMemberBlockEntity member){
    var core=member.scanner();
-   if(core==null)player.displayClientMessage(Component.translatable("message.lithmod.scanner.form_first"),true);
+   if(core==null)player.sendSystemMessage(Component.translatable("message.lithmod.scanner.form_first"));
    else if(kind==BlockKind.CALIBRATION_PANEL)player.openMenu(member,buffer->{buffer.writeBlockPos(pos);buffer.writeBoolean(true);});
    else player.openMenu(member,pos);
   }

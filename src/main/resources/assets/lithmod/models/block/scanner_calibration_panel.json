@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "lithmod:block/t4_unformed_casing",
+    "down": "lithmod:block/t4_unformed_casing",
+    "up": "lithmod:block/t4_unformed_casing",
+    "north": "lithmod:block/t3_unformed_controller",
+    "south": "lithmod:block/t3_unformed_controller",
+    "east": "lithmod:block/t3_unformed_controller",
+    "west": "lithmod:block/t3_unformed_controller"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "ACA",
+    "BDB",
+    "ACA"
+  ],
+  "key": {
+    "A": "minecraft:diamond",
+    "B": "minecraft:gold_block",
+    "C": "lithmod:advanced_casing",
+    "D": "lithmod:arf_dry_lens"
+  },
+  "result": {
+    "id": "lithmod:scanner_optics_module",
+    "count": 1
+  }
+}
