@@ -33,12 +33,12 @@ public final class ScannerDashboardScreen extends AbstractContainerScreen<Scanne
    String[] modules={"Exposure module","Optics module","Stage module","Filtration module","Metrology module"};for(int i=0;i<5;i++)text(g,modules[i],12,56+i*16,256);
    text(g,"FOUP, mask, resist: use the upper Operating Panel",12,150,256);
    text(g,"Beam alignment: use the separate Calibration Panel",12,168,256);
-   text(g,menu.value(1)!=0?"Calibration accepted (quality "+menu.value(12)+")":"Calibration required before operation",12,195,256);return;
+   text(g,menu.value(1)!=0?"Beam alignment accepted (quality "+menu.value(12)+")":"Calibration required before operation",12,195,256);return;
   }
   text(g,"Center the spot; reduce focus error to zero.",12,20,256);
   text(g,"X: "+menu.value(7)+"    Y: "+menu.value(8)+"    Focus: "+menu.value(9),12,179,256);
   text(g,"Spot: "+menu.value(4)+", "+menu.value(5)+"  Focus error: "+menu.value(6),12,190,256);
   text(g,"Quality "+menu.value(2)+"/100  Yield ×"+menu.value(3)/1000.0+"  Minimum "+menu.value(11),12,201,256);
-  text(g,menu.value(10)!=0?"Locked while a lot is active":menu.value(1)!=0?"Accepted—ready to operate":"Adjust, then accept alignment",12,212,256);
+  text(g,menu.value(10)!=0?"Locked while a lot is active":menu.value(1)!=0?"Accepted—beam alignment saved":"Adjust, then accept alignment",12,212,256);
  }
 }
