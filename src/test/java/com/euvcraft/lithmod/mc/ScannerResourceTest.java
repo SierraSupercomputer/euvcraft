@@ -10,7 +10,7 @@ class ScannerResourceTest {
  private static final List<String> IDS=List.of("scanner_controller","scanner_operating_panel","scanner_calibration_panel","scanner_exposure_module","scanner_optics_module","scanner_stage_module","scanner_filtration_module","scanner_metrology_module");
  private static JsonObject json(String path)throws Exception{return JsonParser.parseString(Files.readString(ROOT.resolve(path))).getAsJsonObject();}
  @Test void everyBlockHasCompleteResourcesAndCraftableRecipe()throws Exception{
-  var lang=json("assets/lithmod/lang/en_us.json");var tag=json("data/minecraft/tags/block/mineable/pickaxe.json").getAsJsonArray("values");var pickaxe=new HashSet<String>();for(var v:tag)pickaxe.add(v.getAsString());
+  var lang=json("assets/lithmod/lang/en_us.json");var tag=json("data/minecraft/tags/block/mineable/pickaxe.json").getAsJsonArray("values");var pickaxe=new HashSet<String>();for(var v:tag)pickaxe.add(v.isJsonPrimitive()?v.getAsString():v.getAsJsonObject().get("id").getAsString());
   for(var id:IDS){
    assertTrue(pickaxe.contains("lithmod:"+id));assertFalse(lang.get("block.lithmod."+id).getAsString().isBlank());assertEquals(lang.get("block.lithmod."+id),lang.get("item.lithmod."+id));
    var state=json("assets/lithmod/blockstates/"+id+".json");assertFalse(state.getAsJsonObject("variants").isEmpty());
