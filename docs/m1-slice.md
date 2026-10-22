@@ -2751,6 +2751,7 @@ public net.neoforged.neoforge.transfer.resource.Resource getResource(int);
 ### com.euvcraft.lithmod.mc.multiblock.utilities.UtilityClientEvents
 ```java
 public static void screens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent);
+public static void fluids(net.neoforged.neoforge.client.event.RegisterFluidModelsEvent);
 ```
 
 ### com.euvcraft.lithmod.mc.multiblock.utilities.UtilityControllerBlock

@@ -112,11 +112,7 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
         "logic_t1", "logic_t2", "memory_t2", "logic_t3", "memory_t3", "compute_t3", "nand_t3", "logic_t4", "memory_t4", "compute_t4", "nand_t4", "logic_t5", "memory_t5", "compute_t5", "nand_t5"
     };
     /** Die type for each design index. */
-    private static final String[] EBEAM_DIE_TYPES = {
-        DieTypes.LOGIC, DieTypes.LOGIC, DieTypes.MEMORY,
-        DieTypes.LOGIC, DieTypes.MEMORY, DieTypes.COMPUTE, DieTypes.NAND,
-        DieTypes.LOGIC, DieTypes.MEMORY, DieTypes.COMPUTE, DieTypes.NAND
-    };
+    private static final String[] EBEAM_DIE_TYPES = {DieTypes.LOGIC,DieTypes.LOGIC,DieTypes.MEMORY,DieTypes.LOGIC,DieTypes.MEMORY,DieTypes.COMPUTE,DieTypes.NAND,DieTypes.LOGIC,DieTypes.MEMORY,DieTypes.COMPUTE,DieTypes.NAND,DieTypes.LOGIC,DieTypes.MEMORY,DieTypes.COMPUTE,DieTypes.NAND};
     /** Tier index for each design index. */
     private static final int[] EBEAM_TIER_INDICES = { 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5 };
 

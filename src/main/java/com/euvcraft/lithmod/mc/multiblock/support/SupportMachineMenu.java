@@ -231,7 +231,7 @@ public class SupportMachineMenu extends FabMachineMenu {
     /** Button IDs for design selection (0-6). */
     public static final int EBEAM_DESIGN_BUTTON_BASE = 0;
     /** Button ID for WriteMask Start. */
-    public static final int EBEAM_DESIGN_COUNT=11;
+    public static final int EBEAM_DESIGN_COUNT=15;
     public static final int EBEAM_START_BUTTON = EBEAM_DESIGN_COUNT;
 
     @Override
@@ -307,3 +307,4 @@ public class SupportMachineMenu extends FabMachineMenu {
         }
     }
 }
+

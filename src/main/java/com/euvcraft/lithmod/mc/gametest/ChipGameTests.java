@@ -120,7 +120,7 @@ public final class ChipGameTests {
         for (Tier tier : TierDataLoader.getRegistry().all()) {
             for (String dieType : List.of(DieTypes.COMPUTE, DieTypes.NAND)) {
                 Optional<Item> chip = ChipCatalog.chipFor(dieType, tier.index());
-                if (tier.index() == 3 || tier.index() == 4) {
+                if (tier.index() >= 3 && tier.index() <= 5) {
                     helper.assertTrue(chip.isPresent(),
                         "the catalog must have " + dieType + " chip at T3");
                 } else {

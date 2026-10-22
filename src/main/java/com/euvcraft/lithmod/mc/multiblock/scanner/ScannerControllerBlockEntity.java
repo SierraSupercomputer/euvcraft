@@ -30,7 +30,7 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
  final PureJournal pureJournal=new PureJournal(this);
  private boolean immersion,diagnosticPlotted;
  public boolean immersion(){return immersion;}
- public DiagnosticFit diagnostic(){return diagnostic;}
+ public DiagnosticFit diagnostic(){return diagnostic;}public boolean diagnosticPlotted(){return diagnosticPlotted;}
  public int diagnosticQuality(){return diagnosticQuality;}
  public int diagnosticMinimum(){return definition().map(d->d.paramOrDefault("diagnostic_min_quality",50)).orElse(101);}
  private int diagnosticMin(){return definition().map(d->d.paramOrDefault("diagnostic_min_multiplier_permille",500)).orElse(0);}
@@ -137,6 +137,7 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
   out.putInt("scannerX",alignment.x());out.putInt("scannerY",alignment.y());out.putInt("scannerFocus",alignment.focus());out.putInt("scannerTargetX",alignment.targetX());out.putInt("scannerTargetY",alignment.targetY());out.putInt("scannerTargetFocus",alignment.targetFocus());
  }
 }
+
 
 
 
