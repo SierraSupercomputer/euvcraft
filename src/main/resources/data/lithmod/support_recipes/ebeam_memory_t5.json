@@ -1,0 +1,16 @@
+{
+  "machine": "ebeam_mask_writer",
+  "input": {
+    "item": "lithmod:blank_mask",
+    "count": 1
+  },
+  "secondary": {
+    "item": "minecraft:redstone",
+    "count": 64
+  },
+  "output": "lithmod:mask",
+  "count": 1,
+  "duration": 2000,
+  "energy_per_tick": 3000,
+  "water_mb": 0
+}

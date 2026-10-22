@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "lithmod:block/pick_and_place"
+    }
+  }
+}

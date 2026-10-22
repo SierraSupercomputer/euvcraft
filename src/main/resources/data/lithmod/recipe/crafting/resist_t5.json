@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " R ",
+    "GSG",
+    " D "
+  ],
+  "key": {
+    "R": "lithmod:resist_t4",
+    "G": "minecraft:gold_ingot",
+    "S": "lithmod:silicon",
+    "D": "minecraft:diamond"
+  },
+  "result": {
+    "id": "lithmod:resist_t5",
+    "count": 8
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "lithmod:item/pick_and_place"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "ADA",
+    "BCL",
+    "ADA"
+  ],
+  "key": {
+    "A": "lithmod:advanced_casing",
+    "D": "minecraft:diamond",
+    "B": "lithmod:compute_chip_t4",
+    "C": "lithmod:scanner_optics_module",
+    "L": "lithmod:logic_chip_t4"
+  },
+  "result": {
+    "id": "lithmod:scanner_immersion_module",
+    "count": 1
+  }
+}

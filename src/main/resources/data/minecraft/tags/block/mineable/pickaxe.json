@@ -29,6 +29,13 @@
     "lithmod:scanner_optics_module",
     "lithmod:scanner_stage_module",
     "lithmod:scanner_filtration_module",
-    "lithmod:scanner_metrology_module"
+    "lithmod:scanner_metrology_module",
+    "lithmod:utility_plant",
+    "lithmod:utility_water_inlet",
+    "lithmod:utility_pure_outlet",
+    "lithmod:pick_and_place",
+    "lithmod:scanner_diagnostic_panel",
+    "lithmod:scanner_water_inlet",
+    "lithmod:scanner_immersion_module"
   ]
 }

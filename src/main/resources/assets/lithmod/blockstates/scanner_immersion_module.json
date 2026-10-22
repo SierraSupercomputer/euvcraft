@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "lithmod:block/scanner_immersion_module"
+    }
+  }
+}

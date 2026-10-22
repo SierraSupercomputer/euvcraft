@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "lithmod:item/precision_overlay_scope"
+  }
+}

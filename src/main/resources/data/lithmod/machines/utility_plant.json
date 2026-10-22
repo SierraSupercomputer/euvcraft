@@ -1,0 +1,14 @@
+{
+  "id": "utility_plant",
+  "energy_capacity": 200000,
+  "max_receive": 10000,
+  "energy_per_tick": 80,
+  "params": {
+    "raw_capacity_mb": 16000,
+    "pure_capacity_mb": 16000,
+    "water_per_batch_mb": 8000,
+    "pure_per_batch_mb": 8000,
+    "filters_per_batch": 1,
+    "duration": 200
+  }
+}

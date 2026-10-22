@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "ACA",
+    "DLD",
+    "APA"
+  ],
+  "key": {
+    "A": "lithmod:advanced_casing",
+    "C": "minecraft:cauldron",
+    "D": "minecraft:diamond",
+    "L": "lithmod:logic_chip_t4",
+    "P": "minecraft:piston"
+  },
+  "result": {
+    "id": "lithmod:utility_plant",
+    "count": 1
+  }
+}

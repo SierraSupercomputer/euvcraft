@@ -68,6 +68,9 @@ public class EUVCRAFTMod {
         ModMultiblocks.register(modEventBus);
         SupportMachines.register(modEventBus);
         AdvancedMachines.register(modEventBus);
+        com.euvcraft.lithmod.mc.multiblock.utilities.UtilityFluids.register(modEventBus);
+        com.euvcraft.lithmod.mc.multiblock.utilities.UtilityMachines.register(modEventBus);
+        com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMachines.register(modEventBus);
         com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);

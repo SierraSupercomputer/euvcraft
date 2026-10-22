@@ -4,11 +4,17 @@
   "max_receive": 20000,
   "energy_per_tick": 160,
   "per_tier_energy_per_tick": {
-    "T4": 160
+    "T4": 160,
+    "T5": 240
   },
   "params": {
     "calibration_min_quality": 50,
     "calibration_min_multiplier_permille": 500,
-    "calibration_max_multiplier_permille": 1000
+    "calibration_max_multiplier_permille": 1000,
+    "diagnostic_min_quality": 50,
+    "diagnostic_min_multiplier_permille": 500,
+    "diagnostic_max_multiplier_permille": 1000,
+    "pure_capacity_mb": 16000,
+    "pure_water_per_tick_mb": 2
   }
 }

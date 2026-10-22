@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "GGG",
+    "IRI",
+    "GGG"
+  ],
+  "key": {
+    "G": "minecraft:gold_nugget",
+    "I": "minecraft:iron_ingot",
+    "R": "minecraft:redstone"
+  },
+  "result": {
+    "id": "lithmod:dimm_blank",
+    "count": 2
+  }
+}

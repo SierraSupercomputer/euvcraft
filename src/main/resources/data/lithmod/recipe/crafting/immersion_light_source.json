@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "lithmod:arf_excimer_laser",
+    "lithmod:logic_chip_t4",
+    "minecraft:diamond"
+  ],
+  "result": {
+    "id": "lithmod:immersion_light_source",
+    "count": 1
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "machine": "pick_and_place",
+  "ingredients": [
+    {
+      "item": "lithmod:logic_chip_t3",
+      "count": 1
+    },
+    {
+      "item": "lithmod:microcontroller_blank",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:microcontroller_t3",
+    "count": 1
+  },
+  "ticks": 140
+}

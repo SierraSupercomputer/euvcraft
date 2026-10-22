@@ -1,0 +1,5 @@
+package com.euvcraft.lithmod.mc.multiblock.utilities;
+import com.euvcraft.lithmod.mc.machine.screen.AdvancedMachineScreen;import net.minecraft.client.gui.GuiGraphicsExtractor;import net.minecraft.network.chat.Component;import net.minecraft.world.entity.player.Inventory;
+public final class UtilityScreen extends AdvancedMachineScreen<UtilityMenu>{public UtilityScreen(UtilityMenu m,Inventory i,Component t){super(m,i,t,238);}@Override protected boolean formed(){return menu.formed();}@Override protected boolean cabinet(){return false;}
+ @Override protected void extractLabels(GuiGraphicsExtractor g,int mx,int my){line(g,title,8,6,160);line(g,Component.literal("Filter    Water     Bucket"),18,23,150);line(g,Component.literal(menu.energy()+" / "+menu.energyCapacity()+" FE"),18,57,150);line(g,playerInventoryTitle,8,72,160);line(g,Component.literal(formed()?"Formed":"Unformed: check structure"),8,170,160);line(g,Component.literal("Water: "+menu.raw()+" / "+menu.rawCapacity()+" mB"),8,184,160);line(g,Component.literal("Ultrapure: "+menu.pure()+" / "+menu.pureCapacity()+" mB"),8,198,160);line(g,Component.literal("Connect pure outlet to scanner inlet"),8,213,160);}
+}
