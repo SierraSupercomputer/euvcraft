@@ -33,7 +33,9 @@ public final class UtilityControllerBlockEntity extends FabMachineBlockEntity im
  @Override public void setRemoved(){formation.detach();super.setRemoved();}
  @Override protected AbstractContainerMenu createMachineMenu(int id,Inventory inv,FabMachineBlockEntity machine){return new UtilityMenu(id,inv,this);}
  @Override protected void saveAdditional(ValueOutput o){super.saveAdditional(o);o.putInt("rawMb",raw.amount());o.putInt("pureMb",pure.amount());o.putInt("utilityProgress",progress);o.putInt("utilityDuration",duration);o.putInt("utilityCost",cost);o.putInt("utilityPending",pendingOutput);}
- @Override protected void loadAdditional(ValueInput i){super.loadAdditional(i);raw.restoreAmount(i.getIntOr("rawMb",0));pure.restoreAmount(i.getIntOr("pureMb",0));progress=i.getIntOr("utilityProgress",0);duration=i.getIntOr("utilityDuration",0);cost=i.getIntOr("utilityCost",0);pendingOutput=i.getIntOr("utilityPending",0);if(pendingOutput<0||pendingOutput>1000000||progress<0||progress>=duration||duration>72000||cost<=0){progress=0;duration=0;pendingOutput=0;}sync();}
+ @Override protected void loadAdditional(ValueInput i){super.loadAdditional(i);raw.restoreAmount(Math.clamp(i.getIntOr("rawMb",0),0,1000000));pure.restoreAmount(Math.clamp(i.getIntOr("pureMb",0),0,1000000));progress=i.getIntOr("utilityProgress",0);duration=i.getIntOr("utilityDuration",0);cost=i.getIntOr("utilityCost",0);pendingOutput=i.getIntOr("utilityPending",0);if(pendingOutput<0||pendingOutput>1000000||progress<0||progress>=duration||duration>72000||cost<=0){progress=0;duration=0;pendingOutput=0;}sync();}
  static final class TankJournal extends SnapshotJournal<Integer>{final UtilityControllerBlockEntity owner;final WaterTank tank;TankJournal(UtilityControllerBlockEntity owner,WaterTank tank){this.owner=owner;this.tank=tank;}@Override protected Integer createSnapshot(){return tank.amount();}@Override protected void revertToSnapshot(Integer amount){tank.restoreAmount(amount);}@Override protected void onRootCommit(Integer old){owner.setChanged();}}
 }
+
+
 

@@ -17,5 +17,6 @@ public final class DiagnosticMenu extends AbstractContainerMenu{
   if(id>=0&&id<=400){a=id-200;return true;}if(id>=401&&id<=801){b=id-601;return true;}if(id>=802&&id<=1202){c=id-1002;return true;}
   if(id==2000)return scanner.plotDiagnostic(a,b,c);if(id==2001)return scanner.acceptDiagnostic();return false;
  }
- @Override public ItemStack quickMoveStack(Player p,int index){if(index<0||index>=slots.size()||scanner==null||scanner.inputsLocked()||!stillValid(p))return ItemStack.EMPTY;var slot=slots.get(index);var stack=slot.getItem();var original=stack.copy();if(index==0){if(!moveItemStackTo(stack,1,slots.size(),true))return ItemStack.EMPTY;}else{if(!stack.is(ModItems.BURN_PAPER.get())||!moveItemStackTo(stack,0,1,false))return ItemStack.EMPTY;}if(stack.isEmpty())slot.setByPlayer(ItemStack.EMPTY);else slot.setChanged();slot.onTake(p,stack);scanner.setChanged();return original;}
+ @Override public ItemStack quickMoveStack(Player p,int index){if(index<0||index>=slots.size()||scanner==null||scanner.inputsLocked()||!stillValid(p))return ItemStack.EMPTY;var slot=slots.get(index);var stack=slot.getItem();var original=stack.copy();if(index==0){if(!moveItemStackTo(stack,1,slots.size(),true))return ItemStack.EMPTY;}else{if(!stack.is(ModItems.BURN_PAPER.get())||!moveItemStackTo(stack,0,1,false))return ItemStack.EMPTY;}if(stack.isEmpty())slot.setByPlayer(ItemStack.EMPTY);else slot.setChanged();slot.onTake(p,original);scanner.setChanged();return original;}
 }
+

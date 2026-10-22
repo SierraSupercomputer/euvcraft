@@ -23,7 +23,7 @@ public final class ScannerMemberBlockEntity extends AdvancedMemberBlockEntity {
   var owner=controller();
   return owner instanceof ScannerControllerBlockEntity s&&level.getBlockEntity(s.getBlockPos())==s&&!s.isRemoved()?s:null;
  }
- @Override public Component getDisplayName(){return Component.translatable("block.lithmod."+(structureKind()==BlockKind.CALIBRATION_PANEL?"scanner_calibration_panel":"scanner_operating_panel"));}
+ @Override public Component getDisplayName(){return Component.translatable("block.lithmod."+(structureKind()==BlockKind.DIAGNOSTIC_PANEL?"scanner_diagnostic_panel":structureKind()==BlockKind.CALIBRATION_PANEL?"scanner_calibration_panel":"scanner_operating_panel"));}
  @Override public @Nullable AbstractContainerMenu createMenu(int id,Inventory inventory,Player player){
   var s=scanner();if(s==null)return null;
   if(structureKind()==BlockKind.DIAGNOSTIC_PANEL)return new DiagnosticMenu(id,inventory,s,worldPosition);
@@ -32,4 +32,5 @@ public final class ScannerMemberBlockEntity extends AdvancedMemberBlockEntity {
  @Override protected void loadAdditional(ValueInput input){super.loadAdditional(input);try{installation=UUID.fromString(input.getString("installation").orElse(""));}catch(IllegalArgumentException e){installation=null;}}
  @Override protected void saveAdditional(ValueOutput output){super.saveAdditional(output);if(installation!=null)output.putString("installation",installation.toString());}
 }
+
 

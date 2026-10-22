@@ -132,7 +132,7 @@ public final class ProcessCellRunPersistence {
             Objects.requireNonNull(grade, "grade must not be null");
 
             // Validate tier index (M1 playable: 1, 2, or 3)
-            if (tier.index() < 1 || tier.index() > 4) {
+            if (tier.index() < 1 || tier.index() > 5) {
                 throw new IllegalArgumentException("tier index must be 1, 2, or 3, got " + tier.index());
             }
 
@@ -367,7 +367,7 @@ public final class ProcessCellRunPersistence {
                 SupportLines.TEST_PACKAGING, 1);
 
             // Compute cores: T3 compute uses core count 1, others null
-            Integer cores = (tier.index() >= 3 && tier.index() <= 4 && DieTypes.COMPUTE.equals(dieType)) ? 1 : null;
+            Integer cores = (tier.index() >= 3 && tier.index() <= 5 && DieTypes.COMPUTE.equals(dieType)) ? 1 : null;
 
             return new ProcessRunRequest(
                     lot,
@@ -488,3 +488,4 @@ public final class ProcessCellRunPersistence {
         }
     };
 }
+

@@ -14,3 +14,4 @@ final class UtilityFluidHandler implements ResourceHandler<FluidResource>{
  @Override public int extract(int i,FluidResource r,int n,TransactionContext tx){index(i);transfer(r,n,tx);var tank=live();if(inlet||tank==null||!r.equals(fluid))return 0;int amount=Math.min(n,tank.amount());if(amount>0){owner.pureJournal.updateSnapshots(tx);tank.drainExact(amount,false);}return amount;}
 }
 
+

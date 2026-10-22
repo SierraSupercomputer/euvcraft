@@ -3,7 +3,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;import net.minecraft.client
 /** Fixed domain [-2,2], range [-8,8]; target is amber, last paid candidate cyan. */
 public final class DiagnosticScreen extends AbstractContainerScreen<DiagnosticMenu>{
  private final List<EditBox> fields=new ArrayList<>();private Button plot,accept;private boolean initialized;
- public DiagnosticScreen(DiagnosticMenu m,Inventory i,Component t){super(m,i,t,320,300);}
+ public DiagnosticScreen(DiagnosticMenu m,Inventory i,Component t){super(m,i,t,320,330);}
  private void send(int id){if(minecraft!=null&&minecraft.gameMode!=null)minecraft.gameMode.handleInventoryButtonClick(menu.containerId,id);}
  @Override protected void init(){super.init();fields.clear();initialized=false;for(int k=0;k<3;k++){var field=new EditBox(font,leftPos+20+k*82,topPos+170,74,18,Component.literal(new String[]{"A","b","c"}[k]));field.setMaxLength(6);field.setValue("0.00");fields.add(addRenderableWidget(field));}
  plot=addRenderableWidget(Button.builder(Component.literal("Plot (1 paper)"),b->plot()).bounds(leftPos+20,topPos+191,120,20).build());accept=addRenderableWidget(Button.builder(Component.literal("Accept fit"),b->send(2001)).bounds(leftPos+151,topPos+191,115,20).build());}
@@ -15,5 +15,6 @@ public final class DiagnosticScreen extends AbstractContainerScreen<DiagnosticMe
   for(var slot:menu.slots){g.fill(leftPos+slot.x-1,topPos+slot.y-1,leftPos+slot.x+17,topPos+slot.y+17,0xFF777777);g.fill(leftPos+slot.x,topPos+slot.y,leftPos+slot.x+16,topPos+slot.y+16,0xFFA0A0A0);}
  }
  private int map(int hundredths){return Math.clamp(60-hundredths*119/1600,1,118);}private void text(GuiGraphicsExtractor g,String text,int x,int y){g.text(font,font.plainSubstrByWidth(text,304-x),x,y,0xFF303030,false);}
- @Override protected void extractLabels(GuiGraphicsExtractor g,int mx,int my){text(g,"Diagnostic tuning: y = Ax² + bx + c",8,7);text(g,"Target: amber   Last plot: cyan   x: -2 to 2",15,19);text(g,"A                      b                      c    (-2.00 to 2.00)",20,157);text(g,"Paper",276,173);text(g,"Quality "+menu.value(2)+"/100  Yield ×"+menu.value(8)/1000.0+"  Min "+menu.value(7),15,302-3);text(g,menu.value(6)!=0?"Locked during processing":menu.value(1)==1?"Fit accepted":"Adjust coefficients, plot, then accept",15,211-1);}
+ @Override protected void extractLabels(GuiGraphicsExtractor g,int mx,int my){text(g,"Diagnostic tuning: y = Ax² + bx + c",8,7);text(g,"Target: amber   Last plot: cyan   x: -2 to 2",15,19);text(g,"A                      b                      c    (-2.00 to 2.00)",20,157);text(g,"Paper",276,173);text(g,"Quality "+menu.value(2)+"/100  Yield ×"+menu.value(8)/1000.0+"  Min "+menu.value(7),15,300);text(g,menu.value(6)!=0?"Locked during processing":menu.value(1)==1?"Fit accepted":"Adjust coefficients, plot, then accept",15,314);}
 }
+

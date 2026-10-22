@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/cube_all",
   "textures": {
-    "all": "lithmod:block/process_cell_controller"
+    "all": "lithmod:block/joined_operating_panel_unformed_front"
   }
 }

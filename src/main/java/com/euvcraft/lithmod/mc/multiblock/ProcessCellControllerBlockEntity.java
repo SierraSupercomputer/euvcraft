@@ -85,7 +85,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
     /** M1 stub; later milestones discover actual support-line machines. */
     public static final Map<String, Integer> M1_STUB_GENERATIONS = Map.of(
         SupportLines.SUBSTRATE, 1, SupportLines.MASK_SHOP, 1,
-        SupportLines.DEPOSITION_ETCH, 1, SupportLines.UTILITIES, 1, SupportLines.TEST_PACKAGING, 1);
+        SupportLines.DEPOSITION_ETCH, 1, SupportLines.UTILITIES, utilityGeneration(), SupportLines.TEST_PACKAGING, 1);
     private @Nullable ProcessRun run;
     private @Nullable Contract contract;
     private @Nullable Saved pendingRun;
@@ -197,6 +197,8 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
      *
      * @return true if ready for admission
      */
+    protected int utilityGeneration(){return 1;}
+
     protected boolean readyForAdmission() {
         return true;
     }
@@ -313,7 +315,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         }
         var registry = TierDataLoader.getRegistry();
         Tier tier = registry.byIndex(mask.tierIndex()).orElse(null);
-        if (tier == null || tier.index() > 4) { lastRefusal = RefusalReason.NO_MASK; return; }
+        if (tier == null || tier.index() > 5) { lastRefusal = RefusalReason.NO_MASK; return; }
 
         // Admission hooks: structural formation, tier support, readiness, refusal
         if (!structureFormed()) { lastRefusal = RefusalReason.LINE_CANNOT_RUN_TIER; return; }
@@ -339,7 +341,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
             SupportLines.TEST_PACKAGING, 1
         );
 
-        Integer cores = (tier.index() >= 3 && tier.index() <= 4 && DieTypes.COMPUTE.equals(mask.dieType())) ? 1 : null;
+        Integer cores = (tier.index() >= 3 && tier.index() <= 5 && DieTypes.COMPUTE.equals(mask.dieType())) ? 1 : null;
         ProcessRunRequest request = new ProcessRunRequest(lot, mask.dieType(), tier, cores,
             mask.usesRemaining(), rules.stats(loadout.toLineComponents(), tier.index()),
             rules.canRunTier(loadout.toLineComponents(), tier.index()),
@@ -698,3 +700,4 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
     }
 
 }
+
