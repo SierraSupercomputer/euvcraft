@@ -29,11 +29,11 @@ public class AssemblyMenu extends FabMachineMenu {
     @Override
     protected void addMachineSlots() {
         // Input slot 1 at x=44, y=35
-        addMachineSlot(SLOT_INPUT_1, 44, 35);
+        addMachineSlot(SLOT_INPUT_1,44,35,true);
         // Input slot 2 at x=80, y=35
-        addMachineSlot(SLOT_INPUT_2, 80, 35);
+        addMachineSlot(SLOT_INPUT_2,80,35,true);
         // Output slot at x=116, y=35
-        addOutputSlot(SLOT_OUTPUT, 116, 35);
+        addMachineSlot(SLOT_OUTPUT,116,35,false);
     }
 
     public boolean formed() {

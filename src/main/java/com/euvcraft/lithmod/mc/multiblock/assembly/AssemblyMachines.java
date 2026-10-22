@@ -11,6 +11,7 @@ import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.registries.DeferredBlock;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 public final class AssemblyMachines {
@@ -19,13 +20,13 @@ public final class AssemblyMachines {
     public static final DeferredRegister<MenuType<?>> MENU_TYPES = DeferredRegister.create(Registries.MENU, EUVCRAFTMod.MODID);
 
     public static final DeferredBlock<AssemblyControllerBlock> CONTROLLER = BLOCKS.registerBlock(
-        "pick_and_place_controller",
+        "pick_and_place",
         AssemblyControllerBlock::new,
         p -> p.strength(3, 6).requiresCorrectToolForDrops()
     );
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AssemblyControllerBlockEntity>> CONTROLLER_BE =
-        BLOCK_ENTITIES.register("pick_and_place_controller", () ->
+        BLOCK_ENTITIES.register("pick_and_place", () ->
             new BlockEntityType<>(AssemblyControllerBlockEntity::new, CONTROLLER.get())
         );
 
@@ -36,15 +37,7 @@ public final class AssemblyMachines {
         BLOCKS.register(bus);
         BLOCK_ENTITIES.register(bus);
         MENU_TYPES.register(bus);
-        bus.addListener(AssemblyMachines::capabilities);
-    }
 
-    private static void capabilities(RegisterCapabilitiesEvent event) {
-        event.registerBlockEntity(
-            Capabilities.Energy.BLOCK,
-            AdvancedMachines.ADVANCED_MEMBER_BE.get(),
-            (member, side) -> member.energy()
-        );
     }
 
     private AssemblyMachines() {}
