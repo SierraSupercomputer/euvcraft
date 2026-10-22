@@ -87,7 +87,7 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
  }
  public boolean calibrated(){return hardwareValidated&&!hardware.isEmpty()&&hardware.equals(calibratedHardware)&&acceptedQuality>=minimumQuality()&&acceptedQuality<=100&&acceptedMultiplier>0&&acceptedMultiplier<=1;}
  public int calibrationQuality(){return acceptedQuality;}
- public double calibratedMultiplier(){return calibrated()?acceptedMultiplier:0;}
+ public double calibratedMultiplier(){return operatingCalibrated()?acceptedMultiplier*(maskTier()==5?diagnosticMultiplier:1.0):0;}
  public BeamAlignment alignment(){return alignment;}
  public int minimumQuality(){return definition().map(d->d.paramOrDefault("calibration_min_quality",50)).orElse(101);}
  private boolean validParameters(){return minimumQuality()>=1&&minimumQuality()<=100&&minPermille()>0&&maxPermille()>=minPermille()&&maxPermille()<=1000;}

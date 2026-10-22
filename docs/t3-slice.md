@@ -9,15 +9,19 @@ T3: KrF DUV; 24 layers; 100 ticks per layer.
 | boule_purifier | 1 x lithmod:silicon_boule | - | 1000 | 1 x lithmod:pure_silicon_boule | 400 | 80 | 32000 |
 | ebeam_compute_t3 | 1 x lithmod:blank_mask | 32 x minecraft:redstone | 0 | 1 x lithmod:mask | 1200 | 2000 | 2400000 |
 | ebeam_compute_t4 | 1 x lithmod:blank_mask | 48 x minecraft:redstone | 0 | 1 x lithmod:mask | 1600 | 2500 | 4000000 |
+| ebeam_compute_t5 | 1 x lithmod:blank_mask | 64 x minecraft:redstone | 0 | 1 x lithmod:mask | 2000 | 3000 | 6000000 |
 | ebeam_logic_t1 | 1 x lithmod:blank_mask | 32 x minecraft:redstone | 0 | 1 x lithmod:mask | 1200 | 2000 | 2400000 |
 | ebeam_logic_t2 | 1 x lithmod:blank_mask | 32 x minecraft:redstone | 0 | 1 x lithmod:mask | 1200 | 2000 | 2400000 |
 | ebeam_logic_t3 | 1 x lithmod:blank_mask | 32 x minecraft:redstone | 0 | 1 x lithmod:mask | 1200 | 2000 | 2400000 |
 | ebeam_logic_t4 | 1 x lithmod:blank_mask | 48 x minecraft:redstone | 0 | 1 x lithmod:mask | 1600 | 2500 | 4000000 |
+| ebeam_logic_t5 | 1 x lithmod:blank_mask | 64 x minecraft:redstone | 0 | 1 x lithmod:mask | 2000 | 3000 | 6000000 |
 | ebeam_memory_t2 | 1 x lithmod:blank_mask | 32 x minecraft:redstone | 0 | 1 x lithmod:mask | 1200 | 2000 | 2400000 |
 | ebeam_memory_t3 | 1 x lithmod:blank_mask | 32 x minecraft:redstone | 0 | 1 x lithmod:mask | 1200 | 2000 | 2400000 |
 | ebeam_memory_t4 | 1 x lithmod:blank_mask | 48 x minecraft:redstone | 0 | 1 x lithmod:mask | 1600 | 2500 | 4000000 |
+| ebeam_memory_t5 | 1 x lithmod:blank_mask | 64 x minecraft:redstone | 0 | 1 x lithmod:mask | 2000 | 3000 | 6000000 |
 | ebeam_nand_t3 | 1 x lithmod:blank_mask | 32 x minecraft:redstone | 0 | 1 x lithmod:mask | 1200 | 2000 | 2400000 |
 | ebeam_nand_t4 | 1 x lithmod:blank_mask | 48 x minecraft:redstone | 0 | 1 x lithmod:mask | 1600 | 2500 | 4000000 |
+| ebeam_nand_t5 | 1 x lithmod:blank_mask | 64 x minecraft:redstone | 0 | 1 x lithmod:mask | 2000 | 3000 | 6000000 |
 
 Both support machines are 2 wide x 2 high x 3 deep. Place one controller in either lower front column, one or two support power ports, and support casings in the other positions. Power enters through a formed owned port.
 

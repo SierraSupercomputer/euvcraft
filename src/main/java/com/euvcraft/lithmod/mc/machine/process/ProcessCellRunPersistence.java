@@ -283,7 +283,7 @@ public final class ProcessCellRunPersistence {
                 SupportLines.SUBSTRATE, grade.generation(),
                 SupportLines.MASK_SHOP, maskData.shopGeneration(),
                 SupportLines.DEPOSITION_ETCH, preparationGeneration,
-                SupportLines.UTILITIES, 1,
+                SupportLines.UTILITIES, components.stream().allMatch(component -> ComponentCatalog.tierOf(component) >= 5) ? 2 : 1,
                 SupportLines.TEST_PACKAGING, 1);
             if (preparationGeneration<1||preparationGeneration>2) throw new IllegalArgumentException("Invalid preparation generation");
             if (matrix.unmetLines(installed, tier).stream().anyMatch(line->!SupportLines.TEST_PACKAGING.equals(line.lineId()))) {
@@ -363,7 +363,7 @@ public final class ProcessCellRunPersistence {
                 SupportLines.SUBSTRATE, this.grade.generation(),
                 SupportLines.MASK_SHOP, maskData.shopGeneration(),
                 SupportLines.DEPOSITION_ETCH, preparationGeneration,
-                SupportLines.UTILITIES, 1,
+                SupportLines.UTILITIES, components.stream().allMatch(component -> ComponentCatalog.tierOf(component) >= 5) ? 2 : 1,
                 SupportLines.TEST_PACKAGING, 1);
 
             // Compute cores: T3 compute uses core count 1, others null

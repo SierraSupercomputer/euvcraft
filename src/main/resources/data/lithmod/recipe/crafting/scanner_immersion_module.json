@@ -2,16 +2,19 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "ADA",
-    "BCL",
-    "ADA"
+    "ALA",
+    "SOC",
+    "FMP"
   ],
   "key": {
     "A": "lithmod:advanced_casing",
-    "D": "minecraft:diamond",
-    "B": "lithmod:compute_chip_t4",
-    "C": "lithmod:scanner_optics_module",
-    "L": "lithmod:logic_chip_t4"
+    "L": "lithmod:immersion_light_source",
+    "S": "lithmod:immersion_stage",
+    "O": "lithmod:scanner_optics_module",
+    "C": "lithmod:immersion_optics",
+    "F": "lithmod:immersion_filtration",
+    "M": "lithmod:immersion_metrology",
+    "P": "lithmod:compute_chip_t4"
   },
   "result": {
     "id": "lithmod:scanner_immersion_module",

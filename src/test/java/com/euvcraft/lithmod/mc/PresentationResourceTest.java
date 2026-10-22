@@ -217,7 +217,7 @@ class PresentationResourceTest {
      * source paths, correct per-recipe counts/components from source where useful.
      */
     @Test
-    @DisplayName("generated docs/recipes.md contains all 50 resource IDs and source paths")
+    @DisplayName("generated docs/recipes.md contains all production and fixture resource IDs and source paths")
     void generatedRecipesMarkdownIsComplete() throws Exception {
         Path docPath = Path.of(DOCS_RECIPES);
         assertTrue(Files.exists(docPath), "docs/recipes.md does not exist");
@@ -293,7 +293,7 @@ class PresentationResourceTest {
             .filter(line -> line.startsWith("| lithmod:"))
             .count();
         // Each JSON file contributes exactly one row.
-        assertEquals(73L, recipeCount, "Expected exact recipe inventory in docs/recipes.md, found " + recipeCount);
+        assertEquals(107L, recipeCount, "Expected exact recipe inventory in docs/recipes.md, found " + recipeCount);
 
         // Validate components from source where useful (mask_data for pattern recipes)
         assertTrue(content.contains("mask_data"), "Missing mask_data component documentation");
@@ -413,6 +413,7 @@ class PresentationResourceTest {
         return cwd;
     }
 }
+
 
 
 

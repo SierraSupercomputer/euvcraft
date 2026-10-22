@@ -5,11 +5,11 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
 
 ## Package Layout (parsed from actual package declarations)
 
-  - com.euvcraft.lithmod.core (55 files)
-  - com.euvcraft.lithmod.core.multiblock (9 files)
+  - com.euvcraft.lithmod.core (56 files)
+  - com.euvcraft.lithmod.core.multiblock (11 files)
   - com.euvcraft.lithmod.mc (21 files)
   - com.euvcraft.lithmod.mc.data (14 files)
-  - com.euvcraft.lithmod.mc.gametest (31 files)
+  - com.euvcraft.lithmod.mc.gametest (32 files)
   - com.euvcraft.lithmod.mc.machine (4 files)
   - com.euvcraft.lithmod.mc.machine.client (1 files)
   - com.euvcraft.lithmod.mc.machine.mask (9 files)
@@ -22,8 +22,10 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
   - com.euvcraft.lithmod.mc.machine.test (4 files)
   - com.euvcraft.lithmod.mc.multiblock (12 files)
   - com.euvcraft.lithmod.mc.multiblock.advanced (16 files)
-  - com.euvcraft.lithmod.mc.multiblock.scanner (10 files)
+  - com.euvcraft.lithmod.mc.multiblock.assembly (6 files)
+  - com.euvcraft.lithmod.mc.multiblock.scanner (13 files)
   - com.euvcraft.lithmod.mc.multiblock.support (12 files)
+  - com.euvcraft.lithmod.mc.multiblock.utilities (10 files)
   - com.euvcraft.lithmod.mc.recipe (4 files)
   - com.euvcraft.lithmod.mc.registry (4 files)
 
@@ -73,6 +75,26 @@ public com.euvcraft.lithmod.core.TierRegistry tierRegistry();
 public com.euvcraft.lithmod.core.StatRulesParams params();
 public com.euvcraft.lithmod.core.LineStats stats(com.euvcraft.lithmod.core.LineComponents, int);
 public boolean canRunTier(com.euvcraft.lithmod.core.LineComponents, int);
+```
+
+### com.euvcraft.lithmod.core.DiagnosticFit
+```java
+public com.euvcraft.lithmod.core.DiagnosticFit(int, int, int, int, int, int);
+public static com.euvcraft.lithmod.core.DiagnosticFit create(long);
+public com.euvcraft.lithmod.core.DiagnosticFit plot(int, int, int);
+public double targetAt(double);
+public double candidateAt(double);
+public int quality();
+public double multiplier(double, double);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public int a();
+public int b();
+public int c();
+public int targetA();
+public int targetB();
+public int targetC();
 ```
 
 ### com.euvcraft.lithmod.core.DieRule
@@ -892,6 +914,11 @@ public static int countPassing(boolean[]);
 public static void requireCompleteLot(com.euvcraft.lithmod.core.FoupContents, com.euvcraft.lithmod.core.Tier);
 ```
 
+### com.euvcraft.lithmod.core.multiblock.AssemblyStructureMatcher
+```java
+public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+```
+
 ### com.euvcraft.lithmod.core.multiblock.BlockKind
 ```java
 public static com.euvcraft.lithmod.core.multiblock.BlockKind[] values();
@@ -964,6 +991,11 @@ public int length();
 ```
 
 ### com.euvcraft.lithmod.core.multiblock.SupportStructureMatcher
+```java
+public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+```
+
+### com.euvcraft.lithmod.core.multiblock.UtilityStructureMatcher
 ```java
 public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
 ```
@@ -2021,6 +2053,7 @@ protected void onUnformed();
 protected boolean inputsTemporarilyUnavailable();
 protected net.minecraft.world.item.ItemStack equipment(int);
 protected boolean supportsTier(com.euvcraft.lithmod.core.Tier);
+protected int utilityGeneration();
 protected boolean readyForAdmission();
 protected double admissionYieldMultiplier();
 protected java.lang.String admissionRefusal();
@@ -2269,6 +2302,71 @@ protected void addMachineSlots();
 public boolean formed();
 ```
 
+### com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyClientEvents
+```java
+public static void screens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyControllerBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyControllerBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyControllerBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyControllerBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected java.lang.String machineId();
+public net.minecraft.network.chat.Component getDisplayName();
+public com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity machine();
+public com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedFormation formation();
+public boolean large();
+public com.euvcraft.lithmod.core.multiblock.MatchResult matchStructure(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+public void serverTick();
+public void setRemoved();
+protected net.minecraft.world.inventory.AbstractContainerMenu createMachineMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMachines
+```java
+public static void register(net.neoforged.bus.api.IEventBus);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
+public com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+protected void addMachineSlots();
+public boolean formed();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyScreen(com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+protected boolean formed();
+protected boolean cabinet();
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.scanner.DiagnosticMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.scanner.DiagnosticMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.scanner.ScannerControllerBlockEntity, net.minecraft.core.BlockPos);
+public com.euvcraft.lithmod.mc.multiblock.scanner.DiagnosticMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+public int value(int);
+public boolean stillValid(net.minecraft.world.entity.player.Player);
+public boolean clickMenuButton(net.minecraft.world.entity.player.Player, int);
+public net.minecraft.world.item.ItemStack quickMoveStack(net.minecraft.world.entity.player.Player, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.scanner.DiagnosticScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.scanner.DiagnosticScreen(com.euvcraft.lithmod.mc.multiblock.scanner.DiagnosticMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+protected void init();
+protected void containerTick();
+public void extractBackground(net.minecraft.client.gui.GuiGraphicsExtractor, int, int, float);
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
 ### com.euvcraft.lithmod.mc.multiblock.scanner.ScannerClientEvents
 ```java
 public com.euvcraft.lithmod.mc.multiblock.scanner.ScannerClientEvents();
@@ -2282,8 +2380,29 @@ public com.euvcraft.lithmod.mc.multiblock.scanner.ScannerControllerBlock(net.min
 public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
 ```
 
+### com.euvcraft.lithmod.mc.multiblock.scanner.ScannerControllerBlockEntity$PureJournal
+```java
+com.euvcraft.lithmod.mc.multiblock.scanner.ScannerControllerBlockEntity$PureJournal(com.euvcraft.lithmod.mc.multiblock.scanner.ScannerControllerBlockEntity);
+protected java.lang.Integer createSnapshot();
+protected void revertToSnapshot(java.lang.Integer);
+protected void onRootCommit(java.lang.Integer);
+protected void onRootCommit(java.lang.Object);
+protected void revertToSnapshot(java.lang.Object);
+protected java.lang.Object createSnapshot();
+```
+
 ### com.euvcraft.lithmod.mc.multiblock.scanner.ScannerControllerBlockEntity
 ```java
+public boolean immersion();
+public com.euvcraft.lithmod.core.DiagnosticFit diagnostic();
+public int diagnosticQuality();
+public int diagnosticMinimum();
+public double diagnosticPreview();
+public boolean diagnosed();
+public boolean plotDiagnostic(int, int, int);
+public boolean acceptDiagnostic();
+public boolean operatingCalibrated();
+public int extractEnergy(int, boolean);
 public com.euvcraft.lithmod.mc.multiblock.scanner.ScannerControllerBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
 protected java.lang.String machineId();
 public net.minecraft.network.chat.Component getDisplayName();
@@ -2302,6 +2421,7 @@ public com.euvcraft.lithmod.core.BeamAlignment alignment();
 public int minimumQuality();
 public double previewMultiplier();
 boolean calibrationControl(int);
+protected int utilityGeneration();
 protected boolean supportsTier(com.euvcraft.lithmod.core.Tier);
 protected boolean readyForAdmission();
 protected double admissionYieldMultiplier();
@@ -2309,6 +2429,7 @@ public boolean structureFormed();
 protected boolean inputsTemporarilyUnavailable();
 protected net.minecraft.world.item.ItemStack equipment(int);
 public void serverTick();
+protected void dropExtraContents(net.minecraft.world.level.Level, net.minecraft.core.BlockPos);
 public void setRemoved();
 protected net.minecraft.world.inventory.AbstractContainerMenu createMachineMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
 protected void loadAdditional(net.minecraft.world.level.storage.ValueInput);
@@ -2366,6 +2487,9 @@ public com.euvcraft.lithmod.mc.multiblock.scanner.ScannerOperatingMenu(int, net.
 public com.euvcraft.lithmod.mc.multiblock.scanner.ScannerOperatingMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
 public boolean isOperatingPanel();
 public boolean stillValid(net.minecraft.world.entity.player.Player);
+public int water();
+public boolean diagnosed();
+public boolean immersion();
 public boolean calibrated();
 public int quality();
 public int multiplierPermille();
@@ -2379,6 +2503,23 @@ protected boolean cabinet();
 protected void init();
 protected void containerTick();
 protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.scanner.ScannerWaterHandler
+```java
+com.euvcraft.lithmod.mc.multiblock.scanner.ScannerWaterHandler(com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMemberBlockEntity, com.euvcraft.lithmod.mc.multiblock.scanner.ScannerControllerBlockEntity);
+public int size();
+public net.neoforged.neoforge.transfer.fluid.FluidResource getResource(int);
+public long getAmountAsLong(int);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.fluid.FluidResource);
+public boolean isValid(int, net.neoforged.neoforge.transfer.fluid.FluidResource);
+public int insert(int, net.neoforged.neoforge.transfer.fluid.FluidResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.fluid.FluidResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int insert(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public boolean isValid(int, net.neoforged.neoforge.transfer.resource.Resource);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.resource.Resource);
+public net.neoforged.neoforge.transfer.resource.Resource getResource(int);
 ```
 
 ### com.euvcraft.lithmod.mc.multiblock.support.SupportCasingBlock
@@ -2607,6 +2748,107 @@ public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.resource.Reso
 public net.neoforged.neoforge.transfer.resource.Resource getResource(int);
 ```
 
+### com.euvcraft.lithmod.mc.multiblock.utilities.UtilityClientEvents
+```java
+public static void screens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.utilities.UtilityControllerBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.utilities.UtilityControllerBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.utilities.UtilityControllerBlockEntity$TankJournal
+```java
+com.euvcraft.lithmod.mc.multiblock.utilities.UtilityControllerBlockEntity$TankJournal(com.euvcraft.lithmod.mc.multiblock.utilities.UtilityControllerBlockEntity, com.euvcraft.lithmod.core.WaterTank);
+protected java.lang.Integer createSnapshot();
+protected void revertToSnapshot(java.lang.Integer);
+protected void onRootCommit(java.lang.Integer);
+protected void onRootCommit(java.lang.Object);
+protected void revertToSnapshot(java.lang.Object);
+protected java.lang.Object createSnapshot();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.utilities.UtilityControllerBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.utilities.UtilityControllerBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected java.lang.String machineId();
+public net.minecraft.network.chat.Component getDisplayName();
+public com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity machine();
+public com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedFormation formation();
+public boolean large();
+public com.euvcraft.lithmod.core.multiblock.MatchResult matchStructure(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+public int progress();
+public int duration();
+public boolean hasJob();
+public void serverTick();
+public void setRemoved();
+protected net.minecraft.world.inventory.AbstractContainerMenu createMachineMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
+protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput);
+protected void loadAdditional(net.minecraft.world.level.storage.ValueInput);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.utilities.UtilityFluidHandler
+```java
+com.euvcraft.lithmod.mc.multiblock.utilities.UtilityFluidHandler(com.euvcraft.lithmod.mc.multiblock.utilities.UtilityPortBlockEntity, com.euvcraft.lithmod.mc.multiblock.utilities.UtilityControllerBlockEntity, boolean);
+public int size();
+public net.neoforged.neoforge.transfer.fluid.FluidResource getResource(int);
+public long getAmountAsLong(int);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.fluid.FluidResource);
+public boolean isValid(int, net.neoforged.neoforge.transfer.fluid.FluidResource);
+public int insert(int, net.neoforged.neoforge.transfer.fluid.FluidResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.fluid.FluidResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int insert(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public boolean isValid(int, net.neoforged.neoforge.transfer.resource.Resource);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.resource.Resource);
+public net.neoforged.neoforge.transfer.resource.Resource getResource(int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.utilities.UtilityFluids
+```java
+public static void register(net.neoforged.bus.api.IEventBus);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.utilities.UtilityMachines
+```java
+public static void register(net.neoforged.bus.api.IEventBus);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.utilities.UtilityMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.utilities.UtilityMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.utilities.UtilityControllerBlockEntity);
+public com.euvcraft.lithmod.mc.multiblock.utilities.UtilityMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+protected void addMachineSlots();
+public boolean formed();
+public int raw();
+public int rawCapacity();
+public int pure();
+public int pureCapacity();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.utilities.UtilityPortBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.utilities.UtilityPortBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties, com.euvcraft.lithmod.core.multiblock.BlockKind);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.utilities.UtilityPortBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.utilities.UtilityPortBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public com.euvcraft.lithmod.core.multiblock.BlockKind structureKind();
+public net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.fluid.FluidResource> handler();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.utilities.UtilityScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.utilities.UtilityScreen(com.euvcraft.lithmod.mc.multiblock.utilities.UtilityMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+protected boolean formed();
+protected boolean cabinet();
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
 ### com.euvcraft.lithmod.mc.recipe.HighBinningRecipe
 ```java
 public com.euvcraft.lithmod.mc.recipe.HighBinningRecipe(java.lang.String, com.euvcraft.lithmod.core.HighBinningRules$Transition);
@@ -2735,9 +2977,11 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/machines/ebeam_mask_writer.json | ebeam_mask_writer | 4000000 | 32000 | 2000 | production |
 | src/main/resources/data/lithmod/machines/lithography_scanner.json | lithography_scanner | 1000000 | 20000 | 160 | production |
 | src/main/resources/data/lithmod/machines/pattern_generator.json | pattern_generator | 20000 | 2000 | 20 | production |
+| src/main/resources/data/lithmod/machines/pick_and_place.json | pick_and_place | 100000 | 5000 | 20 | production |
 | src/main/resources/data/lithmod/machines/process_cell.json | process_cell | 100000 | 10000 | 20 | production |
 | src/main/resources/data/lithmod/machines/test_machine.json | test_machine | 10000 | 1000 | 40 | fixture (test-only) |
 | src/main/resources/data/lithmod/machines/test_package.json | test_package | 20000 | 2000 | 20 | production |
+| src/main/resources/data/lithmod/machines/utility_plant.json | utility_plant | 200000 | 10000 | 80 | production |
 | src/main/resources/data/lithmod/machines/wafer_slicer.json | wafer_slicer | 20000 | 2000 | 30 | production |
 
 ### src/main/resources/data/lithmod/machines/advanced_test_package.json
@@ -2827,12 +3071,18 @@ test_machine definitions/recipes are dropped before validation outside fixture m
   "max_receive": 20000,
   "energy_per_tick": 160,
   "per_tier_energy_per_tick": {
-    "T4": 160
+    "T4": 160,
+    "T5": 240
   },
   "params": {
     "calibration_min_quality": 50,
     "calibration_min_multiplier_permille": 500,
-    "calibration_max_multiplier_permille": 1000
+    "calibration_max_multiplier_permille": 1000,
+    "diagnostic_min_quality": 50,
+    "diagnostic_min_multiplier_permille": 500,
+    "diagnostic_max_multiplier_permille": 1000,
+    "pure_capacity_mb": 16000,
+    "pure_water_per_tick_mb": 2
   }
 }
 ```
@@ -2850,6 +3100,18 @@ test_machine definitions/recipes are dropped before validation outside fixture m
     "input_slots": 2,
     "output_slots": 1
   }
+}
+```
+
+### src/main/resources/data/lithmod/machines/pick_and_place.json
+
+```json
+{
+  "id": "pick_and_place",
+  "energy_capacity": 100000,
+  "max_receive": 5000,
+  "energy_per_tick": 20,
+  "params": {}
 }
 ```
 
@@ -2906,6 +3168,25 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 }
 ```
 
+### src/main/resources/data/lithmod/machines/utility_plant.json
+
+```json
+{
+  "id": "utility_plant",
+  "energy_capacity": 200000,
+  "max_receive": 10000,
+  "energy_per_tick": 80,
+  "params": {
+    "raw_capacity_mb": 16000,
+    "pure_capacity_mb": 16000,
+    "water_per_batch_mb": 8000,
+    "pure_per_batch_mb": 8000,
+    "filters_per_batch": 1,
+    "duration": 200
+  }
+}
+```
+
 ### src/main/resources/data/lithmod/machines/wafer_slicer.json
 
 ```json
@@ -2923,9 +3204,9 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 }
 ```
 
-## Recipe Summary (61 actual resources: 59 production + 2 fixture-gated)
+## Recipe Summary (91 actual resources: 89 production + 2 fixture-gated)
 
-### Vanilla recipe datapack files (55 production)
+### Vanilla recipe datapack files (73 production)
 
 | Path | Type | Result | Count |
 |------|------|--------|-------|
@@ -2938,24 +3219,34 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/recipe/crafting/basic_air_filter.json | minecraft:crafting_shaped | lithmod:basic_air_filter | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/blank_mask.json | minecraft:crafting_shaped | lithmod:blank_mask | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/boule_purifier.json | minecraft:crafting_shaped | lithmod:boule_purifier | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/burn_paper.json | minecraft:crafting_shapeless | lithmod:burn_paper | 8 |
 | src/main/resources/data/lithmod/recipe/crafting/chip_package.json | minecraft:crafting_shaped | lithmod:chip_package | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/contact_plate.json | minecraft:crafting_shaped | lithmod:contact_plate | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/cpu_blank.json | minecraft:crafting_shaped | lithmod:cpu_blank | 4 |
 | src/main/resources/data/lithmod/recipe/crafting/crystal_puller.json | minecraft:crafting_shaped | lithmod:crystal_puller | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/deposition_etcher.json | minecraft:crafting_shaped | lithmod:deposition_etcher | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/dimm_blank.json | minecraft:crafting_shaped | lithmod:dimm_blank | 2 |
 | src/main/resources/data/lithmod/recipe/crafting/duv_projection_lens.json | minecraft:crafting_shaped | lithmod:duv_projection_lens | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/ebeam_mask_writer.json | minecraft:crafting_shaped | lithmod:ebeam_mask_writer | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/fine_air_filter.json | minecraft:crafting_shaped | lithmod:fine_air_filter | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/foup_mk1.json | minecraft:crafting_shaped | lithmod:foup_mk1 | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/hepa_filter.json | minecraft:crafting_shaped | lithmod:hepa_filter | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/i_line_lamp.json | minecraft:crafting_shaped | lithmod:i_line_lamp | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/immersion_filtration.json | minecraft:crafting_shapeless | lithmod:immersion_filtration | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/immersion_light_source.json | minecraft:crafting_shapeless | lithmod:immersion_light_source | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/immersion_metrology.json | minecraft:crafting_shapeless | lithmod:immersion_metrology | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/immersion_optics.json | minecraft:crafting_shapeless | lithmod:immersion_optics | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/immersion_stage.json | minecraft:crafting_shapeless | lithmod:immersion_stage | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/krf_excimer_laser.json | minecraft:crafting_shaped | lithmod:krf_excimer_laser | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/laser_interferometer.json | minecraft:crafting_shaped | lithmod:laser_interferometer | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/manual_aligner.json | minecraft:crafting_shaped | lithmod:manual_aligner | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/mercury_lamp.json | minecraft:crafting_shaped | lithmod:mercury_lamp | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/microcontroller_blank.json | minecraft:crafting_shaped | lithmod:microcontroller_blank | 4 |
 | src/main/resources/data/lithmod/recipe/crafting/nanopositioning_stage.json | minecraft:crafting_shaped | lithmod:nanopositioning_stage | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/optical_microscope.json | minecraft:crafting_shaped | lithmod:optical_microscope | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/overlay_scope.json | minecraft:crafting_shaped | lithmod:overlay_scope | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/pattern_generator.json | minecraft:crafting_shaped | lithmod:pattern_generator | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/pick_and_place.json | minecraft:crafting_shaped | lithmod:pick_and_place | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/precision_overlay_scope.json | minecraft:crafting_shaped | lithmod:precision_overlay_scope | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/precision_stepper_stage.json | minecraft:crafting_shaped | lithmod:precision_stepper_stage | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/process_cell_casing.json | minecraft:crafting_shaped | lithmod:process_cell_casing | 1 |
@@ -2967,20 +3258,28 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/recipe/crafting/resist_t2.json | minecraft:crafting_shaped | lithmod:resist_t2 | 4 |
 | src/main/resources/data/lithmod/recipe/crafting/resist_t3.json | minecraft:crafting_shaped | lithmod:resist_t3 | 8 |
 | src/main/resources/data/lithmod/recipe/crafting/resist_t4.json | minecraft:crafting_shaped | lithmod:resist_t4 | 16 |
+| src/main/resources/data/lithmod/recipe/crafting/resist_t5.json | minecraft:crafting_shaped | lithmod:resist_t5 | 8 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_calibration_panel.json | minecraft:crafting_shaped | lithmod:scanner_calibration_panel | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_controller.json | minecraft:crafting_shaped | lithmod:scanner_controller | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/scanner_diagnostic_panel.json | minecraft:crafting_shaped | lithmod:scanner_diagnostic_panel | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_exposure_module.json | minecraft:crafting_shaped | lithmod:scanner_exposure_module | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_filtration_module.json | minecraft:crafting_shaped | lithmod:scanner_filtration_module | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/scanner_immersion_module.json | minecraft:crafting_shaped | lithmod:scanner_immersion_module | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_metrology_module.json | minecraft:crafting_shaped | lithmod:scanner_metrology_module | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_operating_panel.json | minecraft:crafting_shaped | lithmod:scanner_operating_panel | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_optics_module.json | minecraft:crafting_shaped | lithmod:scanner_optics_module | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_stage_module.json | minecraft:crafting_shaped | lithmod:scanner_stage_module | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/scanner_water_inlet.json | minecraft:crafting_shaped | lithmod:scanner_water_inlet | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/stepper_stage.json | minecraft:crafting_shaped | lithmod:stepper_stage | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/support_casing.json | minecraft:crafting_shaped | lithmod:support_casing | 4 |
 | src/main/resources/data/lithmod/recipe/crafting/support_power_port.json | minecraft:crafting_shaped | lithmod:support_power_port | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/support_water_inlet.json | minecraft:crafting_shaped | lithmod:support_water_inlet | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/test_package.json | minecraft:crafting_shaped | lithmod:test_package | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/ulpa_filter.json | minecraft:crafting_shaped | lithmod:ulpa_filter | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/utility_filter.json | minecraft:crafting_shaped | lithmod:utility_filter | 4 |
+| src/main/resources/data/lithmod/recipe/crafting/utility_plant.json | minecraft:crafting_shaped | lithmod:utility_plant | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/utility_pure_outlet.json | minecraft:crafting_shaped | lithmod:utility_pure_outlet | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/utility_water_inlet.json | minecraft:crafting_shaped | lithmod:utility_water_inlet | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/wafer_slicer.json | minecraft:crafting_shaped | lithmod:wafer_slicer | 1 |
 | src/main/resources/data/lithmod/recipe/silicon_from_blasting.json | minecraft:blasting | lithmod:silicon | 1 |
 | src/main/resources/data/lithmod/recipe/silicon_from_smelting.json | minecraft:smelting | lithmod:silicon | 1 |
@@ -2991,7 +3290,19 @@ Loaded by MachineRecipeLoader (directory string "machine_recipes") on every serv
 
 | Path | machine | result | count | ticks | energy_per_tick | Gate |
 |------|---------|--------|-------|-------|-----------------|------|
+| src/main/resources/data/lithmod/machine_recipes/cpu_t3.json | pick_and_place | lithmod:cpu_t3 | 1 | 140 | - | production |
+| src/main/resources/data/lithmod/machine_recipes/cpu_t4.json | pick_and_place | lithmod:cpu_t4 | 1 | 160 | - | production |
+| src/main/resources/data/lithmod/machine_recipes/cpu_t5.json | pick_and_place | lithmod:cpu_t5 | 1 | 180 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/crystal_puller.json | crystal_puller | lithmod:silicon_boule | 1 | 400 | - | production |
+| src/main/resources/data/lithmod/machine_recipes/dimm_t2.json | pick_and_place | lithmod:dimm_t2 | 1 | 120 | - | production |
+| src/main/resources/data/lithmod/machine_recipes/dimm_t3.json | pick_and_place | lithmod:dimm_t3 | 1 | 140 | - | production |
+| src/main/resources/data/lithmod/machine_recipes/dimm_t4.json | pick_and_place | lithmod:dimm_t4 | 1 | 160 | - | production |
+| src/main/resources/data/lithmod/machine_recipes/dimm_t5.json | pick_and_place | lithmod:dimm_t5 | 1 | 180 | - | production |
+| src/main/resources/data/lithmod/machine_recipes/microcontroller_t1.json | pick_and_place | lithmod:microcontroller_t1 | 1 | 100 | - | production |
+| src/main/resources/data/lithmod/machine_recipes/microcontroller_t2.json | pick_and_place | lithmod:microcontroller_t2 | 1 | 120 | - | production |
+| src/main/resources/data/lithmod/machine_recipes/microcontroller_t3.json | pick_and_place | lithmod:microcontroller_t3 | 1 | 140 | - | production |
+| src/main/resources/data/lithmod/machine_recipes/microcontroller_t4.json | pick_and_place | lithmod:microcontroller_t4 | 1 | 160 | - | production |
+| src/main/resources/data/lithmod/machine_recipes/microcontroller_t5.json | pick_and_place | lithmod:microcontroller_t5 | 1 | 180 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/pattern_logic_t1.json | pattern_generator | lithmod:mask | 1 | 200 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/pattern_logic_t2.json | pattern_generator | lithmod:mask | 1 | 200 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/pattern_memory_t2.json | pattern_generator | lithmod:mask | 1 | 200 | - | production |
@@ -2999,6 +3310,75 @@ Loaded by MachineRecipeLoader (directory string "machine_recipes") on every serv
 | src/main/resources/data/lithmod/machine_recipes/test_machine_from_planks.json | test_machine | minecraft:stick | 4 | 6 | 5 | fixture (test-only) |
 
 The two test_machine entries are the payload-gated fixtures: MachineRecipeLoader.parseRuntime filters every spec whose real payload machineId is test_machine when fixtures are off; buildResolved stays unfiltered for unit tests.
+
+#### src/main/resources/data/lithmod/machine_recipes/cpu_t3.json (production)
+
+```json
+{
+  "machine": "pick_and_place",
+  "ingredients": [
+    {
+      "item": "lithmod:compute_chip_t3",
+      "count": 1
+    },
+    {
+      "item": "lithmod:cpu_blank",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:cpu_t3",
+    "count": 1
+  },
+  "ticks": 140
+}
+```
+
+#### src/main/resources/data/lithmod/machine_recipes/cpu_t4.json (production)
+
+```json
+{
+  "machine": "pick_and_place",
+  "ingredients": [
+    {
+      "item": "lithmod:compute_chip_t4",
+      "count": 1
+    },
+    {
+      "item": "lithmod:cpu_blank",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:cpu_t4",
+    "count": 1
+  },
+  "ticks": 160
+}
+```
+
+#### src/main/resources/data/lithmod/machine_recipes/cpu_t5.json (production)
+
+```json
+{
+  "machine": "pick_and_place",
+  "ingredients": [
+    {
+      "item": "lithmod:compute_chip_t5",
+      "count": 1
+    },
+    {
+      "item": "lithmod:cpu_blank",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:cpu_t5",
+    "count": 1
+  },
+  "ticks": 180
+}
+```
 
 #### src/main/resources/data/lithmod/machine_recipes/crystal_puller.json (production)
 
@@ -3013,6 +3393,213 @@ The two test_machine entries are the payload-gated fixtures: MachineRecipeLoader
     "count": 1
   },
   "ticks": 400
+}
+```
+
+#### src/main/resources/data/lithmod/machine_recipes/dimm_t2.json (production)
+
+```json
+{
+  "machine": "pick_and_place",
+  "ingredients": [
+    {
+      "item": "lithmod:memory_chip_t2",
+      "count": 4
+    },
+    {
+      "item": "lithmod:dimm_blank",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:dimm_t2",
+    "count": 1
+  },
+  "ticks": 120
+}
+```
+
+#### src/main/resources/data/lithmod/machine_recipes/dimm_t3.json (production)
+
+```json
+{
+  "machine": "pick_and_place",
+  "ingredients": [
+    {
+      "item": "lithmod:memory_chip_t3",
+      "count": 4
+    },
+    {
+      "item": "lithmod:dimm_blank",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:dimm_t3",
+    "count": 1
+  },
+  "ticks": 140
+}
+```
+
+#### src/main/resources/data/lithmod/machine_recipes/dimm_t4.json (production)
+
+```json
+{
+  "machine": "pick_and_place",
+  "ingredients": [
+    {
+      "item": "lithmod:memory_chip_t4",
+      "count": 4
+    },
+    {
+      "item": "lithmod:dimm_blank",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:dimm_t4",
+    "count": 1
+  },
+  "ticks": 160
+}
+```
+
+#### src/main/resources/data/lithmod/machine_recipes/dimm_t5.json (production)
+
+```json
+{
+  "machine": "pick_and_place",
+  "ingredients": [
+    {
+      "item": "lithmod:memory_chip_t5",
+      "count": 4
+    },
+    {
+      "item": "lithmod:dimm_blank",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:dimm_t5",
+    "count": 1
+  },
+  "ticks": 180
+}
+```
+
+#### src/main/resources/data/lithmod/machine_recipes/microcontroller_t1.json (production)
+
+```json
+{
+  "machine": "pick_and_place",
+  "ingredients": [
+    {
+      "item": "lithmod:logic_chip_t1",
+      "count": 1
+    },
+    {
+      "item": "lithmod:microcontroller_blank",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:microcontroller_t1",
+    "count": 1
+  },
+  "ticks": 100
+}
+```
+
+#### src/main/resources/data/lithmod/machine_recipes/microcontroller_t2.json (production)
+
+```json
+{
+  "machine": "pick_and_place",
+  "ingredients": [
+    {
+      "item": "lithmod:logic_chip_t2",
+      "count": 1
+    },
+    {
+      "item": "lithmod:microcontroller_blank",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:microcontroller_t2",
+    "count": 1
+  },
+  "ticks": 120
+}
+```
+
+#### src/main/resources/data/lithmod/machine_recipes/microcontroller_t3.json (production)
+
+```json
+{
+  "machine": "pick_and_place",
+  "ingredients": [
+    {
+      "item": "lithmod:logic_chip_t3",
+      "count": 1
+    },
+    {
+      "item": "lithmod:microcontroller_blank",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:microcontroller_t3",
+    "count": 1
+  },
+  "ticks": 140
+}
+```
+
+#### src/main/resources/data/lithmod/machine_recipes/microcontroller_t4.json (production)
+
+```json
+{
+  "machine": "pick_and_place",
+  "ingredients": [
+    {
+      "item": "lithmod:logic_chip_t4",
+      "count": 1
+    },
+    {
+      "item": "lithmod:microcontroller_blank",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:microcontroller_t4",
+    "count": 1
+  },
+  "ticks": 160
+}
+```
+
+#### src/main/resources/data/lithmod/machine_recipes/microcontroller_t5.json (production)
+
+```json
+{
+  "machine": "pick_and_place",
+  "ingredients": [
+    {
+      "item": "lithmod:logic_chip_t5",
+      "count": 1
+    },
+    {
+      "item": "lithmod:microcontroller_blank",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:microcontroller_t5",
+    "count": 1
+  },
+  "ticks": 180
 }
 ```
 
@@ -3166,7 +3753,7 @@ Tier JSON fields per file (raw literals read from src/main/resources/data/lithmo
 | data/lithmod/tiers/t8.json | T8 | 8 | 90 | 100 | 80.0 | False |
 
 
-M0-owned data files stay as tracked: data/lithmod/die_rules/rules.json, data/lithmod/support_lines/matrix.json, and the 8 data/lithmod/tiers/t<index>.json files. Block loot tables: 27 files under data/lithmod/loot_table/blocks; block tag files: 1. Counts are read at generation time.
+M0-owned data files stay as tracked: data/lithmod/die_rules/rules.json, data/lithmod/support_lines/matrix.json, and the 8 data/lithmod/tiers/t<index>.json files. Block loot tables: 34 files under data/lithmod/loot_table/blocks; block tag files: 1. Counts are read at generation time.
 
 ### Machine data codecs (actual codec sources; core records stay game-independent)
 

@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/cube_all",
   "textures": {
-    "all": "lithmod:block/support_water_inlet"
+    "all": "lithmod:block/joined_water_inlet_unformed"
   }
 }
