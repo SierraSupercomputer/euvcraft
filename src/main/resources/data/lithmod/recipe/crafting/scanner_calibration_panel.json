@@ -10,7 +10,7 @@
     "A": "minecraft:diamond",
     "B": "minecraft:gold_block",
     "C": "lithmod:advanced_casing",
-    "D": "minecraft:comparator"
+    "D": "minecraft:clock"
   },
   "result": {
     "id": "lithmod:scanner_calibration_panel",

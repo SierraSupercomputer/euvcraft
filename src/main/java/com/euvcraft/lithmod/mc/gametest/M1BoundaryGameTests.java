@@ -591,7 +591,7 @@ public final class M1BoundaryGameTests {
         ServerLevel level = helper.getLevel();
         Set<String> expected = new HashSet<>(Set.of("crystal_puller", "wafer_slicer", "pattern_generator",
                 "test_package", "process_cell_controller", "process_cell_casing", "process_cell_power_port", "process_cell_operating_panel",
-                "boule_purifier", "ebeam_mask_writer", "support_casing", "support_power_port", "support_water_inlet", "deposition_etcher", "advanced_test_package", "advanced_casing", "advanced_operating_panel", "advanced_power_port"));
+                "boule_purifier", "ebeam_mask_writer", "support_casing", "support_power_port", "support_water_inlet", "deposition_etcher", "advanced_test_package", "advanced_casing", "advanced_operating_panel", "advanced_power_port", "scanner_controller", "scanner_operating_panel", "scanner_calibration_panel", "scanner_exposure_module", "scanner_optics_module", "scanner_stage_module", "scanner_filtration_module", "scanner_metrology_module"));
         var registry = net.minecraft.core.registries.BuiltInRegistries.BLOCK;
         Identifier fixture = Identifier.parse("lithmod:test_machine");
         if (registry.containsKey(fixture)) expected.add("test_machine");
