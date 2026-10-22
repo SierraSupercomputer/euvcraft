@@ -2923,9 +2923,9 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 }
 ```
 
-## Recipe Summary (31 actual resources: 29 production + 2 fixture-gated)
+## Recipe Summary (61 actual resources: 59 production + 2 fixture-gated)
 
-### Vanilla recipe datapack files (29 production)
+### Vanilla recipe datapack files (55 production)
 
 | Path | Type | Result | Count |
 |------|------|--------|-------|
