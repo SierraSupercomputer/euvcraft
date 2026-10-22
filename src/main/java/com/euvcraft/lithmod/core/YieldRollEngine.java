@@ -112,6 +112,33 @@ public final class YieldRollEngine {
      */
     public static FoupContents applyLayerStep(FoupContents lot, Tier tier, String dieType, Integer cores, int layerNumber,
             double defectFactor, FabSettings settings, RollSource rolls) {
+        return applyLayerStep(lot, tier, dieType, cores, layerNumber, defectFactor, settings, 1.0, rolls);
+    }
+
+    /**
+     * Puts every wafer of a lot through one more layer of a process with an explicit
+     * frozen yield factor from scanner calibration.
+     *
+     * <p>The frozen factor is applied ONCE to the first layer's effective yield.
+     * The resulting effective yield is preserved in the RunSpec for all subsequent
+     * layers and for packaging/highbin. The factor is NOT multiplied into defectFactor
+     * (which would be nonlinear and wrong), and NOT applied per layer or again on resume.</p>
+     *
+     * @param lot               the lot to process, not null, not empty
+     * @param tier              the tier being run, not null
+     * @param dieType           the die type being run, not null
+     * @param cores             the core count of the die, or {@code null} for none
+     * @param layerNumber       the one-based layer to apply; must be the next layer
+     * @param defectFactor      how healthy the line is (0.0 to 1.0)
+     * @param settings          the settings in force, not null
+     * @param frozenYieldFactor the frozen calibration multiplier (0.0 to 1.0], applied once at first layer
+     * @param rolls             where the step draws its randomness from, not null
+     * @return a new lot with the layer applied and (if first layer) a run spec attached
+     * @throws NullPointerException     if any argument is null
+     * @throws IllegalArgumentException if validation fails
+     */
+    public static FoupContents applyLayerStep(FoupContents lot, Tier tier, String dieType, Integer cores, int layerNumber,
+            double defectFactor, FabSettings settings, double frozenYieldFactor, RollSource rolls) {
         Objects.requireNonNull(lot, "lot must not be null");
         Objects.requireNonNull(tier, "tier must not be null");
         Objects.requireNonNull(dieType, "dieType must not be null");
@@ -120,6 +147,9 @@ public final class YieldRollEngine {
 
         if (defectFactor > 1.0) {
             throw new IllegalArgumentException("defectFactor must be <= 1.0, got " + defectFactor);
+        }
+        if (!Double.isFinite(frozenYieldFactor) || frozenYieldFactor <= 0.0 || frozenYieldFactor > 1.0) {
+            throw new IllegalArgumentException("frozenYieldFactor must be finite in (0.0, 1.0], got " + frozenYieldFactor);
         }
 
         if (lot.isEmpty()) {
@@ -144,7 +174,13 @@ public final class YieldRollEngine {
             if (cores != null && cores <= 0) {
                 throw new IllegalArgumentException("cores must be > 0 when present, got " + cores);
             }
-            spec = RunSpec.of(tier, dieType, cores, settings);
+            // Apply frozen yield factor ONCE to the effective yield at first layer
+            double baseEffectiveYield = YieldMath.resolveEffectiveYield(tier, settings, cores);
+            double finalEffectiveYield = baseEffectiveYield * frozenYieldFactor;
+            // Clamp to valid range
+            finalEffectiveYield = YieldMath.clampYield(finalEffectiveYield);
+            spec = new RunSpec(dieType, tier.index(), RunSpec.coresOrZero(cores),
+                finalEffectiveYield, YieldRollEngine.rollCount(tier, settings));
         } else {
             // Later layers: must match the stored spec exactly
             if (!spec.matches(tier, dieType, cores)) {
@@ -162,7 +198,7 @@ public final class YieldRollEngine {
         } else {
             // Later layers: derive rollsPerLayer from frozen spec rollCount
             rollsPerLayer = spec.rollCount() / tier.layers();
-            // Use the stored spec's effective yield and roll count
+            // Use the stored spec's effective yield and roll count (already includes frozen factor)
             weight = YieldCalibration.stepWeight(spec.rollCount(), spec.effectiveYield(), defectFactor);
         }
 
