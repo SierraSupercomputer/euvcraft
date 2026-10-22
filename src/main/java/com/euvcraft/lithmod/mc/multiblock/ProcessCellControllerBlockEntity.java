@@ -85,7 +85,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
     /** M1 stub; later milestones discover actual support-line machines. */
     public static final Map<String, Integer> M1_STUB_GENERATIONS = Map.of(
         SupportLines.SUBSTRATE, 1, SupportLines.MASK_SHOP, 1,
-        SupportLines.DEPOSITION_ETCH, 1, SupportLines.UTILITIES, utilityGeneration(), SupportLines.TEST_PACKAGING, 1);
+        SupportLines.DEPOSITION_ETCH, 1, SupportLines.UTILITIES, 1, SupportLines.TEST_PACKAGING, 1);
     private @Nullable ProcessRun run;
     private @Nullable Contract contract;
     private @Nullable Saved pendingRun;
@@ -700,4 +700,5 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
     }
 
 }
+
 

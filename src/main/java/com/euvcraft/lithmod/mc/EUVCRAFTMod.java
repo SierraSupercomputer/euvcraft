@@ -107,6 +107,7 @@ modEventBus.addListener(ComponentTooltipAppenders::register);
             com.euvcraft.lithmod.mc.gametest.WaterInletGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.T4RuntimeGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.ScannerGameTests.register(modEventBus);
+            com.euvcraft.lithmod.mc.gametest.T5GameTests.register(modEventBus);
             T3ContentGameTests.register(modEventBus);
             T3PurificationGameTests.register(modEventBus);
             T3MaskWriterGameTests.register(modEventBus);
@@ -193,3 +194,4 @@ modEventBus.addListener(ComponentTooltipAppenders::register);
         return current == null ? FabSettings.defaults() : current.getSettings();
     }
 }
+
