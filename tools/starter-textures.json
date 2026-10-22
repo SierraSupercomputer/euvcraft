@@ -2461,6 +2461,498 @@
         10,
         10
       ]
+    ],
+    "assembly_ctrl_side": [
+      [
+        "rect",
+        "outline",
+        0,
+        0,
+        16,
+        16
+      ],
+      [
+        "rect",
+        "mid",
+        1,
+        1,
+        14,
+        14
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        1,
+        14,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        1,
+        14
+      ],
+      [
+        "rect",
+        "dark",
+        14,
+        1,
+        1,
+        14
+      ],
+      [
+        "line",
+        "dark",
+        3,
+        3,
+        3,
+        12
+      ],
+      [
+        "line",
+        "dark",
+        6,
+        3,
+        6,
+        12
+      ],
+      [
+        "line",
+        "dark",
+        9,
+        3,
+        9,
+        12
+      ],
+      [
+        "line",
+        "dark",
+        12,
+        3,
+        12,
+        12
+      ],
+      [
+        "rect",
+        "accent",
+        2,
+        6,
+        2,
+        1
+      ],
+      [
+        "rect",
+        "accent",
+        12,
+        6,
+        2,
+        1
+      ]
+    ],
+    "assembly_ctrl_top": [
+      [
+        "rect",
+        "outline",
+        0,
+        0,
+        16,
+        16
+      ],
+      [
+        "rect",
+        "mid",
+        1,
+        1,
+        14,
+        14
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        1,
+        14,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        1,
+        14
+      ],
+      [
+        "rect",
+        "dark",
+        14,
+        1,
+        1,
+        14
+      ],
+      [
+        "frame",
+        "outline",
+        4,
+        4,
+        8,
+        8
+      ],
+      [
+        "rect",
+        "accent",
+        5,
+        5,
+        6,
+        6
+      ],
+      [
+        "dot",
+        "trim",
+        5,
+        5
+      ],
+      [
+        "dot",
+        "trim",
+        10,
+        5
+      ],
+      [
+        "dot",
+        "trim",
+        5,
+        10
+      ],
+      [
+        "dot",
+        "trim",
+        10,
+        10
+      ]
+    ],
+    "assembly_ctrl_front": [
+      [
+        "rect",
+        "outline",
+        0,
+        0,
+        16,
+        16
+      ],
+      [
+        "rect",
+        "panel",
+        1,
+        1,
+        14,
+        14
+      ],
+      [
+        "rect",
+        "panelLight",
+        1,
+        1,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "panelLight",
+        1,
+        1,
+        1,
+        14
+      ],
+      [
+        "rect",
+        "outline",
+        3,
+        2,
+        10,
+        9
+      ],
+      [
+        "rect",
+        "wafer",
+        4,
+        3,
+        8,
+        7
+      ],
+      [
+        "rect",
+        "waferLight",
+        4,
+        3,
+        8,
+        1
+      ],
+      [
+        "line",
+        "waferLight",
+        7,
+        4,
+        7,
+        9
+      ],
+      [
+        "line",
+        "waferLight",
+        9,
+        4,
+        9,
+        9
+      ],
+      [
+        "line",
+        "waferLight",
+        5,
+        6,
+        10,
+        6
+      ],
+      [
+        "frame",
+        "outline",
+        2,
+        12,
+        12,
+        2
+      ],
+      [
+        "rect",
+        "status",
+        3,
+        12,
+        10,
+        2
+      ],
+      [
+        "dot",
+        "outline",
+        5,
+        12
+      ],
+      [
+        "dot",
+        "outline",
+        8,
+        12
+      ],
+      [
+        "dot",
+        "outline",
+        11,
+        12
+      ]
+    ],
+    "assembly_casing": [
+      [
+        "rect",
+        "outline",
+        0,
+        0,
+        16,
+        16
+      ],
+      [
+        "rect",
+        "mid",
+        1,
+        1,
+        14,
+        14
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        1,
+        14,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        1,
+        14
+      ],
+      [
+        "rect",
+        "dark",
+        14,
+        1,
+        1,
+        14
+      ],
+      [
+        "dot",
+        "accent",
+        3,
+        3
+      ],
+      [
+        "dot",
+        "accent",
+        12,
+        3
+      ],
+      [
+        "dot",
+        "accent",
+        3,
+        12
+      ],
+      [
+        "dot",
+        "accent",
+        12,
+        12
+      ]
+    ],
+    "assembly_port": [
+      [
+        "rect",
+        "outline",
+        0,
+        0,
+        16,
+        16
+      ],
+      [
+        "rect",
+        "mid",
+        1,
+        1,
+        14,
+        14
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "dark",
+        1,
+        14,
+        14,
+        1
+      ],
+      [
+        "rect",
+        "light",
+        1,
+        1,
+        1,
+        14
+      ],
+      [
+        "rect",
+        "dark",
+        14,
+        1,
+        1,
+        14
+      ],
+      [
+        "rect",
+        "dark",
+        4,
+        2,
+        8,
+        2
+      ],
+      [
+        "rect",
+        "dark",
+        4,
+        12,
+        8,
+        2
+      ],
+      [
+        "line",
+        "bolt",
+        8,
+        4,
+        6,
+        7
+      ],
+      [
+        "line",
+        "bolt",
+        6,
+        7,
+        9,
+        7
+      ],
+      [
+        "line",
+        "bolt",
+        9,
+        7,
+        7,
+        10
+      ],
+      [
+        "dot",
+        "light",
+        3,
+        3
+      ],
+      [
+        "dot",
+        "light",
+        12,
+        3
+      ],
+      [
+        "dot",
+        "light",
+        3,
+        12
+      ],
+      [
+        "dot",
+        "light",
+        12,
+        12
+      ]
     ]
   },
   "items": {
@@ -2795,6 +3287,80 @@
           "note": "Unformed power port with lightning bolt"
         }
       }
+    },
+    "assembly_controller_formed": {
+      "faces": {
+        "side": {
+          "palette": "CASING_FORMED",
+          "shape": "assembly_ctrl_side",
+          "note": "Formed assembly controller side, green metal with vents and accent dots"
+        },
+        "top": {
+          "palette": "CASING_FORMED",
+          "shape": "assembly_ctrl_top",
+          "note": "Formed assembly controller top with wafer inset"
+        },
+        "front": {
+          "palette": "CTRL_FRONT_FORMED",
+          "shape": "assembly_ctrl_front",
+          "note": "Front wafer panel with green status bar"
+        }
+      }
+    },
+    "assembly_controller_unformed": {
+      "faces": {
+        "side": {
+          "palette": "CASING_UNFORMED",
+          "shape": "assembly_ctrl_side",
+          "note": "Unformed assembly controller side, amber steel with vents and accent dots"
+        },
+        "top": {
+          "palette": "CASING_UNFORMED",
+          "shape": "assembly_ctrl_top",
+          "note": "Unformed assembly controller top with wafer inset"
+        },
+        "front": {
+          "palette": "CTRL_FRONT_UNFORMED",
+          "shape": "assembly_ctrl_front",
+          "note": "Front panel with amber status bar"
+        }
+      }
+    },
+    "assembly_casing_formed": {
+      "faces": {
+        "all": {
+          "palette": "CASING_FORMED",
+          "shape": "assembly_casing",
+          "note": "Formed assembly casing tile in green with accent dots"
+        }
+      }
+    },
+    "assembly_casing_unformed": {
+      "faces": {
+        "all": {
+          "palette": "CASING_UNFORMED",
+          "shape": "assembly_casing",
+          "note": "Unformed assembly casing tile in amber with accent dots"
+        }
+      }
+    },
+    "assembly_power_port_formed": {
+      "faces": {
+        "all": {
+          "palette": "PORT_FORMED",
+          "shape": "assembly_port",
+          "note": "Formed assembly power port with lightning bolt and accent dots"
+        }
+      }
+    },
+    "assembly_power_port_unformed": {
+      "faces": {
+        "all": {
+          "palette": "PORT_UNFORMED",
+          "shape": "assembly_port",
+          "note": "Unformed assembly power port with lightning bolt and accent dots"
+        }
+      }
     }
   },
   "output": {
@@ -2859,7 +3425,13 @@
       "process_cell_casing_formed",
       "process_cell_casing_unformed",
       "process_cell_power_port_formed",
-      "process_cell_power_port_unformed"
+      "process_cell_power_port_unformed",
+      "assembly_controller_formed",
+      "assembly_controller_unformed",
+      "assembly_casing_formed",
+      "assembly_casing_unformed",
+      "assembly_power_port_formed",
+      "assembly_power_port_unformed"
     ],
     "preserveUntouched": [
       "test_machine"
