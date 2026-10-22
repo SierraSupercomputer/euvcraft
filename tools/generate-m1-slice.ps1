@@ -259,8 +259,8 @@ foreach ($catName in $expectedConfig.Keys) {
 $machineDir = Join-Path $Root 'src\main\resources\data\lithmod\machines'
 Assert-Dir $machineDir
 $machineNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($machineDir, '*.json'))
-if ($machineNames.Count -ne 10) {
-    Fail "expected 10 machine definition files in data/lithmod/machines, found $($machineNames.Count)"
+if ($machineNames.Count -ne 11) {
+    Fail "expected 11 machine definition files in data/lithmod/machines, found $($machineNames.Count)"
 }
 $machineDefs = New-Object 'System.Collections.Generic.List[object]'
 $fixtureMachineId = 'test_machine'
@@ -288,8 +288,8 @@ $craftingNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($craftingDir, '*.
 $cookingNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($recipeRoot, '*.json'))
 $machineRecipeNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($mrDir, '*.json'))
 $totalRecipes = $craftingNames.Count + $cookingNames.Count + $machineRecipeNames.Count
-if ($totalRecipes -ne 53) {
-    Fail "expected 53 recipe resources (51 production + 2 fixture-gated), found $totalRecipes"
+if ($totalRecipes -ne 61) {
+    Fail "expected 61 recipe resources (59 production + 2 fixture-gated), found $totalRecipes"
 }
 if ($machineRecipeNames.Count -ne 6) {
     Fail "expected 6 machine recipe files in data/lithmod/machine_recipes, found $($machineRecipeNames.Count)"
@@ -337,8 +337,8 @@ foreach ($rFile in $machineRecipeNames) {
 if ($fixtureRecipeCount -ne 2) {
     Fail "expected the two '$fixtureMachineId' fixture recipes to be payload-gated, found $fixtureRecipeCount"
 }
-if (($totalRecipes - $fixtureRecipeCount) -ne 51) {
-    Fail 'production recipe count is not 51'
+if (($totalRecipes - $fixtureRecipeCount) -ne 59) {
+    Fail 'production recipe count is not 59'
 }
 
 # ---- loader directory strings + codec sources (derived from tracked source) --
@@ -633,7 +633,7 @@ Emit "| The runtime datapack probe writes pack.mcmeta through PackMetadataSectio
 Emit "| Reload probe measured FE path: baseline crystal_puller energy_per_tick $baselineFe FE/tick -> override baseline + $overrideDelta ($($baselineFe + $overrideDelta) FE/tick) -> restored $baselineFe FE/tick; the loaded crystal_puller recipe is $crystalTicks paid ticks; original datapack selection restore is asserted | src/main/java/com/euvcraft/lithmod/mc/gametest/M1ReloadGameTests.java; src/main/resources/data/lithmod/machines/crystal_puller.json; src/main/resources/data/lithmod/machine_recipes/crystal_puller.json |"
 Emit '| Fixture gate requires BOTH the lithmodFixtures JVM property true AND non-production FMLEnvironment; normal client/server runs stay false; gameTestServer defaults the property to true, and -PlithmodShippingProbe=true with fixtures off registers only the m1_gate_shipping_no_fixtures case | src/main/java/com/euvcraft/lithmod/mc/GameTestFixtures.java; build.gradle; src/main/java/com/euvcraft/lithmod/mc/gametest/M1ShippingGameTests.java |'
 Emit '| Release jar excludes exactly the eight test_machine fixture entries from the jar task only; processResources/testOutput are untouched so fixture game tests keep fixtures; test_package JSON is production content and is not excluded | build.gradle |'
-Emit '| Optional (required=false) test_machine tag entries live in data/lithmod/tags/block/machine.json, data/minecraft/tags/block/mineable/pickaxe.json and data/minecraft/tags/block/needs_stone_tool.json; production 7 blocks unchanged | see those tracked files |'
+Emit '| Optional (required=false) test_machine tag entries live in data/lithmod/tags/block/machine.json, data/minecraft/tags/block/mineable/pickaxe.json and data/minecraft/tags/block/needs_stone_tool.json; production block entries remain present; see the source-derived inventory above | see those tracked files |'
 Emit '| Fixture loot table uses a neoforge:conditions gate of type neoforge:registered (registry minecraft:item, value lithmod:test_machine) | src/main/resources/data/lithmod/loot_table/blocks/test_machine.json |'
 Emit '| Config is registered as ModConfig.Type.LOCAL (NeoForge 26.3 renamed the former COMMON type); runtime file run/config/lithmod-local.toml | src/main/java/com/euvcraft/lithmod/mc/EUVCRAFTMod.java |'
 Emit-Blank
