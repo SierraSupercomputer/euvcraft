@@ -73,14 +73,15 @@ public final class ProcessCellRunPersistence {
             UUID lotId,
             ItemStack foupTemplate,
             WaferSubstrate grade,
-            int preparationGeneration
+            int preparationGeneration,
+            double frozenYieldFactor
     ) {
 
         public Contract(Tier tier,String dieType,int usesRemaining,int layerTicks,int resistPerLayer,int energyPerTick,
                 LineStats lineStats,List<Tier> tiers,Map<String,List<Integer>> requiredGenerations,ItemStack mask,
                 List<ItemStack> components,ItemStack resistTemplate,UUID lotId,ItemStack foupTemplate,WaferSubstrate grade){
             this(tier,dieType,usesRemaining,layerTicks,resistPerLayer,energyPerTick,lineStats,tiers,requiredGenerations,
-                mask,components,resistTemplate,lotId,foupTemplate,grade,1);
+                mask,components,resistTemplate,lotId,foupTemplate,grade,1, 1.0);
         }
 
         private static final List<String> COMPONENT_KINDS = List.of(
@@ -98,6 +99,20 @@ public final class ProcessCellRunPersistence {
                         ItemStack resistTemplate, UUID lotId, ItemStack foupTemplate) {
             this(tier, dieType, usesRemaining, layerTicks, resistPerLayer, energyPerTick, lineStats, tiers,
                     requiredGenerations, mask, components, resistTemplate, lotId, foupTemplate, WaferSubstrate.ORDINARY);
+        }
+
+        /**
+         * Legacy 15-arg constructor for T1/T3 save compatibility: delegates with default frozenYieldFactor=1.0.
+         * @deprecated Use the 16-arg constructor with explicit frozenYieldFactor.
+         */
+        @Deprecated
+        public Contract(Tier tier, String dieType, int usesRemaining, int layerTicks,
+                        int resistPerLayer, int energyPerTick, LineStats lineStats, List<Tier> tiers,
+                        Map<String, List<Integer>> requiredGenerations, ItemStack mask, List<ItemStack> components,
+                        ItemStack resistTemplate, UUID lotId, ItemStack foupTemplate, WaferSubstrate grade,
+                        int preparationGeneration) {
+            this(tier, dieType, usesRemaining, layerTicks, resistPerLayer, energyPerTick, lineStats, tiers,
+                    requiredGenerations, mask, components, resistTemplate, lotId, foupTemplate, grade, preparationGeneration, 1.0);
         }
 
         /**
@@ -149,6 +164,11 @@ public final class ProcessCellRunPersistence {
             // Validate defect factor
             if (!Double.isFinite(lineStats.defectFactor()) || lineStats.defectFactor() < 0.0 || lineStats.defectFactor() > 1.0) {
                 throw new IllegalArgumentException("defectFactor must be finite in [0.0, 1.0], got " + lineStats.defectFactor());
+            }
+
+            // Validate frozenYieldFactor: finite, strictly positive, at most 1.0
+            if (!Double.isFinite(frozenYieldFactor) || frozenYieldFactor <= 0.0 || frozenYieldFactor > 1.0) {
+                throw new IllegalArgumentException("frozenYieldFactor must be finite in (0.0, 1.0], got " + frozenYieldFactor);
             }
 
             // Defensive copy and validate tiers list (must be exactly 8 tiers T1-T8)
@@ -413,7 +433,7 @@ public final class ProcessCellRunPersistence {
         int resistPerLayer, int energyPerTick, LineStats lineStats, List<Tier> tiers,
         Map<String,List<Integer>> requiredGenerations, ItemStack mask, List<ItemStack> components,
         ItemStack resistTemplate, String lotId, ItemStack foupTemplate, String grade, int preparationGeneration) {}
-    private static final Codec<Contract> CONTRACT_CODEC = RecordCodecBuilder.<ContractFields>create(i -> i.group(
+    private static final com.mojang.serialization.MapCodec<ContractFields> BASE_CONTRACT_CODEC = RecordCodecBuilder.<ContractFields>mapCodec(i -> i.group(
         TierCodec.CODEC.fieldOf("tier").forGetter(ContractFields::tier),
         Codec.STRING.fieldOf("dieType").forGetter(ContractFields::dieType),
         Codec.INT.fieldOf("usesRemaining").forGetter(ContractFields::usesRemaining),
@@ -430,13 +450,17 @@ public final class ProcessCellRunPersistence {
         ItemStack.CODEC.fieldOf("foupTemplate").forGetter(ContractFields::foupTemplate),
         Codec.STRING.optionalFieldOf("grade", "ordinary").forGetter(ContractFields::grade),
         Codec.INT.optionalFieldOf("preparation",1).forGetter(ContractFields::preparationGeneration)
-    ).apply(i, ContractFields::new)).flatXmap(f -> validated(() -> new Contract(f.tier(), f.dieType(),
-        f.usesRemaining(), f.layerTicks(), f.resistPerLayer(), f.energyPerTick(), f.lineStats(), f.tiers(),
-        f.requiredGenerations(), f.mask(), f.components(), f.resistTemplate(), UUID.fromString(f.lotId()), f.foupTemplate(),
-        WaferSubstrate.fromIdOrThrow(f.grade),f.preparationGeneration())),
-        c -> DataResult.success(new ContractFields(c.tier(), c.dieType(), c.usesRemaining(), c.layerTicks(),
-            c.resistPerLayer(), c.energyPerTick(), c.lineStats(), c.tiers(), c.requiredGenerations(), c.mask(),
-            c.components(), c.resistTemplate(), c.lotId().toString(), c.foupTemplate(), c.grade().id(), c.preparationGeneration())));
+    ).apply(i, ContractFields::new));
+    private static final Codec<Contract> CONTRACT_CODEC = Codec.mapPair(BASE_CONTRACT_CODEC,
+        Codec.DOUBLE.optionalFieldOf("frozenYieldFactor",1.0)).codec().flatXmap(pair -> validated(() -> {
+        var f=pair.getFirst();return new Contract(f.tier(),f.dieType(),f.usesRemaining(),f.layerTicks(),
+            f.resistPerLayer(),f.energyPerTick(),f.lineStats(),f.tiers(),f.requiredGenerations(),f.mask(),
+            f.components(),f.resistTemplate(),UUID.fromString(f.lotId()),f.foupTemplate(),
+            WaferSubstrate.fromIdOrThrow(f.grade()),f.preparationGeneration(),pair.getSecond());
+    }), c -> DataResult.success(com.mojang.datafixers.util.Pair.of(new ContractFields(c.tier(),c.dieType(),
+        c.usesRemaining(),c.layerTicks(),c.resistPerLayer(),c.energyPerTick(),c.lineStats(),c.tiers(),
+        c.requiredGenerations(),c.mask(),c.components(),c.resistTemplate(),c.lotId().toString(),
+        c.foupTemplate(),c.grade().id(),c.preparationGeneration()),c.frozenYieldFactor())));
 
     private record SavedFields(Contract contract, ProcessRun.Snapshot snapshot) {}
     private static final Codec<Saved> SAVED_CODEC = RecordCodecBuilder.<SavedFields>create(i -> i.group(

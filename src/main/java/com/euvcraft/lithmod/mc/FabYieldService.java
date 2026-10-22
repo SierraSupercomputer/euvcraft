@@ -205,4 +205,79 @@ public final class FabYieldService {
         return YieldRollEngine.applyLayerStep(lot, tier, dieType, cores, layerNumber, defectFactor, settings,
             (waferIndex, stepIndex) -> FabRandomService.rngFor(level, lot.lotId(), waferIndex, stepIndex));
     }
+
+    // --- Overloads with explicit frozen yield factor (scanner calibration) ---
+
+    /**
+     * Puts every wafer of a lot through one more layer of a process with an explicit
+     * frozen yield factor from scanner calibration.
+     *
+     * <p>The frozen factor is applied ONCE to the first layer's effective yield.
+     * The resulting effective yield is preserved in the RunSpec for all subsequent
+     * layers and for packaging/highbin. The factor is NOT multiplied into defectFactor
+     * (which would be nonlinear and wrong), and NOT applied per layer or again on resume.</p>
+     *
+     * @param level             the server level the lot is processed on, not null
+     * @param lot               the lot to process, not null, not empty, not a client view
+     * @param tier              the tier being run, not null
+     * @param dieType           the die type being run, must be makeable on this tier
+     * @param cores             the core count of the die, or {@code null} for none
+     * @param layerNumber       the one-based layer to apply; must be the next layer
+     * @param defectFactor      how healthy the line is (0.0 to 1.0)
+     * @param frozenYieldFactor the frozen calibration multiplier (0.0 to 1.0], applied once at first layer
+     * @return a new lot with the layer applied
+     * @throws NullPointerException     if an argument but the core count is null
+     * @throws IllegalArgumentException if validation fails
+     */
+    public static FoupContents applyLayerStep(ServerLevel level, FoupContents lot, Tier tier, String dieType,
+            @Nullable Integer cores, int layerNumber, double defectFactor, double frozenYieldFactor) {
+        FabRandomService.requireServerSide(level);
+        Objects.requireNonNull(lot, "lot must not be null");
+        Objects.requireNonNull(tier, "tier must not be null");
+        Objects.requireNonNull(dieType, "dieType must not be null");
+
+        if (FoupContentsCodec.isClientView(lot)) {
+            throw new IllegalArgumentException("a client-view lot cannot take a layer step");
+        }
+
+        if (layerNumber == 1 && !DieRulesDataLoader.getRules().canMake(dieType, tier)) {
+            throw new IllegalArgumentException("die type '" + dieType + "' cannot be made on tier " + tier.id());
+        }
+
+        if (!Double.isFinite(frozenYieldFactor) || frozenYieldFactor <= 0.0 || frozenYieldFactor > 1.0) {
+            throw new IllegalArgumentException("frozenYieldFactor must be finite in (0.0, 1.0], got " + frozenYieldFactor);
+        }
+
+        return YieldRollEngine.applyLayerStep(lot, tier, dieType, cores, layerNumber, defectFactor,
+            EUVCRAFTMod.settings(), frozenYieldFactor,
+            (waferIndex, stepIndex) -> FabRandomService.rngFor(level, lot.lotId(), waferIndex, stepIndex));
+    }
+
+    /**
+     * Testing overload with explicit settings and frozen yield factor.
+     */
+    public static FoupContents applyLayerStep(ServerLevel level, FoupContents lot, Tier tier, String dieType,
+            @Nullable Integer cores, int layerNumber, double defectFactor, double frozenYieldFactor, FabSettings settings) {
+        FabRandomService.requireServerSide(level);
+        Objects.requireNonNull(lot, "lot must not be null");
+        Objects.requireNonNull(tier, "tier must not be null");
+        Objects.requireNonNull(dieType, "dieType must not be null");
+        Objects.requireNonNull(settings, "settings must not be null");
+
+        if (FoupContentsCodec.isClientView(lot)) {
+            throw new IllegalArgumentException("a client-view lot cannot take a layer step");
+        }
+
+        if (layerNumber == 1 && !DieRulesDataLoader.getRules().canMake(dieType, tier)) {
+            throw new IllegalArgumentException("die type '" + dieType + "' cannot be made on tier " + tier.id());
+        }
+
+        if (!Double.isFinite(frozenYieldFactor) || frozenYieldFactor <= 0.0 || frozenYieldFactor > 1.0) {
+            throw new IllegalArgumentException("frozenYieldFactor must be finite in (0.0, 1.0], got " + frozenYieldFactor);
+        }
+
+        return YieldRollEngine.applyLayerStep(lot, tier, dieType, cores, layerNumber, defectFactor, settings,
+            frozenYieldFactor,
+            (waferIndex, stepIndex) -> FabRandomService.rngFor(level, lot.lotId(), waferIndex, stepIndex));
+    }
 }

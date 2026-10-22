@@ -1,0 +1,14 @@
+{
+  "id": "lithography_scanner",
+  "energy_capacity": 1000000,
+  "max_receive": 20000,
+  "energy_per_tick": 160,
+  "per_tier_energy_per_tick": {
+    "T4": 160
+  },
+  "params": {
+    "calibration_min_quality": 50,
+    "calibration_min_multiplier_permille": 500,
+    "calibration_max_multiplier_permille": 1000
+  }
+}

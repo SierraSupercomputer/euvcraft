@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "lithmod:block/scanner_exposure_module"
+    }
+  }
+}

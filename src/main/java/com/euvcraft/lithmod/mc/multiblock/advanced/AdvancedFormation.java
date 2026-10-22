@@ -34,8 +34,8 @@ public final class AdvancedFormation {
             if(!(state.getBlock() instanceof AdvancedControllerBlock)){detach();return;}
             Direction facing=state.getValue(AdvancedVisualProperties.FACING);
             var shape=owner.large()?DEPOSITION_ETCHER_SHAPE:ADVANCED_TEST_PACKAGE_SHAPE;
-            var result=PanelStructureMatcher.match(new MultiblockPos(anchor.getX(),anchor.getY(),anchor.getZ()),
-                MultiblockDirection.valueOf(facing.name()),shape,p->kind(new BlockPos(p.x(),p.y(),p.z())));
+            var result=owner.matchStructure(new MultiblockPos(anchor.getX(),anchor.getY(),anchor.getZ()),
+                MultiblockDirection.valueOf(facing.name()),p->kind(new BlockPos(p.x(),p.y(),p.z())));
             if(!result.success()){failure=result.failureReason();detach();return;}
             var next=result.memberPositions().stream().map(p->new BlockPos(p.x(),p.y(),p.z())).toList();
             for(var old:members)if(!next.contains(old))clear(old);
@@ -58,10 +58,7 @@ public final class AdvancedFormation {
         var other=member.controller();
         if(other!=null&&other!=owner&&other.isFormed()&&!other.machine().isRemoved()
                 &&level.getBlockEntity(other.machine().getBlockPos())==other.machine())return BlockKind.OTHER;
-        if(block==AdvancedMachines.ADVANCED_POWER_PORT.get())return BlockKind.POWER_PORT;
-        if(block==AdvancedMachines.ADVANCED_OPERATING_PANEL.get())return BlockKind.OPERATING_PANEL;
-        if(block==AdvancedMachines.ADVANCED_CASING.get())return BlockKind.CASING;
-        return BlockKind.OTHER;
+        return member.structureKind();
     }
     public void detach() {
         formed=false;data.set(0,0);

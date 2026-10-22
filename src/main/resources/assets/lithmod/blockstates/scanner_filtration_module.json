@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "lithmod:block/scanner_filtration_module"
+    }
+  }
+}

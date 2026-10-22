@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "lithmod:item/scanner_metrology_module"
+  }
+}

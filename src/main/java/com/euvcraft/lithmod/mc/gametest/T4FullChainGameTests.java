@@ -59,10 +59,9 @@ final class T4FullChainGameTests {
    }
    var maskData=mask.get(ModDataComponents.MASK_DATA.get());
    check(h,maskData!=null&&maskData.tierIndex()==4&&maskData.dieType().equals(family)&&maskData.shopGeneration()==2,"Actual mask target and provenance");
-   try(var fixture=build(h,Kind.LITHOGRAPHY)){
+   try(var fixture=build(h,Kind.SCANNER)){
     var machine=(ProcessCellControllerBlockEntity)fixture.machine();
-    Item[] components={ModItems.ARF_EXCIMER_LASER.get(),ModItems.ARF_DRY_LENS.get(),ModItems.NANOPOSITIONING_STAGE.get(),ModItems.ULPA_FILTER.get(),ModItems.PRECISION_OVERLAY_SCOPE.get()};
-    for(int n=0;n<5;n++)machine.setSlot(ProcessCellControllerBlockEntity.SLOT_LIGHT_SOURCE+n,new ItemStack(components[n]));
+    ScannerGameTests.align(h,fixture,100);
     machine.setSlot(ProcessCellControllerBlockEntity.SLOT_FOUP,foup);machine.setSlot(ProcessCellControllerBlockEntity.SLOT_MASK,mask);machine.setSlot(ProcessCellControllerBlockEntity.SLOT_RESIST,new ItemStack(ModItems.RESIST_T4.get(),64));
     machine.setSlot(ProcessCellControllerBlockEntity.SLOT_FOUP,unprepared);replenish(machine);machine.serverTick();
     check(h,machine.processState()==ProcessState.IDLE&&machine.lastRefusal()!=null,"Unprepared PURE wafer lot cannot bypass deposition");

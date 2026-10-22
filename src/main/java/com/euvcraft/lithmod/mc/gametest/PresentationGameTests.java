@@ -165,7 +165,7 @@ public final class PresentationGameTests {
     }
     private static void recipeRegistry(GameTestHelper h) {
         var vanilla = resources(h, "recipe");
-        h.assertValueEqual(47, vanilla.size(), "M1 vanilla recipe inventory");
+        h.assertValueEqual(55, vanilla.size(), "M1 vanilla recipe inventory");
         for (var entry : vanilla.entrySet()) {
             JsonObject source = json(entry.getValue());
             expectedOutput(h, source, assemble(h, entry.getKey(), source), entry.getKey().toString());
@@ -373,6 +373,14 @@ public final class PresentationGameTests {
             ModItems.ADVANCED_TEST_PACKAGE_CONTROLLER.get(),
             ModItems.ADVANCED_CASING.get(),
             ModItems.ADVANCED_POWER_PORT.get(),
+            ModItems.SCANNER_CONTROLLER.get(),
+            ModItems.SCANNER_OPERATING_PANEL.get(),
+            ModItems.SCANNER_CALIBRATION_PANEL.get(),
+            ModItems.SCANNER_EXPOSURE_MODULE.get(),
+            ModItems.SCANNER_OPTICS_MODULE.get(),
+            ModItems.SCANNER_STAGE_MODULE.get(),
+            ModItems.SCANNER_FILTRATION_MODULE.get(),
+            ModItems.SCANNER_METROLOGY_MODULE.get(),
             ModItems.FOUP_MK1.get(),
             ModItems.FOUP_MK2.get(),
             ModItems.SILICON.get(),
@@ -418,8 +426,8 @@ public final class PresentationGameTests {
         );
 
         // Verify exact 49 stacks in order
-        h.assertValueEqual(64, actualEntries.size(), "MAIN tab exact entry count");
-        for (int i = 0; i < 64; i++) {
+        h.assertValueEqual(72, actualEntries.size(), "MAIN tab exact entry count");
+        for (int i = 0; i < 72; i++) {
             Item expected = expectedItems.get(i);
             Item actual = actualEntries.get(i).getItem();
             h.assertTrue(actual == expected,
@@ -427,13 +435,13 @@ public final class PresentationGameTests {
         }
 
         // Verify the three mask entries have correct designs
-        MaskData d1 = actualEntries.get(24).get(ModDataComponents.MASK_DATA.get());
+        MaskData d1 = actualEntries.get(32).get(ModDataComponents.MASK_DATA.get());
         h.assertTrue(d1 != null && DieTypes.LOGIC.equals(d1.dieType()) && d1.tierIndex() == 1,
             "Entry 18 (mask 0) not logic T1: " + d1);
-        MaskData d2 = actualEntries.get(25).get(ModDataComponents.MASK_DATA.get());
+        MaskData d2 = actualEntries.get(33).get(ModDataComponents.MASK_DATA.get());
         h.assertTrue(d2 != null && DieTypes.LOGIC.equals(d2.dieType()) && d2.tierIndex() == 2,
             "Entry 19 (mask 1) not logic T2: " + d2);
-        MaskData d3 = actualEntries.get(26).get(ModDataComponents.MASK_DATA.get());
+        MaskData d3 = actualEntries.get(34).get(ModDataComponents.MASK_DATA.get());
         h.assertTrue(d3 != null && DieTypes.MEMORY.equals(d3.dieType()) && d3.tierIndex() == 2,
             "Entry 20 (mask 2) not memory T2: " + d3);
 

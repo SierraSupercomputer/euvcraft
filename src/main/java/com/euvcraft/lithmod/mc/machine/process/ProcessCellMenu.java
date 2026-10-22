@@ -60,8 +60,11 @@ public class ProcessCellMenu extends FabMachineMenu {
     }
 
     protected ProcessCellMenu(MenuType<?> type, int containerId, Inventory playerInventory, @Nullable FabMachineBlockEntity machine) {
-        super(type, containerId, playerInventory, machine,
-                ProcessCellControllerBlockEntity.INPUT_SLOTS, ProcessCellControllerBlockEntity.SLOT_COUNT);
+        this(type, containerId, playerInventory, machine, ProcessCellControllerBlockEntity.SLOT_COUNT);
+    }
+
+    protected ProcessCellMenu(MenuType<?> type,int containerId,Inventory playerInventory,@Nullable FabMachineBlockEntity machine,int slots) {
+        super(type,containerId,playerInventory,machine,slots,slots);
 
         // Both sides get their own ContainerData; server updates it from controller getters.
         this.cellData = machine instanceof ProcessCellControllerBlockEntity controller ? new ContainerData() {

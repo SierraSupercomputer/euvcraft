@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "ACA",
+    "BDB",
+    "ACA"
+  ],
+  "key": {
+    "A": "minecraft:diamond",
+    "B": "minecraft:gold_block",
+    "C": "lithmod:advanced_casing",
+    "D": "lithmod:logic_chip_t3"
+  },
+  "result": {
+    "id": "lithmod:scanner_controller",
+    "count": 1
+  }
+}

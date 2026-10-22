@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "lithmod:block/t4_unformed_casing",
+    "down": "lithmod:block/t4_unformed_casing",
+    "up": "lithmod:block/t4_unformed_casing",
+    "north": "lithmod:item/precision_overlay_scope",
+    "south": "lithmod:item/precision_overlay_scope",
+    "east": "lithmod:item/precision_overlay_scope",
+    "west": "lithmod:item/precision_overlay_scope"
+  }
+}

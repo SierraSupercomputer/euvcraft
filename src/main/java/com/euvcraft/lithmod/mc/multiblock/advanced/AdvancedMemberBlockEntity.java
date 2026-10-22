@@ -17,7 +17,15 @@ public class AdvancedMemberBlockEntity extends BlockEntity implements MenuProvid
     private @Nullable AdvancedOwner owner;
     private boolean formed;
     public AdvancedMemberBlockEntity(BlockPos pos,BlockState state){
-        super(AdvancedMachines.ADVANCED_MEMBER_BE.get(),pos,state);
+        this(AdvancedMachines.ADVANCED_MEMBER_BE.get(),pos,state);
+    }
+    protected AdvancedMemberBlockEntity(net.minecraft.world.level.block.entity.BlockEntityType<?> type,BlockPos pos,BlockState state){super(type,pos,state);}
+    public com.euvcraft.lithmod.core.multiblock.BlockKind structureKind(){
+        var block=getBlockState().getBlock();
+        if(block==AdvancedMachines.ADVANCED_POWER_PORT.get())return com.euvcraft.lithmod.core.multiblock.BlockKind.POWER_PORT;
+        if(block==AdvancedMachines.ADVANCED_OPERATING_PANEL.get())return com.euvcraft.lithmod.core.multiblock.BlockKind.OPERATING_PANEL;
+        if(block==AdvancedMachines.ADVANCED_CASING.get())return com.euvcraft.lithmod.core.multiblock.BlockKind.CASING;
+        return com.euvcraft.lithmod.core.multiblock.BlockKind.OTHER;
     }
     public @Nullable AdvancedOwner controller(){return owner;}
     public boolean isMemberOfFormedCell(){return formed;}

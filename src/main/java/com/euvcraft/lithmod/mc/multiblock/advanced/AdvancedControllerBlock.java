@@ -10,7 +10,7 @@ import net.minecraft.world.level.block.state.*;
 import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jspecify.annotations.Nullable;
-public final class AdvancedControllerBlock extends AdvancedCasingBlock {
+public class AdvancedControllerBlock extends AdvancedCasingBlock {
     public AdvancedControllerBlock(BlockBehaviour.Properties properties){super(properties);}
     @Override public BlockEntity newBlockEntity(BlockPos pos,BlockState state){
         return this==AdvancedMachines.DEPOSITION_ETCHER_CONTROLLER.get()?new DepositionEtcherControllerBlockEntity(pos,state):new AdvancedTestPackageControllerBlockEntity(pos,state);

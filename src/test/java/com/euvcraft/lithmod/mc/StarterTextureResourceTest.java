@@ -108,6 +108,7 @@ class StarterTextureResourceTest {
             for(int part=0;part<45;part++)ids.add("t4_"+role+"_large_part"+part+"_formed");
             for(int part=0;part<12;part++)ids.add("t4_"+role+"_small_part"+part+"_formed");
         }
+        ids.addAll(List.of("scanner_controller","scanner_operating_panel","scanner_calibration_panel","scanner_exposure_module","scanner_optics_module","scanner_stage_module","scanner_filtration_module","scanner_metrology_module"));
         return Set.copyOf(ids);
     }
 
@@ -304,7 +305,7 @@ class StarterTextureResourceTest {
         for (String modelFile : modelFiles) {
             String id = modelFile.substring(0, modelFile.length() - 5); // strip .json
             if (PRODUCTION_ITEMS.contains(id)) continue;
-            if(Set.of("deposition_etcher","advanced_test_package","advanced_casing","advanced_power_port","advanced_operating_panel").contains(id)) continue;
+            if(Set.of("deposition_etcher","advanced_test_package","advanced_casing","advanced_power_port","advanced_operating_panel","scanner_controller","scanner_operating_panel","scanner_calibration_panel","scanner_exposure_module","scanner_optics_module","scanner_stage_module","scanner_filtration_module","scanner_metrology_module").contains(id)) continue;
             if (Set.of("test_machine", "crystal_puller", "wafer_slicer", "test_package",
                 "pattern_generator", "process_cell_controller", "process_cell_casing",
                 "process_cell_power_port", "process_cell_operating_panel", "boule_purifier",

@@ -28,7 +28,7 @@ import net.minecraft.world.phys.AABB;
 
 /** Independent fixtures keep every orientation within a five-by-five footprint. */
 final class T4RuntimeFixtures {
- enum Kind { DEPOSITION, PACKAGING, LITHOGRAPHY, PURIFIER, EBEAM }
+ enum Kind { DEPOSITION, PACKAGING, LITHOGRAPHY, SCANNER, PURIFIER, EBEAM }
  record Cell(ServerLevel level,List<BlockPos> positions,BlockPos anchor,FabMachineBlockEntity machine) implements AutoCloseable {
   BlockPos port(){return positions.stream().filter(p->level.getBlockState(p).getBlock()==AdvancedMachines.ADVANCED_POWER_PORT.get()
       ||level.getBlockState(p).getBlock()==ModMultiblocks.PROCESS_CELL_POWER_PORT.get()
@@ -48,7 +48,7 @@ final class T4RuntimeFixtures {
  static void check(GameTestHelper h,boolean value,String message){h.assertTrue(value,message);}
  static void eq(GameTestHelper h,long expected,long actual,String message){h.assertTrue(expected==actual,message+" expected="+expected+" actual="+actual);}
  static Cell build(GameTestHelper h,Kind kind,Direction facing,int column){
-  boolean big=kind==Kind.DEPOSITION,advanced=big||kind==Kind.PACKAGING,panel=advanced||kind==Kind.LITHOGRAPHY;
+  boolean big=kind==Kind.DEPOSITION||kind==Kind.SCANNER,advanced=big||kind==Kind.PACKAGING,panel=advanced||kind==Kind.LITHOGRAPHY;
   int width=big?3:2,height=big?3:2,depth=big?5:3;
   int rx=switch(facing){case NORTH->1;case SOUTH->-1;default->0;};
   int rz=switch(facing){case EAST->1;case WEST->-1;default->0;};
@@ -64,8 +64,9 @@ final class T4RuntimeFixtures {
    level.setBlock(pos,casing.defaultBlockState(),3);
   }
   var port=anchor.offset(bx,0,bz);level.setBlock(port,power.defaultBlockState(),3);
-  if(panel)level.setBlock(anchor.above(),(advanced?AdvancedMachines.ADVANCED_OPERATING_PANEL.get():ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get()).defaultBlockState(),3);
+  if(panel)level.setBlock(anchor.above(),(kind==Kind.SCANNER?com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.OPERATING_PANEL.get():advanced?AdvancedMachines.ADVANCED_OPERATING_PANEL.get():ModMultiblocks.PROCESS_CELL_OPERATING_PANEL.get()).defaultBlockState(),3);
   Block controller=switch(kind){
+   case SCANNER->com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.CONTROLLER.get();
    case DEPOSITION->AdvancedMachines.DEPOSITION_ETCHER_CONTROLLER.get();
    case PACKAGING->AdvancedMachines.ADVANCED_TEST_PACKAGE_CONTROLLER.get();
    case LITHOGRAPHY->ModMultiblocks.PROCESS_CELL_CONTROLLER.get();
@@ -73,6 +74,11 @@ final class T4RuntimeFixtures {
    case EBEAM->SupportMachines.E_BEAM_MASK_WRITER.get();
   };
   level.setBlock(anchor,controller.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING,facing),3);
+  if(kind==Kind.SCANNER){
+   var middle=positions.stream().filter(p->p.getY()==anchor.getY()+1&&!p.equals(anchor.above())).toList();
+   var blocks=List.of(com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.CALIBRATION_PANEL.get(),com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.EXPOSURE_MODULE.get(),com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.OPTICS_MODULE.get(),com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.STAGE_MODULE.get(),com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.FILTRATION_MODULE.get(),com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.METROLOGY_MODULE.get());
+   for(int i=0;i<blocks.size();i++)level.setBlock(middle.get(i),blocks.get(i).defaultBlockState(),3);
+  }
   var machine=(FabMachineBlockEntity)level.getBlockEntity(anchor);
   if(machine instanceof AdvancedOwner owner){owner.revalidate();check(h,owner.isFormed(),"Advanced fixture forms "+kind+" "+facing+" "+column);}
   else if(machine instanceof ProcessCellControllerBlockEntity owner){owner.revalidate();check(h,owner.isFormed(),"Lithography fixture forms");}
