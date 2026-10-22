@@ -1,6 +1,6 @@
 # M1 Progression: From Quartz to Chips
 
-This guide covers the owner/player progression path defined in M1-11. It describes the four single-block machines, the Process Cell multiblock, and the flow from raw quartz to finished chips. Editable placeholder ingredients and timings are generated in [docs/recipes.md](recipes.md) — this guide does not duplicate the full recipe table.
+This guide covers the early T1/T2 owner/player progression path, updated for the accepted panel layout. It describes the four single-block machines, the Process Cell multiblock, and the flow from raw quartz to finished chips. Editable placeholder ingredients and timings are generated in [docs/recipes.md](recipes.md) — this guide does not duplicate the full recipe table.
 
 ## 1. Quartz → Silicon
 
@@ -98,20 +98,18 @@ Both views show shared coarse status, FE, and progress. Only the upper view has 
 
 ## 7. Creative Tab (M1-11)
 
-Exactly **one creative tab** (`lithmod:0_main`) with **32 stacks** in requested group order (M1 progression items only):
-- 30 unique production item types
-- 2 extra MASK variants (logic T1, logic T2, memory T2 — `blank_mask` is a different item, not a base variant)
-- `test_machine` fixture omitted from progression; M1-12 now gates its registration and excludes its eight JSON resources from shipping jars
+There is one EUVCRAFT creative tab, registered as lithmod:0_main. Its current source includes later T3–T5 machines, materials, assembly products and mask variants; the historical32-stack M1 census is no longer the full tab. The authoritative ordering is ModCreativeTabs.MAIN displayItems, checked against CreativeCatalog by the presentation tests. Fixture test_machine is excluded from normal production play. Do not derive a current total by adding historical item groups or confusing unique item types with mask variants.
 
-**Full tab census (T5 current):** the single tab now contains **112 stacks** total, including all M1 progression items plus T3 support multiblocks, T4 advanced multiblocks (deposition etcher, advanced test package, lithography scanner), T5 utility/assembly/scanner blocks, and T3–T5 chips, line components, resists, assembly blanks, and sample masks. The 112 entries derive directly from `ModCreativeTabs.MAIN` displayItems: 4 single-block machines + 4 Process Cell blocks + 5 T3 support blocks + 13 T4 advanced/scanner blocks + 9 T5 utility/assembly/scanner blocks + 2 FOUPs + 3 silicon-chain items + 1 blank mask + 3 sample M1 masks + 10 M1 line components + 3 resists/package + 4 M1 chips/scrap + 9 T3 items + 10 T4 items + 4 T5 chips + 5 T5 utility items + 9 T5 assembly items + 5 T5 resist/immersion components + 4 T5 sample masks = 112. This count is verified against the actual source registration order in `ModCreativeTabs.java`; historical creative census text has been removed in favor of this source-derived total.
+## 8. Later generations and deferred features
 
-## 8. What Is NOT in M1
+This guide's small Process Cell covers early progression; it is not a description of every current machine. T3 adds pure substrates and the E-beam Mask Writer. T4 adds G2 preparation/packaging, the physical-module scanner and beam alignment. T5 adds ultrapure-water utilities, immersion and diagnostic fitting. Pick-and-place assembles existing chip families using universal blanks (CPU1compute, DIMM4memory, MCU1logic) at their available tiers.
 
-- FOUP Mk2 has no crafting recipe. Higher progression, chip-consuming recipes, Encoded Logistics changes and scrap recycling remain outside M1.
-- **T6 core choices:** owner-confirmed start of future core-count choices; remains outside M1 core play.
-- **Debug energy fill command:** M1-12 adds config-gated `/debug fab energy`; it is a walkthrough/development aid, disabled by default.
-- **Hidden roll/yield numbers:** never displayed to player.
-- **Complete playable M1 or visual proof:** M1-12 covers end-to-end, client gates, statistics, privacy, hand-fed reload, debug command, shipping fixture gate, generated handoff, manual walkthrough.
+- [T3 walkthrough](manual-walkthrough-t3.md)
+- [T4 walkthrough](manual-walkthrough-t4.md)
+- [Scanner walkthrough](manual-walkthrough-scanner.md)
+- [T5 utilities, diagnostics and assembly](manual-walkthrough-t5.md)
+
+T6+ selectable compute cores, reflow, cleanrooms, FOUP cleaning and scrap recycling are future plans, not implemented by this guide. FOUP Mk2 remains available for development/creative use without a crafting recipe. Debug energy fill is a config-gated development aid, disabled by default. Private wafer rolls remain server-only; do not interpret the guide as exposing those values.
 
 ## 9. References
 
@@ -121,14 +119,6 @@ Exactly **one creative tab** (`lithmod:0_main`) with **32 stacks** in requested 
 - Crafting recipes: `data/lithmod/recipe/crafting/*.json`
 - Tier data: `data/lithmod/tiers/*.json`
 
-## M1-12 automated gate and owner handoff
+## Verification history
 
-The current source passed both full physical T1 logic and twelve-layer T2 memory chains, 200 sampled lots/tier (12,800 wafers each, absolute yield tolerance 0.02), ten complete machine lots/tier, privacy and hand-fed boundaries, actual definition reload, debug energy safeguards and shipping fixture gating. Three complete server processes each passed 810/810 cases, including all 140 ordinary project IDs; Arcforge creosote failed 0/3. Units/core/jar passed 517 tests in 76 classes. The separate shipping probe passes one case and is excluded from ordinary counts.
-
-The Process Cell is 2 wide, 2 tall and 3 long: twelve blocks comprising one Equipment Cabinet, one Operating Panel, one or two ports, and casings. Line components belong in its eight-slot inventory owned by the Equipment Cabinet. A mask loses one use per completed lot; same-type-and-components resist top-ups are allowed while active, and Abort keeps automatic startup stopped until FOUP removal/reinsertion.
-
-The fixture-enabled hand-fed audit covers eight blocks on six directions plus null and twelve formed members. Normal shipping leaves seven production blocks; its off-mode registry/creative probe is not an additional all-side audit. Privacy checks combine real wire/menu/tooltip/log invariance with bounded source auditing, not a formal proof.
-
-See [the report](reports/M1-12_m1-gate-and-handoff.md), [generated reference](m1-slice.md), and [owner walkthrough](manual-walkthrough-m1.md). Two final whole-task reviews, separate candidate verification and integration remain pending at authoring time. Only initial singleplayer launch is owner-confirmed; the complete rendered-client walkthrough and visual observations remain pending. T6 is already the owner-confirmed future core-choice start, with no higher-tier gameplay added to M1.
-
-M1-12 automated gate and handoff accepted: see `reports/M1-12_acceptance.md` and `reports/M1-12_review.md`. The owner walkthrough remains manual; no rendered-client result is claimed. Earlier pending statements describe authoring time.
+Historical M1-12 acceptance and test counts belong to [the original acceptance report](reports/M1-12_acceptance.md); they are not current full-suite or creative-inventory counts. Later reports and the walkthroughs linked above document subsequent increments. The owner confirmed the functional T5 walkthrough on October22; diagnostic/utility text clipping and a shutdown hang are separate follow-up issues. This documentation update does not claim rendered fixes or new executed tests.

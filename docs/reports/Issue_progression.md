@@ -34,3 +34,5 @@ All changes verified against actual source:
 - No invented execution or tests; source verification only.
 - Rendered-client walkthrough remains owner-pending (per M1-12 status).
 - Three final whole-task reviews and integration remain pending at authoring time.
+
+Coordinator follow-up: the worker timed out, so no completed attestation exists. It left both the old32-stack claim and a contradictory112-stack breakdown whose groups did not add to that total. Removed those claims in favor of the actual registration/presentation authority, retained correct scoped panel/slot changes, removed stale pending-current M1-12 gate claims, and linked later walkthroughs. This does not rewrite historical reports or claim new test execution.
