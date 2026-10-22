@@ -40,6 +40,15 @@ import net.neoforged.neoforge.registries.DeferredRegister.Items;
  * block items use their normal defaults.</p>
  */
 public final class ModItems {
+    public static final DeferredItem<BlockItem> SCANNER_CONTROLLER = ITEMS.registerSimpleBlockItem("scanner_controller", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.CONTROLLER.get());
+    public static final DeferredItem<BlockItem> SCANNER_OPERATING_PANEL = ITEMS.registerSimpleBlockItem("scanner_operating_panel", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.OPERATING_PANEL.get());
+    public static final DeferredItem<BlockItem> SCANNER_CALIBRATION_PANEL = ITEMS.registerSimpleBlockItem("scanner_calibration_panel", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.CALIBRATION_PANEL.get());
+    public static final DeferredItem<BlockItem> SCANNER_EXPOSURE_MODULE = ITEMS.registerSimpleBlockItem("scanner_exposure_module", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.EXPOSURE_MODULE.get());
+    public static final DeferredItem<BlockItem> SCANNER_OPTICS_MODULE = ITEMS.registerSimpleBlockItem("scanner_optics_module", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.OPTICS_MODULE.get());
+    public static final DeferredItem<BlockItem> SCANNER_STAGE_MODULE = ITEMS.registerSimpleBlockItem("scanner_stage_module", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.STAGE_MODULE.get());
+    public static final DeferredItem<BlockItem> SCANNER_FILTRATION_MODULE = ITEMS.registerSimpleBlockItem("scanner_filtration_module", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.FILTRATION_MODULE.get());
+    public static final DeferredItem<BlockItem> SCANNER_METROLOGY_MODULE = ITEMS.registerSimpleBlockItem("scanner_metrology_module", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.METROLOGY_MODULE.get());
+
 
     /** Registry of EUVCRAFT items. */
     public static final Items ITEMS = DeferredRegister.createItems(EUVCRAFTMod.MODID);

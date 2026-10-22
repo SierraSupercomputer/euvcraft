@@ -68,6 +68,7 @@ public class EUVCRAFTMod {
         ModMultiblocks.register(modEventBus);
         SupportMachines.register(modEventBus);
         AdvancedMachines.register(modEventBus);
+        com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(FoupTooltipAppenders::register);

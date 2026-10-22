@@ -69,6 +69,14 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.ADVANCED_TEST_PACKAGE_CONTROLLER.get());
                 output.accept(ModItems.ADVANCED_CASING.get());
                 output.accept(ModItems.ADVANCED_POWER_PORT.get());
+                output.accept(ModItems.SCANNER_CONTROLLER.get());
+                output.accept(ModItems.SCANNER_OPERATING_PANEL.get());
+                output.accept(ModItems.SCANNER_CALIBRATION_PANEL.get());
+                output.accept(ModItems.SCANNER_EXPOSURE_MODULE.get());
+                output.accept(ModItems.SCANNER_OPTICS_MODULE.get());
+                output.accept(ModItems.SCANNER_STAGE_MODULE.get());
+                output.accept(ModItems.SCANNER_FILTRATION_MODULE.get());
+                output.accept(ModItems.SCANNER_METROLOGY_MODULE.get());
                 // FOUP variants via FoupItems.emptyFoup (real sealed lots)
                 output.accept(FoupItems.emptyFoup(ModItems.FOUP_MK1.get()));
                 output.accept(FoupItems.emptyFoup(ModItems.FOUP_MK2.get()));
