@@ -165,6 +165,10 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
      * @param logicalSlot the logical slot index (3 = LIGHT_SOURCE, 4 = OPTICS, 5 = STAGE, 6 = CLEANROOM, 7 = METROLOGY)
      * @return the item stack, or empty if not present
      */
+    /** A scanner may temporarily lose access to physical module views while unformed.
+     * It can defer identity checks until reforming; the run still pauses through structureFormed(). */
+    protected boolean inputsTemporarilyUnavailable() { return false; }
+
     protected ItemStack equipment(int logicalSlot) {
         return slot(logicalSlot).copy();
     }
@@ -266,7 +270,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         }
         if (run == null && !abortLatched && isFormed() && definition().isPresent()) tryStartRun();
         if (run != null && run.state() != ProcessState.FINISHED) {
-            if (!inputsMatch()) stopInvalidRun();
+            if (!inputsTemporarilyUnavailable() && !inputsMatch()) stopInvalidRun();
             else {
                 ProcessRun.Snapshot before = run.snapshot();
                 try {

@@ -69,6 +69,7 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
  @Override protected double admissionYieldMultiplier(){acceptedHardware=hardware;setChanged();return acceptedMultiplier;}
 
  @Override public boolean structureFormed(){return isFormed()&&definition().isPresent()&&hardwareValidated&&(!inputsLocked()||hardware.equals(acceptedHardware));}
+ @Override protected boolean inputsTemporarilyUnavailable(){return !isFormed();}
  @Override protected ItemStack equipment(int logicalSlot){
   BlockKind kind=switch(logicalSlot){case 3->BlockKind.EXPOSURE_MODULE;case 4->BlockKind.OPTICS_MODULE;case 5->BlockKind.STAGE_MODULE;case 6->BlockKind.FILTRATION_MODULE;case 7->BlockKind.METROLOGY_MODULE;default->BlockKind.OTHER;};
   var pos=modulePositions.get(kind);

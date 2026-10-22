@@ -143,17 +143,17 @@ public record BeamAlignment(
      *
      * <p>Formula: min + (max - min) * quality / 100
      *
-     * @param min the minimum multiplier (inclusive), must be finite
-     * @param max the maximum multiplier (inclusive), must be finite and >= min
+     * @param min the strictly positive finite lower bound (inclusive), at most 1
+     * @param max the finite upper bound (inclusive), at least min and at most 1
      * @return the interpolated multiplier
      * @throws IllegalArgumentException if min or max is not finite, or if max < min
      */
     public double multiplier(double min, double max) {
         if (!Double.isFinite(min) || !Double.isFinite(max)) {
-            throw new IllegalArgumentException("min and max must be finite");
+            throw new IllegalArgumentException("multipliers must be finite");
         }
         if (min <= 0 || max > 1 || max < min) {
-            throw new IllegalArgumentException("max must be >= min");
+            throw new IllegalArgumentException("multipliers require 0 < min <= max <= 1");
         }
         return min + (max - min) * quality() / 100.0;
     }
