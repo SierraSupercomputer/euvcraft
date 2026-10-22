@@ -503,9 +503,9 @@ foreach ($m in $machineDefs) {
     Emit-Blank
 }
 
-Emit '## Recipe Summary (31 actual resources: 29 production + 2 fixture-gated)'
+Emit "## Recipe Summary ($totalRecipes actual resources: $($totalRecipes - $fixtureRecipeCount) production + $fixtureRecipeCount fixture-gated)"
 Emit-Blank
-Emit '### Vanilla recipe datapack files (29 production)'
+Emit "### Vanilla recipe datapack files ($($recipes.Count) production)"
 Emit-Blank
 Emit '| Path | Type | Result | Count |'
 Emit '|------|------|--------|-------|'
