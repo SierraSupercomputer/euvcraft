@@ -29,6 +29,13 @@ class ScannerResourceTest {
   String[] items={"arf_excimer_laser","arf_dry_lens","nanopositioning_stage","ulpa_filter","precision_overlay_scope"};
   for(int i=0;i<5;i++)assertEquals("lithmod:"+items[i],json("data/lithmod/recipe/crafting/"+IDS.get(i+3)+".json").getAsJsonObject("key").get("D").getAsString());
  }
+ @Test void scannerCraftingInputsAreUniqueAmongAllRecipes()throws Exception{
+  var all=new HashMap<String,JsonObject>();try(var paths=Files.list(ROOT.resolve("data/lithmod/recipe/crafting"))){for(var path:paths.filter(p->p.toString().endsWith(".json")).toList()){var recipe=JsonParser.parseString(Files.readString(path)).getAsJsonObject();if(recipe.has("pattern"))all.put(path.getFileName().toString(),recipe);}}
+  for(var id:IDS){var recipe=all.get(id+".json");var signature=signature(recipe);for(var e:all.entrySet())if(!e.getKey().equals(id+".json"))assertNotEquals(signature,signature(e.getValue()),"Ambiguous crafting inputs: "+id+" and "+e.getKey());}
+ }
+ private static String signature(JsonObject recipe){
+  var rows=new ArrayList<String>();for(var row:recipe.getAsJsonArray("pattern")){var cells=new ArrayList<String>();for(char c:row.getAsString().toCharArray())cells.add(c==' '?"EMPTY":recipe.getAsJsonObject("key").get(String.valueOf(c)).toString());rows.add(String.join("|",cells));}return String.join("/",rows);
+ }
  @Test void editableCalibrationParametersAreBounded()throws Exception{
   var def=json("data/lithmod/machines/lithography_scanner.json");assertEquals("lithography_scanner",def.get("id").getAsString());var p=def.getAsJsonObject("params");int quality=p.get("calibration_min_quality").getAsInt(),min=p.get("calibration_min_multiplier_permille").getAsInt(),max=p.get("calibration_max_multiplier_permille").getAsInt();assertTrue(quality>0&&quality<=100);assertTrue(min>0&&min<=max&&max<=1000);
  }

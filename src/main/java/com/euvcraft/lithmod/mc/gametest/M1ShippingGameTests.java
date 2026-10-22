@@ -62,7 +62,7 @@ public final class M1ShippingGameTests {
         Identifier.parse("lithmod:support_casing"),
         Identifier.parse("lithmod:support_power_port"), Identifier.parse("lithmod:support_water_inlet"),
         Identifier.parse("lithmod:deposition_etcher"), Identifier.parse("lithmod:advanced_test_package"),
-        Identifier.parse("lithmod:advanced_casing"), Identifier.parse("lithmod:advanced_power_port"), Identifier.parse("lithmod:advanced_operating_panel"));
+        Identifier.parse("lithmod:advanced_casing"), Identifier.parse("lithmod:advanced_power_port"), Identifier.parse("lithmod:advanced_operating_panel"), Identifier.parse("lithmod:scanner_controller"), Identifier.parse("lithmod:scanner_operating_panel"), Identifier.parse("lithmod:scanner_calibration_panel"), Identifier.parse("lithmod:scanner_exposure_module"), Identifier.parse("lithmod:scanner_optics_module"), Identifier.parse("lithmod:scanner_stage_module"), Identifier.parse("lithmod:scanner_filtration_module"), Identifier.parse("lithmod:scanner_metrology_module"));
     private static final List<Identifier> PRODUCTION_ITEMS = List.of(
         Identifier.parse("lithmod:foup_mk1"),
         Identifier.parse("lithmod:silicon"),
@@ -70,7 +70,7 @@ public final class M1ShippingGameTests {
     /** Machine definitions loaded when fixtures are off (test_machine excluded). */
     private static final List<String> PRODUCTION_DEFINITIONS = List.of(
         "crystal_puller", "wafer_slicer", "pattern_generator", "test_package", "process_cell",
-        "boule_purifier", "ebeam_mask_writer", "deposition_etcher", "advanced_test_package");
+        "boule_purifier", "ebeam_mask_writer", "deposition_etcher", "advanced_test_package", "lithography_scanner");
     /** Machine recipe machines loaded when fixtures are off (test_machine excluded). */
     private static final List<String> PRODUCTION_RECIPE_MACHINES = List.of(
         "crystal_puller", "pattern_generator");
@@ -125,7 +125,7 @@ public final class M1ShippingGameTests {
         if (definitions != null) {
             helper.assertTrue(definitions.byId("test_machine").isEmpty(),
                 "test_machine definition must be absent when fixtures are off");
-            helper.assertValueEqual(9, definitions.size(),
+            helper.assertValueEqual(10, definitions.size(),
                 "production machine definition inventory when fixtures are off");
             for (String machineId : PRODUCTION_DEFINITIONS) {
                 helper.assertTrue(definitions.byId(machineId).isPresent(),
