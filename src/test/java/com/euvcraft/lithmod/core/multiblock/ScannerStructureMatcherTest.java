@@ -296,7 +296,7 @@ class ScannerStructureMatcherTest {
     void match_rejectsThreePowerPorts(MultiblockDirection facing) {
         for (int u0 = 0; u0 < SHAPE.width(); u0++) {
             Map<Cell, BlockKind> layout = validLayout(u0);
-            layout.put(new Cell(1, 1, SHAPE.length() - 1), BlockKind.POWER_PORT); // third port
+            layout.put(new Cell(1, 2, 1), BlockKind.POWER_PORT); // third distinct port in known frame
             Function<MultiblockPos, BlockKind> world = worldAt(CONTROLLER, facing, u0, 0, layout);
             MatchResult result = ScannerStructureMatcher.match(CONTROLLER, facing, world);
             assertFalse(result.success(), "facing=" + facing + " u0=" + u0 + " should fail with three ports");
@@ -370,7 +370,8 @@ class ScannerStructureMatcherTest {
         for (int u0 = 0; u0 < SHAPE.width(); u0++) {
             Map<Cell, BlockKind> layout = validLayout(u0);
             // Add a duplicate module
-            layout.put(new Cell((u0 + 1) % 3, 1, 2), BlockKind.EXPOSURE_MODULE);
+            Cell spare = layout.entrySet().stream().filter(e -> e.getKey().v() == 1 && e.getValue() == BlockKind.CASING).map(Map.Entry::getKey).findFirst().orElseThrow();
+            layout.put(spare, BlockKind.EXPOSURE_MODULE);
             Function<MultiblockPos, BlockKind> world = worldAt(CONTROLLER, facing, u0, 0, layout);
             MatchResult result = ScannerStructureMatcher.match(CONTROLLER, facing, world);
             assertFalse(result.success(), "facing=" + facing + " u0=" + u0 + " should fail with extra exposure module");

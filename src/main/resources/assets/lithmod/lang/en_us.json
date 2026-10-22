@@ -204,5 +204,13 @@
   "message.lithmod.scanner.form_first": "Form the scanner before using this Calibration Panel.",
   "message.lithmod.scanner.calibration_required": "Calibration required",
   "message.lithmod.scanner.use_calibration_panel": "Use the Calibration Panel",
-  "button.lithmod.scanner.accept_alignment": "Accept alignment"
+  "button.lithmod.scanner.accept_alignment": "Accept alignment",
+  "item.lithmod.scanner_controller": "T4 Lithography Equipment Cabinet",
+  "item.lithmod.scanner_operating_panel": "Scanner Operating Panel",
+  "item.lithmod.scanner_calibration_panel": "Scanner Calibration Panel",
+  "item.lithmod.scanner_exposure_module": "Scanner Exposure Module",
+  "item.lithmod.scanner_optics_module": "Scanner Optics Module",
+  "item.lithmod.scanner_stage_module": "Scanner Stage Module",
+  "item.lithmod.scanner_filtration_module": "Scanner Filtration Module",
+  "item.lithmod.scanner_metrology_module": "Scanner Metrology Module"
 }
