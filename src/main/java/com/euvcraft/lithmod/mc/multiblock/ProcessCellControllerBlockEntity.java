@@ -33,6 +33,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
@@ -92,9 +93,13 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
     private boolean abortLatched;
     private boolean needsValidation = true;
 
-    public ProcessCellControllerBlockEntity(BlockPos pos, BlockState state) {
-        super(ModMultiblocks.PROCESS_CELL_CONTROLLER_BE.get(), pos, state, INPUT_SLOTS, OUTPUT_SLOTS);
+    protected ProcessCellControllerBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state, int inputSlots) {
+        super(type, pos, state, inputSlots, OUTPUT_SLOTS);
         // machineId() is "process_cell", base constructor calls refreshDefinition() which loads energy numbers from data
+    }
+
+    public ProcessCellControllerBlockEntity(BlockPos pos, BlockState state) {
+        this(ModMultiblocks.PROCESS_CELL_CONTROLLER_BE.get(), pos, state, INPUT_SLOTS);
     }
 
     @Override
@@ -147,6 +152,90 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
     protected void onUnformed() {
     }
 
+    // ---------------------------------------------------------------- equipment access (scanner override point)
+
+    /**
+     * Returns the item stack for a logical equipment slot (3..7 for LIGHT_SOURCE..METROLOGY).
+     * <p>
+     * Base implementation reads from the real container inventory. The scanner subclass
+     * overrides this to provide physical module item views using only 3 actual inventory
+     * slots, and must never write phantom module stacks into the real container.
+     * </p>
+     *
+     * @param logicalSlot the logical slot index (3 = LIGHT_SOURCE, 4 = OPTICS, 5 = STAGE, 6 = CLEANROOM, 7 = METROLOGY)
+     * @return the item stack, or empty if not present
+     */
+    protected ItemStack equipment(int logicalSlot) {
+        return slot(logicalSlot).copy();
+    }
+
+    // ---------------------------------------------------------------- admission hooks (scanner override point)
+
+    /**
+     * Returns whether this cell supports the given tier for admission.
+     * <p>
+     * Default allows tiers 1-3. Scanner subclass overrides to allow tier 4 only.
+     * Enforced on both initial admission and pending contract restore.
+     * </p>
+     *
+     * @param tier the tier to check
+     * @return true if the tier is supported
+     */
+    protected boolean supportsTier(Tier tier) {
+        return tier.index() <= 3;
+    }
+
+    /**
+     * Returns whether the cell is ready for run admission beyond structural formation.
+     * <p>
+     * Default true. Scanner subclass can override to require calibration.
+     * </p>
+     *
+     * @return true if ready for admission
+     */
+    protected boolean readyForAdmission() {
+        return true;
+    }
+
+    /**
+     * Returns a yield multiplier frozen at admission time.
+     * <p>
+     * Default 1.0 (no effect). Scanner subclass overrides with calibration quality factor.
+     * Applied once to the first layer's effective yield; RunSpec preserves the final
+     * effective yield for all layers and packaging/highbin.
+     * </p>
+     *
+     * @return the frozen yield multiplier, finite and in (0, 1]
+     */
+    protected double admissionYieldMultiplier() {
+        return 1.0;
+    }
+
+    /**
+     * Returns a refusal message if admission should be denied despite readyForAdmission().
+     * <p>
+     * Default empty string (no refusal). Scanner subclass overrides to return
+     * "calibrationRequired" when calibration is missing.
+     * </p>
+     *
+     * @return refusal reason, or empty string if no refusal
+     */
+    protected String admissionRefusal() {
+        return "";
+    }
+
+    /**
+     * Returns whether there is an active (non-finished) run that locks calibration.
+     * <p>
+     * Safe for scanner subclass to call when gating calibration panel access.
+     * </p>
+     *
+     * @return true if a run is active and not finished
+     */
+    public boolean hasActiveRun() {
+        return run != null && run.state() != ProcessState.FINISHED;
+    }
+
     // ---------------------------------------------------------------- ticking
 
     /** Geometry and the pure run have one server-side owner. Never tick the generic recipe runner. */
@@ -162,6 +251,11 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         if (pendingRun != null) {
             try {
                 contract = pendingRun.contract();
+                // Enforce tier support on restore as well
+                if (!supportsTier(contract.tier())) {
+                    stopInvalidRun();
+                    return;
+                }
                 run = pendingRun.restore(FoupItems.trustedContentsOf(slot(SLOT_FOUP)));
                 pendingRun = null;
             } catch (RuntimeException malformed) { stopInvalidRun(); }
@@ -216,8 +310,16 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         var registry = TierDataLoader.getRegistry();
         Tier tier = registry.byIndex(mask.tierIndex()).orElse(null);
         if (tier == null || tier.index() > 4) { lastRefusal = RefusalReason.NO_MASK; return; }
-        LineLoadout loadout = LineLoadoutReader.read(slot(SLOT_LIGHT_SOURCE), slot(SLOT_OPTICS),
-            slot(SLOT_STAGE), slot(SLOT_CLEANROOM), slot(SLOT_METROLOGY), slot(SLOT_RESIST), mask.tierIndex());
+
+        // Admission hooks: structural formation, tier support, readiness, refusal
+        if (!structureFormed()) { lastRefusal = RefusalReason.UNFORMED; return; }
+        if (!supportsTier(tier)) { lastRefusal = RefusalReason.TIER_UNSUPPORTED; return; }
+        if (!readyForAdmission()) { lastRefusal = RefusalReason.NOT_READY; return; }
+        String refusal = admissionRefusal();
+        if (!refusal.isEmpty()) { lastRefusal = RefusalReason.of(refusal); return; }
+
+        LineLoadout loadout = LineLoadoutReader.read(equipment(SLOT_LIGHT_SOURCE), equipment(SLOT_OPTICS),
+            equipment(SLOT_STAGE), equipment(SLOT_CLEANROOM), equipment(SLOT_METROLOGY), slot(SLOT_RESIST), mask.tierIndex());
         DefaultStatRules rules = new DefaultStatRules(registry);
         FabSettings settings = EUVCRAFTMod.settings();
         GenerationMatrix matrix = SupportLineDataLoader.getMatrix();
@@ -246,13 +348,14 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         for (String line : SupportLines.ALL) required.put(line,
             registry.all().stream().map(t -> matrix.requiredGeneration(line, t)).toList());
         List<ItemStack> components = new ArrayList<>();
-        for (int index = SLOT_LIGHT_SOURCE; index <= SLOT_METROLOGY; index++) components.add(slot(index).copy());
+        for (int index = SLOT_LIGHT_SOURCE; index <= SLOT_METROLOGY; index++) components.add(equipment(index).copy());
         ItemStack carrier = slot(SLOT_FOUP).copy();
         carrier.remove(ModDataComponents.FOUP_CONTENTS.get());
+        double frozenYieldFactor = admissionYieldMultiplier();
         try {
             contract = new Contract(tier, mask.dieType(), mask.usesRemaining(), tier.layerTicks(settings),
                 settings.resistPerLayer(), request.energyPerTick(), request.lineStats(), registry.all(),
-                required, maskStack.copy(), components, slot(SLOT_RESIST).copyWithCount(1), lot.lotId(), carrier, lot.grade(), lot.preparationGeneration());
+                required, maskStack.copy(), components, slot(SLOT_RESIST).copyWithCount(1), lot.lotId(), carrier, lot.grade(), lot.preparationGeneration(), frozenYieldFactor);
             run = (ProcessRun) result;
             lastRefusal = null;
             setChanged();
@@ -367,8 +470,10 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
     public FoupContents applyLayer(FoupContents lot, int layer, double defectFactor) {
         if (!(level instanceof ServerLevel server) || contract == null || !inputsMatch()
                 || !Objects.equals(lot, trustedLot())) throw new IllegalStateException("Run inputs changed");
+        double frozenYieldFactor = contract.frozenYieldFactor();
+        Integer cores = DieTypes.COMPUTE.equals(contract.dieType()) ? 1 : null;
         FoupContents updated = FabYieldService.applyLayerStep(server, lot, contract.tier(),
-            contract.dieType(), DieTypes.COMPUTE.equals(contract.dieType()) ? 1 : null, layer, defectFactor);
+            contract.dieType(), cores, layer, defectFactor, frozenYieldFactor);
         ItemStack carrier = slot(SLOT_FOUP).copy();
         ItemStack sealed = FoupItems.with(carrier.getItem(), updated);
         carrier.set(ModDataComponents.FOUP_CONTENTS.get(), sealed.get(ModDataComponents.FOUP_CONTENTS.get()));
