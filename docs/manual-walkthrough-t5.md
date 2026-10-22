@@ -6,7 +6,7 @@ Use the new project build/libs/lithmod-1.0.0.jar after automated acceptance. Exi
 
 Build a solid box from Advanced Fab Casings. Use one Utility Plant controller in either bottom-front column, one or two Advanced Power Ports anywhere else, exactly one Utility Water Inlet and one Utility Pure Outlet in any remaining positions. Fill the rest with casing (8 casings with one power port; 7 with two). All horizontal orientations work. This small utility machine has one controller interface.
 
-Supply FE through a power port. The GUI accepts Utility Filters in the left slot and ordinary water buckets in the middle; the right slot returns empty buckets. Alternatively connect an Arcforge fluid conduit/tank to the Water Inlet, from any side. Ordinary water belongs here. The Pure Outlet is extraction-only and outputs a separate Ultrapure Water fluid; ordinary water must not substitute for it in the scanner.
+Supply FE through a power port. The GUI accepts Utility Filters in the left slot and ordinary water buckets in the middle; the right slot returns empty buckets. Alternatively connect an Arcforge fluid conduit/tank to the Water Inlet, from any side. Ordinary water belongs here. Shift-click water buckets and filters to confirm they route to their own inputs. The Pure Outlet is extraction-only and outputs a separate Ultrapure Water fluid; ordinary water must not substitute for it in the scanner.
 
 Defaults: 16,000 mB raw and pure tanks. One filter + 8,000 mB water + 200 powered ticks at 80 FE/t produces 8,000 mB ultrapure water. Load eight buckets or pipe in water. No water/filter consumption should repeat after an active job is saved/reloaded. Insufficient power or blocked pure storage pauses work. Multiple scanners can share a plant/tank network; capacity and consumption are editable.
 
@@ -46,7 +46,7 @@ Build a solid cube using one Pick And Place controller in either bottom-front co
 | DIMM | 4 same-tier memory chips + 1 DIMM Blank | T2–T5 |
 | Microcontroller | 1 same-tier logic chip + 1 Microcontroller Blank | T1–T5 |
 
-The chip families retain their existing first tiers. All generations use the same three blanks. Blank crafting recipes embody the assembly materials; there is no hidden additional material cost. Default assembly time is 80 + 20×tier ticks at 20 FE/t. Three memory chips must not produce a DIMM. Verify exact inputs, same-tier outputs, blocked-output behavior, power/formation pauses, reload and controller drops without duplication. Assembly does not reroll chip yield.
+The chip families retain their existing first tiers. All generations use the same three blanks. Blank crafting recipes embody the assembly materials; there is no hidden additional material cost. Default assembly time is 80 + 20×tier ticks at 20 FE/t. Three memory chips must not produce a DIMM. Shift-click blanks and chips from the player inventory and confirm they route to the matching inputs; NAND and unrelated items are refused. Verify exact inputs, same-tier outputs, blocked-output behavior, power/formation pauses, reload and controller drops without duplication. Assembly does not reroll chip yield.
 
 ## Editable data and deferred work
 
@@ -58,4 +58,5 @@ The chip families retain their existing first tiers. All generations use the sam
 - Tier definitions/support requirements: data/lithmod/tiers/t5.json and support_lines/matrix.json.
 
 Starter visuals reuse existing textures; check labels, graph legibility, slot positions and JEI overlap in the client. Later wafer cleaning, NAND assembly and the calibrated 3×3×2 T6+ reflow oven are recorded future work and are not implemented. Existing downstream crafting recipes have not been globally rewritten to require assembled components.
+
 

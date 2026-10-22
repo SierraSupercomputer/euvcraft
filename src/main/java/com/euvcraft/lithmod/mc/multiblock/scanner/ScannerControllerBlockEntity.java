@@ -123,12 +123,12 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
  @Override protected void loadAdditional(ValueInput input){
   super.loadAdditional(input);hardware=input.getString("scannerHardware").orElse("");calibratedHardware=input.getString("scannerCalibratedHardware").orElse("");acceptedHardware=input.getString("scannerAcceptedHardware").orElse("");
   acceptedQuality=input.getInt("scannerQuality").orElse(-1);acceptedMultiplier=input.getDoubleOr("scannerMultiplier",0);
-  try{alignment=new BeamAlignment(input.getIntOr("scannerX",0),input.getIntOr("scannerY",0),input.getIntOr("scannerFocus",0),input.getIntOr("scannerTargetX",0),input.getIntOr("scannerTargetY",0),input.getIntOr("scannerTargetFocus",0));}catch(IllegalArgumentException e){alignment=BeamAlignment.create(0);calibratedHardware="";}
+  try{alignment=new BeamAlignment(input.getIntOr("scannerX",0),input.getIntOr("scannerY",0),input.getIntOr("scannerFocus",0),input.getIntOr("scannerTargetX",0),input.getIntOr("scannerTargetY",0),input.getIntOr("scannerTargetFocus",0));}catch(IllegalArgumentException e){alignment=BeamAlignment.create(0);calibratedHardware="";acceptedQuality=-1;acceptedMultiplier=0;/* acceptedHardware belongs to the frozen in-flight contract, not new calibration. */}
   boolean diagnosticValid=true;try{diagnostic=new DiagnosticFit(input.getIntOr("diagnosticA",0),input.getIntOr("diagnosticB",0),input.getIntOr("diagnosticC",0),input.getIntOr("diagnosticTargetA",0),input.getIntOr("diagnosticTargetB",0),input.getIntOr("diagnosticTargetC",0));}catch(IllegalArgumentException invalid){diagnostic=DiagnosticFit.create(0);diagnosticValid=false;}
   diagnosticPlotted=input.getBooleanOr("diagnosticPlotted",false);
   diagnosticHardware=input.getString("diagnosticHardware").orElse("");diagnosticQuality=input.getIntOr("diagnosticQuality",-1);diagnosticMultiplier=input.getDoubleOr("diagnosticMultiplier",0);
   pureWater.restoreAmount(Math.clamp(input.getIntOr("scannerPureWater",0),0,1000000));diagnosticPaper.setItem(0,input.read("diagnosticPaper",ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY));
-  if(!diagnosticValid||!diagnosticPlotted){diagnosticHardware="";diagnosticQuality=-1;diagnosticMultiplier=0;}
+  if(!diagnosticValid||!diagnosticPlotted){diagnosticPlotted=false;diagnosticHardware="";diagnosticQuality=-1;diagnosticMultiplier=0;}
   hardwareValidated=false;modulePositions.clear();
  }
  @Override protected void saveAdditional(ValueOutput out){
