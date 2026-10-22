@@ -29,9 +29,9 @@ public class AssemblyMenu extends FabMachineMenu {
     @Override
     protected void addMachineSlots() {
         // Input slot 1 at x=44, y=35
-        addMachineSlot(SLOT_INPUT_1,44,35,true);
+        addCustomSlot(new Slot(machineSlots(),SLOT_INPUT_1,44,35){@Override public boolean mayPlace(ItemStack stack){return com.euvcraft.lithmod.mc.ChipCatalog.designOf(stack.getItem()).filter(d->d.tierIndex()<=5&&!com.euvcraft.lithmod.core.DieTypes.NAND.equals(d.dieType())).isPresent();}});
         // Input slot 2 at x=80, y=35
-        addMachineSlot(SLOT_INPUT_2,80,35,true);
+        addCustomSlot(new Slot(machineSlots(),SLOT_INPUT_2,80,35){@Override public boolean mayPlace(ItemStack stack){return stack.is(com.euvcraft.lithmod.mc.registry.ModItems.CPU_BLANK.get())||stack.is(com.euvcraft.lithmod.mc.registry.ModItems.DIMM_BLANK.get())||stack.is(com.euvcraft.lithmod.mc.registry.ModItems.MICROCONTROLLER_BLANK.get());}});
         // Output slot at x=116, y=35
         addMachineSlot(SLOT_OUTPUT,116,35,false);
     }
@@ -45,3 +45,4 @@ public class AssemblyMenu extends FabMachineMenu {
     private static final int SLOT_INPUT_2 = 1;
     private static final int SLOT_OUTPUT = 2;
 }
+
