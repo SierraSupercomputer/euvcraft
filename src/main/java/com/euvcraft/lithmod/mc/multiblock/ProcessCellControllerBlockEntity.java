@@ -312,11 +312,10 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         if (tier == null || tier.index() > 4) { lastRefusal = RefusalReason.NO_MASK; return; }
 
         // Admission hooks: structural formation, tier support, readiness, refusal
-        if (!structureFormed()) { lastRefusal = RefusalReason.UNFORMED; return; }
-        if (!supportsTier(tier)) { lastRefusal = RefusalReason.TIER_UNSUPPORTED; return; }
-        if (!readyForAdmission()) { lastRefusal = RefusalReason.NOT_READY; return; }
-        String refusal = admissionRefusal();
-        if (!refusal.isEmpty()) { lastRefusal = RefusalReason.of(refusal); return; }
+        if (!structureFormed()) { lastRefusal = RefusalReason.LINE_CANNOT_RUN_TIER; return; }
+        if (!supportsTier(tier)) { lastRefusal = RefusalReason.LINE_CANNOT_RUN_TIER; return; }
+        if (!readyForAdmission()) { lastRefusal = RefusalReason.LINE_CANNOT_RUN_TIER; return; }
+        // The scanner operating panel displays its public calibration-required status.
 
         LineLoadout loadout = LineLoadoutReader.read(equipment(SLOT_LIGHT_SOURCE), equipment(SLOT_OPTICS),
             equipment(SLOT_STAGE), equipment(SLOT_CLEANROOM), equipment(SLOT_METROLOGY), slot(SLOT_RESIST), mask.tierIndex());

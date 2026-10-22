@@ -178,7 +178,8 @@ public final class YieldRollEngine {
             double baseEffectiveYield = YieldMath.resolveEffectiveYield(tier, settings, cores);
             double finalEffectiveYield = baseEffectiveYield * frozenYieldFactor;
             // Clamp to valid range
-            finalEffectiveYield = YieldMath.clampYield(finalEffectiveYield);
+            // Calibration is a true multiplier, including when the base yield is already low.
+            // RunSpec accepts any finite fraction in (0,1).
             spec = new RunSpec(dieType, tier.index(), RunSpec.coresOrZero(cores),
                 finalEffectiveYield, YieldRollEngine.rollCount(tier, settings));
         } else {
@@ -194,7 +195,7 @@ public final class YieldRollEngine {
         double weight;
         if (firstLayer) {
             rollsPerLayer = settings.rollsPerLayer();
-            weight = stepWeight(tier, settings, cores, defectFactor);
+            weight = YieldCalibration.stepWeight(spec.rollCount(), spec.effectiveYield(), defectFactor);
         } else {
             // Later layers: derive rollsPerLayer from frozen spec rollCount
             rollsPerLayer = spec.rollCount() / tier.layers();

@@ -28,6 +28,11 @@ public record BeamAlignment(
         int targetFocus
 ) {
 
+    public BeamAlignment {
+        if(x < -10 || x > 10 || y < -10 || y > 10 || focus < -10 || focus > 10
+            || targetX < -5 || targetX > 5 || targetY < -5 || targetY > 5 || targetFocus < -5 || targetFocus > 5)
+            throw new IllegalArgumentException("Alignment controls/targets outside bounds");
+    }
     /** Minimum allowed knob value. */
     public static final int KNOB_MIN = -10;
     /** Maximum allowed knob value. */
@@ -147,7 +152,7 @@ public record BeamAlignment(
         if (!Double.isFinite(min) || !Double.isFinite(max)) {
             throw new IllegalArgumentException("min and max must be finite");
         }
-        if (max < min) {
+        if (min <= 0 || max > 1 || max < min) {
             throw new IllegalArgumentException("max must be >= min");
         }
         return min + (max - min) * quality() / 100.0;

@@ -381,8 +381,7 @@ public final class ProcessCellRunPersistence {
                     installedGenerations,
                     generationMatrix,
                     settings,
-                    this.energyPerTick,
-                    this.frozenYieldFactor
+                    this.energyPerTick
             );
         }
 
@@ -433,9 +432,8 @@ public final class ProcessCellRunPersistence {
     private record ContractFields(Tier tier, String dieType, int usesRemaining, int layerTicks,
         int resistPerLayer, int energyPerTick, LineStats lineStats, List<Tier> tiers,
         Map<String,List<Integer>> requiredGenerations, ItemStack mask, List<ItemStack> components,
-        ItemStack resistTemplate, String lotId, ItemStack foupTemplate, String grade, int preparationGeneration,
-        double frozenYieldFactor) {}
-    private static final Codec<Contract> CONTRACT_CODEC = RecordCodecBuilder.<ContractFields>create(i -> i.group(
+        ItemStack resistTemplate, String lotId, ItemStack foupTemplate, String grade, int preparationGeneration) {}
+    private static final com.mojang.serialization.MapCodec<ContractFields> BASE_CONTRACT_CODEC = RecordCodecBuilder.<ContractFields>mapCodec(i -> i.group(
         TierCodec.CODEC.fieldOf("tier").forGetter(ContractFields::tier),
         Codec.STRING.fieldOf("dieType").forGetter(ContractFields::dieType),
         Codec.INT.fieldOf("usesRemaining").forGetter(ContractFields::usesRemaining),
@@ -451,15 +449,18 @@ public final class ProcessCellRunPersistence {
         Codec.STRING.fieldOf("lotId").forGetter(ContractFields::lotId),
         ItemStack.CODEC.fieldOf("foupTemplate").forGetter(ContractFields::foupTemplate),
         Codec.STRING.optionalFieldOf("grade", "ordinary").forGetter(ContractFields::grade),
-        Codec.INT.optionalFieldOf("preparation",1).forGetter(ContractFields::preparationGeneration),
-        Codec.DOUBLE.optionalFieldOf("frozenYieldFactor", 1.0).forGetter(ContractFields::frozenYieldFactor)
-    ).apply(i, ContractFields::new)).flatXmap(f -> validated(() -> new Contract(f.tier(), f.dieType(),
-        f.usesRemaining(), f.layerTicks(), f.resistPerLayer(), f.energyPerTick(), f.lineStats(), f.tiers(),
-        f.requiredGenerations(), f.mask(), f.components(), f.resistTemplate(), UUID.fromString(f.lotId()), f.foupTemplate(),
-        WaferSubstrate.fromIdOrThrow(f.grade),f.preparationGeneration(), f.frozenYieldFactor())),
-        c -> DataResult.success(new ContractFields(c.tier(), c.dieType(), c.usesRemaining(), c.layerTicks(),
-            c.resistPerLayer(), c.energyPerTick(), c.lineStats(), c.tiers(), c.requiredGenerations(), c.mask(),
-            c.components(), c.resistTemplate(), c.lotId().toString(), c.foupTemplate(), c.grade().id(), c.preparationGeneration(), c.frozenYieldFactor())));
+        Codec.INT.optionalFieldOf("preparation",1).forGetter(ContractFields::preparationGeneration)
+    ).apply(i, ContractFields::new));
+    private static final Codec<Contract> CONTRACT_CODEC = Codec.mapPair(BASE_CONTRACT_CODEC,
+        Codec.DOUBLE.optionalFieldOf("frozenYieldFactor",1.0)).codec().flatXmap(pair -> validated(() -> {
+        var f=pair.getFirst();return new Contract(f.tier(),f.dieType(),f.usesRemaining(),f.layerTicks(),
+            f.resistPerLayer(),f.energyPerTick(),f.lineStats(),f.tiers(),f.requiredGenerations(),f.mask(),
+            f.components(),f.resistTemplate(),UUID.fromString(f.lotId()),f.foupTemplate(),
+            WaferSubstrate.fromIdOrThrow(f.grade()),f.preparationGeneration(),pair.getSecond());
+    }), c -> DataResult.success(com.mojang.datafixers.util.Pair.of(new ContractFields(c.tier(),c.dieType(),
+        c.usesRemaining(),c.layerTicks(),c.resistPerLayer(),c.energyPerTick(),c.lineStats(),c.tiers(),
+        c.requiredGenerations(),c.mask(),c.components(),c.resistTemplate(),c.lotId().toString(),
+        c.foupTemplate(),c.grade().id(),c.preparationGeneration()),c.frozenYieldFactor())));
 
     private record SavedFields(Contract contract, ProcessRun.Snapshot snapshot) {}
     private static final Codec<Saved> SAVED_CODEC = RecordCodecBuilder.<SavedFields>create(i -> i.group(
