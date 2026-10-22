@@ -38,7 +38,7 @@ Package each completed T5 family using the existing G2 packager and chip package
 
 ## 5. Pick-and-place assembly (2×2×2)
 
-Build a solid cube using one Pick And Place controller in either bottom-front column, one or two Advanced Power Ports anywhere else, and Advanced Casings (6 with one port; 5 with two). No operating panel or calibration is required for this small machine. Supply FE through a port. In its GUI, place chips in the left input, a shared blank in the middle and take the result from the right.
+Build a solid cube using one Pick And Place controller in either bottom-front column, one or two Assembly Power Ports anywhere else, and Assembly Casings (6 with one port; 5 with two). No operating panel or calibration is required for this small machine. Supply FE through a port. In its GUI, place chips in the left input, a shared blank in the middle and take the result from the right.
 
 | Product | Inputs | Available tiers |
 |---|---|---|
@@ -58,3 +58,4 @@ The chip families retain their existing first tiers. All generations use the sam
 - Tier definitions/support requirements: data/lithmod/tiers/t5.json and support_lines/matrix.json.
 
 Starter visuals reuse existing textures; check labels, graph legibility, slot positions and JEI overlap in the client. Later wafer cleaning, NAND assembly and the calibrated 3×3×2 T6+ reflow oven are recorded future work and are not implemented. Existing downstream crafting recipes have not been globally rewritten to require assembled components.
+

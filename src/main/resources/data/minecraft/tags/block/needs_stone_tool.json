@@ -28,6 +28,8 @@
     "lithmod:pick_and_place",
     "lithmod:scanner_diagnostic_panel",
     "lithmod:scanner_water_inlet",
-    "lithmod:scanner_immersion_module"
+    "lithmod:scanner_immersion_module",
+    "lithmod:assembly_casing",
+    "lithmod:assembly_power_port"
   ]
 }

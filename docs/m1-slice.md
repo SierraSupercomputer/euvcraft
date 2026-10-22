@@ -22,7 +22,7 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
   - com.euvcraft.lithmod.mc.machine.test (4 files)
   - com.euvcraft.lithmod.mc.multiblock (12 files)
   - com.euvcraft.lithmod.mc.multiblock.advanced (16 files)
-  - com.euvcraft.lithmod.mc.multiblock.assembly (6 files)
+  - com.euvcraft.lithmod.mc.multiblock.assembly (8 files)
   - com.euvcraft.lithmod.mc.multiblock.scanner (13 files)
   - com.euvcraft.lithmod.mc.multiblock.support (12 files)
   - com.euvcraft.lithmod.mc.multiblock.utilities (10 files)
@@ -2196,6 +2196,7 @@ public boolean isMemberOfFormedCell();
 public void attach(com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOwner, boolean);
 public void serverTick();
 public com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOwner belowOwner();
+protected boolean energyPort();
 public net.neoforged.neoforge.transfer.energy.EnergyHandler energy();
 public net.minecraft.network.chat.Component getDisplayName();
 public net.minecraft.world.inventory.AbstractContainerMenu createMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.world.entity.player.Player);
@@ -2332,6 +2333,19 @@ protected net.minecraft.world.inventory.AbstractContainerMenu createMachineMenu(
 public static void register(net.neoforged.bus.api.IEventBus);
 ```
 
+### com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMemberBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMemberBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMemberBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMemberBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public com.euvcraft.lithmod.core.multiblock.BlockKind structureKind();
+protected boolean energyPort();
+```
+
 ### com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMenu
 ```java
 public com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
@@ -2403,6 +2417,7 @@ public boolean diagnosed();
 public boolean plotDiagnostic(int, int, int);
 public boolean acceptDiagnostic();
 public boolean operatingCalibrated();
+public int waterPerTick();
 public int extractEnergy(int, boolean);
 public com.euvcraft.lithmod.mc.multiblock.scanner.ScannerControllerBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
 protected java.lang.String machineId();
@@ -2488,6 +2503,7 @@ public com.euvcraft.lithmod.mc.multiblock.scanner.ScannerOperatingMenu(int, net.
 public com.euvcraft.lithmod.mc.multiblock.scanner.ScannerOperatingMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
 public boolean isOperatingPanel();
 public boolean stillValid(net.minecraft.world.entity.player.Player);
+public int waterCost();
 public int water();
 public boolean diagnosed();
 public boolean immersion();
@@ -3206,9 +3222,9 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 }
 ```
 
-## Recipe Summary (91 actual resources: 89 production + 2 fixture-gated)
+## Recipe Summary (93 actual resources: 91 production + 2 fixture-gated)
 
-### Vanilla recipe datapack files (73 production)
+### Vanilla recipe datapack files (75 production)
 
 | Path | Type | Result | Count |
 |------|------|--------|-------|
@@ -3218,6 +3234,8 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/recipe/crafting/advanced_test_package.json | minecraft:crafting_shaped | lithmod:advanced_test_package | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/arf_dry_lens.json | minecraft:crafting_shaped | lithmod:arf_dry_lens | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/arf_excimer_laser.json | minecraft:crafting_shaped | lithmod:arf_excimer_laser | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/assembly_casing.json | minecraft:crafting_shaped | lithmod:assembly_casing | 8 |
+| src/main/resources/data/lithmod/recipe/crafting/assembly_power_port.json | minecraft:crafting_shaped | lithmod:assembly_power_port | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/basic_air_filter.json | minecraft:crafting_shaped | lithmod:basic_air_filter | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/blank_mask.json | minecraft:crafting_shaped | lithmod:blank_mask | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/boule_purifier.json | minecraft:crafting_shaped | lithmod:boule_purifier | 1 |
@@ -3755,7 +3773,7 @@ Tier JSON fields per file (raw literals read from src/main/resources/data/lithmo
 | data/lithmod/tiers/t8.json | T8 | 8 | 90 | 100 | 80.0 | False |
 
 
-M0-owned data files stay as tracked: data/lithmod/die_rules/rules.json, data/lithmod/support_lines/matrix.json, and the 8 data/lithmod/tiers/t<index>.json files. Block loot tables: 34 files under data/lithmod/loot_table/blocks; block tag files: 1. Counts are read at generation time.
+M0-owned data files stay as tracked: data/lithmod/die_rules/rules.json, data/lithmod/support_lines/matrix.json, and the 8 data/lithmod/tiers/t<index>.json files. Block loot tables: 36 files under data/lithmod/loot_table/blocks; block tag files: 1. Counts are read at generation time.
 
 ### Machine data codecs (actual codec sources; core records stay game-independent)
 

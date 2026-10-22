@@ -25,6 +25,9 @@ public final class AssemblyMachines {
         p -> p.strength(3, 6).requiresCorrectToolForDrops()
     );
 
+    public static final DeferredBlock<AssemblyMemberBlock> CASING=BLOCKS.registerBlock("assembly_casing",AssemblyMemberBlock::new,p->p.strength(3,6).requiresCorrectToolForDrops());
+    public static final DeferredBlock<AssemblyMemberBlock> POWER_PORT=BLOCKS.registerBlock("assembly_power_port",AssemblyMemberBlock::new,p->p.strength(3,6).requiresCorrectToolForDrops());
+    public static final DeferredHolder<BlockEntityType<?>,BlockEntityType<AssemblyMemberBlockEntity>> MEMBER_BE=BLOCK_ENTITIES.register("assembly_member",()->new BlockEntityType<>(AssemblyMemberBlockEntity::new,CASING.get(),POWER_PORT.get()));
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AssemblyControllerBlockEntity>> CONTROLLER_BE =
         BLOCK_ENTITIES.register("pick_and_place", () ->
             new BlockEntityType<>(AssemblyControllerBlockEntity::new, CONTROLLER.get())
@@ -37,8 +40,10 @@ public final class AssemblyMachines {
         BLOCKS.register(bus);
         BLOCK_ENTITIES.register(bus);
         MENU_TYPES.register(bus);
+        bus.addListener((java.util.function.Consumer<RegisterCapabilitiesEvent>)e->e.registerBlockEntity(Capabilities.Energy.BLOCK,MEMBER_BE.get(),(be,side)->be.energy()));
 
     }
 
     private AssemblyMachines() {}
 }
+

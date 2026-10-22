@@ -166,7 +166,7 @@ public final class PresentationGameTests {
     }
     private static void recipeRegistry(GameTestHelper h) {
         var vanilla = resources(h, "recipe");
-        h.assertValueEqual(73, vanilla.size(), "M1 vanilla recipe inventory");
+        h.assertValueEqual(75, vanilla.size(), "M1 vanilla recipe inventory");
         for (var entry : vanilla.entrySet()) {
             JsonObject source = json(entry.getValue());
             expectedOutput(h, source, assemble(h, entry.getKey(), source), entry.getKey().toString());
@@ -211,7 +211,7 @@ public final class PresentationGameTests {
                 cooking++;
             }
         }
-        h.assertValueEqual(71, crafting, "Crafting lookup inventory");
+        h.assertValueEqual(73, crafting, "Crafting lookup inventory");
         h.assertValueEqual(2, cooking, "Cooking lookup inventory");
         var sand = manager.getRecipeFor(RecipeType.SMELTING, new SingleRecipeInput(new ItemStack(Items.SAND)), h.getLevel()).orElseThrow();
         h.assertTrue(sand.value().assemble(new SingleRecipeInput(new ItemStack(Items.SAND))).is(Items.GLASS), "Sand must still smelt to glass");
@@ -427,7 +427,7 @@ public final class PresentationGameTests {
             ModItems.UTILITY_PLANT.get(),
             ModItems.UTILITY_WATER_INLET.get(),
             ModItems.UTILITY_PURE_OUTLET.get(),
-            ModItems.PICK_AND_PLACE.get(),
+            ModItems.PICK_AND_PLACE.get(),ModItems.ASSEMBLY_CASING.get(),ModItems.ASSEMBLY_POWER_PORT.get(),
             ModItems.SCANNER_DIAGNOSTIC_PANEL.get(),
             ModItems.SCANNER_WATER_INLET.get(),
             ModItems.SCANNER_IMMERSION_MODULE.get(),
@@ -465,8 +465,8 @@ public final class PresentationGameTests {
         );
 
         // Verify exact 49 stacks in order
-        h.assertValueEqual(110, actualEntries.size(), "MAIN tab exact entry count");
-        for (int i = 0; i < 110; i++) {
+        h.assertValueEqual(112, actualEntries.size(), "MAIN tab exact entry count");
+        for (int i = 0; i < 112; i++) {
             Item expected = expectedItems.get(i);
             Item actual = actualEntries.get(i).getItem();
             h.assertTrue(actual == expected,
@@ -909,5 +909,6 @@ public final class PresentationGameTests {
         h.killAllEntitiesOfClass(ItemEntity.class);
     }
 }
+
 
 

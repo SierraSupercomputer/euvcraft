@@ -255,5 +255,9 @@
   "item.lithmod.scanner_diagnostic_panel": "Scanner Diagnostic Panel",
   "item.lithmod.scanner_water_inlet": "Scanner Water Inlet",
   "item.lithmod.scanner_immersion_module": "Scanner Immersion Module",
-  "tier.lithmod.t5": "T5"
+  "tier.lithmod.t5": "T5",
+  "block.lithmod.assembly_casing": "Assembly Casing",
+  "item.lithmod.assembly_casing": "Assembly Casing",
+  "block.lithmod.assembly_power_port": "Assembly Power Port",
+  "item.lithmod.assembly_power_port": "Assembly Power Port"
 }
