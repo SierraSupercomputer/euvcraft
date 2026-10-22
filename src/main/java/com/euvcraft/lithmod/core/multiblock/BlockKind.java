@@ -14,6 +14,8 @@ public enum BlockKind {
     POWER_PORT,
 
     /** Any other block - causes match failure. */
+    FLUID_OUTLET,
+    DIAGNOSTIC_PANEL,
     OTHER,
 
     /** Operating panel block - exactly one required, directly above the controller. */

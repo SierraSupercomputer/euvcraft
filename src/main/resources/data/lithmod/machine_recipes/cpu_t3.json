@@ -1,0 +1,18 @@
+{
+  "machine": "pick_and_place",
+  "ingredients": [
+    {
+      "item": "lithmod:compute_chip_t3",
+      "count": 1
+    },
+    {
+      "item": "lithmod:cpu_blank",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:cpu_t3",
+    "count": 1
+  },
+  "ticks": 140
+}

@@ -1,0 +1,7 @@
+{
+  "id": "pick_and_place",
+  "energy_capacity": 100000,
+  "max_receive": 5000,
+  "energy_per_tick": 20,
+  "params": {}
+}

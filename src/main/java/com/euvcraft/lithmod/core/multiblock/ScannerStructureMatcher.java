@@ -67,12 +67,21 @@ public final class ScannerStructureMatcher {
         java.util.Objects.requireNonNull(facing);
         java.util.Objects.requireNonNull(blockKindAt);
 
+        final var original = blockKindAt;
+        blockKindAt = pos -> {var kind=original.apply(pos);return kind==BlockKind.DIAGNOSTIC_PANEL||kind==BlockKind.WATER_INLET?BlockKind.CASING:kind;};
         String firstFailure = null;
         // Only lower row (v0=0) is valid for the anchor; try all three front-face columns (u0=0,1,2)
         for (int u0 = 0; u0 < SCANNER_SHAPE.width(); u0++) {
             int v0 = 0;
             MatchResult result = matchAtAnchor(controllerPos, facing, blockKindAt, u0, v0);
             if (result.success()) {
+                int diagnostic=0,inlet=0;
+                for(var pos:result.memberPositions()){
+                    var kind=original.apply(pos);
+                    if(kind==BlockKind.DIAGNOSTIC_PANEL){diagnostic++;if(pos.y()!=controllerPos.y()+1)return MatchResult.failure("Diagnostic panel must be in middle layer");}
+                    if(kind==BlockKind.WATER_INLET)inlet++;
+                }
+                if(diagnostic>1||inlet>1||diagnostic!=inlet)return MatchResult.failure("water inlet not allowed without exactly one diagnostic panel, and vice versa");
                 return result;
             }
             if (firstFailure == null) {
@@ -202,3 +211,4 @@ public final class ScannerStructureMatcher {
                 .add(facing.back().multiply(d));
     }
 }
+

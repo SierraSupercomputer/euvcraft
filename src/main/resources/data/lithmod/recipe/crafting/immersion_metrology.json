@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "lithmod:precision_overlay_scope",
+    "lithmod:logic_chip_t4",
+    "minecraft:diamond"
+  ],
+  "result": {
+    "id": "lithmod:immersion_metrology",
+    "count": 1
+  }
+}

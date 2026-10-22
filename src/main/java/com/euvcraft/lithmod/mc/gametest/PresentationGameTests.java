@@ -134,6 +134,7 @@ public final class PresentationGameTests {
         return new ItemStack(values.next().value());
     }
     private static CraftingInput craftingInput(JsonObject source) {
+        if(source.get("type").getAsString().equals("minecraft:crafting_shapeless")){List<ItemStack> slots=new ArrayList<>();for(var in:source.getAsJsonArray("ingredients"))slots.add(ingredient(in.getAsString()));while(slots.size()<9)slots.add(ItemStack.EMPTY);return CraftingInput.of(3,3,slots);}
         var pattern = source.getAsJsonArray("pattern");
         var keys = source.getAsJsonObject("key");
         int width = pattern.get(0).getAsString().length();
@@ -165,15 +166,15 @@ public final class PresentationGameTests {
     }
     private static void recipeRegistry(GameTestHelper h) {
         var vanilla = resources(h, "recipe");
-        h.assertValueEqual(55, vanilla.size(), "M1 vanilla recipe inventory");
+        h.assertValueEqual(73, vanilla.size(), "M1 vanilla recipe inventory");
         for (var entry : vanilla.entrySet()) {
             JsonObject source = json(entry.getValue());
             expectedOutput(h, source, assemble(h, entry.getKey(), source), entry.getKey().toString());
         }
         var custom = resources(h, "machine_recipes");
         var resolved = MachineRecipeLoader.getRegistry().all();
-        h.assertValueEqual(6, custom.size(), "Custom source inventory");
-        h.assertValueEqual(6, resolved.size(), "Resolved custom inventory");
+        h.assertValueEqual(18, custom.size(), "Custom source inventory");
+        h.assertValueEqual(18, resolved.size(), "Resolved custom inventory");
         Set<com.euvcraft.lithmod.core.MachineRecipeSpec> expected = new HashSet<>();
         for (var entry : custom.entrySet()) {
             var spec = MachineRecipeSpecCodec.CODEC.parse(JsonOps.INSTANCE, json(entry.getValue())).getOrThrow();
@@ -195,7 +196,7 @@ public final class PresentationGameTests {
         for (var entry : resources(h, "recipe").entrySet()) {
             JsonObject source = json(entry.getValue());
             Identifier expected = recipeId(entry.getKey());
-            if (source.get("type").getAsString().equals("minecraft:crafting_shaped")) {
+            if (source.get("type").getAsString().startsWith("minecraft:crafting_")) {
                 var input = craftingInput(source);
                 var picked = manager.getRecipeFor(RecipeType.CRAFTING, input, h.getLevel()).orElseThrow();
                 h.assertTrue(picked.id().identifier().equals(expected), "Crafting lookup collision: " + expected + " selected " + picked.id());
@@ -210,7 +211,7 @@ public final class PresentationGameTests {
                 cooking++;
             }
         }
-        h.assertValueEqual(53, crafting, "Crafting lookup inventory");
+        h.assertValueEqual(71, crafting, "Crafting lookup inventory");
         h.assertValueEqual(2, cooking, "Cooking lookup inventory");
         var sand = manager.getRecipeFor(RecipeType.SMELTING, new SingleRecipeInput(new ItemStack(Items.SAND)), h.getLevel()).orElseThrow();
         h.assertTrue(sand.value().assemble(new SingleRecipeInput(new ItemStack(Items.SAND))).is(Items.GLASS), "Sand must still smelt to glass");
@@ -266,7 +267,7 @@ public final class PresentationGameTests {
                 missing.add(id.getPath());
         h.assertTrue(missing.equals(Set.of("foup_mk2", "logic_chip_t1", "logic_chip_t2", "memory_chip_t2", "chip_scrap",
                 "logic_chip_t3", "memory_chip_t3", "compute_chip_t3", "nand_chip_t3",
-                "logic_chip_t4", "memory_chip_t4", "compute_chip_t4", "nand_chip_t4")),
+                "logic_chip_t4", "memory_chip_t4", "compute_chip_t4", "nand_chip_t4", "logic_chip_t5", "memory_chip_t5", "compute_chip_t5", "nand_chip_t5")),
             "Unexpected recipe-less production items: " + missing);
         h.succeed();
     }
@@ -422,12 +423,50 @@ public final class PresentationGameTests {
             ModItems.NANOPOSITIONING_STAGE.get(), ModItems.ULPA_FILTER.get(),
             ModItems.PRECISION_OVERLAY_SCOPE.get(), ModItems.RESIST_T4.get(),
             ModItems.LOGIC_CHIP_T4.get(), ModItems.MEMORY_CHIP_T4.get(),
-            ModItems.COMPUTE_CHIP_T4.get(), ModItems.NAND_CHIP_T4.get()
+            ModItems.COMPUTE_CHIP_T4.get(), ModItems.NAND_CHIP_T4.get(),
+            ModItems.UTILITY_PLANT.get(),
+            ModItems.UTILITY_WATER_INLET.get(),
+            ModItems.UTILITY_PURE_OUTLET.get(),
+            ModItems.PICK_AND_PLACE.get(),
+            ModItems.SCANNER_DIAGNOSTIC_PANEL.get(),
+            ModItems.SCANNER_WATER_INLET.get(),
+            ModItems.SCANNER_IMMERSION_MODULE.get(),
+            ModItems.LOGIC_CHIP_T5.get(),
+            ModItems.MEMORY_CHIP_T5.get(),
+            ModItems.COMPUTE_CHIP_T5.get(),
+            ModItems.NAND_CHIP_T5.get(),
+            ModItems.UTILITY_FILTER.get(),
+            ModItems.BURN_PAPER.get(),
+            ModItems.CPU_BLANK.get(),
+            ModItems.DIMM_BLANK.get(),
+            ModItems.MICROCONTROLLER_BLANK.get(),
+            ModItems.CPU_T3.get(),
+            ModItems.CPU_T4.get(),
+            ModItems.CPU_T5.get(),
+            ModItems.DIMM_T2.get(),
+            ModItems.DIMM_T3.get(),
+            ModItems.DIMM_T4.get(),
+            ModItems.DIMM_T5.get(),
+            ModItems.MICROCONTROLLER_T1.get(),
+            ModItems.MICROCONTROLLER_T2.get(),
+            ModItems.MICROCONTROLLER_T3.get(),
+            ModItems.MICROCONTROLLER_T4.get(),
+            ModItems.MICROCONTROLLER_T5.get(),
+            ModItems.RESIST_T5.get(),
+            ModItems.IMMERSION_LIGHT_SOURCE.get(),
+            ModItems.IMMERSION_OPTICS.get(),
+            ModItems.IMMERSION_STAGE.get(),
+            ModItems.IMMERSION_FILTRATION.get(),
+            ModItems.IMMERSION_METROLOGY.get(),
+            ModItems.MASK.get(),
+            ModItems.MASK.get(),
+            ModItems.MASK.get(),
+            ModItems.MASK.get()
         );
 
         // Verify exact 49 stacks in order
-        h.assertValueEqual(72, actualEntries.size(), "MAIN tab exact entry count");
-        for (int i = 0; i < 72; i++) {
+        h.assertValueEqual(110, actualEntries.size(), "MAIN tab exact entry count");
+        for (int i = 0; i < 110; i++) {
             Item expected = expectedItems.get(i);
             Item actual = actualEntries.get(i).getItem();
             h.assertTrue(actual == expected,
@@ -870,4 +909,5 @@ public final class PresentationGameTests {
         h.killAllEntitiesOfClass(ItemEntity.class);
     }
 }
+
 

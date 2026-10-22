@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "AGA",
+    "BCB",
+    "AGA"
+  ],
+  "key": {
+    "A": "lithmod:advanced_casing",
+    "G": "minecraft:glass",
+    "B": "minecraft:gold_ingot",
+    "C": "lithmod:utility_water_inlet"
+  },
+  "result": {
+    "id": "lithmod:scanner_water_inlet",
+    "count": 1
+  }
+}

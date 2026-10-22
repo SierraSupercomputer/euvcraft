@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "lithmod:nanopositioning_stage",
+    "lithmod:logic_chip_t4",
+    "minecraft:diamond"
+  ],
+  "result": {
+    "id": "lithmod:immersion_stage",
+    "count": 1
+  }
+}

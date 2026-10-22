@@ -16,13 +16,15 @@ public final class ScannerMemberBlock extends AdvancedCasingBlock {
  public BlockKind kind(){return kind;}
  @Override public BlockEntity newBlockEntity(BlockPos pos,BlockState state){return new ScannerMemberBlockEntity(pos,state);}
  @Override protected InteractionResult useItemOn(ItemStack stack,BlockState state,Level level,BlockPos pos,Player player,InteractionHand hand,BlockHitResult hit){
-  if(kind!=BlockKind.OPERATING_PANEL&&kind!=BlockKind.CALIBRATION_PANEL)return InteractionResult.PASS;
+  if(kind!=BlockKind.OPERATING_PANEL&&kind!=BlockKind.CALIBRATION_PANEL&&kind!=BlockKind.DIAGNOSTIC_PANEL)return InteractionResult.PASS;
   if(!level.isClientSide()&&level.getBlockEntity(pos) instanceof ScannerMemberBlockEntity member){
    var core=member.scanner();
    if(core==null)player.sendSystemMessage(Component.translatable("message.lithmod.scanner.form_first"));
+   else if(kind==BlockKind.DIAGNOSTIC_PANEL)player.openMenu(member,pos);
    else if(kind==BlockKind.CALIBRATION_PANEL)player.openMenu(member,buffer->{buffer.writeBlockPos(pos);buffer.writeBoolean(true);});
    else player.openMenu(member,pos);
   }
   return InteractionResult.SUCCESS;
  }
 }
+

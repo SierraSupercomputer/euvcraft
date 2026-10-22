@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "ALA",
+    "SOC",
+    "FMP"
+  ],
+  "key": {
+    "A": "lithmod:advanced_casing",
+    "L": "lithmod:immersion_light_source",
+    "S": "lithmod:immersion_stage",
+    "O": "lithmod:scanner_optics_module",
+    "C": "lithmod:immersion_optics",
+    "F": "lithmod:immersion_filtration",
+    "M": "lithmod:immersion_metrology",
+    "P": "lithmod:compute_chip_t4"
+  },
+  "result": {
+    "id": "lithmod:scanner_immersion_module",
+    "count": 1
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "IPI",
+    "RCR",
+    "IGI"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "P": "minecraft:piston",
+    "R": "minecraft:redstone",
+    "C": "lithmod:logic_chip_t1",
+    "G": "minecraft:gold_ingot"
+  },
+  "result": {
+    "id": "lithmod:pick_and_place",
+    "count": 1
+  }
+}

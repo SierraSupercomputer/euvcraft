@@ -197,7 +197,7 @@ public final class T4RuntimeGameTests {
    var machine=(AdvancedTestPackageControllerBlockEntity)c.machine();machine.toggleHighBinning();
    var client=complete(3,DieTypes.LOGIC,0);var buf=Unpooled.buffer();FoupContentsCodec.STREAM_CODEC.encode(buf,FoupItems.trustedContentsOf(client));
    client.set(ModDataComponents.FOUP_CONTENTS.get(),FoupContentsCodec.STREAM_CODEC.decode(buf));buf.release();
-   for(var source:List.of(complete(3,DieTypes.MEMORY,0),complete(3,DieTypes.NAND,0),complete(4,DieTypes.LOGIC,0),fresh(3,WaferSubstrate.PURE),client,complete(3,DieTypes.COMPUTE,0))){
+   for(var source:List.of(complete(3,DieTypes.MEMORY,0),complete(3,DieTypes.NAND,0),complete(5,DieTypes.LOGIC,0),fresh(3,WaferSubstrate.PURE),client,complete(3,DieTypes.COMPUTE,0))){
     machine.setSlot(0,source.copy());machine.setSlot(1,new ItemStack(ModItems.CHIP_PACKAGE.get(),64));replenish(machine);
     var before=FoupItems.contentsOf(machine.slot(0));machine.serverTick();check(h,!machine.isQueueActive(),"Unsupported source cannot start");
     check(h,before.equals(FoupItems.contentsOf(machine.slot(0))),"Unsupported source is not consumed");eq(h,64,machine.slot(1).getCount(),"Unsupported source consumes no packages");
@@ -235,4 +235,5 @@ public final class T4RuntimeGameTests {
  }
  private T4RuntimeGameTests(){}
 }
+
 

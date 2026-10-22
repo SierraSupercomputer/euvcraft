@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "AGA",
+    "CLB",
+    "ARA"
+  ],
+  "key": {
+    "A": "lithmod:advanced_casing",
+    "G": "minecraft:glass",
+    "C": "minecraft:comparator",
+    "L": "lithmod:logic_chip_t4",
+    "B": "minecraft:book",
+    "R": "minecraft:redstone"
+  },
+  "result": {
+    "id": "lithmod:scanner_diagnostic_panel",
+    "count": 1
+  }
+}

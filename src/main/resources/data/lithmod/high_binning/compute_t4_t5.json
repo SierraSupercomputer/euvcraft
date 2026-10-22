@@ -1,0 +1,8 @@
+{
+  "die_type": "compute",
+  "source_tier": 4,
+  "target_tier": 5,
+  "yield_multiplier": 0.15,
+  "ticks_multiplier": 2,
+  "energy_multiplier": 2
+}

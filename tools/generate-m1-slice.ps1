@@ -259,8 +259,8 @@ foreach ($catName in $expectedConfig.Keys) {
 $machineDir = Join-Path $Root 'src\main\resources\data\lithmod\machines'
 Assert-Dir $machineDir
 $machineNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($machineDir, '*.json'))
-if ($machineNames.Count -ne 11) {
-    Fail "expected 11 machine definition files in data/lithmod/machines, found $($machineNames.Count)"
+if ($machineNames.Count -ne 13) {
+    Fail "expected 13 machine definition files in data/lithmod/machines, found $($machineNames.Count)"
 }
 $machineDefs = New-Object 'System.Collections.Generic.List[object]'
 $fixtureMachineId = 'test_machine'
@@ -288,11 +288,11 @@ $craftingNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($craftingDir, '*.
 $cookingNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($recipeRoot, '*.json'))
 $machineRecipeNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($mrDir, '*.json'))
 $totalRecipes = $craftingNames.Count + $cookingNames.Count + $machineRecipeNames.Count
-if ($totalRecipes -ne 61) {
-    Fail "expected 61 recipe resources (59 production + 2 fixture-gated), found $totalRecipes"
+if ($totalRecipes -ne 91) {
+    Fail "expected 91 recipe resources (89 production + 2 fixture-gated), found $totalRecipes"
 }
-if ($machineRecipeNames.Count -ne 6) {
-    Fail "expected 6 machine recipe files in data/lithmod/machine_recipes, found $($machineRecipeNames.Count)"
+if ($machineRecipeNames.Count -ne 18) {
+    Fail "expected 18 machine recipe files in data/lithmod/machine_recipes, found $($machineRecipeNames.Count)"
 }
 if ($cookingNames.Count -ne 2) {
     Fail "expected the two vanilla cooking recipes in data/lithmod/recipe, found $($cookingNames.Count)"
@@ -337,8 +337,8 @@ foreach ($rFile in $machineRecipeNames) {
 if ($fixtureRecipeCount -ne 2) {
     Fail "expected the two '$fixtureMachineId' fixture recipes to be payload-gated, found $fixtureRecipeCount"
 }
-if (($totalRecipes - $fixtureRecipeCount) -ne 59) {
-    Fail 'production recipe count is not 59'
+if (($totalRecipes - $fixtureRecipeCount) -ne 89) {
+    Fail 'production recipe count is not 89'
 }
 
 # ---- loader directory strings + codec sources (derived from tracked source) --
@@ -706,4 +706,5 @@ Emit '| Block Tags | data/lithmod/tags/block/machine.json + data/minecraft/tags/
 Emit '| Runtime Config | run/config/lithmod-local.toml (ModConfig.Type.LOCAL, registered in EUVCRAFTMod.java) |'
 Emit '| Fixture_gate | JVM system property lithmodFixtures AND non-production (GameTestFixtures.java); -PlithmodFixtures=false with -PlithmodShippingProbe=true registers one off-mode case |'
 Emit-Blank
+
 

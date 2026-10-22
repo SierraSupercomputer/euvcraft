@@ -360,6 +360,44 @@ public final class ModItems {
     public static final DeferredItem<LineComponentItem> PRECISION_OVERLAY_SCOPE = ITEMS.registerItem("precision_overlay_scope",
         properties -> new LineComponentItem(properties, "metrology", 4), properties -> properties.stacksTo(1));
 
+
+    // T5 utilities and common assembly carriers.
+    public static final DeferredItem<BlockItem> UTILITY_PLANT = ITEMS.registerSimpleBlockItem("utility_plant", () -> com.euvcraft.lithmod.mc.multiblock.utilities.UtilityMachines.CONTROLLER.get());
+    public static final DeferredItem<BlockItem> UTILITY_WATER_INLET = ITEMS.registerSimpleBlockItem("utility_water_inlet", () -> com.euvcraft.lithmod.mc.multiblock.utilities.UtilityMachines.WATER_INLET.get());
+    public static final DeferredItem<BlockItem> UTILITY_PURE_OUTLET = ITEMS.registerSimpleBlockItem("utility_pure_outlet", () -> com.euvcraft.lithmod.mc.multiblock.utilities.UtilityMachines.PURE_OUTLET.get());
+    public static final DeferredItem<BlockItem> PICK_AND_PLACE = ITEMS.registerSimpleBlockItem("pick_and_place", () -> com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMachines.CONTROLLER.get());
+    public static final DeferredItem<BlockItem> SCANNER_DIAGNOSTIC_PANEL = ITEMS.registerSimpleBlockItem("scanner_diagnostic_panel", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.DIAGNOSTIC_PANEL.get());
+    public static final DeferredItem<BlockItem> SCANNER_WATER_INLET = ITEMS.registerSimpleBlockItem("scanner_water_inlet", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.WATER_INLET.get());
+    public static final DeferredItem<BlockItem> SCANNER_IMMERSION_MODULE = ITEMS.registerSimpleBlockItem("scanner_immersion_module", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.IMMERSION_MODULE.get());
+    public static final DeferredItem<Item> LOGIC_CHIP_T5 = ITEMS.registerSimpleItem("logic_chip_t5");
+    public static final DeferredItem<Item> MEMORY_CHIP_T5 = ITEMS.registerSimpleItem("memory_chip_t5");
+    public static final DeferredItem<Item> COMPUTE_CHIP_T5 = ITEMS.registerSimpleItem("compute_chip_t5");
+    public static final DeferredItem<Item> NAND_CHIP_T5 = ITEMS.registerSimpleItem("nand_chip_t5");
+    public static final DeferredItem<Item> UTILITY_FILTER = ITEMS.registerSimpleItem("utility_filter");
+    public static final DeferredItem<Item> BURN_PAPER = ITEMS.registerSimpleItem("burn_paper");
+    public static final DeferredItem<Item> CPU_BLANK = ITEMS.registerSimpleItem("cpu_blank");
+    public static final DeferredItem<Item> DIMM_BLANK = ITEMS.registerSimpleItem("dimm_blank");
+    public static final DeferredItem<Item> MICROCONTROLLER_BLANK = ITEMS.registerSimpleItem("microcontroller_blank");
+    public static final DeferredItem<Item> CPU_T3 = ITEMS.registerSimpleItem("cpu_t3");
+    public static final DeferredItem<Item> CPU_T4 = ITEMS.registerSimpleItem("cpu_t4");
+    public static final DeferredItem<Item> CPU_T5 = ITEMS.registerSimpleItem("cpu_t5");
+    public static final DeferredItem<Item> DIMM_T2 = ITEMS.registerSimpleItem("dimm_t2");
+    public static final DeferredItem<Item> DIMM_T3 = ITEMS.registerSimpleItem("dimm_t3");
+    public static final DeferredItem<Item> DIMM_T4 = ITEMS.registerSimpleItem("dimm_t4");
+    public static final DeferredItem<Item> DIMM_T5 = ITEMS.registerSimpleItem("dimm_t5");
+    public static final DeferredItem<Item> MICROCONTROLLER_T1 = ITEMS.registerSimpleItem("microcontroller_t1");
+    public static final DeferredItem<Item> MICROCONTROLLER_T2 = ITEMS.registerSimpleItem("microcontroller_t2");
+    public static final DeferredItem<Item> MICROCONTROLLER_T3 = ITEMS.registerSimpleItem("microcontroller_t3");
+    public static final DeferredItem<Item> MICROCONTROLLER_T4 = ITEMS.registerSimpleItem("microcontroller_t4");
+    public static final DeferredItem<Item> MICROCONTROLLER_T5 = ITEMS.registerSimpleItem("microcontroller_t5");
+    public static final DeferredItem<Item> RESIST_T5 = ITEMS.registerSimpleItem("resist_t5", p -> p.component(ModDataComponents.RESIST_TIER, 5));
+    public static final DeferredItem<LineComponentItem> IMMERSION_LIGHT_SOURCE = ITEMS.registerItem("immersion_light_source", p -> new LineComponentItem(p,"light_source",5), p -> p.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> IMMERSION_OPTICS = ITEMS.registerItem("immersion_optics", p -> new LineComponentItem(p,"optics",5), p -> p.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> IMMERSION_STAGE = ITEMS.registerItem("immersion_stage", p -> new LineComponentItem(p,"stage",5), p -> p.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> IMMERSION_FILTRATION = ITEMS.registerItem("immersion_filtration", p -> new LineComponentItem(p,"cleanroom",5), p -> p.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> IMMERSION_METROLOGY = ITEMS.registerItem("immersion_metrology", p -> new LineComponentItem(p,"metrology",5), p -> p.stacksTo(1));
+
     private ModItems() {
     }
 }
+

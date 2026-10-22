@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "lithmod:arf_dry_lens",
+    "lithmod:logic_chip_t4",
+    "minecraft:diamond"
+  ],
+  "result": {
+    "id": "lithmod:immersion_optics",
+    "count": 1
+  }
+}

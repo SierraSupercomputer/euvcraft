@@ -1,0 +1,18 @@
+{
+  "machine": "pick_and_place",
+  "ingredients": [
+    {
+      "item": "lithmod:memory_chip_t5",
+      "count": 4
+    },
+    {
+      "item": "lithmod:dimm_blank",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:dimm_t5",
+    "count": 1
+  },
+  "ticks": 180
+}
