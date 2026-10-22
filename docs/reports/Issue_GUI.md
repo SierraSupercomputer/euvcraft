@@ -22,3 +22,5 @@ Fixed label clipping and overlap issues in two screen files per scoped task.
 - Font width assumptions: ~5px/char for default Minecraft font; `plainSubstrByWidth` handles actual truncation.
 - No changes to menu slots, widgets, server logic, or graph function.
 - Report created at `docs/reports/Issue_GUI.md` per scope.
+
+Coordinator correction: the worker's y=22 legend would still overlap the graph beginning at24, contrary to its report. Restored the legend to19 and moved/resized the graph to32..104 (72px tall), updating axis/mapping consistently. Paper x270 is retained. Utility input labels are individually aligned to actual slots35/80/125 and the plumbing instruction uses two short complete lines; proportional font width is not approximated as5px per character. Rendered verification remains pending.
