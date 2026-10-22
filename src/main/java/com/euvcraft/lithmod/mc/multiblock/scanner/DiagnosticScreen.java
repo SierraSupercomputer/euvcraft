@@ -15,7 +15,7 @@ public final class DiagnosticScreen extends AbstractContainerScreen<DiagnosticMe
   for(var slot:menu.slots){g.fill(leftPos+slot.x-1,topPos+slot.y-1,leftPos+slot.x+17,topPos+slot.y+17,0xFF777777);g.fill(leftPos+slot.x,topPos+slot.y,leftPos+slot.x+16,topPos+slot.y+16,0xFFA0A0A0);}
  }
  private int map(int hundredths){return Math.clamp(40-hundredths*79/1600,1,78);}private void text(GuiGraphicsExtractor g,String text,int x,int y){g.text(font,font.plainSubstrByWidth(text,304-x),x,y,0xFF303030,false);}
- @Override protected void extractLabels(GuiGraphicsExtractor g,int mx,int my){text(g,"Diagnostic tuning: y = Ax² + bx + c",8,7);text(g,"Amber: target; cyan: last plot | x ±2, y ±8",15,19);text(g,"A                      b                      c    (-2.00 to 2.00)",20,110);text(g,"Paper",276,132);text(g,"Quality "+menu.value(2)+"/100  Yield ×"+menu.value(8)/1000.0+"  Min "+menu.value(7),15,166);text(g,menu.value(6)!=0?"Locked during processing":menu.value(1)==1?"Fit accepted":"Adjust coefficients, plot, then accept",15,176);}
+ @Override protected void extractLabels(GuiGraphicsExtractor g,int mx,int my){text(g,"Diagnostic tuning: y = Ax² + bx + c",8,7);text(g,"Amber: target; cyan: last plot | x ±2, y ±8",15,22);text(g,"A                      b                      c    (-2.00 to 2.00)",20,110);text(g,"Paper",270,132);text(g,"Quality "+menu.value(2)+"/100  Yield ×"+menu.value(8)/1000.0+"  Min "+menu.value(7),15,166);text(g,menu.value(6)!=0?"Locked during processing":menu.value(1)==1?"Fit accepted":"Adjust coefficients, plot, then accept",15,176);}
 }
 
 
