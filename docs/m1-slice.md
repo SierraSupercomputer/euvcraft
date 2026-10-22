@@ -2195,6 +2195,7 @@ public com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOwner controller();
 public boolean isMemberOfFormedCell();
 public void attach(com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOwner, boolean);
 public void serverTick();
+public boolean supportsOwner(com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOwner);
 public com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOwner belowOwner();
 protected boolean energyPort();
 public net.neoforged.neoforge.transfer.energy.EnergyHandler energy();
@@ -2341,6 +2342,7 @@ public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.min
 
 ### com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMemberBlockEntity
 ```java
+public boolean supportsOwner(com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOwner);
 public com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMemberBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
 public com.euvcraft.lithmod.core.multiblock.BlockKind structureKind();
 protected boolean energyPort();
@@ -2487,6 +2489,7 @@ protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.it
 
 ### com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMemberBlockEntity
 ```java
+public boolean supportsOwner(com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOwner);
 public com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMemberBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
 public com.euvcraft.lithmod.core.multiblock.BlockKind structureKind();
 public java.util.UUID installation();
@@ -2854,6 +2857,7 @@ public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.min
 
 ### com.euvcraft.lithmod.mc.multiblock.utilities.UtilityPortBlockEntity
 ```java
+public boolean supportsOwner(com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOwner);
 public com.euvcraft.lithmod.mc.multiblock.utilities.UtilityPortBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
 public com.euvcraft.lithmod.core.multiblock.BlockKind structureKind();
 public net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.fluid.FluidResource> handler();

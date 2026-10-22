@@ -55,6 +55,7 @@ public final class AdvancedFormation {
         var block=level.getBlockState(pos).getBlock();
         if(pos.equals(machine.getBlockPos()))return entity==machine?BlockKind.CONTROLLER:BlockKind.OTHER;
         if(!(entity instanceof AdvancedMemberBlockEntity member))return BlockKind.OTHER;
+        if(!member.supportsOwner(owner))return BlockKind.OTHER;
         var other=member.controller();
         if(other!=null&&other!=owner&&other.isFormed()&&!other.machine().isRemoved()
                 &&level.getBlockEntity(other.machine().getBlockPos())==other.machine())return BlockKind.OTHER;
@@ -86,3 +87,4 @@ public final class AdvancedFormation {
         if(next!=state)level.setBlock(pos,next,2);
     }
 }
+
