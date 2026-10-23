@@ -9,11 +9,11 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
   - com.euvcraft.lithmod.core.cleanroom (3 files)
   - com.euvcraft.lithmod.core.multiblock (11 files)
   - com.euvcraft.lithmod.mc (21 files)
-  - com.euvcraft.lithmod.mc.cleanroom (16 files)
+  - com.euvcraft.lithmod.mc.cleanroom (17 files)
   - com.euvcraft.lithmod.mc.compat (1 files)
   - com.euvcraft.lithmod.mc.compat.mixin (1 files)
   - com.euvcraft.lithmod.mc.data (14 files)
-  - com.euvcraft.lithmod.mc.gametest (33 files)
+  - com.euvcraft.lithmod.mc.gametest (34 files)
   - com.euvcraft.lithmod.mc.machine (4 files)
   - com.euvcraft.lithmod.mc.machine.client (1 files)
   - com.euvcraft.lithmod.mc.machine.mask (9 files)
@@ -1368,6 +1368,7 @@ protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.it
 
 ### com.euvcraft.lithmod.mc.cleanroom.CleanroomMenu
 ```java
+protected void addDataSlots(net.minecraft.world.inventory.ContainerData);
 public com.euvcraft.lithmod.mc.cleanroom.CleanroomMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity, boolean);
 public com.euvcraft.lithmod.mc.cleanroom.CleanroomMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
 protected void addMachineSlots();
@@ -1528,6 +1529,14 @@ public int minZ();
 public int maxX();
 public int maxY();
 public int maxZ();
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.WideContainerData
+```java
+public com.euvcraft.lithmod.mc.cleanroom.WideContainerData(net.minecraft.world.inventory.ContainerData);
+public int getCount();
+public int get(int);
+public void set(int, int);
 ```
 
 ### com.euvcraft.lithmod.mc.compat.TooltipLineWrapping

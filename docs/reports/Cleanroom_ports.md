@@ -1,3 +1,5 @@
+> Coordinator integration note: the following is a preserved worker draft, not independent execution evidence. The domain draft required correction of power/breach signs, exposure validation/overflow and assertions. Ports required26.3 API fixes, bidirectional live guards and six-axis support. See Cleanroom_foundation.md for final architecture and manual-walkthrough-cleanroom.md for owner tests.
+
 # Cleanroom Ports Implementation Report
 
 ## Scope

@@ -166,7 +166,7 @@ public final class PresentationGameTests {
     }
     private static void recipeRegistry(GameTestHelper h) {
         var vanilla = resources(h, "recipe");
-        h.assertValueEqual(75, vanilla.size(), "M1 vanilla recipe inventory");
+        h.assertValueEqual(89, vanilla.size(), "M1 vanilla recipe inventory");
         for (var entry : vanilla.entrySet()) {
             JsonObject source = json(entry.getValue());
             expectedOutput(h, source, assemble(h, entry.getKey(), source), entry.getKey().toString());
@@ -211,7 +211,7 @@ public final class PresentationGameTests {
                 cooking++;
             }
         }
-        h.assertValueEqual(73, crafting, "Crafting lookup inventory");
+        h.assertValueEqual(87, crafting, "Crafting lookup inventory");
         h.assertValueEqual(2, cooking, "Cooking lookup inventory");
         var sand = manager.getRecipeFor(RecipeType.SMELTING, new SingleRecipeInput(new ItemStack(Items.SAND)), h.getLevel()).orElseThrow();
         h.assertTrue(sand.value().assemble(new SingleRecipeInput(new ItemStack(Items.SAND))).is(Items.GLASS), "Sand must still smelt to glass");
