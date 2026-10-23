@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "IRI",
+    "WLW",
+    "IRI"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "R": "minecraft:redstone",
+    "W": "lithmod:cleanroom_wall",
+    "L": "lithmod:logic_chip_t4"
+  },
+  "result": {
+    "id": "lithmod:cleanroom_controller",
+    "count": 1
+  }
+}

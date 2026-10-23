@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "lithmod:cleanroom_gown"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "lithmod:cleanroom_gown"
+      }
+    ]
+  }
+}

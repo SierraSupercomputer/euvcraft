@@ -48,7 +48,15 @@ import java.util.UUID;
  * @param grade                the wafer substrate grade of this lot, never null
  * @param preparationGeneration the preparation generation: 1 = legacy/unprepared, 2 = G2 prepared
  */
-public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec run, WaferSubstrate grade, int preparationGeneration) {
+public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec run, WaferSubstrate grade, int preparationGeneration, com.euvcraft.lithmod.core.cleanroom.CleanroomExposure roomExposure, int roomYieldPermille) {
+
+    public FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec run, WaferSubstrate grade, int preparationGeneration) {
+        this(lotId,capacity,wafers,run,grade,preparationGeneration,com.euvcraft.lithmod.core.cleanroom.CleanroomExposure.empty(),0);
+    }
+
+    public FoupContents withRoomExposure(com.euvcraft.lithmod.core.cleanroom.CleanroomExposure exposure, int frozenPermille) {
+        return new FoupContents(lotId,capacity,wafers,run,grade,preparationGeneration,exposure,frozenPermille);
+    }
 
     /** Saved/source compatibility with pre-T4 lots. */
     public FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec run, WaferSubstrate grade) {
@@ -123,6 +131,9 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
      *                                  is not 1 or 2
      */
     public FoupContents {
+        Objects.requireNonNull(roomExposure, "roomExposure");
+        if(roomYieldPermille<0||roomYieldPermille>1000)throw new IllegalArgumentException("Invalid room yield");
+        if(wafers.isEmpty()&&(roomExposure.samples()!=0||roomYieldPermille!=0))throw new IllegalArgumentException("Empty carrier cannot retain room exposure");
         Objects.requireNonNull(lotId, "lotId must not be null");
         Objects.requireNonNull(wafers, "wafers must not be null");
         Objects.requireNonNull(grade, "grade must not be null");
@@ -211,7 +222,7 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
         }
         List<Wafer> grown = new ArrayList<>(this.wafers);
         grown.add(wafer);
-        return new FoupContents(this.lotId, this.capacity, grown, this.run, this.grade, this.preparationGeneration);
+        return new FoupContents(this.lotId, this.capacity, grown, this.run, this.grade, this.preparationGeneration, this.roomExposure, this.roomYieldPermille);
     }
 
     /**
@@ -233,7 +244,7 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
         }
         List<Wafer> grown = new ArrayList<>(this.wafers);
         grown.addAll(newWafers);
-        return new FoupContents(this.lotId, this.capacity, grown, this.run, this.grade, this.preparationGeneration);
+        return new FoupContents(this.lotId, this.capacity, grown, this.run, this.grade, this.preparationGeneration, this.roomExposure, this.roomYieldPermille);
     }
 
     /**
@@ -256,7 +267,7 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
         if (shrunk.isEmpty()) {
             newPreparation = PREPARATION_LEGACY;
         }
-        return new FoupContents(this.lotId, this.capacity, shrunk, this.run, this.grade, newPreparation);
+        return new FoupContents(this.lotId, this.capacity, shrunk, this.run, this.grade, newPreparation, shrunk.isEmpty()?com.euvcraft.lithmod.core.cleanroom.CleanroomExposure.empty():roomExposure, shrunk.isEmpty()?0:roomYieldPermille);
     }
 
     /**
@@ -280,7 +291,7 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
      * @return a new lot with the spec attached, preserving the grade and preparation generation
      */
     public FoupContents withRun(RunSpec run) {
-        return new FoupContents(this.lotId, this.capacity, this.wafers, run, this.grade, this.preparationGeneration);
+        return new FoupContents(this.lotId, this.capacity, this.wafers, run, this.grade, this.preparationGeneration, roomExposure, roomYieldPermille);
     }
 
     /**
@@ -314,7 +325,7 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
                 throw new IllegalArgumentException("all wafers must be at layer 0 (unprocessed) to prepare");
             }
         }
-        return new FoupContents(this.lotId, this.capacity, this.wafers, this.run, this.grade, PREPARATION_G2);
+        return new FoupContents(this.lotId, this.capacity, this.wafers, this.run, this.grade, PREPARATION_G2, roomExposure, roomYieldPermille);
     }
 
     /**

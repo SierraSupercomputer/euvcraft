@@ -83,6 +83,9 @@ public final class ProcessRun implements ProcessStartResult {
             state = ProcessState.PAUSED_NO_POWER;
             return new ProcessTickResult(state, events);
         }
+        FoupContents sampled = Objects.requireNonNull(environment.processingTick(lot));
+        if(!sampled.lotId().equals(lot.lotId())||sampled.capacity()!=lot.capacity()||!sampled.wafers().equals(lot.wafers())||!Objects.equals(sampled.run(),lot.run())||sampled.grade()!=lot.grade()||sampled.preparationGeneration()!=lot.preparationGeneration()||sampled.roomYieldPermille()!=lot.roomYieldPermille())throw new IllegalStateException("Processing sample changed wafer state");
+        lot=sampled;
         if (progressTicks + 1 < layerTicks) {
             progressTicks++;
             state = ProcessState.RUNNING;

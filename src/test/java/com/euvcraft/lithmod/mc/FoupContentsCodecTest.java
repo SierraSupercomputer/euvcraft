@@ -353,4 +353,28 @@ class FoupContentsCodecTest {
         saved.putString(FoupContentsCodec.KEY_PREPARATION,"two");
         assertTrue(FoupContentsCodec.CODEC.parse(NbtOps.INSTANCE,saved).error().isPresent());
     }
+
+    @Test void cleanroomExposurePersistsWithoutNetworkDisclosure() {
+        var original=lot(4,3,2);
+        var exposure=new com.euvcraft.lithmod.core.cleanroom.CleanroomExposure(200,123456);
+        var sampled=original.withRoomExposure(exposure,0);
+        assertEquals(sampled,encodeDecode(sampled));
+        ByteBuf a=Unpooled.buffer(),b=Unpooled.buffer();
+        try {
+            FoupContentsCodec.STREAM_CODEC.encode(a,original);
+            FoupContentsCodec.STREAM_CODEC.encode(b,sampled);
+            assertEquals(a,b,"Exposure never changes public bytes");
+            var view=FoupContentsCodec.STREAM_CODEC.decode(b);
+            assertEquals(com.euvcraft.lithmod.core.cleanroom.CleanroomExposure.empty(),view.roomExposure());
+            assertEquals(0,view.roomYieldPermille());
+        }finally{a.release();b.release();}
+    }
+    @Test void malformedExposureFailsWithCodecError() {
+        for(long[] pair:List.of(new long[]{-1,0},new long[]{0,1},new long[]{2,1},new long[]{1,1001},new long[]{Long.MAX_VALUE,Long.MAX_VALUE-1})){
+            var tag=(CompoundTag)FoupContentsCodec.CODEC.encodeStart(NbtOps.INSTANCE,lot(4,3,0)).result().orElseThrow();
+            var invalid=new CompoundTag();invalid.putLong("ticks",pair[0]);invalid.putLong("sum",pair[1]);tag.put("roomExposure",invalid);
+            assertTrue(FoupContentsCodec.CODEC.parse(NbtOps.INSTANCE,tag).error().isPresent(),"Malformed exposure fails closed");
+        }
+    }
+
 }

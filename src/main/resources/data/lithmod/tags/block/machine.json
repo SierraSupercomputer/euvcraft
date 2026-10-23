@@ -1,12 +1,24 @@
 {
   "values": [
-    { "id": "lithmod:test_machine", "required": false },
+    {
+      "id": "lithmod:test_machine",
+      "required": false
+    },
     "lithmod:crystal_puller",
     "lithmod:wafer_slicer",
     "lithmod:pattern_generator",
     "lithmod:process_cell_controller",
     "lithmod:process_cell_casing",
     "lithmod:process_cell_power_port",
-    "lithmod:test_package"
+    "lithmod:test_package",
+    "lithmod:cleanroom_floor",
+    "lithmod:cleanroom_wall",
+    "lithmod:cleanroom_window",
+    "lithmod:cleanroom_door",
+    "lithmod:cleanroom_controller",
+    "lithmod:cleanroom_filter",
+    "lithmod:cleanroom_power_port",
+    "lithmod:cleanroom_fluid_port",
+    "lithmod:cleanroom_item_port"
   ]
 }

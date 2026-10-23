@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "SSS",
+    "IWI",
+    "SSS"
+  ],
+  "key": {
+    "S": "minecraft:smooth_stone",
+    "I": "minecraft:iron_ingot",
+    "W": "minecraft:white_wool"
+  },
+  "result": {
+    "id": "lithmod:cleanroom_floor",
+    "count": 4
+  }
+}

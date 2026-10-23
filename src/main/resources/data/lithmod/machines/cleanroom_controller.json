@@ -1,0 +1,6 @@
+{
+  "id": "cleanroom_controller",
+  "energy_capacity": 200000,
+  "max_receive": 10000,
+  "energy_per_tick": 0
+}

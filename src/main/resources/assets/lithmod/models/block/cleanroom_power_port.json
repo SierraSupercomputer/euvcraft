@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "lithmod:block/cleanroom_power_port",
+    "north": "lithmod:block/cleanroom_power_port",
+    "south": "lithmod:block/cleanroom_power_port",
+    "east": "lithmod:block/cleanroom_wall",
+    "west": "lithmod:block/cleanroom_wall",
+    "up": "lithmod:block/cleanroom_wall",
+    "down": "lithmod:block/cleanroom_wall"
+  }
+}

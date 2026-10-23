@@ -115,6 +115,15 @@ public final class FoupContentsCodec {
         return DataResult.success(i);
     });
 
+    private record ExposureFields(long ticks,long sum){}
+    private static final Codec<com.euvcraft.lithmod.core.cleanroom.CleanroomExposure> EXPOSURE_CODEC = RecordCodecBuilder.<ExposureFields>create(i->i.group(
+        Codec.LONG.fieldOf("ticks").forGetter(ExposureFields::ticks),
+        Codec.LONG.fieldOf("sum").forGetter(ExposureFields::sum)
+    ).apply(i,ExposureFields::new)).comapFlatMap(fields->{
+        try{return DataResult.success(new com.euvcraft.lithmod.core.cleanroom.CleanroomExposure(fields.ticks(),fields.sum()));}
+        catch(IllegalArgumentException invalid){return DataResult.error(()->"Invalid cleanroom exposure: "+invalid.getMessage());}
+    },e->new ExposureFields(e.samples(),e.permilleSum()));
+
     /** Persistent private state plus backwards-compatible public substrate and preparation fields. */
     public static final Codec<FoupContents> CODEC = RecordCodecBuilder.create(instance -> instance.group(
         UUIDUtil.CODEC.fieldOf(KEY_LOT).forGetter(FoupContents::lotId),
@@ -124,11 +133,13 @@ public final class FoupContentsCodec {
         INT_ARRAY.fieldOf(KEY_FLAGS).forGetter(contents -> WaferPacking.packFlags(contents.wafers())),
         RunSpecCodec.CODEC.optionalFieldOf(KEY_RUN_SPEC).forGetter(c -> java.util.Optional.ofNullable(c.run())),
         GRADE_CODEC.optionalFieldOf(KEY_GRADE, WaferSubstrate.ORDINARY).forGetter(FoupContents::grade),
-        PREPARATION_CODEC.optionalFieldOf(KEY_PREPARATION, FoupContents.PREPARATION_LEGACY).forGetter(FoupContents::preparationGeneration)
-    ).apply(instance, (lotId, capacity, layers, rollBits, flags, runSpec, grade, preparationGeneration) ->
+        PREPARATION_CODEC.optionalFieldOf(KEY_PREPARATION, FoupContents.PREPARATION_LEGACY).forGetter(FoupContents::preparationGeneration),
+        EXPOSURE_CODEC.optionalFieldOf("roomExposure", com.euvcraft.lithmod.core.cleanroom.CleanroomExposure.empty()).forGetter(FoupContents::roomExposure),
+        Codec.intRange(0,1000).optionalFieldOf("roomYieldPermille",0).forGetter(FoupContents::roomYieldPermille)
+    ).apply(instance, (lotId, capacity, layers, rollBits, flags, runSpec, grade, preparationGeneration, exposure, roomYield) ->
         new FoupContents(lotId, capacity,
             WaferPacking.unpack(layers, WaferPacking.unpackRollBits(rollBits), flags),
-            runSpec.orElse(null), grade, preparationGeneration)));
+            runSpec.orElse(null), grade, preparationGeneration, exposure, roomYield)));
 
     /**
      * Network form: the public view only including the wafer substrate grade and preparation generation.

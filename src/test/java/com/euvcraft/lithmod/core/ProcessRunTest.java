@@ -519,4 +519,20 @@ class ProcessRunTest {
         assertDoesNotThrow(() ->
             new ProcessRun.Snapshot(ProcessState.PAUSED_NO_POWER, 1, 0, true, false, false));
     }
+
+    @Test void exposureCountsOnlyPaidTicksAndSurvivesResume() {
+        FabSettings settings=settings(Map.of("T2",2));
+        ProcessRun run=(ProcessRun)ProcessRun.start(request(freshLot(2),t2(),settings));
+        FakeEnv env=new FakeEnv(t2(),"logic",null,settings,120,12){
+            @Override public FoupContents processingTick(FoupContents lot){return lot.withRoomExposure(lot.roomExposure().sample(750),0);}
+        };
+        env.energy=0;run.tick(env);assertEquals(0,run.lot().roomExposure().samples());
+        env.energy=120;run.tick(env);assertEquals(1,run.lot().roomExposure().samples());
+        var restored=ProcessRun.restore(request(run.lot(),t2(),settings),run.snapshot());
+        runToFinish(restored,env,100);
+        assertEquals(24,restored.lot().roomExposure().samples());
+        assertEquals(750,restored.lot().roomExposure().meanPermille());
+        assertEquals(0,restored.lot().roomYieldPermille());
+    }
+
 }

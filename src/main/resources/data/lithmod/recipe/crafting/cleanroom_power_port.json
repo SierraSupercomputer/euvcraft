@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "III",
+    "WMW",
+    "III"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "W": "lithmod:cleanroom_wall",
+    "M": "minecraft:redstone"
+  },
+  "result": {
+    "id": "lithmod:cleanroom_power_port",
+    "count": 1
+  }
+}

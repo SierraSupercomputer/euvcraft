@@ -170,6 +170,7 @@ public final class ModCreativeTabs {
                 output.accept(sampleMask(DieTypes.MEMORY, 5));
                 output.accept(sampleMask(DieTypes.COMPUTE, 5));
                 output.accept(sampleMask(DieTypes.NAND, 5));
+                com.euvcraft.lithmod.mc.cleanroom.CleanroomItems.all().forEach(output::accept);
             })
             .build()
     );

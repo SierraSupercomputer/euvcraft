@@ -304,6 +304,7 @@ class StarterTextureResourceTest {
         List<String> modelFiles = listResources(ITEM_MODELS, ".json");
         for (String modelFile : modelFiles) {
             String id = modelFile.substring(0, modelFile.length() - 5); // strip .json
+            if(CleanroomAssetResourceTest.ITEM_MODELS.contains(id)) continue;
             if (PRODUCTION_ITEMS.contains(id)||T5AssetResourceTest.ITEMS.contains(id)||T5AssetResourceTest.BLOCKS.contains(id)) continue;
             if(Set.of("deposition_etcher","advanced_test_package","advanced_casing","advanced_power_port","advanced_operating_panel","scanner_controller","scanner_operating_panel","scanner_calibration_panel","scanner_exposure_module","scanner_optics_module","scanner_stage_module","scanner_filtration_module","scanner_metrology_module").contains(id)) continue;
             if (Set.of("test_machine", "crystal_puller", "wafer_slicer", "test_package",
@@ -320,6 +321,7 @@ class StarterTextureResourceTest {
         List<String> modelFiles = listResources(BLOCK_MODELS, ".json");
         for (String modelFile : modelFiles) {
             String id = modelFile.substring(0, modelFile.length() - 5);
+            if(CleanroomAssetResourceTest.BLOCK_MODELS.contains(id)) continue;
             if (PRODUCTION_BLOCKS.contains(id)||T5AssetResourceTest.BLOCKS.contains(id)||AssemblyVisualResourceTest.MODELS.contains(id)) continue;
             if (JOINED_PANEL_BLOCKS.contains(id)) continue; // joined panels validated separately
             if (Set.of("test_machine").contains(id)) continue; // preserved

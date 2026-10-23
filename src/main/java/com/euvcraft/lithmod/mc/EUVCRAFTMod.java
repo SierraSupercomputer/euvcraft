@@ -58,6 +58,7 @@ public class EUVCRAFTMod {
     private static FabConfig config;
 
     public EUVCRAFTMod(IEventBus modEventBus, ModContainer modContainer) {
+        com.euvcraft.lithmod.mc.cleanroom.CleanroomBlocks.register(modEventBus);
         ModDataComponents.DATA_COMPONENTS.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
         ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
@@ -108,6 +109,8 @@ modEventBus.addListener(ComponentTooltipAppenders::register);
             com.euvcraft.lithmod.mc.gametest.T4RuntimeGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.ScannerGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.T5GameTests.register(modEventBus);
+            com.euvcraft.lithmod.mc.gametest.CleanroomPortGameTests.register(modEventBus);
+            com.euvcraft.lithmod.mc.gametest.CleanroomSafetyGameTests.register(modEventBus);
             T3ContentGameTests.register(modEventBus);
             T3PurificationGameTests.register(modEventBus);
             T3MaskWriterGameTests.register(modEventBus);
@@ -124,6 +127,8 @@ modEventBus.addListener(ComponentTooltipAppenders::register);
         modEventBus.addListener(EUVCRAFTMod::configLoaded);
         modEventBus.addListener(EUVCRAFTMod::configReloaded);
 
+        NeoForge.EVENT_BUS.addListener(com.euvcraft.lithmod.mc.cleanroom.CleanroomRulesLoader::register);
+        NeoForge.EVENT_BUS.addListener(com.euvcraft.lithmod.mc.cleanroom.CleanroomRooms::blockChanged);
         NeoForge.EVENT_BUS.addListener(FoupDebugCommand::register);
         NeoForge.EVENT_BUS.addListener(FabDebugCommand::register);
 
