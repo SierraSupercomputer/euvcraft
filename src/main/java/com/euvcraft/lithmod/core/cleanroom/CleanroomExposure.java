@@ -58,6 +58,6 @@ public record CleanroomExposure(long samples, long permilleSum) {
         if (mean > Integer.MAX_VALUE) {
             throw new ArithmeticException("mean exceeds int range");
         }
-        return (int) mean;
+        return (int) (mean + (permilleSum % samples >= (samples / 2 + samples % 2) ? 1 : 0));
     }
 }

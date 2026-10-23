@@ -1,6 +1,6 @@
 package com.euvcraft.lithmod.mc.cleanroom;
 
-import com.euvcraft.lithmod.mc.registry.CleanroomBlocks;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
@@ -72,8 +72,8 @@ public class CleanroomPortBlockEntity extends BlockEntity {
      */
     public @Nullable EnergyHandler energy(@Nullable Direction side) {
         if (role() != CleanroomPortBlock.PortRole.POWER) return null;
-        if (side == null || side != outsideSide()) return null; // only outside face, no transverse/null
-        return new ForwardingEnergyHandler(this);
+        if (side == null || side != outsideSide() && side != insideSide()) return null; // only outside face, no transverse/null
+        return new ForwardingEnergyHandler(this, side);
     }
 
     /**
@@ -82,8 +82,8 @@ public class CleanroomPortBlockEntity extends BlockEntity {
      */
     public @Nullable ResourceHandler<FluidResource> fluids(@Nullable Direction side) {
         if (role() != CleanroomPortBlock.PortRole.FLUID) return null;
-        if (side == null || side != outsideSide()) return null;
-        return new ForwardingFluidHandler(this);
+        if (side == null || side != outsideSide() && side != insideSide()) return null;
+        return new ForwardingFluidHandler(this, side);
     }
 
     /**
@@ -92,8 +92,8 @@ public class CleanroomPortBlockEntity extends BlockEntity {
      */
     public @Nullable ResourceHandler<ItemResource> items(@Nullable Direction side) {
         if (role() != CleanroomPortBlock.PortRole.ITEM) return null;
-        if (side == null || side != outsideSide()) return null;
-        return new ForwardingItemHandler(this);
+        if (side == null || side != outsideSide() && side != insideSide()) return null;
+        return new ForwardingItemHandler(this, side);
     }
 
     /** Server tick — currently no-op, but kept for symmetry with other port BEs. */
@@ -121,10 +121,11 @@ public class CleanroomPortBlockEntity extends BlockEntity {
 
         private @Nullable EnergyHandler neighborHandler() {
             Level level = port.getLevel();
-            if (level == null || level.isClientSide() || port.isRemoved()) return null;
-            BlockPos neighborPos = port.worldPosition.relative(port.insideSide());
-            // Do not force chunk load; getCapability returns null if unloaded
-            return level.getCapability(Capabilities.Energy.BLOCK, neighborPos, port.outsideSide());
+            if (level == null || level.isClientSide() || port.isRemoved() || !level.hasChunkAt(port.getBlockPos()) || level.getBlockEntity(port.getBlockPos()) != port) return null;
+            BlockPos neighborPos = port.worldPosition.relative(side.getOpposite());
+            if (!level.hasChunkAt(neighborPos)) return null;
+            // Never force an endpoint chunk to load.
+            return level.getCapability(Capabilities.Energy.BLOCK, neighborPos, side);
         }
 
         private boolean enterRecursion() {
@@ -200,9 +201,10 @@ public class CleanroomPortBlockEntity extends BlockEntity {
 
         private @Nullable ResourceHandler<FluidResource> neighborHandler() {
             Level level = port.getLevel();
-            if (level == null || level.isClientSide() || port.isRemoved()) return null;
-            BlockPos neighborPos = port.worldPosition.relative(port.insideSide());
-            return level.getCapability(Capabilities.Fluid.BLOCK, neighborPos, port.outsideSide());
+            if (level == null || level.isClientSide() || port.isRemoved() || !level.hasChunkAt(port.getBlockPos()) || level.getBlockEntity(port.getBlockPos()) != port) return null;
+            BlockPos neighborPos = port.worldPosition.relative(side.getOpposite());
+            if (!level.hasChunkAt(neighborPos)) return null;
+            return level.getCapability(Capabilities.Fluid.BLOCK, neighborPos, side);
         }
 
         private boolean enterRecursion() {
@@ -313,9 +315,10 @@ public class CleanroomPortBlockEntity extends BlockEntity {
 
         private @Nullable ResourceHandler<ItemResource> neighborHandler() {
             Level level = port.getLevel();
-            if (level == null || level.isClientSide() || port.isRemoved()) return null;
-            BlockPos neighborPos = port.worldPosition.relative(port.insideSide());
-            return level.getCapability(Capabilities.Item.BLOCK, neighborPos, port.outsideSide());
+            if (level == null || level.isClientSide() || port.isRemoved() || !level.hasChunkAt(port.getBlockPos()) || level.getBlockEntity(port.getBlockPos()) != port) return null;
+            BlockPos neighborPos = port.worldPosition.relative(side.getOpposite());
+            if (!level.hasChunkAt(neighborPos)) return null;
+            return level.getCapability(Capabilities.Item.BLOCK, neighborPos, side);
         }
 
         private boolean enterRecursion() {

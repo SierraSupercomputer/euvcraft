@@ -1,6 +1,6 @@
 package com.euvcraft.lithmod.mc.cleanroom;
 
-import com.euvcraft.lithmod.mc.registry.CleanroomBlocks;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -49,12 +49,12 @@ public class CleanroomPortBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected BlockState rotate(BlockState state, net.minecraft.world.level.block.state.properties.Rotation rotation) {
+    protected BlockState rotate(BlockState state, net.minecraft.world.level.block.Rotation rotation) {
         return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
     }
 
     @Override
-    protected BlockState mirror(BlockState state, net.minecraft.world.level.block.state.properties.Mirror mirror) {
+    protected BlockState mirror(BlockState state, net.minecraft.world.level.block.Mirror mirror) {
         return state.rotate(mirror.getRotation(state.getValue(FACING)));
     }
 

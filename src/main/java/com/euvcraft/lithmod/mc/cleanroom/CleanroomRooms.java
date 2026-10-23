@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerLevel;
 public final class CleanroomRooms {
  private static final Map<ServerLevel,Set<BlockPos>> ROOMS=new WeakHashMap<>();
  public record Sample(boolean available,int yieldPermille,CleanroomControllerBlockEntity room){}
+ public static void blockChanged(net.neoforged.neoforge.event.level.BlockEvent.NeighborNotifyEvent e){if(e.getLevel() instanceof ServerLevel level)for(var pos:List.copyOf(ROOMS.getOrDefault(level,Set.of())))if(level.hasChunkAt(pos)&&level.getBlockEntity(pos) instanceof CleanroomControllerBlockEntity room){var b=room.bounds();if(b==null||e.getPos().getX()>=b.minX()-1&&e.getPos().getX()<=b.maxX()+1&&e.getPos().getY()>=b.minY()-1&&e.getPos().getY()<=b.maxY()+1&&e.getPos().getZ()>=b.minZ()-1&&e.getPos().getZ()<=b.maxZ()+1)room.markTopologyDirty();}}
  public static void register(CleanroomControllerBlockEntity room){if(room.getLevel() instanceof ServerLevel l)ROOMS.computeIfAbsent(l,k->new HashSet<>()).add(room.getBlockPos());}
  public static void forget(CleanroomControllerBlockEntity room){if(room.getLevel() instanceof ServerLevel l){var set=ROOMS.get(l);if(set!=null){set.remove(room.getBlockPos());if(set.isEmpty())ROOMS.remove(l);}}}
  public static Sample sample(ServerLevel level,List<BlockPos> members){
