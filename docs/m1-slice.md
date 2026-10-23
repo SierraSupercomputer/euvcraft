@@ -8,6 +8,8 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
   - com.euvcraft.lithmod.core (56 files)
   - com.euvcraft.lithmod.core.multiblock (11 files)
   - com.euvcraft.lithmod.mc (21 files)
+  - com.euvcraft.lithmod.mc.compat (1 files)
+  - com.euvcraft.lithmod.mc.compat.mixin (1 files)
   - com.euvcraft.lithmod.mc.data (14 files)
   - com.euvcraft.lithmod.mc.gametest (32 files)
   - com.euvcraft.lithmod.mc.machine (4 files)
@@ -1185,6 +1187,16 @@ public static int tierOf(net.minecraft.world.item.ItemStack);
 
 ### com.euvcraft.lithmod.mc.RunSpecCodec
 ```java
+```
+
+### com.euvcraft.lithmod.mc.compat.TooltipLineWrapping
+```java
+public static java.util.List<net.minecraft.network.chat.FormattedText> wrap(net.minecraft.client.StringSplitter, net.minecraft.network.chat.FormattedText, int, net.minecraft.network.chat.Style, boolean);
+```
+
+### com.euvcraft.lithmod.mc.compat.mixin.EncodedTooltipMixin
+```java
+public com.euvcraft.lithmod.mc.compat.mixin.EncodedTooltipMixin();
 ```
 
 ### com.euvcraft.lithmod.mc.data.DieRuleCodec
