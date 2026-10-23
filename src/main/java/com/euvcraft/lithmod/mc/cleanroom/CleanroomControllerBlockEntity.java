@@ -11,11 +11,11 @@ import net.minecraft.world.level.storage.*;
 import java.util.*;
 public final class CleanroomControllerBlockEntity extends FabMachineBlockEntity {
  public static final int UNFORMED=0,ENCLOSED=1,BREACHED=2,UNKNOWN=3;
- private RoomBounds bounds;private int state=UNFORMED,score,doors,activeFilters,trend;private boolean powered;private String fault="Build an enclosed cuboid";private List<BlockPos> filters=List.of();private int ticks;private long validatedAt=Long.MIN_VALUE;private boolean topologyDirty=true;
+ private RoomBounds bounds;private BlockPos faultPos;private int state=UNFORMED,score,doors,activeFilters,trend;private boolean powered;private String fault="Build an enclosed cuboid";private List<BlockPos> filters=List.of();private int ticks;private long validatedAt=Long.MIN_VALUE;private boolean topologyDirty=true;
  public void markTopologyDirty(){topologyDirty=true;}
  public CleanroomControllerBlockEntity(BlockPos p,BlockState s){super(CleanroomBlocks.CONTROLLER_BE.get(),p,s,0,0);}
  @Override protected String machineId(){return "cleanroom_controller";}
- public RoomBounds bounds(){return bounds;}public int state(){return state;}public int cleanliness(){return score;}public int ppm(){return CleanroomAtmosphere.ppm(score,CleanroomRulesLoader.rules());}public int roomYield(){return CleanroomAtmosphere.yieldPermille(score,CleanroomRulesLoader.rules());}public int doors(){return doors;}public int activeFilters(){return activeFilters;}public int filterCount(){return filters.size();}public int trend(){return trend;}public boolean powered(){return powered;}public String fault(){return fault;}
+ public RoomBounds bounds(){return bounds;}public int state(){return state;}public int cleanliness(){return score;}public int ppm(){return CleanroomAtmosphere.ppm(score,CleanroomRulesLoader.rules());}public int roomYield(){return state==ENCLOSED?CleanroomAtmosphere.yieldPermille(score,CleanroomRulesLoader.rules()):CleanroomRulesLoader.rules().outsideYieldPermille();}public int doors(){return doors;}public int activeFilters(){return activeFilters;}public int filterCount(){return filters.size();}public int trend(){return trend;}public boolean powered(){return powered;}public String fault(){return fault;}public BlockPos faultPos(){return faultPos;}
  public void revalidate(){
   if(!(level instanceof ServerLevel server)||isRemoved())return;
   CleanroomRooms.register(this);var result=CleanroomTopology.discover(server,worldPosition);
@@ -23,7 +23,7 @@ public final class CleanroomControllerBlockEntity extends FabMachineBlockEntity 
   else if(bounds!=null)validateKnown();else apply(result);
   setChanged();
  }
- private void apply(CleanroomTopology.Result result){state=result.state();fault=result.fault();doors=result.doors();filters=result.filters();}
+ private void apply(CleanroomTopology.Result result){state=result.state();fault=result.fault();faultPos=result.faultPos();doors=result.doors();filters=result.filters();}
  public void validateKnown(){if(!(level instanceof ServerLevel server)||bounds==null||isRemoved())return;
   for(int cx=bounds.minX()>>4;cx<=bounds.maxX()>>4;cx++)for(int cz=bounds.minZ()>>4;cz<=bounds.maxZ()>>4;cz++)if(!server.hasChunk(cx,cz)){state=UNKNOWN;fault="Room chunk unavailable";topologyDirty=true;return;}
   if(!topologyDirty&&server.getGameTime()-validatedAt<20)return;topologyDirty=false;validatedAt=server.getGameTime();apply(CleanroomTopology.validate(server,worldPosition,bounds));if(state==ENCLOSED&&CleanroomRooms.overlaps(server,this,bounds)){state=BREACHED;fault="Room overlaps another controller";}}

@@ -187,9 +187,9 @@ class CleanroomAtmosphereTest {
             int result512 = CleanroomAtmosphere.step(0, 512, 1, 0, 0, 0, true, false, RULES);
             int result128 = CleanroomAtmosphere.step(0, 128, 1, 0, 0, 0, true, false, RULES);
 
-            assertEquals(5000, result256);
-            assertEquals(5000, result512);
-            assertEquals(5000, result128);
+            assertEquals(4200, result256);
+            assertEquals(3400, result512);
+            assertEquals(4600, result128);
         }
     }
 
@@ -200,23 +200,23 @@ class CleanroomAtmosphereTest {
         @DisplayName("filter adds when powered && !breached")
         void filterWhenPoweredNotBreached() {
             int result = CleanroomAtmosphere.step(0, 256, 1, 0, 0, 0, true, false, RULES);
-            assertEquals(5000, result);
+            assertEquals(4200, result);
         }
 
         @Test
         @DisplayName("filter does NOT add when !powered")
         void noFilterWhenUnpowered() {
             int result = CleanroomAtmosphere.step(0, 256, 1, 0, 0, 0, false, false, RULES);
-            // Should have powerLossLeak added instead
-            assertEquals(30000, result);
+            // Power loss adds contamination, lowering cleanliness
+            assertEquals(0, result);
         }
 
         @Test
         @DisplayName("filter does NOT add when breached")
         void noFilterWhenBreached() {
             int result = CleanroomAtmosphere.step(0, 256, 1, 0, 0, 0, true, true, RULES);
-            // Should have breachLeak added instead
-            assertEquals(60000, result);
+            // Breach adds contamination, lowering cleanliness
+            assertEquals(0, result);
         }
 
         @Test
@@ -236,19 +236,19 @@ class CleanroomAtmosphereTest {
         void doorLeakSubtracts() {
             // openDoors = 1 -> subtract 2500
             int result = CleanroomAtmosphere.step(SCALE, 256, 0, 0, 0, 1, true, false, RULES);
-            assertEquals(SCALE - 2500, result);
+            assertEquals(SCALE - 800 - 2500, result);
 
             // openDoors = 2 -> subtract 5000
             int result2 = CleanroomAtmosphere.step(SCALE, 256, 0, 0, 0, 2, true, false, RULES);
-            assertEquals(SCALE - 5000, result2);
+            assertEquals(SCALE - 800 - 5000, result2);
         }
 
         @Test
-        @DisplayName("breachLeak adds once when breached")
+        @DisplayName("breachLeak subtracts once when breached")
         void breachLeakAddsOnce() {
             int result = CleanroomAtmosphere.step(SCALE, 256, 0, 0, 0, 0, true, true, RULES);
-            // breachLeak = 60000 added
-            assertEquals(SCALE, result); // clamped to SCALE
+            // breachLeak = 60000 subtracted
+            assertEquals(SCALE - 800 - 60000, result); // actual breach worsens cleanliness
         }
     }
 
@@ -262,8 +262,8 @@ class CleanroomAtmosphereTest {
             int gownedResult = CleanroomAtmosphere.step(SCALE, 256, 0, 0, 1, 0, true, false, RULES);
 
             // ungownedLeak = 2000, gownedLeak = 200
-            assertEquals(SCALE - 2000, ungownedResult);
-            assertEquals(SCALE - 200, gownedResult);
+            assertEquals(SCALE - 800 - 2000, ungownedResult);
+            assertEquals(SCALE - 800 - 200, gownedResult);
             assertTrue(ungownedResult < gownedResult);
         }
     }

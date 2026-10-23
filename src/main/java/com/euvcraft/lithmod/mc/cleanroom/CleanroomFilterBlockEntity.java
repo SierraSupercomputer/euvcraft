@@ -14,9 +14,10 @@ public final class CleanroomFilterBlockEntity extends FabMachineBlockEntity {
  public boolean workSecond(CleanroomControllerBlockEntity owner){
   if(level==null||isRemoved()||owner.isRemoved()||owner.getLevel()!=level||!level.hasChunkAt(worldPosition)||level.getBlockEntity(worldPosition)!=this||owner.state()!=CleanroomControllerBlockEntity.ENCLOSED||owner.bounds()==null||!owner.bounds().shell(worldPosition))return false;
   refreshDefinition();var rules=CleanroomRulesLoader.rules();int cost=rules.filterFePerTick()*20;
-  if(definition().isEmpty()||buffer().getAmountAsLong()<cost||remaining<20&&!slot(0).is(CleanroomItems.MEDIUM.get())){working=false;return false;}
+  int needed=remaining>=20?0:(int)(((long)20-remaining+rules.filterMediaTicks()-1)/rules.filterMediaTicks());
+  if(definition().isEmpty()||buffer().getAmountAsLong()<cost||needed>0&&(!slot(0).is(CleanroomItems.MEDIUM.get())||slot(0).getCount()<needed)){working=false;return false;}
   if(energySource().draw(cost)!=cost){working=false;return false;}
-  if(remaining<20){slot(0).shrink(1);remaining=rules.filterMediaTicks();}remaining=Math.max(0,remaining-20);working=true;workedAt=level.getGameTime();setChanged();return true;
+  if(needed>0)slot(0).shrink(needed);remaining=(int)Math.min(Integer.MAX_VALUE,(long)remaining+(long)needed*rules.filterMediaTicks()-20);working=true;workedAt=level.getGameTime();setChanged();return true;
  }
  @Override public void serverTick(){refreshDefinition();data().set(DATA_ENERGY,buffer().getAmountAsInt());data().set(DATA_CAPACITY,buffer().getCapacityAsInt());}
  @Override public boolean canPlaceItem(int slot,ItemStack stack){return slot==0&&stack.is(CleanroomItems.MEDIUM.get());}

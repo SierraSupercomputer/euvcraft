@@ -6,7 +6,7 @@ import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import java.util.*;
 /** Bounded shell discovery; never asks the level to load a chunk. */
 public final class CleanroomTopology {
- public record Result(RoomBounds bounds,int state,String fault,int doors,List<BlockPos> filters){}
+ public record Result(RoomBounds bounds,int state,String fault,int doors,List<BlockPos> filters,BlockPos faultPos){public Result(RoomBounds b,int s,String f,int d,List<BlockPos> filters){this(b,s,f,d,filters,null);}}
  public static Result discover(ServerLevel level,BlockPos anchor){
   var rules=CleanroomRulesLoader.rules();var visited=new HashSet<BlockPos>();var queue=new ArrayDeque<BlockPos>();queue.add(anchor);visited.add(anchor);boolean unknown=false;
   int minX=anchor.getX(),minY=anchor.getY(),minZ=anchor.getZ(),maxX=minX,maxY=minY,maxZ=minZ;
@@ -44,7 +44,7 @@ public final class CleanroomTopology {
   }
   if(unknown)return new Result(b,CleanroomControllerBlockEntity.UNKNOWN,"Room chunk unavailable",doors,List.copyOf(filters));
   if(controllers!=1||level.getBlockState(anchor).getBlock()!=CleanroomBlocks.CONTROLLER.get())return new Result(b,CleanroomControllerBlockEntity.BREACHED,"Exactly one shell controller required",doors,List.copyOf(filters));
-  if(firstMissing!=null)return new Result(b,CleanroomControllerBlockEntity.BREACHED,"Breach at "+firstMissing.toShortString(),doors,List.copyOf(filters));
+  if(firstMissing!=null)return new Result(b,CleanroomControllerBlockEntity.BREACHED,"Breach at "+firstMissing.toShortString(),doors,List.copyOf(filters),firstMissing);
   return new Result(b,CleanroomControllerBlockEntity.ENCLOSED,"Enclosed",doors,List.copyOf(filters));
  }
  private CleanroomTopology(){}

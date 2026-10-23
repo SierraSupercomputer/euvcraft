@@ -123,6 +123,9 @@ public class CleanroomPortBlockEntity extends BlockEntity {
         private @Nullable EnergyHandler neighborHandler() {
             Level level = port.getLevel();
             if (level == null || level.isClientSide() || port.isRemoved() || !level.hasChunkAt(port.getBlockPos()) || level.getBlockEntity(port.getBlockPos()) != port) return null;
+            if(port.role()!=CleanroomPortBlock.PortRole.POWER || side!=port.insideSide()&&side!=port.outsideSide())return null;
+            if(port.role()!=CleanroomPortBlock.PortRole.POWER || side!=port.insideSide()&&side!=port.outsideSide())return null;
+            if(port.role()!=CleanroomPortBlock.PortRole.POWER || side!=port.insideSide()&&side!=port.outsideSide())return null;
             BlockPos neighborPos = port.worldPosition.relative(side.getOpposite());
             if (!level.hasChunkAt(neighborPos)) return null;
             // Never force an endpoint chunk to load.
@@ -204,6 +207,7 @@ public class CleanroomPortBlockEntity extends BlockEntity {
         private @Nullable ResourceHandler<FluidResource> neighborHandler() {
             Level level = port.getLevel();
             if (level == null || level.isClientSide() || port.isRemoved() || !level.hasChunkAt(port.getBlockPos()) || level.getBlockEntity(port.getBlockPos()) != port) return null;
+            if(port.role()!=CleanroomPortBlock.PortRole.FLUID || side!=port.insideSide()&&side!=port.outsideSide())return null;
             BlockPos neighborPos = port.worldPosition.relative(side.getOpposite());
             if (!level.hasChunkAt(neighborPos)) return null;
             return level.getCapability(Capabilities.Fluid.BLOCK, neighborPos, side);
@@ -319,6 +323,7 @@ public class CleanroomPortBlockEntity extends BlockEntity {
         private @Nullable ResourceHandler<ItemResource> neighborHandler() {
             Level level = port.getLevel();
             if (level == null || level.isClientSide() || port.isRemoved() || !level.hasChunkAt(port.getBlockPos()) || level.getBlockEntity(port.getBlockPos()) != port) return null;
+            if(port.role()!=CleanroomPortBlock.PortRole.ITEM || side!=port.insideSide()&&side!=port.outsideSide())return null;
             BlockPos neighborPos = port.worldPosition.relative(side.getOpposite());
             if (!level.hasChunkAt(neighborPos)) return null;
             return level.getCapability(Capabilities.Item.BLOCK, neighborPos, side);

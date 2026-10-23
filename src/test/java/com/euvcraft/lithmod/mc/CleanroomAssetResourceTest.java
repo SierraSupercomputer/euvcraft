@@ -1,0 +1,19 @@
+package com.euvcraft.lithmod.mc;
+import static org.junit.jupiter.api.Assertions.*;
+import com.google.gson.*;
+import java.util.*;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import javax.imageio.ImageIO;
+import org.junit.jupiter.api.Test;
+class CleanroomAssetResourceTest {
+ static final Set<String> BLOCKS=Set.of("cleanroom_floor","cleanroom_wall","cleanroom_window","cleanroom_door","cleanroom_controller","cleanroom_filter","cleanroom_power_port","cleanroom_fluid_port","cleanroom_item_port");
+ static final Set<String> ITEMS=Set.of("cleanroom_filter_medium","cleanroom_hood","cleanroom_suit","cleanroom_trousers","cleanroom_boots");
+ static final Set<String> ITEM_MODELS;static final Set<String> BLOCK_MODELS;
+ static{var items=new HashSet<>(ITEMS);items.addAll(BLOCKS);ITEM_MODELS=Set.copyOf(items);var blocks=new HashSet<>(BLOCKS);blocks.remove("cleanroom_door");for(String half:List.of("bottom","top"))for(String hinge:List.of("left","right"))for(String open:List.of("","_open"))blocks.add("cleanroom_door_"+half+"_"+hinge+open);BLOCK_MODELS=Set.copyOf(blocks);}
+ static JsonObject json(String path)throws Exception{try(var in=CleanroomAssetResourceTest.class.getResourceAsStream(path)){assertNotNull(in,path);return JsonParser.parseReader(new InputStreamReader(in,StandardCharsets.UTF_8)).getAsJsonObject();}}
+ @Test void allItemsHaveModelsTranslationsAndEditableRecipes()throws Exception{var lang=json("/assets/lithmod/lang/en_us.json");for(String id:ITEM_MODELS){assertTrue(lang.has("item.lithmod."+id));var model=json("/assets/lithmod/items/"+id+".json").getAsJsonObject("model");assertEquals("lithmod:item/"+id,model.get("model").getAsString());json("/assets/lithmod/models/item/"+id+".json");var recipe=json("/data/lithmod/recipe/crafting/"+id+".json");assertEquals("lithmod:"+id,recipe.getAsJsonObject("result").get("id").getAsString());}}
+ @Test void blockModelsReferenceRealTextures()throws Exception{for(String id:BLOCK_MODELS){var model=json("/assets/lithmod/models/block/"+id+".json");for(var ref:model.getAsJsonObject("textures").entrySet()){var path="/assets/lithmod/textures/"+ref.getValue().getAsString().substring(8)+".png";try(var in=getClass().getResourceAsStream(path)){assertNotNull(in,path);var image=ImageIO.read(in);assertNotNull(image);assertEquals(16,image.getWidth());assertEquals(16,image.getHeight());}}}}
+ @Test void doorStatesCoverBothPoweredValuesAndOnlyLowerHalfDrops()throws Exception{var variants=json("/assets/lithmod/blockstates/cleanroom_door.json").getAsJsonObject("variants");for(String facing:List.of("north","east","south","west"))for(String half:List.of("lower","upper"))for(String hinge:List.of("left","right"))for(boolean open:List.of(false,true))for(boolean power:List.of(false,true)){var state=Map.of("facing",facing,"half",half,"hinge",hinge,"open",""+open,"powered",""+power);var matches=variants.entrySet().stream().filter(e->Arrays.stream(e.getKey().split(",")).allMatch(p->{var a=p.split("=");return a[1].equals(state.get(a[0]));})).toList();assertEquals(1,matches.size());String id=matches.getFirst().getValue().getAsJsonObject().get("model").getAsString().substring("lithmod:block/".length());assertTrue(BLOCK_MODELS.contains(id));}var loot=json("/data/lithmod/loot_table/blocks/cleanroom_door.json");assertTrue(loot.toString().contains("\"half\":\"lower\""));}
+ @Test void gownEquipmentHasBothTextureLayers()throws Exception{var layers=json("/assets/lithmod/equipment/cleanroom_gown.json").getAsJsonObject("layers");for(String layer:List.of("humanoid","humanoid_leggings")){assertEquals("lithmod:cleanroom_gown",layers.getAsJsonArray(layer).get(0).getAsJsonObject().get("texture").getAsString());try(var in=getClass().getResourceAsStream("/assets/lithmod/textures/entity/equipment/"+layer+"/cleanroom_gown.png")){assertNotNull(in);var img=ImageIO.read(in);assertEquals(64,img.getWidth());assertEquals(32,img.getHeight());}}}
+}

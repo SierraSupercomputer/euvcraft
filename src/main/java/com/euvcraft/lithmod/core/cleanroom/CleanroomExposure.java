@@ -11,6 +11,9 @@ package com.euvcraft.lithmod.core.cleanroom;
  * This class has no Minecraft or NeoForge dependencies.
  */
 public record CleanroomExposure(long samples, long permilleSum) {
+    public CleanroomExposure {
+        if(samples<0||permilleSum<0||samples==0&&permilleSum!=0||samples>0&&(permilleSum<samples||permilleSum/samples>1000||(permilleSum/samples==1000&&permilleSum%samples!=0)))throw new IllegalArgumentException("Invalid room exposure");
+    }
 
     /**
      * Returns an empty exposure accumulator.
