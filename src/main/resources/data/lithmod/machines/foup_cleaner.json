@@ -1,0 +1,12 @@
+{
+  "id": "foup_cleaner",
+  "energy_capacity": 40000,
+  "max_receive": 2000,
+  "energy_per_tick": 20,
+  "params": {
+    "duration": 200,
+    "water_mb": 1000,
+    "water_capacity_mb": 16000,
+    "scrap_per_wafer": 1
+  }
+}
