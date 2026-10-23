@@ -115,10 +115,14 @@ public final class FoupContentsCodec {
         return DataResult.success(i);
     });
 
-    private static final Codec<com.euvcraft.lithmod.core.cleanroom.CleanroomExposure> EXPOSURE_CODEC = RecordCodecBuilder.create(i->i.group(
-        Codec.LONG.fieldOf("ticks").forGetter(com.euvcraft.lithmod.core.cleanroom.CleanroomExposure::samples),
-        Codec.LONG.fieldOf("sum").forGetter(com.euvcraft.lithmod.core.cleanroom.CleanroomExposure::permilleSum)
-    ).apply(i,com.euvcraft.lithmod.core.cleanroom.CleanroomExposure::new));
+    private record ExposureFields(long ticks,long sum){}
+    private static final Codec<com.euvcraft.lithmod.core.cleanroom.CleanroomExposure> EXPOSURE_CODEC = RecordCodecBuilder.<ExposureFields>create(i->i.group(
+        Codec.LONG.fieldOf("ticks").forGetter(ExposureFields::ticks),
+        Codec.LONG.fieldOf("sum").forGetter(ExposureFields::sum)
+    ).apply(i,ExposureFields::new)).comapFlatMap(fields->{
+        try{return DataResult.success(new com.euvcraft.lithmod.core.cleanroom.CleanroomExposure(fields.ticks(),fields.sum()));}
+        catch(IllegalArgumentException invalid){return DataResult.error(()->"Invalid cleanroom exposure: "+invalid.getMessage());}
+    },e->new ExposureFields(e.samples(),e.permilleSum()));
 
     /** Persistent private state plus backwards-compatible public substrate and preparation fields. */
     public static final Codec<FoupContents> CODEC = RecordCodecBuilder.create(instance -> instance.group(

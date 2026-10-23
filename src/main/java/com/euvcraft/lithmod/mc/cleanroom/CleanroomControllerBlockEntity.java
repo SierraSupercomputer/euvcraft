@@ -21,7 +21,7 @@ public final class CleanroomControllerBlockEntity extends FabMachineBlockEntity 
   CleanroomRooms.register(this);var result=CleanroomTopology.discover(server,worldPosition);
   if(result.state()==ENCLOSED){if(!Objects.equals(bounds,result.bounds()))score=0;bounds=result.bounds();apply(result);if(CleanroomRooms.overlaps(server,this,bounds)){state=BREACHED;fault="Room overlaps another controller";}}
   else if(bounds!=null)validateKnown();else apply(result);
-  setChanged();
+  CleanroomRooms.register(this);setChanged();
  }
  private void apply(CleanroomTopology.Result result){state=result.state();fault=result.fault();faultPos=result.faultPos();doors=result.doors();filters=result.filters();}
  public void validateKnown(){if(!(level instanceof ServerLevel server)||bounds==null||isRemoved())return;

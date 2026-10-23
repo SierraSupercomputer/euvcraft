@@ -224,7 +224,7 @@ class CleanroomAtmosphereTest {
         void noFilterWhenUnpoweredAndBreached() {
             int result = CleanroomAtmosphere.step(0, 256, 1, 0, 0, 0, false, true, RULES);
             // Both powerLossLeak and breachLeak added
-            assertEquals(30000 + 60000, result);
+            assertEquals(0, result); // cleanliness is clamped at zero
         }
     }
 

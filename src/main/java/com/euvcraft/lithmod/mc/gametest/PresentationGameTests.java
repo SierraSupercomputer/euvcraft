@@ -464,10 +464,12 @@ public final class PresentationGameTests {
             ModItems.MASK.get()
         );
 
-        // Verify all112 current stacks in order
-        h.assertValueEqual(112, actualEntries.size(), "MAIN tab exact entry count");
-        for (int i = 0; i < 112; i++) {
-            Item expected = expectedItems.get(i);
+        // Verify the complete legacy sequence followed by the fourteen cleanroom entries.
+        var fullExpected = new java.util.ArrayList<Item>(expectedItems);
+        fullExpected.addAll(com.euvcraft.lithmod.mc.cleanroom.CleanroomItems.all());
+        h.assertValueEqual(126, actualEntries.size(), "MAIN tab exact entry count");
+        for (int i = 0; i < 126; i++) {
+            Item expected = fullExpected.get(i);
             Item actual = actualEntries.get(i).getItem();
             h.assertTrue(actual == expected,
                 "MAIN tab entry " + i + " is " + actual + " expected " + expected);

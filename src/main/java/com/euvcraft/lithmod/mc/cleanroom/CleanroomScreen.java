@@ -18,6 +18,6 @@ public final class CleanroomScreen extends FabMachineScreen<CleanroomMenu>{
   line(g,"Controller: "+(menu.value(8)==1?"powered":"no power")+"   Filters: "+menu.value(5)+" / "+menu.value(6),8,244);
   line(g,"Doors open: "+menu.value(7)+"   Trend: "+(menu.value(9)/10000.0)+"% / s",8,258);
   line(g,menu.value(13)>=0?"To pristine: ~"+menu.value(13)+" s":"Recovery: add powered filtration",8,272);
-  line(g,"Leak size factor: "+String.format(java.util.Locale.ROOT,"%.2f",menu.value(4)/(double)CleanroomRulesLoader.rules().referenceVolume()),8,286);
+  line(g,"Leak size factor: "+String.format(java.util.Locale.ROOT,"%.2f",menu.value(18)/100.0),8,286);
  }
 }
