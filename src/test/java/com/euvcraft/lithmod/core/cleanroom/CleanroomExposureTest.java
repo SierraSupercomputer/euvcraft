@@ -211,7 +211,7 @@ class CleanroomExposureTest {
     @DisplayName("accumulator roundtrip")
     class Roundtrip {
         @Test
-        @DisplayN("multiple sample/mean cycles consistent")
+        @DisplayName("multiple sample/mean cycles consistent")
         void roundtripConsistent() {
             CleanroomExposure exp = CleanroomExposure.empty();
             
