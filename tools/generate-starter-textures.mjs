@@ -18,6 +18,7 @@ import { deflateSync, crc32 } from 'zlib';
 import { createHash } from 'crypto';
 import { computeJoinedPanels } from './lib/joined-panels.mjs';
 import { computeSupportAssets } from './lib/support-assets.mjs';
+import { computeAssemblyAssets } from './lib/assembly-assets.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -454,6 +455,10 @@ export function main() {
   }
   for (const [path, bytes] of computeSupportAssets()) {
     if (computed.models.has(path)) throw new Error('Support JSON output collision: ' + path);
+    computed.models.set(path, bytes);
+  }
+  for (const [path, bytes] of computeAssemblyAssets()) {
+    if (computed.models.has(path)) throw new Error('Assembly JSON output collision: ' + path);
     computed.models.set(path, bytes);
   }
   computed.joinedPreview = joined.preview;

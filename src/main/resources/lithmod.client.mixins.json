@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.euvcraft.lithmod.mc.compat.mixin",
+  "client": ["EncodedTooltipMixin"],
+  "injectors": {"defaultRequire": 1}
+}

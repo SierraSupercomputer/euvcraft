@@ -1,7 +1,34 @@
 {
   "variants": {
-    "": {
+    "facing=north,formed=false": {
       "model": "lithmod:block/assembly_power_port"
+    },
+    "facing=north,formed=true": {
+      "model": "lithmod:block/assembly_power_port_formed"
+    },
+    "facing=east,formed=false": {
+      "model": "lithmod:block/assembly_power_port",
+      "y": 90
+    },
+    "facing=east,formed=true": {
+      "model": "lithmod:block/assembly_power_port_formed",
+      "y": 90
+    },
+    "facing=south,formed=false": {
+      "model": "lithmod:block/assembly_power_port",
+      "y": 180
+    },
+    "facing=south,formed=true": {
+      "model": "lithmod:block/assembly_power_port_formed",
+      "y": 180
+    },
+    "facing=west,formed=false": {
+      "model": "lithmod:block/assembly_power_port",
+      "y": 270
+    },
+    "facing=west,formed=true": {
+      "model": "lithmod:block/assembly_power_port_formed",
+      "y": 270
     }
   }
 }
