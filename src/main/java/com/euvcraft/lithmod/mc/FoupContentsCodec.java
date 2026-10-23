@@ -129,8 +129,10 @@ public final class FoupContentsCodec {
         INT_ARRAY.fieldOf(KEY_FLAGS).forGetter(contents -> WaferPacking.packFlags(contents.wafers())),
         RunSpecCodec.CODEC.optionalFieldOf(KEY_RUN_SPEC).forGetter(c -> java.util.Optional.ofNullable(c.run())),
         GRADE_CODEC.optionalFieldOf(KEY_GRADE, WaferSubstrate.ORDINARY).forGetter(FoupContents::grade),
-        PREPARATION_CODEC.optionalFieldOf(KEY_PREPARATION, FoupContents.PREPARATION_LEGACY).forGetter(FoupContents::preparationGeneration)
-    ).apply(instance, (lotId, capacity, layers, rollBits, flags, runSpec, grade, preparationGeneration) ->
+        PREPARATION_CODEC.optionalFieldOf(KEY_PREPARATION, FoupContents.PREPARATION_LEGACY).forGetter(FoupContents::preparationGeneration),
+        EXPOSURE_CODEC.optionalFieldOf("roomExposure", com.euvcraft.lithmod.core.cleanroom.CleanroomExposure.empty()).forGetter(FoupContents::roomExposure),
+        Codec.intRange(0,1000).optionalFieldOf("roomYieldPermille",0).forGetter(FoupContents::roomYieldPermille)
+    ).apply(instance, (lotId, capacity, layers, rollBits, flags, runSpec, grade, preparationGeneration, exposure, roomYield) ->
         new FoupContents(lotId, capacity,
             WaferPacking.unpack(layers, WaferPacking.unpackRollBits(rollBits), flags),
             runSpec.orElse(null), grade, preparationGeneration, exposure, roomYield)));

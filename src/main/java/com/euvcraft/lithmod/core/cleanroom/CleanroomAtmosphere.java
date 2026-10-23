@@ -87,12 +87,12 @@ public final class CleanroomAtmosphere {
 
         // Power loss leak
         if (!powered) {
-            score += rules.powerLossLeak();
+            score -= rules.powerLossLeak();
         }
 
         // Breach leak
         if (breached) {
-            score += rules.breachLeak();
+            score -= rules.breachLeak();
         }
 
         // Filter contribution (only if powered and not breached)

@@ -12,7 +12,8 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.Level;
 import org.jspecify.annotations.Nullable;
 
@@ -30,7 +31,7 @@ import org.jspecify.annotations.Nullable;
 public class CleanroomPortBlock extends BaseEntityBlock {
 
     /** Horizontal facing of the port; points from outside into the cleanroom. */
-    public static final DirectionProperty FACING = DirectionProperty.create("facing", Direction.Plane.HORIZONTAL);
+    public static final Property<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     public CleanroomPortBlock(BlockBehaviour.Properties properties) {
         super(properties);

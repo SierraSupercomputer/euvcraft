@@ -114,9 +114,10 @@ public class CleanroomPortBlockEntity extends BlockEntity {
 
     private static final class ForwardingEnergyHandler implements EnergyHandler {
         private final CleanroomPortBlockEntity port;
+        private final Direction side;
 
-        ForwardingEnergyHandler(CleanroomPortBlockEntity port) {
-            this.port = port;
+        ForwardingEnergyHandler(CleanroomPortBlockEntity port, Direction side) {
+            this.port = port; this.side = side;
         }
 
         private @Nullable EnergyHandler neighborHandler() {
@@ -194,9 +195,10 @@ public class CleanroomPortBlockEntity extends BlockEntity {
 
     private static final class ForwardingFluidHandler implements ResourceHandler<FluidResource> {
         private final CleanroomPortBlockEntity port;
+        private final Direction side;
 
-        ForwardingFluidHandler(CleanroomPortBlockEntity port) {
-            this.port = port;
+        ForwardingFluidHandler(CleanroomPortBlockEntity port, Direction side) {
+            this.port = port; this.side = side;
         }
 
         private @Nullable ResourceHandler<FluidResource> neighborHandler() {
@@ -308,9 +310,10 @@ public class CleanroomPortBlockEntity extends BlockEntity {
 
     private static final class ForwardingItemHandler implements ResourceHandler<ItemResource> {
         private final CleanroomPortBlockEntity port;
+        private final Direction side;
 
-        ForwardingItemHandler(CleanroomPortBlockEntity port) {
-            this.port = port;
+        ForwardingItemHandler(CleanroomPortBlockEntity port, Direction side) {
+            this.port = port; this.side = side;
         }
 
         private @Nullable ResourceHandler<ItemResource> neighborHandler() {

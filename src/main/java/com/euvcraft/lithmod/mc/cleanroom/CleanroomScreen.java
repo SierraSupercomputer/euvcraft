@@ -6,6 +6,7 @@ import net.minecraft.world.entity.player.Inventory;
 /** Status stays inside an opaque panel, below the fixed player inventory. */
 public final class CleanroomScreen extends FabMachineScreen<CleanroomMenu>{
  public CleanroomScreen(CleanroomMenu m,Inventory i,Component t){super(m,i,t,238,288);inventoryLabelY=72;}
+ @Override protected int progressBarX(){return 0;}@Override protected int progressBarY(){return 0;}
  @Override protected int energyBarX(){return 12;}@Override protected int energyBarY(){return 18;}@Override protected boolean hasProgressBar(){return false;}
  private void line(GuiGraphicsExtractor g,String s,int x,int y){g.text(font,font.plainSubstrByWidth(s,222-x+8),x,y,0xff404040,false);}
  @Override protected void extractLabels(GuiGraphicsExtractor g,int mx,int my){line(g,title.getString(),8,6);line(g,menu.energy()+" / "+menu.energyCapacity()+" FE",30,20);line(g,playerInventoryTitle.getString(),8,72);
