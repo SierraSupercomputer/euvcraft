@@ -155,15 +155,11 @@ class FoupDisposalTest {
         }
 
         @Test
-        @DisplayName("identity invariant: emptyCarrier(emptyCarrier(source))")
+        @DisplayName("cleaned carrier cannot be disposed a second time")
         void identityInvariant() {
             FoupContents source = lot(LOT_A, 25, wafers(5, 1, 0.9f));
             FoupContents empty1 = FoupDisposal.emptyCarrier(source, LOT_B);
-            FoupContents empty2 = FoupDisposal.emptyCarrier(empty1, LOT_C);
-
-            assertEquals(empty1.capacity(), empty2.capacity());
-            assertTrue(empty2.isEmpty());
-            assertEquals(LOT_C, empty2.lotId());
+            assertThrows(IllegalArgumentException.class, () -> FoupDisposal.emptyCarrier(empty1, LOT_C));
         }
     }
 
