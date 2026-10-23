@@ -10,8 +10,9 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-/** Compatibility with Encoded Logistics 1.2.1's font access during async indexing. */
-@Mixin(targets = "net.zagdrath.encodedlogistics.client.ItemInfoTooltips", remap = false)
+/** Compatibility with Encoded Logistics 1.2.1 and Arcforge 2.5.1 async tooltip wrapping. */
+@Mixin(targets = {"net.zagdrath.encodedlogistics.client.ItemInfoTooltips",
+        "net.zagdrath.arcforge.client.ItemInfoTooltips"}, remap = false)
 public abstract class EncodedTooltipMixin {
     @Redirect(method = "onTooltip", at = @At(value = "INVOKE", target =
             "Lnet/minecraft/client/StringSplitter;splitLines(Lnet/minecraft/network/chat/FormattedText;ILnet/minecraft/network/chat/Style;)Ljava/util/List;"), require = 1)
