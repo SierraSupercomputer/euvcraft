@@ -112,6 +112,7 @@ modEventBus.addListener(ComponentTooltipAppenders::register);
             com.euvcraft.lithmod.mc.gametest.T5GameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.CleanroomPortGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.CleanroomSafetyGameTests.register(modEventBus);
+            com.euvcraft.lithmod.mc.gametest.FoupCleanerGameTests.register(modEventBus);
             T3ContentGameTests.register(modEventBus);
             T3PurificationGameTests.register(modEventBus);
             T3MaskWriterGameTests.register(modEventBus);
