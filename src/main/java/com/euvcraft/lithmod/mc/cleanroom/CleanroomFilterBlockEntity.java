@@ -7,6 +7,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.*;
 public final class CleanroomFilterBlockEntity extends FabMachineBlockEntity {
+ public final CleanroomFilterItems items=new CleanroomFilterItems(this);
  private int remaining;private boolean working;private long workedAt=Long.MIN_VALUE;
  public CleanroomFilterBlockEntity(BlockPos p,BlockState s){super(CleanroomBlocks.FILTER_BE.get(),p,s,1,0);}
  @Override protected String machineId(){return "cleanroom_filter";}

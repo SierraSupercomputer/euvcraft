@@ -29,6 +29,7 @@ public final class CleanroomBlocks {
  public static boolean isShell(Block b){return b==FLOOR.get()||b==WALL.get()||b==WINDOW.get()||b==DOOR.get()||b==CONTROLLER.get()||b==FILTER.get()||b==POWER_PORT.get()||b==FLUID_PORT.get()||b==ITEM_PORT.get();}
  public static void register(IEventBus bus){BLOCKS.register(bus);BES.register(bus);MENUS.register(bus);CleanroomItems.ITEMS.register(bus);bus.addListener(CleanroomBlocks::capabilities);}
  private static void capabilities(RegisterCapabilitiesEvent e){
+  e.registerBlockEntity(Capabilities.Item.BLOCK,FILTER_BE.get(),(be,side)->be.items);
   e.registerBlockEntity(Capabilities.Energy.BLOCK,CONTROLLER_BE.get(),(be,side)->CleanroomEnergy.view(be));
   e.registerBlockEntity(Capabilities.Energy.BLOCK,FILTER_BE.get(),(be,side)->CleanroomEnergy.view(be));
   e.registerBlockEntity(Capabilities.Energy.BLOCK,PORT_BE.get(),(be,side)->be.energy(side));
