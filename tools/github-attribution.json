@@ -1,0 +1,12 @@
+{
+  "owner": "SierraSupercomputer",
+  "email": "195608235+SierraSupercomputer@users.noreply.github.com",
+  "allowedAuthorEmails": [
+    "195608235+SierraSupercomputer@users.noreply.github.com",
+    "DAMONE@my.erau.edu"
+  ],
+  "serviceCommitter": {
+    "name": "GitHub",
+    "email": "noreply@github.com"
+  }
+}
