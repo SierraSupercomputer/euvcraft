@@ -24,5 +24,5 @@ public final class CleanroomFilterBlockEntity extends FabMachineBlockEntity {
  @Override public boolean canPlaceItem(int slot,ItemStack stack){return slot==0&&stack.is(CleanroomItems.MEDIUM.get());}
  @Override protected AbstractContainerMenu createMachineMenu(int id,Inventory inv,FabMachineBlockEntity machine){return new CleanroomMenu(id,inv,this,true);}
  @Override protected void saveAdditional(ValueOutput out){super.saveAdditional(out);out.putInt("mediumTicks",remaining);}
- @Override protected void loadAdditional(ValueInput in){super.loadAdditional(in);remaining=Math.clamp(in.getIntOr("mediumTicks",0),0,CleanroomRulesLoader.rules().filterMediaTicks());working=false;}
+ @Override protected void loadAdditional(ValueInput in){super.loadAdditional(in);remaining=Math.max(0,in.getIntOr("mediumTicks",0));working=false;}
 }

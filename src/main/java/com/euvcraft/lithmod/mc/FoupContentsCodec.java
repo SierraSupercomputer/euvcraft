@@ -124,7 +124,7 @@ public final class FoupContentsCodec {
         catch(IllegalArgumentException invalid){return DataResult.error(()->"Invalid cleanroom exposure: "+invalid.getMessage());}
     },e->new ExposureFields(e.samples(),e.permilleSum()));
 
-    /** Persistent private state plus backwards-compatible public substrate and preparation fields. */
+    /** Persistent private state; roomExposure uses stable serialized keys ticks and sum for samples/permilleSum, independent of Java accessor names. */
     public static final Codec<FoupContents> CODEC = RecordCodecBuilder.create(instance -> instance.group(
         UUIDUtil.CODEC.fieldOf(KEY_LOT).forGetter(FoupContents::lotId),
         Codec.INT.fieldOf(KEY_CAPACITY).forGetter(FoupContents::capacity),
