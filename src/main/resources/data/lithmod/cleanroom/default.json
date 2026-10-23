@@ -1,0 +1,19 @@
+{
+  "max_span": 32,
+  "max_volume": 16384,
+  "reference_volume": 256,
+  "controller_fe_per_tick": 100,
+  "filter_fe_per_tick": 50,
+  "filter_media_ticks": 12000,
+  "baseline_leak": 800,
+  "ungowned_leak": 2000,
+  "gowned_leak": 200,
+  "door_leak": 2500,
+  "power_loss_leak": 30000,
+  "breach_leak": 60000,
+  "filter_strength": 5000,
+  "outside_yield_permille": 500,
+  "dirty_yield_permille": 500,
+  "clean_ppm": 1,
+  "dirty_ppm": 10001
+}

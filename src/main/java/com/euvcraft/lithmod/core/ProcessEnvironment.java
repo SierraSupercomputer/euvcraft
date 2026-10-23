@@ -22,6 +22,9 @@ public interface ProcessEnvironment {
     /** Consumes the supplied resist units. */
     void consumeResist(int amount);
 
+    /** Called exactly once after a real energy payment, never on a paused tick. */
+    default FoupContents processingTick(FoupContents lot) { return lot; }
+
     /** Applies one layer to the lot and returns the updated lot. */
     FoupContents applyLayer(FoupContents lot, int layerNumber, double defectFactor);
 }

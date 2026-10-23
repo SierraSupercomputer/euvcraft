@@ -115,6 +115,11 @@ public final class FoupContentsCodec {
         return DataResult.success(i);
     });
 
+    private static final Codec<com.euvcraft.lithmod.core.cleanroom.CleanroomExposure> EXPOSURE_CODEC = RecordCodecBuilder.create(i->i.group(
+        Codec.LONG.fieldOf("ticks").forGetter(com.euvcraft.lithmod.core.cleanroom.CleanroomExposure::samples),
+        Codec.LONG.fieldOf("sum").forGetter(com.euvcraft.lithmod.core.cleanroom.CleanroomExposure::permilleSum)
+    ).apply(i,com.euvcraft.lithmod.core.cleanroom.CleanroomExposure::new));
+
     /** Persistent private state plus backwards-compatible public substrate and preparation fields. */
     public static final Codec<FoupContents> CODEC = RecordCodecBuilder.create(instance -> instance.group(
         UUIDUtil.CODEC.fieldOf(KEY_LOT).forGetter(FoupContents::lotId),
@@ -128,7 +133,7 @@ public final class FoupContentsCodec {
     ).apply(instance, (lotId, capacity, layers, rollBits, flags, runSpec, grade, preparationGeneration) ->
         new FoupContents(lotId, capacity,
             WaferPacking.unpack(layers, WaferPacking.unpackRollBits(rollBits), flags),
-            runSpec.orElse(null), grade, preparationGeneration)));
+            runSpec.orElse(null), grade, preparationGeneration, exposure, roomYield)));
 
     /**
      * Network form: the public view only including the wafer substrate grade and preparation generation.
