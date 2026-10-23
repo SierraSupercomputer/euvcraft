@@ -7,7 +7,7 @@ import net.neoforged.neoforge.registries.*;
 import java.util.*;
 public final class CleanroomItems {
  public static final DeferredRegister.Items ITEMS=DeferredRegister.createItems(EUVCRAFTMod.MODID);
- private static final ArmorMaterial GOWN=new ArmorMaterial(5,Map.of(),0,ArmorMaterials.LEATHER.equipSound(),0,0,ArmorMaterials.LEATHER.repairIngredient(),ResourceKey.create(EquipmentAssets.ROOT_ID,Identifier.fromNamespaceAndPath(EUVCRAFTMod.MODID,"cleanroom_gown")));
+ private static final ArmorMaterial GOWN=new ArmorMaterial(5,Map.of(),1,ArmorMaterials.LEATHER.equipSound(),0,0,ArmorMaterials.LEATHER.repairIngredient(),ResourceKey.create(EquipmentAssets.ROOT_ID,Identifier.fromNamespaceAndPath(EUVCRAFTMod.MODID,"cleanroom_gown")));
  public static final DeferredItem<Item> MEDIUM=ITEMS.registerSimpleItem("cleanroom_filter_medium");
  public static final DeferredItem<Item> HOOD=ITEMS.registerItem("cleanroom_hood",Item::new,p->p.humanoidArmor(GOWN,ArmorType.HELMET));
  public static final DeferredItem<Item> SUIT=ITEMS.registerItem("cleanroom_suit",Item::new,p->p.humanoidArmor(GOWN,ArmorType.CHESTPLATE));
