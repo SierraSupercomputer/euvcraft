@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "WWW",
+    "WLW",
+    "W W"
+  ],
+  "key": {
+    "W": "minecraft:white_wool",
+    "L": "minecraft:leather"
+  },
+  "result": {
+    "id": "lithmod:cleanroom_trousers",
+    "count": 1
+  }
+}

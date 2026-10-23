@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "lithmod:block/cleanroom_fluid_port"
+  }
+}

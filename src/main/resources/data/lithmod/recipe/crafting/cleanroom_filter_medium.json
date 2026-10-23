@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "PPP",
+    "CFC",
+    "PPP"
+  ],
+  "key": {
+    "P": "minecraft:paper",
+    "C": "minecraft:charcoal",
+    "F": "lithmod:fine_air_filter"
+  },
+  "result": {
+    "id": "lithmod:cleanroom_filter_medium",
+    "count": 4
+  }
+}

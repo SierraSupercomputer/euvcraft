@@ -38,6 +38,15 @@
     "lithmod:scanner_water_inlet",
     "lithmod:scanner_immersion_module",
     "lithmod:assembly_casing",
-    "lithmod:assembly_power_port"
+    "lithmod:assembly_power_port",
+    "lithmod:cleanroom_floor",
+    "lithmod:cleanroom_wall",
+    "lithmod:cleanroom_window",
+    "lithmod:cleanroom_door",
+    "lithmod:cleanroom_controller",
+    "lithmod:cleanroom_filter",
+    "lithmod:cleanroom_power_port",
+    "lithmod:cleanroom_fluid_port",
+    "lithmod:cleanroom_item_port"
   ]
 }

@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "lithmod:block/cleanroom_item_port"
+    },
+    "facing=east": {
+      "model": "lithmod:block/cleanroom_item_port",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "lithmod:block/cleanroom_item_port",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "lithmod:block/cleanroom_item_port",
+      "y": 270
+    }
+  }
+}

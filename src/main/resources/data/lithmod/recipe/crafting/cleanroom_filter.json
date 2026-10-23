@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "IWI",
+    "FMF",
+    "ILI"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "W": "lithmod:cleanroom_wall",
+    "F": "lithmod:fine_air_filter",
+    "M": "lithmod:cleanroom_filter_medium",
+    "L": "lithmod:logic_chip_t4"
+  },
+  "result": {
+    "id": "lithmod:cleanroom_filter",
+    "count": 1
+  }
+}
