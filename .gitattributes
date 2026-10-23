@@ -1,0 +1,11 @@
+# Disable autocrlf on generated files, they always generate with LF
+# Add any extra files or paths here to make git stop saying they
+# are changed when only line endings change.
+src/generated/**/.cache/* text eol=lf
+src/generated/**/*.json text eol=lf
+
+# Generated references and JSON are compared byte-for-byte by nonwriting Check commands.
+docs/m1-slice.md text eol=lf
+docs/t3-slice.md text eol=lf
+docs/recipes.md text eol=lf
+src/main/resources/**/*.json text eol=lf
