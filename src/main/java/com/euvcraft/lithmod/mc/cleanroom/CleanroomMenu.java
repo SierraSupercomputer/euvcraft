@@ -5,6 +5,7 @@ import net.minecraft.world.inventory.*;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
 public final class CleanroomMenu extends FabMachineMenu {
+ @Override protected void addDataSlots(ContainerData values){super.addDataSlots(new WideContainerData(values));}
  private final ContainerData room;
  private final boolean filter;
  public CleanroomMenu(int id,Inventory inv,FabMachineBlockEntity machine,boolean filter){
