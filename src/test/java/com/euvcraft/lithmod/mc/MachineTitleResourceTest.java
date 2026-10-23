@@ -41,7 +41,7 @@ class MachineTitleResourceTest {
     /** The seven production machine definition ids observed in data/lithmod/machines. */
     private static final Set<String> PRODUCTION_IDS = Set.of(
             "crystal_puller", "wafer_slicer", "pattern_generator", "test_package", "process_cell",
-            "boule_purifier", "ebeam_mask_writer", "deposition_etcher", "advanced_test_package", "lithography_scanner", "utility_plant", "pick_and_place", "cleanroom_controller", "cleanroom_filter");
+            "boule_purifier", "ebeam_mask_writer", "deposition_etcher", "advanced_test_package", "lithography_scanner", "utility_plant", "pick_and_place", "cleanroom_controller", "cleanroom_filter", "foup_cleaner");
 
     @Test
     @DisplayName("every production machine definition has a non-blank block.lithmod.<id> title in en_us.json")

@@ -282,5 +282,8 @@
   "item.lithmod.cleanroom_hood": "Cleanroom Hood",
   "item.lithmod.cleanroom_suit": "Cleanroom Suit",
   "item.lithmod.cleanroom_trousers": "Cleanroom Trousers",
-  "item.lithmod.cleanroom_boots": "Cleanroom Boots"
+  "item.lithmod.cleanroom_boots": "Cleanroom Boots",
+  "block.lithmod.foup_cleaner": "FOUP Cleaner",
+  "item.lithmod.foup_cleaner": "FOUP Cleaner",
+  "item.lithmod.wafer_scrap": "Wafer Scrap"
 }

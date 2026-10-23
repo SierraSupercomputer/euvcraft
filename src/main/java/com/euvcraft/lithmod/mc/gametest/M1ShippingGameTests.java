@@ -70,7 +70,7 @@ public final class M1ShippingGameTests {
     /** Machine definitions loaded when fixtures are off (test_machine excluded). */
     private static final List<String> PRODUCTION_DEFINITIONS = List.of(
         "crystal_puller", "wafer_slicer", "pattern_generator", "test_package", "process_cell",
-        "boule_purifier", "ebeam_mask_writer", "deposition_etcher", "advanced_test_package", "lithography_scanner", "utility_plant", "pick_and_place", "cleanroom_controller", "cleanroom_filter");
+        "boule_purifier", "ebeam_mask_writer", "deposition_etcher", "advanced_test_package", "lithography_scanner", "utility_plant", "pick_and_place", "cleanroom_controller", "cleanroom_filter", "foup_cleaner");
     /** Machine recipe machines loaded when fixtures are off (test_machine excluded). */
     private static final List<String> PRODUCTION_RECIPE_MACHINES = List.of(
         "crystal_puller", "pattern_generator", "pick_and_place");
@@ -125,7 +125,7 @@ public final class M1ShippingGameTests {
         if (definitions != null) {
             helper.assertTrue(definitions.byId("test_machine").isEmpty(),
                 "test_machine definition must be absent when fixtures are off");
-            helper.assertValueEqual(14, definitions.size(),
+            helper.assertValueEqual(15, definitions.size(),
                 "production machine definition inventory when fixtures are off");
             for (String machineId : PRODUCTION_DEFINITIONS) {
                 helper.assertTrue(definitions.byId(machineId).isPresent(),
@@ -161,6 +161,7 @@ public final class M1ShippingGameTests {
         helper.assertTrue(BuiltInRegistries.FLUID.containsKey(Identifier.parse("lithmod:ultrapure_water")),"Shipping UPW fluid");
         for(String id:java.util.List.of("cleanroom_floor","cleanroom_wall","cleanroom_window","cleanroom_door","cleanroom_controller","cleanroom_filter","cleanroom_power_port","cleanroom_fluid_port","cleanroom_item_port"))helper.assertTrue(BuiltInRegistries.BLOCK.containsKey(Identifier.fromNamespaceAndPath("lithmod",id)),"Shipping cleanroom block "+id);
         helper.assertTrue(com.euvcraft.lithmod.mc.cleanroom.CleanroomRulesLoader.rules().maxSpan()==32,"Shipping cleanroom balance loaded");
+        helper.assertTrue(BuiltInRegistries.BLOCK.containsKey(Identifier.parse("lithmod:foup_cleaner"))&&BuiltInRegistries.ITEM.containsKey(Identifier.parse("lithmod:wafer_scrap")),"Shipping cleaner and wafer scrap");
         assertCreativeAbsence(helper);
     }
 

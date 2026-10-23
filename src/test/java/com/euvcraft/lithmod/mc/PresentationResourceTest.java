@@ -293,7 +293,7 @@ class PresentationResourceTest {
             .filter(line -> line.startsWith("| lithmod:"))
             .count();
         // Each JSON file contributes exactly one row.
-        assertEquals(123L, recipeCount, "Expected exact recipe inventory in docs/recipes.md, found " + recipeCount);
+        assertEquals(124L, recipeCount, "Expected exact recipe inventory in docs/recipes.md, found " + recipeCount);
 
         // Validate components from source where useful (mask_data for pattern recipes)
         assertTrue(content.contains("mask_data"), "Missing mask_data component documentation");

@@ -146,7 +146,7 @@ class FoupDisposalTest {
         @DisplayName("works with exposure source")
         void exposureSource() {
             FoupContents source = lot(LOT_A, 25, wafers(5, 1, 0.9f))
-                .withRoomExposure(com.euvcraft.lithmod.core.cleanroom.CleanroomExposure.of(100, 500), 500);
+                .withRoomExposure(new com.euvcraft.lithmod.core.cleanroom.CleanroomExposure(100, 50000), 500);
             FoupContents empty = FoupDisposal.emptyCarrier(source, LOT_B);
 
             assertEquals(0, empty.roomYieldPermille());
@@ -201,13 +201,8 @@ class FoupDisposalTest {
         }
 
         @Test
-        @DisplayName("rejects multiplication overflow")
-        void overflowRejected() {
-            // 64 wafers * 64 = 4096, well within int range
-            // But we can test boundary: 25 * 64 = 1600 (default capacity)
-            // To test overflow we'd need huge numbers but capacity max is 64
-            // 64 * 64 = 4096, no overflow possible with current constraints
-            // Still test the boundary check is present
+        @DisplayName("supports 64 wafers without assuming capacity equals stack size")
+        void largerCarrierSupported() {
             FoupContents source = FoupContents.empty(LOT_A, 64).withWafers(wafers(64, 1, 0.9f));
             // This should not overflow: 64 * 64 = 4096
             assertEquals(4096, FoupDisposal.scrapCount(source, 64));
@@ -254,7 +249,7 @@ class FoupDisposalTest {
         @DisplayName("works with exposure lot")
         void exposureLot() {
             FoupContents source = lot(LOT_A, 25, wafers(8, 2, 0.85f))
-                .withRoomExposure(com.euvcraft.lithmod.core.cleanroom.CleanroomExposure.of(200, 600), 600);
+                .withRoomExposure(new com.euvcraft.lithmod.core.cleanroom.CleanroomExposure(200, 120000), 600);
             assertEquals(8 * 8, FoupDisposal.scrapCount(source, 8));
         }
 

@@ -171,6 +171,8 @@ public final class ModCreativeTabs {
                 output.accept(sampleMask(DieTypes.COMPUTE, 5));
                 output.accept(sampleMask(DieTypes.NAND, 5));
                 com.euvcraft.lithmod.mc.cleanroom.CleanroomItems.all().forEach(output::accept);
+                output.accept(com.euvcraft.lithmod.mc.machine.cleaner.FoupCleanerMachines.ITEM.get());
+                output.accept(com.euvcraft.lithmod.mc.machine.cleaner.FoupCleanerMachines.WAFER_SCRAP.get());
             })
             .build()
     );

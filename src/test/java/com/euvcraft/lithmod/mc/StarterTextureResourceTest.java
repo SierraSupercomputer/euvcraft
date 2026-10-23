@@ -57,7 +57,7 @@ class StarterTextureResourceTest {
     private static final Set<String> PRODUCTION_ITEMS = Set.of(
         "foup_mk1", "foup_mk2",
         "logic_chip_t1", "logic_chip_t2", "memory_chip_t2",
-        "chip_scrap", "silicon", "silicon_boule",
+        "wafer_scrap", "chip_scrap", "silicon", "silicon_boule",
         "resist_t1", "resist_t2",
         "chip_package", "blank_mask", "mask",
         "mercury_lamp", "i_line_lamp",
@@ -84,6 +84,7 @@ class StarterTextureResourceTest {
 
     // 10 production block models (test_machine excluded — preserved untouched)
     private static final Set<String> PRODUCTION_BLOCKS = Set.of(
+        "foup_cleaner",
         "crystal_puller", "wafer_slicer", "test_package", "pattern_generator",
         "process_cell_controller_formed", "process_cell_controller_unformed",
         "process_cell_casing_formed", "process_cell_casing_unformed",

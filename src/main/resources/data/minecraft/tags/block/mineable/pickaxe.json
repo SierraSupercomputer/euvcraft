@@ -47,6 +47,7 @@
     "lithmod:cleanroom_filter",
     "lithmod:cleanroom_power_port",
     "lithmod:cleanroom_fluid_port",
-    "lithmod:cleanroom_item_port"
+    "lithmod:cleanroom_item_port",
+    "lithmod:foup_cleaner"
   ]
 }
