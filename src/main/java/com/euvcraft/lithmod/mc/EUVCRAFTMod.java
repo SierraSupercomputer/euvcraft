@@ -59,6 +59,7 @@ public class EUVCRAFTMod {
 
     public EUVCRAFTMod(IEventBus modEventBus, ModContainer modContainer) {
         com.euvcraft.lithmod.mc.cleanroom.CleanroomBlocks.register(modEventBus);
+        com.euvcraft.lithmod.mc.machine.cleaner.FoupCleanerMachines.register(modEventBus);
         ModDataComponents.DATA_COMPONENTS.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
         ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
