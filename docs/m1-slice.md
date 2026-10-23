@@ -5,13 +5,15 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
 
 ## Package Layout (parsed from actual package declarations)
 
-  - com.euvcraft.lithmod.core (56 files)
+  - com.euvcraft.lithmod.core (57 files)
+  - com.euvcraft.lithmod.core.cleanroom (3 files)
   - com.euvcraft.lithmod.core.multiblock (11 files)
   - com.euvcraft.lithmod.mc (21 files)
+  - com.euvcraft.lithmod.mc.cleanroom (16 files)
   - com.euvcraft.lithmod.mc.compat (1 files)
   - com.euvcraft.lithmod.mc.compat.mixin (1 files)
   - com.euvcraft.lithmod.mc.data (14 files)
-  - com.euvcraft.lithmod.mc.gametest (32 files)
+  - com.euvcraft.lithmod.mc.gametest (33 files)
   - com.euvcraft.lithmod.mc.machine (4 files)
   - com.euvcraft.lithmod.mc.machine.client (1 files)
   - com.euvcraft.lithmod.mc.machine.mask (9 files)
@@ -54,6 +56,11 @@ public int focus();
 public int targetX();
 public int targetY();
 public int targetFocus();
+```
+
+### com.euvcraft.lithmod.core.CleanroomYield
+```java
+public static com.euvcraft.lithmod.core.FoupContents finish(com.euvcraft.lithmod.core.FoupContents, com.euvcraft.lithmod.core.Tier);
 ```
 
 ### com.euvcraft.lithmod.core.ContextualRng
@@ -227,10 +234,12 @@ public static void setLogger(org.slf4j.Logger);
 
 ### com.euvcraft.lithmod.core.FoupContents
 ```java
+public com.euvcraft.lithmod.core.FoupContents(java.util.UUID, int, java.util.List<com.euvcraft.lithmod.core.Wafer>, com.euvcraft.lithmod.core.RunSpec, com.euvcraft.lithmod.core.WaferSubstrate, int);
 public com.euvcraft.lithmod.core.FoupContents(java.util.UUID, int, java.util.List<com.euvcraft.lithmod.core.Wafer>, com.euvcraft.lithmod.core.RunSpec, com.euvcraft.lithmod.core.WaferSubstrate);
 public com.euvcraft.lithmod.core.FoupContents(java.util.UUID, int, java.util.List<com.euvcraft.lithmod.core.Wafer>);
 public com.euvcraft.lithmod.core.FoupContents(java.util.UUID, int, java.util.List<com.euvcraft.lithmod.core.Wafer>, com.euvcraft.lithmod.core.RunSpec);
-public com.euvcraft.lithmod.core.FoupContents(java.util.UUID, int, java.util.List<com.euvcraft.lithmod.core.Wafer>, com.euvcraft.lithmod.core.RunSpec, com.euvcraft.lithmod.core.WaferSubstrate, int);
+public com.euvcraft.lithmod.core.FoupContents(java.util.UUID, int, java.util.List<com.euvcraft.lithmod.core.Wafer>, com.euvcraft.lithmod.core.RunSpec, com.euvcraft.lithmod.core.WaferSubstrate, int, com.euvcraft.lithmod.core.cleanroom.CleanroomExposure, int);
+public com.euvcraft.lithmod.core.FoupContents withRoomExposure(com.euvcraft.lithmod.core.cleanroom.CleanroomExposure, int);
 public static com.euvcraft.lithmod.core.FoupContents of(java.util.UUID, int, java.util.List<com.euvcraft.lithmod.core.Wafer>, com.euvcraft.lithmod.core.WaferSubstrate);
 public static com.euvcraft.lithmod.core.FoupContents empty(java.util.UUID, int);
 public static com.euvcraft.lithmod.core.FoupContents empty(java.util.UUID, int, com.euvcraft.lithmod.core.WaferSubstrate);
@@ -254,6 +263,8 @@ public java.util.List<com.euvcraft.lithmod.core.Wafer> wafers();
 public com.euvcraft.lithmod.core.RunSpec run();
 public com.euvcraft.lithmod.core.WaferSubstrate grade();
 public int preparationGeneration();
+public com.euvcraft.lithmod.core.cleanroom.CleanroomExposure roomExposure();
+public int roomYieldPermille();
 ```
 
 ### com.euvcraft.lithmod.core.FoupPublicView
@@ -559,6 +570,7 @@ public abstract boolean structureFormed();
 public abstract int extractEnergy(int, boolean);
 public abstract int resistAvailable();
 public abstract void consumeResist(int);
+public default com.euvcraft.lithmod.core.FoupContents processingTick(com.euvcraft.lithmod.core.FoupContents);
 public abstract com.euvcraft.lithmod.core.FoupContents applyLayer(com.euvcraft.lithmod.core.FoupContents, int, double);
 ```
 
@@ -916,6 +928,77 @@ public static int countPassing(boolean[]);
 public static void requireCompleteLot(com.euvcraft.lithmod.core.FoupContents, com.euvcraft.lithmod.core.Tier);
 ```
 
+### com.euvcraft.lithmod.core.cleanroom.CleanroomAtmosphere
+```java
+public static int step(int, int, int, int, int, int, boolean, boolean, com.euvcraft.lithmod.core.cleanroom.CleanroomRules);
+public static int ppm(int, com.euvcraft.lithmod.core.cleanroom.CleanroomRules);
+public static int yieldPermille(int, com.euvcraft.lithmod.core.cleanroom.CleanroomRules);
+public static double sizeMultiplier(int, com.euvcraft.lithmod.core.cleanroom.CleanroomRules);
+```
+
+### com.euvcraft.lithmod.core.cleanroom.CleanroomExposure
+```java
+public com.euvcraft.lithmod.core.cleanroom.CleanroomExposure(long, long);
+public static com.euvcraft.lithmod.core.cleanroom.CleanroomExposure empty();
+public com.euvcraft.lithmod.core.cleanroom.CleanroomExposure sample(int);
+public int meanPermille();
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public long samples();
+public long permilleSum();
+```
+
+### com.euvcraft.lithmod.core.cleanroom.CleanroomRules$Builder
+```java
+public com.euvcraft.lithmod.core.cleanroom.CleanroomRules$Builder();
+public com.euvcraft.lithmod.core.cleanroom.CleanroomRules$Builder maxSpan(int);
+public com.euvcraft.lithmod.core.cleanroom.CleanroomRules$Builder maxVolume(int);
+public com.euvcraft.lithmod.core.cleanroom.CleanroomRules$Builder referenceVolume(int);
+public com.euvcraft.lithmod.core.cleanroom.CleanroomRules$Builder controllerFePerTick(int);
+public com.euvcraft.lithmod.core.cleanroom.CleanroomRules$Builder filterFePerTick(int);
+public com.euvcraft.lithmod.core.cleanroom.CleanroomRules$Builder filterMediaTicks(int);
+public com.euvcraft.lithmod.core.cleanroom.CleanroomRules$Builder baselineLeak(int);
+public com.euvcraft.lithmod.core.cleanroom.CleanroomRules$Builder ungownedLeak(int);
+public com.euvcraft.lithmod.core.cleanroom.CleanroomRules$Builder gownedLeak(int);
+public com.euvcraft.lithmod.core.cleanroom.CleanroomRules$Builder doorLeak(int);
+public com.euvcraft.lithmod.core.cleanroom.CleanroomRules$Builder powerLossLeak(int);
+public com.euvcraft.lithmod.core.cleanroom.CleanroomRules$Builder breachLeak(int);
+public com.euvcraft.lithmod.core.cleanroom.CleanroomRules$Builder filterStrength(int);
+public com.euvcraft.lithmod.core.cleanroom.CleanroomRules$Builder outsideYieldPermille(int);
+public com.euvcraft.lithmod.core.cleanroom.CleanroomRules$Builder dirtyYieldPermille(int);
+public com.euvcraft.lithmod.core.cleanroom.CleanroomRules$Builder cleanPpm(int);
+public com.euvcraft.lithmod.core.cleanroom.CleanroomRules$Builder dirtyPpm(int);
+public com.euvcraft.lithmod.core.cleanroom.CleanroomRules build();
+```
+
+### com.euvcraft.lithmod.core.cleanroom.CleanroomRules
+```java
+public com.euvcraft.lithmod.core.cleanroom.CleanroomRules(int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int);
+public static com.euvcraft.lithmod.core.cleanroom.CleanroomRules defaults();
+public static com.euvcraft.lithmod.core.cleanroom.CleanroomRules$Builder builder();
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public int maxSpan();
+public int maxVolume();
+public int referenceVolume();
+public int controllerFePerTick();
+public int filterFePerTick();
+public int filterMediaTicks();
+public int baselineLeak();
+public int ungownedLeak();
+public int gownedLeak();
+public int doorLeak();
+public int powerLossLeak();
+public int breachLeak();
+public int filterStrength();
+public int outsideYieldPermille();
+public int dirtyYieldPermille();
+public int cleanPpm();
+public int dirtyPpm();
+```
+
 ### com.euvcraft.lithmod.core.multiblock.AssemblyStructureMatcher
 ```java
 public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
@@ -1108,6 +1191,15 @@ public static com.euvcraft.lithmod.core.FoupContents applyLayerStep(net.minecraf
 public static com.euvcraft.lithmod.core.FoupContents applyLayerStep(net.minecraft.server.level.ServerLevel, com.euvcraft.lithmod.core.FoupContents, com.euvcraft.lithmod.core.Tier, java.lang.String, java.lang.Integer, int, double, double, com.euvcraft.lithmod.core.FabSettings);
 ```
 
+### com.euvcraft.lithmod.mc.FoupContentsCodec$ExposureFields
+```java
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public long ticks();
+public long sum();
+```
+
 ### com.euvcraft.lithmod.mc.FoupContentsCodec
 ```java
 public static com.euvcraft.lithmod.core.FoupContents fromPublicView(int, int, int);
@@ -1187,6 +1279,255 @@ public static int tierOf(net.minecraft.world.item.ItemStack);
 
 ### com.euvcraft.lithmod.mc.RunSpecCodec
 ```java
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomBlocks
+```java
+public static boolean isShell(net.minecraft.world.level.block.Block);
+public static void register(net.neoforged.bus.api.IEventBus);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomClientEvents
+```java
+public static void screens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomControllerBlockEntity
+```java
+public void markTopologyDirty();
+public com.euvcraft.lithmod.mc.cleanroom.CleanroomControllerBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected java.lang.String machineId();
+public com.euvcraft.lithmod.mc.cleanroom.RoomBounds bounds();
+public int state();
+public int cleanliness();
+public int ppm();
+public int roomYield();
+public int doors();
+public int activeFilters();
+public int filterCount();
+public int trend();
+public boolean powered();
+public java.lang.String fault();
+public net.minecraft.core.BlockPos faultPos();
+public void revalidate();
+public void validateKnown();
+public void serverTick();
+public static boolean gowned(net.minecraft.world.entity.player.Player);
+protected net.minecraft.world.inventory.AbstractContainerMenu createMachineMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
+public void setRemoved();
+protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput);
+protected void loadAdditional(net.minecraft.world.level.storage.ValueInput);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomEnergy
+```java
+static net.neoforged.neoforge.transfer.energy.EnergyHandler view(com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
+public long getAmountAsLong();
+public long getCapacityAsLong();
+public int insert(int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomFilterBlockEntity
+```java
+public com.euvcraft.lithmod.mc.cleanroom.CleanroomFilterBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected java.lang.String machineId();
+public int remaining();
+public boolean working();
+public boolean workSecond(com.euvcraft.lithmod.mc.cleanroom.CleanroomControllerBlockEntity);
+public void serverTick();
+public boolean canPlaceItem(int, net.minecraft.world.item.ItemStack);
+protected net.minecraft.world.inventory.AbstractContainerMenu createMachineMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
+protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput);
+protected void loadAdditional(net.minecraft.world.level.storage.ValueInput);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomFilterItems
+```java
+public com.euvcraft.lithmod.mc.cleanroom.CleanroomFilterItems(com.euvcraft.lithmod.mc.cleanroom.CleanroomFilterBlockEntity);
+protected net.minecraft.world.item.ItemStack getStack();
+protected void setStack(net.minecraft.world.item.ItemStack);
+protected boolean isValid(net.neoforged.neoforge.transfer.item.ItemResource);
+protected int getCapacity(net.neoforged.neoforge.transfer.item.ItemResource);
+protected void onRootCommit(net.minecraft.world.item.ItemStack);
+protected void onRootCommit(java.lang.Object);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomItems
+```java
+public static java.util.List<net.minecraft.world.item.Item> all();
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomMachineBlock
+```java
+public com.euvcraft.lithmod.mc.cleanroom.CleanroomMachineBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
+protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.entity.player.Player, net.minecraft.world.InteractionHand, net.minecraft.world.phys.BlockHitResult);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomMenu
+```java
+public com.euvcraft.lithmod.mc.cleanroom.CleanroomMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity, boolean);
+public com.euvcraft.lithmod.mc.cleanroom.CleanroomMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+protected void addMachineSlots();
+public boolean filter();
+public int value(int);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlock$PortRole
+```java
+public static com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlock$PortRole[] values();
+public static com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlock$PortRole valueOf(java.lang.String);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlock
+```java
+public com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition$Builder<net.minecraft.world.level.block.Block, net.minecraft.world.level.block.state.BlockState>);
+public net.minecraft.world.level.block.state.BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext);
+protected net.minecraft.world.level.block.state.BlockState rotate(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.Rotation);
+protected net.minecraft.world.level.block.state.BlockState mirror(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.Mirror);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
+public static com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlock$PortRole detectRole(net.minecraft.world.level.block.Block);
+public static com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlock$PortRole detectRole(net.minecraft.world.level.block.state.BlockState);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity$ForwardingEnergyHandler
+```java
+com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity$ForwardingEnergyHandler(com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity, net.minecraft.core.Direction);
+public long getAmountAsLong();
+public long getCapacityAsLong();
+public int insert(int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity$ForwardingFluidHandler
+```java
+com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity$ForwardingFluidHandler(com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity, net.minecraft.core.Direction);
+public int size();
+public net.neoforged.neoforge.transfer.fluid.FluidResource getResource(int);
+public long getAmountAsLong(int);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.fluid.FluidResource);
+public boolean isValid(int, net.neoforged.neoforge.transfer.fluid.FluidResource);
+public int insert(int, net.neoforged.neoforge.transfer.fluid.FluidResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.fluid.FluidResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int insert(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public boolean isValid(int, net.neoforged.neoforge.transfer.resource.Resource);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.resource.Resource);
+public net.neoforged.neoforge.transfer.resource.Resource getResource(int);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity$ForwardingItemHandler
+```java
+com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity$ForwardingItemHandler(com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity, net.minecraft.core.Direction);
+public int size();
+public net.neoforged.neoforge.transfer.item.ItemResource getResource(int);
+public long getAmountAsLong(int);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.item.ItemResource);
+public boolean isValid(int, net.neoforged.neoforge.transfer.item.ItemResource);
+public int insert(int, net.neoforged.neoforge.transfer.item.ItemResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.item.ItemResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int insert(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public boolean isValid(int, net.neoforged.neoforge.transfer.resource.Resource);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.resource.Resource);
+public net.neoforged.neoforge.transfer.resource.Resource getResource(int);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity
+```java
+public com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public net.neoforged.neoforge.transfer.energy.EnergyHandler energy(net.minecraft.core.Direction);
+public net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.fluid.FluidResource> fluids(net.minecraft.core.Direction);
+public net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.item.ItemResource> items(net.minecraft.core.Direction);
+public void serverTick();
+public void setRemoved();
+static net.minecraft.core.BlockPos access$000(com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity);
+static net.minecraft.core.BlockPos access$100(com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity);
+static net.minecraft.core.BlockPos access$200(com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomRooms$Sample
+```java
+public com.euvcraft.lithmod.mc.cleanroom.CleanroomRooms$Sample(boolean, int, com.euvcraft.lithmod.mc.cleanroom.CleanroomControllerBlockEntity);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public boolean available();
+public int yieldPermille();
+public com.euvcraft.lithmod.mc.cleanroom.CleanroomControllerBlockEntity room();
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomRooms
+```java
+public static void blockChanged(net.neoforged.neoforge.event.level.BlockEvent$NeighborNotifyEvent);
+public static void register(com.euvcraft.lithmod.mc.cleanroom.CleanroomControllerBlockEntity);
+public static void forget(com.euvcraft.lithmod.mc.cleanroom.CleanroomControllerBlockEntity);
+public static com.euvcraft.lithmod.mc.cleanroom.CleanroomRooms$Sample sample(net.minecraft.server.level.ServerLevel, java.util.List<net.minecraft.core.BlockPos>);
+static boolean overlaps(net.minecraft.server.level.ServerLevel, com.euvcraft.lithmod.mc.cleanroom.CleanroomControllerBlockEntity, com.euvcraft.lithmod.mc.cleanroom.RoomBounds);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomRulesLoader
+```java
+public com.euvcraft.lithmod.mc.cleanroom.CleanroomRulesLoader();
+public static com.euvcraft.lithmod.core.cleanroom.CleanroomRules rules();
+public static void register(net.neoforged.neoforge.event.AddServerReloadListenersEvent);
+public static com.euvcraft.lithmod.core.cleanroom.CleanroomRules decode(java.util.Map<java.lang.String, java.lang.Integer>);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomScreen
+```java
+public com.euvcraft.lithmod.mc.cleanroom.CleanroomScreen(com.euvcraft.lithmod.mc.cleanroom.CleanroomMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+protected int progressBarX();
+protected int progressBarY();
+protected int energyBarX();
+protected int energyBarY();
+protected boolean hasProgressBar();
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomTopology$Result
+```java
+public com.euvcraft.lithmod.mc.cleanroom.CleanroomTopology$Result(com.euvcraft.lithmod.mc.cleanroom.RoomBounds, int, java.lang.String, int, java.util.List<net.minecraft.core.BlockPos>);
+public com.euvcraft.lithmod.mc.cleanroom.CleanroomTopology$Result(com.euvcraft.lithmod.mc.cleanroom.RoomBounds, int, java.lang.String, int, java.util.List<net.minecraft.core.BlockPos>, net.minecraft.core.BlockPos);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public com.euvcraft.lithmod.mc.cleanroom.RoomBounds bounds();
+public int state();
+public java.lang.String fault();
+public int doors();
+public java.util.List<net.minecraft.core.BlockPos> filters();
+public net.minecraft.core.BlockPos faultPos();
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomTopology
+```java
+public static com.euvcraft.lithmod.mc.cleanroom.CleanroomTopology$Result discover(net.minecraft.server.level.ServerLevel, net.minecraft.core.BlockPos);
+public static com.euvcraft.lithmod.mc.cleanroom.CleanroomTopology$Result validate(net.minecraft.server.level.ServerLevel, net.minecraft.core.BlockPos, com.euvcraft.lithmod.mc.cleanroom.RoomBounds);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.RoomBounds
+```java
+public com.euvcraft.lithmod.mc.cleanroom.RoomBounds(int, int, int, int, int, int);
+public boolean contains(net.minecraft.core.BlockPos);
+public boolean containsAll(java.util.List<net.minecraft.core.BlockPos>);
+public boolean shell(net.minecraft.core.BlockPos);
+public int volume();
+public net.minecraft.world.phys.AABB interior();
+public boolean overlaps(com.euvcraft.lithmod.mc.cleanroom.RoomBounds);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public int minX();
+public int minY();
+public int minZ();
+public int maxX();
+public int maxY();
+public int maxZ();
 ```
 
 ### com.euvcraft.lithmod.mc.compat.TooltipLineWrapping
@@ -2459,6 +2800,8 @@ protected double admissionYieldMultiplier();
 public boolean structureFormed();
 protected boolean inputsTemporarilyUnavailable();
 protected net.minecraft.world.item.ItemStack equipment(int);
+public com.euvcraft.lithmod.core.FoupContents processingTick(com.euvcraft.lithmod.core.FoupContents);
+public com.euvcraft.lithmod.core.FoupContents applyLayer(com.euvcraft.lithmod.core.FoupContents, int, double);
 public void serverTick();
 protected void dropExtraContents(net.minecraft.world.level.Level, net.minecraft.core.BlockPos);
 public void setRemoved();
@@ -3007,6 +3350,8 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 |------------|----|-----------------|-------------|-----------------|--------------|
 | src/main/resources/data/lithmod/machines/advanced_test_package.json | advanced_test_package | 1000000 | 20000 | 100 | production |
 | src/main/resources/data/lithmod/machines/boule_purifier.json | boule_purifier | 100000 | 10000 | 80 | production |
+| src/main/resources/data/lithmod/machines/cleanroom_controller.json | cleanroom_controller | 200000 | 10000 | 0 | production |
+| src/main/resources/data/lithmod/machines/cleanroom_filter.json | cleanroom_filter | 200000 | 10000 | 0 | production |
 | src/main/resources/data/lithmod/machines/crystal_puller.json | crystal_puller | 20000 | 2000 | 20 | production |
 | src/main/resources/data/lithmod/machines/deposition_etcher.json | deposition_etcher | 1000000 | 20000 | 1000 | production |
 | src/main/resources/data/lithmod/machines/ebeam_mask_writer.json | ebeam_mask_writer | 4000000 | 32000 | 2000 | production |
@@ -3049,6 +3394,28 @@ test_machine definitions/recipes are dropped before validation outside fixture m
   "params": {
     "water_capacity": 16000
   }
+}
+```
+
+### src/main/resources/data/lithmod/machines/cleanroom_controller.json
+
+```json
+{
+  "id": "cleanroom_controller",
+  "energy_capacity": 200000,
+  "max_receive": 10000,
+  "energy_per_tick": 0
+}
+```
+
+### src/main/resources/data/lithmod/machines/cleanroom_filter.json
+
+```json
+{
+  "id": "cleanroom_filter",
+  "energy_capacity": 200000,
+  "max_receive": 10000,
+  "energy_per_tick": 0
 }
 ```
 
@@ -3239,9 +3606,9 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 }
 ```
 
-## Recipe Summary (93 actual resources: 91 production + 2 fixture-gated)
+## Recipe Summary (107 actual resources: 105 production + 2 fixture-gated)
 
-### Vanilla recipe datapack files (75 production)
+### Vanilla recipe datapack files (89 production)
 
 | Path | Type | Result | Count |
 |------|------|--------|-------|
@@ -3258,6 +3625,20 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/recipe/crafting/boule_purifier.json | minecraft:crafting_shaped | lithmod:boule_purifier | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/burn_paper.json | minecraft:crafting_shapeless | lithmod:burn_paper | 8 |
 | src/main/resources/data/lithmod/recipe/crafting/chip_package.json | minecraft:crafting_shaped | lithmod:chip_package | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/cleanroom_boots.json | minecraft:crafting_shaped | lithmod:cleanroom_boots | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/cleanroom_controller.json | minecraft:crafting_shaped | lithmod:cleanroom_controller | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/cleanroom_door.json | minecraft:crafting_shaped | lithmod:cleanroom_door | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/cleanroom_filter.json | minecraft:crafting_shaped | lithmod:cleanroom_filter | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/cleanroom_filter_medium.json | minecraft:crafting_shaped | lithmod:cleanroom_filter_medium | 4 |
+| src/main/resources/data/lithmod/recipe/crafting/cleanroom_floor.json | minecraft:crafting_shaped | lithmod:cleanroom_floor | 4 |
+| src/main/resources/data/lithmod/recipe/crafting/cleanroom_fluid_port.json | minecraft:crafting_shaped | lithmod:cleanroom_fluid_port | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/cleanroom_hood.json | minecraft:crafting_shaped | lithmod:cleanroom_hood | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/cleanroom_item_port.json | minecraft:crafting_shaped | lithmod:cleanroom_item_port | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/cleanroom_power_port.json | minecraft:crafting_shaped | lithmod:cleanroom_power_port | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/cleanroom_suit.json | minecraft:crafting_shaped | lithmod:cleanroom_suit | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/cleanroom_trousers.json | minecraft:crafting_shaped | lithmod:cleanroom_trousers | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/cleanroom_wall.json | minecraft:crafting_shaped | lithmod:cleanroom_wall | 4 |
+| src/main/resources/data/lithmod/recipe/crafting/cleanroom_window.json | minecraft:crafting_shaped | lithmod:cleanroom_window | 4 |
 | src/main/resources/data/lithmod/recipe/crafting/contact_plate.json | minecraft:crafting_shaped | lithmod:contact_plate | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/cpu_blank.json | minecraft:crafting_shaped | lithmod:cpu_blank | 4 |
 | src/main/resources/data/lithmod/recipe/crafting/crystal_puller.json | minecraft:crafting_shaped | lithmod:crystal_puller | 1 |
@@ -3790,7 +4171,7 @@ Tier JSON fields per file (raw literals read from src/main/resources/data/lithmo
 | data/lithmod/tiers/t8.json | T8 | 8 | 90 | 100 | 80.0 | False |
 
 
-M0-owned data files stay as tracked: data/lithmod/die_rules/rules.json, data/lithmod/support_lines/matrix.json, and the 8 data/lithmod/tiers/t<index>.json files. Block loot tables: 36 files under data/lithmod/loot_table/blocks; block tag files: 1. Counts are read at generation time.
+M0-owned data files stay as tracked: data/lithmod/die_rules/rules.json, data/lithmod/support_lines/matrix.json, and the 8 data/lithmod/tiers/t<index>.json files. Block loot tables: 45 files under data/lithmod/loot_table/blocks; block tag files: 1. Counts are read at generation time.
 
 ### Machine data codecs (actual codec sources; core records stay game-independent)
 
