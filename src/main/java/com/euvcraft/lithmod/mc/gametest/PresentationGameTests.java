@@ -265,7 +265,7 @@ public final class PresentationGameTests {
         for (Identifier id : BuiltInRegistries.ITEM.keySet())
             if (id.getNamespace().equals("lithmod") && !id.getPath().equals("test_machine") && !produced.contains(id.getPath()))
                 missing.add(id.getPath());
-        h.assertTrue(missing.equals(Set.of("foup_mk2", "logic_chip_t1", "logic_chip_t2", "memory_chip_t2", "chip_scrap",
+        h.assertTrue(missing.equals(Set.of("foup_mk2", "logic_chip_t1", "logic_chip_t2", "memory_chip_t2", "chip_scrap", "wafer_scrap",
                 "logic_chip_t3", "memory_chip_t3", "compute_chip_t3", "nand_chip_t3",
                 "logic_chip_t4", "memory_chip_t4", "compute_chip_t4", "nand_chip_t4", "logic_chip_t5", "memory_chip_t5", "compute_chip_t5", "nand_chip_t5")),
             "Unexpected recipe-less production items: " + missing);
