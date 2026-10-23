@@ -8,14 +8,15 @@ export function verifyUpdates(cwd,input){
   const fields=line.trim().split(/\s+/);if(fields.length!==4||!fields[2].startsWith('refs/')||![fields[1],fields[3]].every(x=>/^[0-9a-f]{40}$/.test(x)))throw Error('Malformed pre-push update');
   const[,local,,remote]=fields;updates++;if(/^0+$/.test(local))continue;
   const revisions=[local];if(!/^0+$/.test(remote)){try{git(cwd,['cat-file','-e',remote+'^{commit}']);revisions.push('^'+remote);}catch{/* Unknown remote history: inspect the whole proposed history. */}}
-  const raw=git(cwd,['log','--no-use-mailmap','-z','--format=%H%x00%an%x00%ae%x00%cn%x00%ce',...revisions]);
-  if(!raw)continue;const rows=raw.split('\0');if(rows.at(-1)==='')rows.pop();if(rows.length%5)throw Error('Malformed Git author inventory');
-  for(let i=0;i<rows.length;i+=5)commits.set(rows[i],rows.slice(i+1,i+5));
+  const raw=git(cwd,['log','--no-use-mailmap','-z','--format=%H%x00%an%x00%ae%x00%cn%x00%ce%x00%B',...revisions]);
+  if(!raw)continue;const rows=raw.split('\0');if(rows.at(-1)==='')rows.pop();if(rows.length%6)throw Error('Malformed Git author inventory');
+  for(let i=0;i<rows.length;i+=6)commits.set(rows[i],rows.slice(i+1,i+6));
  }
- const failures=[];for(const[sha,[an,ae,cn,ce]]of commits){
+ const failures=[];for(const[sha,[an,ae,cn,ce,message]]of commits){
   const author=an===policy.owner&&policy.allowedAuthorEmails.includes(ae);
   const committer=cn===policy.owner&&policy.allowedAuthorEmails.includes(ce)||cn===policy.serviceCommitter.name&&ce===policy.serviceCommitter.email;
   if(!author||!committer)failures.push(sha.slice(0,12)+' ('+(!author?'author '+an:'committer '+cn)+')');
+  for(const line of message.split(/\r?\n/)){if(!/^\s*Co-authored-by\s*:/i.test(line))continue;const match=/^\s*Co-authored-by\s*:\s*(.+?)\s*<([^>]+)>\s*$/i.exec(line);if(!match||match[1]!==policy.owner||!policy.allowedAuthorEmails.includes(match[2]))failures.push(sha.slice(0,12)+' (unapproved co-author)');}
  }
  if(failures.length)throw Error('Push blocked: '+failures.length+' commit(s) have an unapproved identity: '+failures.slice(0,5).join(', ')+'. Configure '+policy.owner+' and correct the commits. Do not merge preserved pre-correction branches.');
  return{updates,checkedCommits:commits.size};
