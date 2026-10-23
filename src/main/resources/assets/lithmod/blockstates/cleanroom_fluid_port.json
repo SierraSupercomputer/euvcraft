@@ -14,6 +14,14 @@
     "facing=west": {
       "model": "lithmod:block/cleanroom_fluid_port",
       "y": 270
+    },
+    "facing=up": {
+      "model": "lithmod:block/cleanroom_fluid_port",
+      "x": 90
+    },
+    "facing=down": {
+      "model": "lithmod:block/cleanroom_fluid_port",
+      "x": 90
     }
   }
 }

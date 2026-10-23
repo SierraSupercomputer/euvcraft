@@ -1,6 +1,12 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube",
   "textures": {
-    "all": "lithmod:block/cleanroom_fluid_port"
+    "particle": "lithmod:block/cleanroom_fluid_port",
+    "north": "lithmod:block/cleanroom_fluid_port",
+    "south": "lithmod:block/cleanroom_fluid_port",
+    "east": "lithmod:block/cleanroom_wall",
+    "west": "lithmod:block/cleanroom_wall",
+    "up": "lithmod:block/cleanroom_wall",
+    "down": "lithmod:block/cleanroom_wall"
   }
 }

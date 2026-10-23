@@ -25,13 +25,13 @@ import org.jspecify.annotations.Nullable;
  * {@link CleanroomBlocks#FLUID_PORT}, and {@link CleanroomBlocks#ITEM_PORT}. The role is
  * detected at runtime by comparing the block state's block to the registry fields.</p>
  *
- * <p>Placement facing follows {@link BlockPlaceContext#getHorizontalDirection()}, which points
+ * <p>Placement facing follows {@link BlockPlaceContext#getClickedFace()}, which points
  * from the placement player through the wall into the room (i.e. the destination side).</p>
  */
 public class CleanroomPortBlock extends BaseEntityBlock {
 
-    /** Horizontal facing of the port; points from outside into the cleanroom. */
-    public static final Property<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
+    /** Facing normal of the through-wall axis, including floor and ceiling. */
+    public static final Property<Direction> FACING = BlockStateProperties.FACING;
 
     public CleanroomPortBlock(BlockBehaviour.Properties properties) {
         super(properties);
@@ -45,8 +45,8 @@ public class CleanroomPortBlock extends BaseEntityBlock {
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        // Horizontal direction from the player, pointing through the wall into the room
-        return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection());
+        // Use the clicked support face as the through-wall normal
+        return this.defaultBlockState().setValue(FACING, context.getClickedFace());
     }
 
     @Override
