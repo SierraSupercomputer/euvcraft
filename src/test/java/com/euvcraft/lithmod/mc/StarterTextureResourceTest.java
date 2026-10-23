@@ -320,7 +320,7 @@ class StarterTextureResourceTest {
         List<String> modelFiles = listResources(BLOCK_MODELS, ".json");
         for (String modelFile : modelFiles) {
             String id = modelFile.substring(0, modelFile.length() - 5);
-            if (PRODUCTION_BLOCKS.contains(id)||T5AssetResourceTest.BLOCKS.contains(id)) continue;
+            if (PRODUCTION_BLOCKS.contains(id)||T5AssetResourceTest.BLOCKS.contains(id)||AssemblyVisualResourceTest.MODELS.contains(id)) continue;
             if (JOINED_PANEL_BLOCKS.contains(id)) continue; // joined panels validated separately
             if (Set.of("test_machine").contains(id)) continue; // preserved
             fail("Unexpected production block model: " + id + " (not in PRODUCTION_BLOCKS, JOINED_PANEL_BLOCKS, or preserve list)");

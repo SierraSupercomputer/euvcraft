@@ -1,32 +1,32 @@
 {
   "variants": {
     "facing=north,formed=false": {
-      "model": "lithmod:block/assembly_casing_unformed"
+      "model": "lithmod:block/assembly_casing"
     },
-    "facing=north,formed=true,part=0": {
+    "facing=north,formed=true": {
       "model": "lithmod:block/assembly_casing_formed"
     },
     "facing=east,formed=false": {
-      "model": "lithmod:block/assembly_casing_unformed",
+      "model": "lithmod:block/assembly_casing",
       "y": 90
     },
-    "facing=east,formed=true,part=0": {
+    "facing=east,formed=true": {
       "model": "lithmod:block/assembly_casing_formed",
       "y": 90
     },
     "facing=south,formed=false": {
-      "model": "lithmod:block/assembly_casing_unformed",
+      "model": "lithmod:block/assembly_casing",
       "y": 180
     },
-    "facing=south,formed=true,part=0": {
+    "facing=south,formed=true": {
       "model": "lithmod:block/assembly_casing_formed",
       "y": 180
     },
     "facing=west,formed=false": {
-      "model": "lithmod:block/assembly_casing_unformed",
+      "model": "lithmod:block/assembly_casing",
       "y": 270
     },
-    "facing=west,formed=true,part=0": {
+    "facing=west,formed=true": {
       "model": "lithmod:block/assembly_casing_formed",
       "y": 270
     }
