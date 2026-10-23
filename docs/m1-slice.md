@@ -5,7 +5,7 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
 
 ## Package Layout (parsed from actual package declarations)
 
-  - com.euvcraft.lithmod.core (57 files)
+  - com.euvcraft.lithmod.core (58 files)
   - com.euvcraft.lithmod.core.cleanroom (3 files)
   - com.euvcraft.lithmod.core.multiblock (11 files)
   - com.euvcraft.lithmod.mc (21 files)
@@ -13,8 +13,9 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
   - com.euvcraft.lithmod.mc.compat (1 files)
   - com.euvcraft.lithmod.mc.compat.mixin (1 files)
   - com.euvcraft.lithmod.mc.data (14 files)
-  - com.euvcraft.lithmod.mc.gametest (34 files)
+  - com.euvcraft.lithmod.mc.gametest (35 files)
   - com.euvcraft.lithmod.mc.machine (4 files)
+  - com.euvcraft.lithmod.mc.machine.cleaner (7 files)
   - com.euvcraft.lithmod.mc.machine.client (1 files)
   - com.euvcraft.lithmod.mc.machine.mask (9 files)
   - com.euvcraft.lithmod.mc.machine.packaging (6 files)
@@ -265,6 +266,12 @@ public com.euvcraft.lithmod.core.WaferSubstrate grade();
 public int preparationGeneration();
 public com.euvcraft.lithmod.core.cleanroom.CleanroomExposure roomExposure();
 public int roomYieldPermille();
+```
+
+### com.euvcraft.lithmod.core.FoupDisposal
+```java
+public static com.euvcraft.lithmod.core.FoupContents emptyCarrier(com.euvcraft.lithmod.core.FoupContents, java.util.UUID);
+public static int scrapCount(com.euvcraft.lithmod.core.FoupContents, int);
 ```
 
 ### com.euvcraft.lithmod.core.FoupPublicView
@@ -1826,6 +1833,86 @@ public int getMaxStackSize();
 public boolean mayPickup(net.minecraft.world.entity.player.Player);
 ```
 
+### com.euvcraft.lithmod.mc.machine.cleaner.CleanerWaterInput
+```java
+com.euvcraft.lithmod.mc.machine.cleaner.CleanerWaterInput(com.euvcraft.lithmod.mc.machine.cleaner.FoupCleanerBlockEntity);
+public int size();
+public net.neoforged.neoforge.transfer.fluid.FluidResource getResource(int);
+public long getAmountAsLong(int);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.fluid.FluidResource);
+public boolean isValid(int, net.neoforged.neoforge.transfer.fluid.FluidResource);
+public int insert(int, net.neoforged.neoforge.transfer.fluid.FluidResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.fluid.FluidResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int insert(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public boolean isValid(int, net.neoforged.neoforge.transfer.resource.Resource);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.resource.Resource);
+public net.neoforged.neoforge.transfer.resource.Resource getResource(int);
+```
+
+### com.euvcraft.lithmod.mc.machine.cleaner.FoupCleanerBlock
+```java
+public com.euvcraft.lithmod.mc.machine.cleaner.FoupCleanerBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
+protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.entity.player.Player, net.minecraft.world.InteractionHand, net.minecraft.world.phys.BlockHitResult);
+```
+
+### com.euvcraft.lithmod.mc.machine.cleaner.FoupCleanerBlockEntity
+```java
+public com.euvcraft.lithmod.mc.machine.cleaner.FoupCleanerBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected java.lang.String machineId();
+public boolean live();
+public boolean hasJob();
+public int progress();
+public int duration();
+public int pendingScrap();
+public int waterRequired();
+public static boolean isFoup(net.minecraft.world.item.ItemStack);
+public int status();
+public boolean start();
+public void serverTick();
+public boolean canPlaceItem(int, net.minecraft.world.item.ItemStack);
+protected net.minecraft.world.inventory.AbstractContainerMenu createMachineMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
+protected void dropExtraContents(net.minecraft.world.level.Level, net.minecraft.core.BlockPos);
+protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput);
+protected void loadAdditional(net.minecraft.world.level.storage.ValueInput);
+```
+
+### com.euvcraft.lithmod.mc.machine.cleaner.FoupCleanerClientEvents
+```java
+public static void menus(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent);
+```
+
+### com.euvcraft.lithmod.mc.machine.cleaner.FoupCleanerMachines
+```java
+public static void register(net.neoforged.bus.api.IEventBus);
+```
+
+### com.euvcraft.lithmod.mc.machine.cleaner.FoupCleanerMenu
+```java
+protected void addDataSlots(net.minecraft.world.inventory.ContainerData);
+public com.euvcraft.lithmod.mc.machine.cleaner.FoupCleanerMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.cleaner.FoupCleanerBlockEntity);
+public com.euvcraft.lithmod.mc.machine.cleaner.FoupCleanerMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+public int value(int);
+public boolean locked();
+protected void addMachineSlots();
+public net.minecraft.world.item.ItemStack quickMoveStack(net.minecraft.world.entity.player.Player, int);
+public boolean clickMenuButton(net.minecraft.world.entity.player.Player, int);
+```
+
+### com.euvcraft.lithmod.mc.machine.cleaner.FoupCleanerScreen
+```java
+public com.euvcraft.lithmod.mc.machine.cleaner.FoupCleanerScreen(com.euvcraft.lithmod.mc.machine.cleaner.FoupCleanerMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+protected int energyBarX();
+protected int energyBarY();
+protected int progressBarX();
+protected int progressBarY();
+protected void init();
+protected void containerTick();
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
 ### com.euvcraft.lithmod.mc.machine.client.MachineClientEvents
 ```java
 public static void registerScreens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent);
@@ -3364,6 +3451,7 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/machines/crystal_puller.json | crystal_puller | 20000 | 2000 | 20 | production |
 | src/main/resources/data/lithmod/machines/deposition_etcher.json | deposition_etcher | 1000000 | 20000 | 1000 | production |
 | src/main/resources/data/lithmod/machines/ebeam_mask_writer.json | ebeam_mask_writer | 4000000 | 32000 | 2000 | production |
+| src/main/resources/data/lithmod/machines/foup_cleaner.json | foup_cleaner | 40000 | 2000 | 20 | production |
 | src/main/resources/data/lithmod/machines/lithography_scanner.json | lithography_scanner | 1000000 | 20000 | 160 | production |
 | src/main/resources/data/lithmod/machines/pattern_generator.json | pattern_generator | 20000 | 2000 | 20 | production |
 | src/main/resources/data/lithmod/machines/pick_and_place.json | pick_and_place | 100000 | 5000 | 20 | production |
@@ -3470,6 +3558,23 @@ test_machine definitions/recipes are dropped before validation outside fixture m
   "energy_per_tick": 2000,
   "per_tier_energy_per_tick": {},
   "params": {}
+}
+```
+
+### src/main/resources/data/lithmod/machines/foup_cleaner.json
+
+```json
+{
+  "id": "foup_cleaner",
+  "energy_capacity": 40000,
+  "max_receive": 2000,
+  "energy_per_tick": 20,
+  "params": {
+    "duration": 200,
+    "water_mb": 1000,
+    "water_capacity_mb": 16000,
+    "scrap_per_wafer": 1
+  }
 }
 ```
 
@@ -3615,9 +3720,9 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 }
 ```
 
-## Recipe Summary (107 actual resources: 105 production + 2 fixture-gated)
+## Recipe Summary (108 actual resources: 106 production + 2 fixture-gated)
 
-### Vanilla recipe datapack files (89 production)
+### Vanilla recipe datapack files (90 production)
 
 | Path | Type | Result | Count |
 |------|------|--------|-------|
@@ -3656,6 +3761,7 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/recipe/crafting/duv_projection_lens.json | minecraft:crafting_shaped | lithmod:duv_projection_lens | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/ebeam_mask_writer.json | minecraft:crafting_shaped | lithmod:ebeam_mask_writer | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/fine_air_filter.json | minecraft:crafting_shaped | lithmod:fine_air_filter | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/foup_cleaner.json | minecraft:crafting_shaped | lithmod:foup_cleaner | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/foup_mk1.json | minecraft:crafting_shaped | lithmod:foup_mk1 | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/hepa_filter.json | minecraft:crafting_shaped | lithmod:hepa_filter | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/i_line_lamp.json | minecraft:crafting_shaped | lithmod:i_line_lamp | 1 |
@@ -4180,7 +4286,7 @@ Tier JSON fields per file (raw literals read from src/main/resources/data/lithmo
 | data/lithmod/tiers/t8.json | T8 | 8 | 90 | 100 | 80.0 | False |
 
 
-M0-owned data files stay as tracked: data/lithmod/die_rules/rules.json, data/lithmod/support_lines/matrix.json, and the 8 data/lithmod/tiers/t<index>.json files. Block loot tables: 45 files under data/lithmod/loot_table/blocks; block tag files: 1. Counts are read at generation time.
+M0-owned data files stay as tracked: data/lithmod/die_rules/rules.json, data/lithmod/support_lines/matrix.json, and the 8 data/lithmod/tiers/t<index>.json files. Block loot tables: 46 files under data/lithmod/loot_table/blocks; block tag files: 1. Counts are read at generation time.
 
 ### Machine data codecs (actual codec sources; core records stay game-independent)
 
