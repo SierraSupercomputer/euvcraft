@@ -1,5 +1,7 @@
 # M1 Progression: From Quartz to Chips
 
+For the complete current route, start with the [T1–T5 playtest progression guide](playtest-progression.md). This page is the detailed early-tier reference; later machines have separate walkthroughs.
+
 This guide covers the early T1/T2 owner/player progression path, updated for the accepted panel layout. It describes the four single-block machines, the Process Cell multiblock, and the flow from raw quartz to finished chips. Editable placeholder ingredients and timings are generated in [docs/recipes.md](recipes.md) — this guide does not duplicate the full recipe table.
 
 ## 1. Quartz → Silicon
@@ -98,7 +100,7 @@ Both views show shared coarse status, FE, and progress. Only the upper view has 
 
 ## 7. Creative Tab (M1-11)
 
-There is one EUVCRAFT creative tab, registered as lithmod:0_main. Its current source includes later T3–T5 machines, materials, assembly products and mask variants; the historical32-stack M1 census is no longer the full tab. The current tab has112 stacks, including distinct mask variants. ModCreativeTabs.MAIN displayItems defines its ordering; PresentationGameTests asserts the actual tab contains exactly112 entries and compares each item against its explicit expected list. Fixture test_machine is excluded from normal production play. Do not derive a current total by adding historical item groups or confusing unique item types with mask variants.
+There is one EUVCRAFT creative tab, registered as lithmod:0_main. It includes current machines, materials, assembly products and distinct mask variants. Creative search also exposes the registered production entries. Historical M1 inventory counts are not current totals. The test_machine fixture is excluded from normal production play.
 
 ## 8. Later generations and deferred features
 
@@ -108,8 +110,10 @@ This guide's small Process Cell covers early progression; it is not a descriptio
 - [T4 walkthrough](manual-walkthrough-t4.md)
 - [Scanner walkthrough](manual-walkthrough-scanner.md)
 - [T5 utilities, diagnostics and assembly](manual-walkthrough-t5.md)
+- [T5 cleanrooms](manual-walkthrough-cleanroom.md)
+- [FOUP cleaning and wafer disposal](manual-walkthrough-foup-cleaner.md)
 
-T6+ selectable compute cores, reflow, cleanrooms, FOUP cleaning and scrap recycling are future plans, not implemented by this guide. FOUP Mk2 remains available for development/creative use without a crafting recipe. Debug energy fill is a config-gated development aid, disabled by default. Private wafer rolls remain server-only; do not interpret the guide as exposing those values.
+Cleanrooms and standalone FOUP cleaning are implemented; follow their walkthroughs above. T6+ selectable compute cores, reflow, persistent equipment contamination and scrap recycling remain future plans. FOUP Mk2 remains available for development/creative use without a crafting recipe. Debug energy fill is a config-gated development aid, disabled by default. Private wafer rolls remain server-only.
 
 ## 9. References
 
@@ -121,4 +125,4 @@ T6+ selectable compute cores, reflow, cleanrooms, FOUP cleaning and scrap recycl
 
 ## Verification history
 
-Historical M1-12 acceptance and test counts belong to [the original acceptance report](reports/M1-12_acceptance.md); they are not current full-suite or creative-inventory counts. Later reports and the walkthroughs linked above document subsequent increments. The owner confirmed the functional T5 walkthrough on October22; diagnostic/utility text clipping and a shutdown hang are separate follow-up issues. This documentation update does not claim rendered fixes or new executed tests.
+Historical M1-12 acceptance and test counts belong to [the original acceptance report](reports/M1-12_acceptance.md); they are not current full-suite or creative-inventory counts. Later reports and walkthroughs document subsequent increments. The owner confirmed the T5 and cleanroom walkthroughs, along with the GUI, shutdown, creative search and assembly texture fixes. The FOUP cleaner has its own walkthrough; this documentation update does not claim a new in-game test.

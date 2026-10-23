@@ -1,4 +1,10 @@
 
+# EUVCRAFT
+
+Start with the [T1–T5 playtest progression guide](docs/playtest-progression.md) for the current production route, machine layouts, cleanrooms, assembly and FOUP cleaning. See the [recipe reference](docs/recipes.md) for crafting ingredients.
+
+The development setup information below comes from the NeoForge template.
+
 Installation information
 =======
 
