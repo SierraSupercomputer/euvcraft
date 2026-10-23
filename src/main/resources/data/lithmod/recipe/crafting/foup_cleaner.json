@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "IBI",
+    "BRB",
+    "IGI"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "B": "minecraft:bucket",
+    "R": "minecraft:redstone",
+    "G": "minecraft:glass"
+  },
+  "result": {
+    "id": "lithmod:foup_cleaner",
+    "count": 1
+  }
+}
