@@ -27,8 +27,8 @@ public final class CleanroomAtmosphere {
      *   <li>Subtract {@code ungownedLeak * ungowned}</li>
      *   <li>Subtract {@code gownedLeak * gowned}</li>
      *   <li>Subtract {@code doorLeak * openDoors}</li>
-     *   <li>Add {@code powerLossLeak} if {@code !powered}</li>
-     *   <li>Add {@code breachLeak} if {@code breached}</li>
+     *   <li>Subtract {@code powerLossLeak} if {@code !powered}</li>
+     *   <li>Subtract {@code breachLeak} if {@code breached}</li>
      *   <li>Add {@code filterStrength * poweredFilters} only if {@code powered && !breached}</li>
      * </ul>
      * <p>No double volume scaling on filter rate. Safe overflow handling; negative counts rejected; volume must be >= 1.

@@ -20,7 +20,7 @@ public final class CleanroomRooms {
    register(r);if(r.bounds()==null||!r.bounds().containsAll(members))continue;
    if(found!=null)return new Sample(true,outside,null);found=r;
   }
-  if(unavailable)return new Sample(false,outside,null);
+  if(unavailable)return new Sample(false,outside,null); // An unavailable overlapping claim makes ownership ambiguous even if another claimant is loaded.
   if(found==null)return new Sample(true,outside,null);
   found.validateKnown();
   if(found.state()==CleanroomControllerBlockEntity.UNKNOWN)return new Sample(false,outside,found);
