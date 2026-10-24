@@ -21,12 +21,12 @@ import java.util.Objects;
  * facing axis to the adjacent block on the opposite side.
  *
  * <p>Each port role (power, fluid, item) exposes exactly one capability matching its type.
- * The handler is a dynamic lens — it does not cache the neighbor or its capability, and
+ * Item/fluid forwarding is a dynamic lens — it does not cache the neighbor or its capability, and
  * re-queries on every operation. For item/fluid forwarding, if the port is removed, the neighbor is unloaded/replaced,
  * or the capability changes, operations immediately refuse or return empty without loading chunks.</p>
  *
  * <p>Recursion across chained or mutually-facing ports is guarded using a bounded
- * {@link ThreadLocal} key for each transfer type, preventing infinite loops and duplicate
+ * {@link ThreadLocal} key for item/fluid transfer, preventing infinite loops and duplicate
  * resource accounting. Power handlers access only their own buffer; they do not recurse.</p>
  *
  * <p>World shutdown ({@link #setRemoved()}) does not inspect neighbors or chunks.</p>
@@ -97,7 +97,7 @@ public class CleanroomPortBlockEntity extends BlockEntity {
         return new ForwardingItemHandler(this, side);
     }
 
-    /** Server tick — currently no-op, but kept for symmetry with other port BEs. */
+    /** Deliver buffered FE to adjacent receivers; conduit networks can pull it directly. */
     public void serverTick() {
         if (role() == CleanroomPortBlock.PortRole.POWER) power.tick();
     }
