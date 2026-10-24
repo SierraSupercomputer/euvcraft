@@ -285,5 +285,42 @@
   "item.lithmod.cleanroom_boots": "Cleanroom Boots",
   "block.lithmod.foup_cleaner": "FOUP Cleaner",
   "item.lithmod.foup_cleaner": "FOUP Cleaner",
-  "item.lithmod.wafer_scrap": "Wafer Scrap"
+  "item.lithmod.wafer_scrap": "Wafer Scrap",
+
+  "tooltip.lithmod.hold_shift_for_details": "Hold Shift for structure details",
+
+  "tooltip.lithmod.frame.assembly": "Frame: Assembly",
+  "tooltip.lithmod.frame.support": "Frame: Support",
+  "tooltip.lithmod.frame.advanced": "Frame: Advanced",
+  "tooltip.lithmod.frame.cleanroom": "Frame: Cleanroom",
+
+  "tooltip.lithmod.dims.2x2x2": "Dimensions: 2×2×2",
+  "tooltip.lithmod.dims.2x2x3": "Dimensions: 2×2×3",
+  "tooltip.lithmod.dims.3x3x5": "Dimensions: 3×3×5",
+  "tooltip.lithmod.dims.cuboid_shell": "Dimensions: Hollow cuboid shell (variable)",
+
+  "tooltip.lithmod.casing.process_cell": "Casing: Process Cell Casing",
+  "tooltip.lithmod.casing.support": "Casing: Support Casing",
+  "tooltip.lithmod.casing.advanced_fab": "Casing: Advanced Fab Casing",
+  "tooltip.lithmod.casing.assembly": "Casing: Assembly Casing",
+  "tooltip.lithmod.casing.cleanroom_shell": "Shell: Cleanroom Wall/Window/Door/Floor",
+
+  "tooltip.lithmod.port.process_cell": "Power: 1–2 Process Cell Power Ports",
+  "tooltip.lithmod.port.support": "Power: 1–2 Support Power Ports",
+  "tooltip.lithmod.port.advanced": "Power: 1–2 Advanced Power Ports",
+  "tooltip.lithmod.port.assembly": "Power: 1–2 Assembly Power Ports",
+  "tooltip.lithmod.port.cleanroom_powered_filters": "Power: Powered Filters on shell",
+
+  "tooltip.lithmod.panel.operating_panel_above": "Panel: Operating Panel directly above controller",
+  "tooltip.lithmod.panel.scanner_operating_panel_above": "Panel: Scanner Operating Panel directly above controller",
+  "tooltip.lithmod.panel.calibration_panel": "Panel: Calibration Panel in middle layer",
+  "tooltip.lithmod.modules.five_physical": "Modules: 5 physical modules (Exposure, Optics, Stage, Filtration, Metrology) in middle layer",
+
+  "tooltip.lithmod.optional.support_water_inlet": "Optional: Support Water Inlet (replaces one casing)",
+  "tooltip.lithmod.optional.diagnostic_and_water_inlet": "Optional: Diagnostic Panel + Water Inlet (pair, middle layer) for T5 immersion",
+
+  "tooltip.lithmod.utility.water_inlet_one": "Utility: Exactly 1 Utility Water Inlet",
+  "tooltip.lithmod.utility.pure_outlet_one": "Utility: Exactly 1 Utility Pure Outlet",
+
+  "tooltip.lithmod.cleanroom.no_fixed_power_port": "No fixed production power port; shell provides power via filters"
 }
