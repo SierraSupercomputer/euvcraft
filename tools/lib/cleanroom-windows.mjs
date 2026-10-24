@@ -1,0 +1,29 @@
+import { deflateSync, crc32 } from 'node:zlib';
+const A='src/main/resources/assets/lithmod/';
+// Texture left/right/top/bottom in vanilla FaceInfo UV order. North/east reverse world axes.
+export const FACE_EDGES={north:['east','west','up','down'],south:['west','east','up','down'],
+    west:['north','south','up','down'],east:['south','north','up','down'],
+    up:['west','east','north','south'],down:['west','east','south','north']};
+function chunk(type,data){const t=Buffer.from(type),n=Buffer.alloc(4),c=Buffer.alloc(4);n.writeUInt32BE(data.length);c.writeUInt32BE(crc32(Buffer.concat([t,data]))>>>0);return Buffer.concat([n,t,data,c]);}
+function tile(mask){const h=Buffer.alloc(13);h.writeUInt32BE(16);h.writeUInt32BE(16,4);h[8]=8;h[9]=6;const rows=Buffer.alloc(16*65);
+    for(let y=0;y<16;y++)for(let x=0;x<16;x++){
+        const edges=[x<2,x>=14,y<2,y>=14];
+        const border=edges.some((edge,i)=>edge&&!(mask&(1<<i)));
+        const outer=(x===0&&!(mask&1))||(x===15&&!(mask&2))||(y===0&&!(mask&4))||(y===15&&!(mask&8));
+        const rgba=border?(outer?[80,100,107,255]:[217,228,231,255]):[117,202,220,70];
+        for(let c=0;c<4;c++)rows[y*65+1+x*4+c]=rgba[c];
+    }
+    return Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',h),chunk('IDAT',deflateSync(rows,{level:9})),chunk('IEND',Buffer.alloc(0))]);
+}
+/** Four-edge joins work on all six faces, including floor/ceiling windows, with no CTM dependency. */
+export function connectedWindowAssets(){const out=new Map(),put=(path,value)=>out.set(A+path,Buffer.isBuffer(value)?value:Buffer.from(JSON.stringify(value,null,2)+'\n')),multipart=[];
+    for(let mask=0;mask<16;mask++)put(`textures/block/cleanroom_window_join_${mask}.png`,tile(mask));
+    for(const[face,edges]of Object.entries(FACE_EDGES))for(let mask=0;mask<16;mask++){
+        const id=`cleanroom_window_${face}_${mask}`;
+        const when=Object.fromEntries(edges.map((edge,i)=>[edge,String(Boolean(mask&(1<<i)))]));
+        multipart.push({when,apply:{model:'lithmod:block/'+id}});
+        put('models/block/'+id+'.json',{render_type:'minecraft:translucent',textures:{particle:'lithmod:block/cleanroom_window',pane:`lithmod:block/cleanroom_window_join_${mask}`},
+            elements:[{from:[0,0,0],to:[16,16,16],faces:{[face]:{texture:'#pane',uv:[0,0,16,16],cullface:face}}}]});
+    }
+    put('blockstates/cleanroom_window.json',{multipart});return out;
+}

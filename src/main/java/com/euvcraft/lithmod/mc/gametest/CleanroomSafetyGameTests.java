@@ -9,7 +9,7 @@ import java.util.*;import java.util.function.Consumer;
 public final class CleanroomSafetyGameTests {
  private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS=DeferredRegister.create(Registries.TEST_FUNCTION,"lithmod");
  private static final Map<String,Consumer<GameTestHelper>> CASES=new LinkedHashMap<>();
- static{add("t5_cleanroom_safety_unloaded",CleanroomSafetyGameTests::unloaded);add("t5_cleanroom_safety_formation",CleanroomSafetyGameTests::formation);add("t5_cleanroom_safety_breach",CleanroomSafetyGameTests::breach);add("t5_cleanroom_safety_two_controllers",CleanroomSafetyGameTests::two);add("t5_cleanroom_safety_door",CleanroomSafetyGameTests::door);add("t5_cleanroom_safety_filtration",CleanroomSafetyGameTests::filter);add("t5_cleanroom_safety_persistence",CleanroomSafetyGameTests::persistence);add("t5_cleanroom_safety_gown",CleanroomSafetyGameTests::gown);}
+ static{add("t5_cleanroom_safety_windows",CleanroomSafetyGameTests::windows);add("t5_cleanroom_safety_unloaded",CleanroomSafetyGameTests::unloaded);add("t5_cleanroom_safety_formation",CleanroomSafetyGameTests::formation);add("t5_cleanroom_safety_breach",CleanroomSafetyGameTests::breach);add("t5_cleanroom_safety_two_controllers",CleanroomSafetyGameTests::two);add("t5_cleanroom_safety_door",CleanroomSafetyGameTests::door);add("t5_cleanroom_safety_filtration",CleanroomSafetyGameTests::filter);add("t5_cleanroom_safety_persistence",CleanroomSafetyGameTests::persistence);add("t5_cleanroom_safety_gown",CleanroomSafetyGameTests::gown);}
  private static void add(String id,Consumer<GameTestHelper> run){CASES.put(id,run);FUNCTIONS.register(id,()->run);}
  public static void register(IEventBus bus){FUNCTIONS.register(bus);bus.addListener((Consumer<RegisterGameTestsEvent>)event->{Holder<TestEnvironmentDefinition<?>> env=event.registerEnvironment(Identifier.parse("lithmod:cleanroom_safety"),new TestEnvironmentDefinition[0]);var data=new TestData<>(env,Level.OVERWORLD,Identifier.withDefaultNamespace("empty"),400,0,true,Rotation.NONE,false,1,1,false,0);for(var name:CASES.keySet()){var id=Identifier.fromNamespaceAndPath("lithmod",name);event.registerTest(id,new FunctionGameTestInstance(ResourceKey.<Consumer<GameTestHelper>>create(Registries.TEST_FUNCTION,id),data));}});}
  private record Room(ServerLevel level,BlockPos origin,List<BlockPos> shell,CleanroomControllerBlockEntity controller,CleanroomFilterBlockEntity filter) implements AutoCloseable{
@@ -25,5 +25,32 @@ public final class CleanroomSafetyGameTests {
  private static void persistence(GameTestHelper h){try(var r=room(h)){var c=r.controller;var f=r.filter;c.setStoredEnergy(100000);f.setStoredEnergy(100000);f.setSlot(0,new ItemStack(CleanroomItems.MEDIUM.get()));for(int i=0;i<100;i++)c.serverTick();int score=c.cleanliness(),wear=f.remaining();var ct=save(r.level,c);var ft=save(r.level,f);var pos=c.getBlockPos();r.level.removeBlockEntity(pos);var replacement=new CleanroomControllerBlockEntity(pos,r.level.getBlockState(pos));r.level.setBlockEntity(replacement);load(r.level,replacement,ct);eq(h,score,replacement.cleanliness(),"Score saved exactly; no offline gain");eq(h,3,replacement.state(),"Restored footprint unknown until validated");replacement.validateKnown();eq(h,1,replacement.state(),"Restored footprint validates");check(h,replacement.bounds().equals(c.bounds()),"Bounds persist");load(r.level,f,ft);eq(h,wear,f.remaining(),"Persistent media wear");ft.putInt("mediumTicks",24000);load(r.level,f,ft);eq(h,24000,f.remaining(),"Previously paid longer-life medium survives smaller current balance");f.setStoredEnergy(100000);check(h,f.workSecond(replacement),"Prepaid medium works without consuming a new item");eq(h,23980,f.remaining(),"Only actual working ticks deducted after reload");}h.succeed();}
  private static void gown(GameTestHelper h){var cookie=CommonListenerCookie.createInitial(new GameProfile(UUID.randomUUID(),"cleanroom-test"),false);var p=new ServerPlayer(h.getLevel().getServer(),h.getLevel(),cookie.gameProfile(),cookie.clientInformation());check(h,!CleanroomControllerBlockEntity.gowned(p),"No gown unprotected");p.setItemSlot(EquipmentSlot.HEAD,new ItemStack(CleanroomItems.HOOD.get()));p.setItemSlot(EquipmentSlot.CHEST,new ItemStack(CleanroomItems.SUIT.get()));p.setItemSlot(EquipmentSlot.LEGS,new ItemStack(CleanroomItems.TROUSERS.get()));check(h,!CleanroomControllerBlockEntity.gowned(p),"Partial gown unprotected");p.setItemSlot(EquipmentSlot.FEET,new ItemStack(CleanroomItems.BOOTS.get()));check(h,CleanroomControllerBlockEntity.gowned(p),"Four matching pieces protect");h.succeed();}
  private static void unloaded(GameTestHelper h){var l=h.getLevel();var p=new BlockPos(20000000,100,20000000);check(h,!l.hasChunkAt(p),"Remote test chunk initially unavailable");var bounds=new RoomBounds(p.getX(),p.getY(),p.getZ(),p.getX()+4,p.getY()+4,p.getZ()+4);var result=CleanroomTopology.validate(l,p,bounds);eq(h,3,result.state(),"Unavailable footprint is UNKNOWN rather than breach");check(h,!l.hasChunkAt(p),"Validation never loads remote chunk");h.succeed();}
+
+ private static void placeWindow(ServerLevel l,BlockPos p){l.setBlock(p,Block.updateFromNeighbourShapes(CleanroomBlocks.WINDOW.get().defaultBlockState(),l,p),3);}
+ private static void windows(GameTestHelper h){
+  var l=h.getLevel();var origin=h.absolutePos(new BlockPos(9,2,9));var positions=new ArrayList<BlockPos>();positions.add(origin);
+  try{
+   placeWindow(l,origin);
+   for(var direction:Direction.values()){var p=origin.relative(direction);positions.add(p);placeWindow(l,p);}
+   for(var direction:Direction.values()){
+    check(h,l.getBlockState(origin).getValue(CleanroomWindowBlock.CONNECTIONS.get(direction)),"Connects on "+direction);
+    check(h,l.getBlockState(origin.relative(direction)).getValue(CleanroomWindowBlock.CONNECTIONS.get(direction.getOpposite())),"Reciprocal connection "+direction);
+   }
+   l.setBlock(origin.above(),Blocks.GLASS.defaultBlockState(),3);
+   check(h,!l.getBlockState(origin).getValue(CleanroomWindowBlock.CONNECTIONS.get(Direction.UP)),"Vanilla glass does not join");
+   l.setBlock(origin.east(),Blocks.AIR.defaultBlockState(),3);
+   check(h,!l.getBlockState(origin).getValue(CleanroomWindowBlock.CONNECTIONS.get(Direction.EAST)),"Removal restores edge");
+   var north=CleanroomBlocks.WINDOW.get().defaultBlockState().setValue(CleanroomWindowBlock.CONNECTIONS.get(Direction.NORTH),true);
+   var rotated=north.rotate(Rotation.CLOCKWISE_90);check(h,rotated.getValue(CleanroomWindowBlock.CONNECTIONS.get(Direction.EAST))&&!rotated.getValue(CleanroomWindowBlock.CONNECTIONS.get(Direction.NORTH)),"Rotation preserves directional flags");
+   check(h,north.mirror(Mirror.LEFT_RIGHT).getValue(CleanroomWindowBlock.CONNECTIONS.get(Direction.SOUTH)),"Mirror preserves directional flags");
+  }finally{for(var p:positions)l.setBlock(p,Blocks.AIR.defaultBlockState(),3);}
+  try(var r=room(h)){
+   var p=r.wall();for(var q:List.of(p,p.above(),p.south(),p.above().south()))placeWindow(l,q);
+   r.controller.markTopologyDirty();r.controller.validateKnown();eq(h,1,r.controller.state(),"Joined windows remain valid cleanroom shell");
+   l.setBlock(p,Blocks.AIR.defaultBlockState(),3);r.controller.markTopologyDirty();r.controller.validateKnown();eq(h,2,r.controller.state(),"Missing joined window breaches room");
+   placeWindow(l,p);r.controller.markTopologyDirty();r.controller.validateKnown();eq(h,1,r.controller.state(),"Replacing joined window repairs shell");
+  }
+  h.succeed();
+ }
  private CleanroomSafetyGameTests(){}
 }
