@@ -1,0 +1,9 @@
+{
+  "id": "cleanroom_power_port",
+  "energy_capacity": 200000,
+  "max_receive": 20000,
+  "energy_per_tick": 0,
+  "params": {
+    "transfer_per_tick": 20000
+  }
+}
