@@ -1,12 +1,12 @@
 {
   "parent": "minecraft:block/cube",
   "textures": {
-    "particle": "lithmod:block/t4_unformed_casing",
-    "down": "lithmod:block/t4_unformed_casing",
+    "particle": "lithmod:block/scanner_optics_module",
+    "north": "lithmod:block/scanner_optics_module",
+    "south": "lithmod:block/scanner_optics_module",
+    "east": "lithmod:block/scanner_optics_module",
+    "west": "lithmod:block/scanner_optics_module",
     "up": "lithmod:block/t4_unformed_casing",
-    "north": "lithmod:item/arf_dry_lens",
-    "south": "lithmod:item/arf_dry_lens",
-    "east": "lithmod:item/arf_dry_lens",
-    "west": "lithmod:item/arf_dry_lens"
+    "down": "lithmod:block/t4_unformed_casing"
   }
 }

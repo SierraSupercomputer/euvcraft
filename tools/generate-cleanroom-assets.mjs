@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import{readFileSync,writeFileSync,mkdirSync,existsSync}from'node:fs';
 import{dirname,resolve,join}from'node:path';import{fileURLToPath}from'node:url';import{deflateSync,crc32}from'node:zlib';
+import{connectedWindowAssets}from'./lib/cleanroom-windows.mjs';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..'),A='src/main/resources/assets/lithmod/',D='src/main/resources/data/lithmod/';
 export const BLOCKS=['cleanroom_floor','cleanroom_wall','cleanroom_window','cleanroom_door','cleanroom_controller','cleanroom_filter','cleanroom_power_port','cleanroom_fluid_port','cleanroom_item_port'];
 export const ITEMS=['cleanroom_filter_medium','cleanroom_hood','cleanroom_suit','cleanroom_trousers','cleanroom_boots'];
@@ -133,16 +134,77 @@ const doorStates={
 ;
 function chunk(type,data){const t=Buffer.from(type),n=Buffer.alloc(4),c=Buffer.alloc(4);n.writeUInt32BE(data.length);c.writeUInt32BE(crc32(Buffer.concat([t,data]))>>>0);return Buffer.concat([n,t,data,c]);}
 function png(w,h,pixels){const header=Buffer.alloc(13);header.writeUInt32BE(w);header.writeUInt32BE(h,4);header[8]=8;header[9]=6;const rows=Buffer.alloc((w*4+1)*h);for(let y=0;y<h;y++)pixels.copy(rows,y*(w*4+1)+1,y*w*4,(y+1)*w*4);return Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',header),chunk('IDAT',deflateSync(rows,{level:9})),chunk('IEND',Buffer.alloc(0))]);}
-function tile(id,item=false,w=16,h=16){const p=Buffer.alloc(w*h*4),pixel=(x,y,c)=>{if(x<0||y<0||x>=w||y>=h)return;for(let k=0;k<4;k++)p[(y*w+x)*4+k]=c[k]??255;},rect=(x,y,rw,rh,c)=>{for(let j=y;j<y+rh;j++)for(let i=x;i<x+rw;i++)pixel(i,j,c);};
- if(w===64){rect(0,0,w,h,[232,240,242,255]);rect(20,9,8,3,[71,117,128,255]);return png(w,h,p);}
- if(item){rect(4,2,8,12,[225,235,238,255]);rect(5,3,6,2,[91,140,149,255]);if(id.includes('trousers')||id.includes('boots'))rect(7,8,2,6,[0,0,0,0]);if(id.includes('medium'))for(let x=5;x<12;x+=2)rect(x,4,1,8,[82,110,116,255]);return png(w,h,p);}
- rect(0,0,16,16,[80,100,107,255]);rect(1,1,14,14,[217,228,231,255]);rect(2,2,12,12,[237,243,244,255]);
- if(id.includes('window'))rect(2,2,12,12,[117,202,220,70]);
- if(id.includes('floor'))for(let i=4;i<16;i+=4){rect(i,1,1,14,[183,200,204,255]);rect(1,i,14,1,[183,200,204,255]);}
- if(id.includes('controller')){rect(3,3,10,8,[25,48,53,255]);rect(4,4,8,2,[62,197,155,255]);rect(5,12,2,1,[229,174,57,255]);}
- if(id.includes('filter'))for(let y=3;y<14;y+=2)rect(3,y,10,1,[78,103,112,255]);
- if(id.includes('port')){const c=id.includes('power')?[224,156,51,255]:id.includes('fluid')?[62,151,211,255]:[110,174,97,255];rect(3,3,10,10,[60,80,87,255]);rect(5,5,6,6,c);rect(7,4,2,8,[229,240,239,255]);}
- if(id.includes('door')){rect(4,3,8,7,[87,145,160,255]);rect(12,11,1,2,[64,86,93,255]);}return png(w,h,p);}
+
+const WHITE = [232,240,242,255];
+const WHITE_DIM = [200,210,215,255];
+const BLUE_BOOT = [62,151,211,255];
+const BLUE_BOOT_DARK = [40,100,140,255];
+const TRANSPARENT = [0,0,0,0];
+const DARK_DISPLAY = [20,30,40,255];
+
+function tile(id,item=false,w=16,h=16,layer=null){
+  const p=Buffer.alloc(w*h*4),
+  pixel=(x,y,c)=>{if(x<0||y<0||x>=w||y>=h)return;for(let k=0;k<4;k++)p[(y*w+x)*4+k]=c[k]??255;},
+  rect=(x,y,rw,rh,c)=>{for(let j=y;j<y+rh;j++)for(let i=x;i<x+rw;i++)pixel(i,j,c);};
+
+  // Standard 64x32 humanoid armor UVs. Each mirrored leg uses the same 16x16 net.
+  if(w===64 && h===32){
+    const box=(u,v,dx,dy,dz,color)=>{
+      rect(u+dz,v,dx,dz,color);rect(u+dz+dx,v,dx,dz,color);
+      rect(u,v+dz,dz,dy,color);rect(u+dz,v+dz,dx,dy,color);
+      rect(u+dz+dx,v+dz,dz,dy,color);rect(u+2*dz+dx,v+dz,dx,dy,color);
+    };
+    if(layer==='humanoid'){
+      box(0,0,8,8,8,WHITE);       // head: front is [8,8..16,16]
+      rect(9,9,6,6,TRANSPARENT);  // reveal only the face through a white hood border
+      box(16,16,8,12,4,WHITE);    // torso
+      box(40,16,4,12,4,WHITE);    // arms (mirrored)
+      box(0,16,4,12,4,WHITE);     // legs/boots (mirrored)
+      // Lower six rows of all leg side faces, plus foot sole: blue boot covers.
+      rect(0,26,16,6,BLUE_BOOT);rect(8,16,4,4,BLUE_BOOT_DARK);
+      rect(0,26,16,1,[123,193,229,255]);rect(0,31,16,1,BLUE_BOOT_DARK);
+    }else if(layer==='humanoid_leggings'){
+      box(16,16,8,12,4,WHITE);box(0,16,4,12,4,WHITE);
+    }
+    return png(w,h,p);
+  }
+
+  // Item icons (16x16)
+  if(item){
+    const isHood = id.includes('hood');
+    const isBoots = id.includes('boots');
+    if(isHood){
+      // Hood item: dark display with open face appearance
+      rect(0,0,16,16,TRANSPARENT);
+      rect(2,2,12,12,WHITE);
+      // Face opening (dark)
+      rect(5,4,6,8,DARK_DISPLAY);
+      rect(6,5,4,6,[10,15,20,255]);
+      return png(w,h,p);
+    }
+    if(isBoots){
+      rect(3,3,4,9,BLUE_BOOT);rect(9,3,4,9,BLUE_BOOT);
+      rect(2,10,5,3,BLUE_BOOT_DARK);rect(8,10,5,3,BLUE_BOOT_DARK);
+      rect(3,3,4,1,[123,193,229,255]);rect(9,3,4,1,[123,193,229,255]);
+      return png(w,h,p);
+    }
+    // Other items (filter_medium, suit, trousers, etc.) - original logic
+    rect(4,2,8,12,[225,235,238,255]);rect(5,3,6,2,[91,140,149,255]);
+    if(id.includes('trousers')||id.includes('boots'))rect(7,8,2,6,TRANSPARENT);
+    if(id.includes('medium'))for(let x=5;x<12;x+=2)rect(x,4,1,8,[82,110,116,255]);
+    return png(w,h,p);
+  }
+
+  // Block/item textures (16x16) - original logic preserved
+  rect(0,0,16,16,[80,100,107,255]);rect(1,1,14,14,[217,228,231,255]);rect(2,2,12,12,[237,243,244,255]);
+  if(id.includes('window'))rect(2,2,12,12,[117,202,220,70]);
+  if(id.includes('floor'))for(let i=4;i<16;i+=4){rect(i,1,1,14,[183,200,204,255]);rect(1,i,14,1,[183,200,204,255]);}
+  if(id.includes('controller')){rect(3,3,10,8,[25,48,53,255]);rect(4,4,8,2,[62,197,155,255]);rect(5,12,2,1,[229,174,57,255]);}
+  if(id.includes('filter'))for(let y=3;y<14;y+=2)rect(3,y,10,1,[78,103,112,255]);
+  if(id.includes('port')){const c=id.includes('power')?[224,156,51,255]:id.includes('fluid')?[62,151,211,255]:[110,174,97,255];rect(3,3,10,10,[60,80,87,255]);rect(5,5,6,6,c);rect(7,4,2,8,[229,240,239,255]);}
+  if(id.includes('door')){rect(4,3,8,7,[87,145,160,255]);rect(12,11,1,2,[64,86,93,255]);}
+  return png(w,h,p);
+}
 export function outputs(){const out=new Map(),put=(path,value)=>{if(out.has(path))throw Error('Duplicate '+path);out.set(path,Buffer.isBuffer(value)?value:Buffer.from(JSON.stringify(value,null,2)+'\n'));};
  for(const id of BLOCKS){
   if(id==='cleanroom_door')continue;
@@ -160,7 +222,7 @@ export function outputs(){const out=new Map(),put=(path,value)=>{if(out.has(path
  for(const[role,material]of Object.entries({power:'minecraft:redstone',fluid:'minecraft:bucket',item:'minecraft:hopper'}))craft('cleanroom_'+role+'_port',['III','WMW','III'],{I:'minecraft:iron_ingot',W:'lithmod:cleanroom_wall',M:material});
  craft('cleanroom_filter_medium',['PPP','CFC','PPP'],{P:'minecraft:paper',C:'minecraft:charcoal',F:'lithmod:fine_air_filter'},4);
  for(const[id,pattern]of Object.entries({hood:['WWW','WLW','   '],suit:['W W','WLW','WWW'],trousers:['WWW','WLW','W W'],boots:['   ','W W','L L']}))craft('cleanroom_'+id,pattern,{W:'minecraft:white_wool',L:'minecraft:leather'});
- put(A+'equipment/cleanroom_gown.json',{layers:{humanoid:[{texture:'lithmod:cleanroom_gown'}],humanoid_leggings:[{texture:'lithmod:cleanroom_gown'}]}});for(const layer of['humanoid','humanoid_leggings'])put(A+'textures/entity/equipment/'+layer+'/cleanroom_gown.png',tile('gown',false,64,32));return out;
+ put(A+'equipment/cleanroom_gown.json',{layers:{humanoid:[{texture:'lithmod:cleanroom_gown'}],humanoid_leggings:[{texture:'lithmod:cleanroom_gown'}]}});for(const layer of['humanoid','humanoid_leggings'])put(A+'textures/entity/equipment/'+layer+'/cleanroom_gown.png',tile('gown',false,64,32,layer));for(const[path,bytes]of connectedWindowAssets())out.set(path,bytes);return out;
 }
 export function main(){const args=process.argv.slice(2);if(args.length>1||args.length===1&&args[0]!=='--check')throw Error('Usage: node tools/generate-cleanroom-assets.mjs [--check]');const map=outputs();let stale=0;for(const[path,bytes]of map){if(!(path.startsWith(A)||path.startsWith(D+'recipe/crafting/cleanroom_')||path.startsWith(D+'loot_table/blocks/cleanroom_')))throw Error('Output escapes scope '+path);const to=join(root,path);if(args[0]==='--check'){if(!existsSync(to)||!readFileSync(to).equals(bytes)){console.error('Missing/stale '+path);stale++;}}else{mkdirSync(dirname(to),{recursive:true});writeFileSync(to,bytes);}}if(stale)throw Error('Stale cleanroom outputs: '+stale);console.log((args[0]==='--check'?'Checked ':'Generated ')+map.size+' deterministic cleanroom assets');}
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url))main();

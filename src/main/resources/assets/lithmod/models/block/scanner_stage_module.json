@@ -1,12 +1,12 @@
 {
   "parent": "minecraft:block/cube",
   "textures": {
-    "particle": "lithmod:block/t4_unformed_casing",
-    "down": "lithmod:block/t4_unformed_casing",
+    "particle": "lithmod:block/scanner_stage_module",
+    "north": "lithmod:block/scanner_stage_module",
+    "south": "lithmod:block/scanner_stage_module",
+    "east": "lithmod:block/scanner_stage_module",
+    "west": "lithmod:block/scanner_stage_module",
     "up": "lithmod:block/t4_unformed_casing",
-    "north": "lithmod:item/nanopositioning_stage",
-    "south": "lithmod:item/nanopositioning_stage",
-    "east": "lithmod:item/nanopositioning_stage",
-    "west": "lithmod:item/nanopositioning_stage"
+    "down": "lithmod:block/t4_unformed_casing"
   }
 }

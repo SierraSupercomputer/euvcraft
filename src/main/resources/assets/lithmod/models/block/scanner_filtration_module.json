@@ -1,12 +1,12 @@
 {
   "parent": "minecraft:block/cube",
   "textures": {
-    "particle": "lithmod:block/t4_unformed_casing",
-    "down": "lithmod:block/t4_unformed_casing",
+    "particle": "lithmod:block/scanner_filtration_module",
+    "north": "lithmod:block/scanner_filtration_module",
+    "south": "lithmod:block/scanner_filtration_module",
+    "east": "lithmod:block/scanner_filtration_module",
+    "west": "lithmod:block/scanner_filtration_module",
     "up": "lithmod:block/t4_unformed_casing",
-    "north": "lithmod:item/ulpa_filter",
-    "south": "lithmod:item/ulpa_filter",
-    "east": "lithmod:item/ulpa_filter",
-    "west": "lithmod:item/ulpa_filter"
+    "down": "lithmod:block/t4_unformed_casing"
   }
 }

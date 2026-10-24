@@ -1,6 +1,12 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube",
   "textures": {
-    "all": "lithmod:item/precision_overlay_scope"
+    "particle": "lithmod:block/scanner_diagnostic_panel",
+    "north": "lithmod:block/scanner_diagnostic_panel",
+    "south": "lithmod:block/scanner_diagnostic_panel",
+    "east": "lithmod:block/scanner_diagnostic_panel",
+    "west": "lithmod:block/scanner_diagnostic_panel",
+    "up": "lithmod:block/t4_unformed_casing",
+    "down": "lithmod:block/t4_unformed_casing"
   }
 }
