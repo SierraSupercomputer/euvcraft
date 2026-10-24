@@ -8,6 +8,6 @@ The power port is now a buffered FE endpoint, allowing separate conduit networks
 4. Confirm the receiving machine gains FE and the source loses it. The port may temporarily retain energy while the inside network is blocked, disabled or unloaded; that charge survives save/reload. A directly adjacent receiver also receives buffered power automatically.
 5. Disconnect the destination, let the port charge, save/reload, then reconnect. Verify delivery resumes without duplicated charge. Breaking a charged port loses its stored FE, like a machine energy buffer; it does not drop an energy item.
 
-Defaults are editable in `data/lithmod/machines/cleanroom_power_port.json`: 200,000 FE capacity, 20,000 FE per-operation receive/extract limit, and up to 20,000 FE per tick for automatic direct-neighbor delivery. Conduit throughput remains subject to the conduit tier and its settings. The port does not generate or consume power for itself.
+Defaults are editable in `data/lithmod/machines/cleanroom_power_port.json`: 200,000 FE capacity; `max_receive` limits each insertion to 20,000 FE; `transfer_per_tick` limits each extraction to 20,000 FE and sets the shared 20,000 FE per-tick budget for automatic direct-neighbor delivery. The two limits can be edited independently. Conduit throughput remains subject to its tier and settings. The port does not generate or consume power for itself.
 
 Item/fluid forwarding and cleanroom contamination rules are unchanged by this repair. Their capabilities are not energy-network bridges.
