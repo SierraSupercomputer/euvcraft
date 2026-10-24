@@ -39,5 +39,34 @@ public final class CleanroomPortGameTests {
   var target=p.south(2);l.setBlock(target,CleanroomBlocks.FILTER.get().defaultBlockState(),3);var shortTarget=(CleanroomFilterBlockEntity)l.getBlockEntity(target);shortTarget.setStoredEnergy(0);try(var tx=Transaction.openRoot()){eq(h,1000,cap.insert(1000,tx),"Short chain dynamically resolves replacement");tx.commit();}eq(h,1000,shortTarget.buffer().getAmountAsInt(),"Short chain conserved");
   l.setBlock(p,l.getBlockState(p).setValue(CleanroomPortBlock.FACING,Direction.EAST),3);try(var tx=Transaction.openRoot()){eq(h,0,cap.insert(1000,tx),"Retained handler refuses changed axis");tx.commit();}
  }finally{clear(h,points);}h.succeed();}
+
+ private static void arcforgeNetwork(GameTestHelper h){
+  var l=h.getLevel();var p=h.absolutePos(new BlockPos(4,2,4));var points=List.of(p.west(2),p.west(),p,p.east(),p.east(2));
+  try{
+   var cellBlock=net.minecraft.core.registries.BuiltInRegistries.BLOCK.getValue(Identifier.parse("arcforge:wrought_energy_cell"));
+   var pipeBlock=net.minecraft.core.registries.BuiltInRegistries.BLOCK.getValue(Identifier.parse("arcforge:wrought_energy_conduit"));
+   check(h,cellBlock!=Blocks.AIR&&pipeBlock!=Blocks.AIR,"Real Arcforge energy fixtures registered");
+   l.setBlock(p.west(2),cellBlock.defaultBlockState(),3);l.setBlock(p.west(),pipeBlock.defaultBlockState(),3);
+   l.setBlock(p,CleanroomBlocks.POWER_PORT.get().defaultBlockState().setValue(CleanroomPortBlock.FACING,Direction.WEST),3);
+   l.setBlock(p.east(),pipeBlock.defaultBlockState(),3);l.setBlock(p.east(2),CleanroomBlocks.FILTER.get().defaultBlockState(),3);
+   var cell=(EnergyCellBlockEntity)l.getBlockEntity(p.west(2));
+   for(var side:RelativeSide.values())cell.setSideMode(side,SideMode.OUTPUT);
+   var seed=cell.getEnergyHandler(null);check(h,seed!=null,"Actual cell charge view");int supplied=0;
+   for(int i=0;i<200&&supplied<10000;i++){try(var tx=Transaction.openRoot()){int accepted=seed.insert(10000-supplied,tx);tx.commit();supplied+=accepted;}}
+   eq(h,10000,supplied,"Source cell charged exactly");
+   var outside=(ConduitBlockEntity)l.getBlockEntity(p.west());var inside=(ConduitBlockEntity)l.getBlockEntity(p.east());
+   for(var side:Direction.values()){outside.setSetting(side,SideSetting.DISABLED);inside.setSetting(side,SideSetting.DISABLED);}
+   // Arcforge OUTPUT extracts from an endpoint; INPUT supplies an endpoint (same as the proven water-inlet test).
+   outside.setSetting(Direction.WEST,SideSetting.OUTPUT);outside.setSetting(Direction.EAST,SideSetting.INPUT);
+   inside.setSetting(Direction.WEST,SideSetting.OUTPUT);inside.setSetting(Direction.EAST,SideSetting.INPUT);
+   net.zagdrath.arcforge.block.conduit.ConduitBlock.refreshConnections(l,p.west());net.zagdrath.arcforge.block.conduit.ConduitBlock.refreshConnections(l,p.east());
+   var manager=ConduitNetworkManager.get(l);manager.markDirty(p.west());manager.markDirty(p.east());
+   for(int i=0;i<100;i++)manager.tick();
+   var filter=(CleanroomFilterBlockEntity)l.getBlockEntity(p.east(2));var bridge=l.getCapability(Capabilities.Energy.BLOCK,p,Direction.EAST);
+   long total=(long)cell.getEnergy()+outside.getStored()+inside.getStored()+filter.buffer().getAmountAsLong()+bridge.getAmountAsLong();
+   eq(h,10000,total,"Conserved FE across both real networks and all buffers");
+   check(h,filter.buffer().getAmountAsInt()>0,"Real Arcforge conduits on BOTH sides must transmit FE through cleanroom port");
+  }finally{clear(h,points);}h.succeed();
+ }
  private CleanroomPortGameTests(){}
 }
