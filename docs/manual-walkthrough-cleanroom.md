@@ -26,9 +26,11 @@ Enter without a gown and observe worse trend. Equip Cleanroom Hood, Suit, Trouse
 
 ## 4. Sealed utility ports
 
-Place Cleanroom Power, Fluid and Item Ports anywhere on the shell. The clicked support face determines the through-wall axis; either face forwards to the opposite adjacent endpoint. Place against the appropriate support face for a wall, ceiling or floor. Transverse and null-side requests expose no handler; floor and ceiling ports also support vertical transport.
+Place Cleanroom Power, Fluid and Item Ports anywhere on the shell. The clicked support face determines the through-wall axis; both opposite faces support transport. Place against the appropriate support face for a wall, ceiling or floor. Transverse and null-side requests expose no handler; floor and ceiling ports support vertical transport.
 
-Connect Arcforge-compatible FE/fluid/item transport outside and a matching handler or conduit immediately inside. Each port exposes only its own resource type. These are pass-throughs, not tanks, batteries or inventories. Both directions are supported subject to the actual endpoint's rules (a water inlet may accept but refuse extraction). Wrong items/fluids are governed by the destination. Port chains are bounded to eight lenses. Avoid unnecessary chains. Verify water delivery to the immersion scanner/utility setup and FE across a closed shell; try medium supply through an item port to a filter. A broken shell port is a breach like any other shell block.
+The Power Port is a saved transactional FE buffer connecting separate energy networks. Configure the outside conduit to extract from the source and supply the port, and the inside conduit to extract from the port and supply its machine. It also delivers buffered power to directly adjacent receivers. See the [power-port walkthrough](manual-walkthrough-power-port.md) for editable limits and save/reload checks.
+
+Fluid and Item Ports remain dynamic pass-throughs to the opposite adjacent handler, without tanks or inventories. Endpoint rules govern allowed resources and extraction. Their lens chains are bounded to eight; avoid unnecessary chains. Power hops are buffered and nonrecursive. Verify water delivery and FE across a closed shell; try medium supply through an item port to a filter. A broken shell port is a breach like any other shell block.
 
 ## 5. T5 wafer yield
 
