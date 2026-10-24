@@ -22,12 +22,12 @@ import java.util.Objects;
  *
  * <p>Each port role (power, fluid, item) exposes exactly one capability matching its type.
  * The handler is a dynamic lens — it does not cache the neighbor or its capability, and
- * re-queries on every operation. If the port is removed, the neighbor is unloaded/replaced,
+ * re-queries on every operation. For item/fluid forwarding, if the port is removed, the neighbor is unloaded/replaced,
  * or the capability changes, operations immediately refuse or return empty without loading chunks.</p>
  *
  * <p>Recursion across chained or mutually-facing ports is guarded using a bounded
  * {@link ThreadLocal} key for each transfer type, preventing infinite loops and duplicate
- * resource/FE accounting.</p>
+ * resource accounting. Power handlers access only their own buffer; they do not recurse.</p>
  *
  * <p>World shutdown ({@link #setRemoved()}) does not inspect neighbors or chunks.</p>
  */
