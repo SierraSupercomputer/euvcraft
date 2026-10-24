@@ -17,7 +17,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.Objects;
 
 /**
- * Block entity for cleanroom ports. Exposes transfer handlers that forward along the
+ * Block entity for cleanroom ports. Power uses a saved transactional bridge buffer; item/fluid handlers forward along the
  * facing axis to the adjacent block on the opposite side.
  *
  * <p>Each port role (power, fluid, item) exposes exactly one capability matching its type.
@@ -33,8 +33,8 @@ import java.util.Objects;
  */
 public class CleanroomPortBlockEntity extends BlockEntity {
 
-    /** Thread-local recursion guard for energy transfers. */
-    private static final ThreadLocal<Integer> ENERGY_DEPTH = ThreadLocal.withInitial(() -> 0);
+    /** Independent power endpoint lets two conduit networks exchange FE across the wall. */
+    private final CleanroomPowerBuffer power = new CleanroomPowerBuffer(this);
     /** Thread-local recursion guard for fluid transfers. */
     private static final ThreadLocal<Integer> FLUID_DEPTH = ThreadLocal.withInitial(() -> 0);
     /** Thread-local recursion guard for item transfers. */
@@ -73,7 +73,8 @@ public class CleanroomPortBlockEntity extends BlockEntity {
     public @Nullable EnergyHandler energy(@Nullable Direction side) {
         if (role() != CleanroomPortBlock.PortRole.POWER) return null;
         if (side == null || side != outsideSide() && side != insideSide()) return null; // both axis faces, no transverse/null
-        return new ForwardingEnergyHandler(this, side);
+        power.refresh();
+        return power.view(side);
     }
 
     /**
@@ -98,7 +99,17 @@ public class CleanroomPortBlockEntity extends BlockEntity {
 
     /** Server tick — currently no-op, but kept for symmetry with other port BEs. */
     public void serverTick() {
-        // No periodic work needed; lenses are fully dynamic.
+        if (role() == CleanroomPortBlock.PortRole.POWER) power.tick();
+    }
+
+    @Override
+    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput out) {
+        super.saveAdditional(out); out.putInt("portEnergy", power.getAmountAsInt());
+    }
+
+    @Override
+    protected void loadAdditional(net.minecraft.world.level.storage.ValueInput in) {
+        super.loadAdditional(in); power.refresh(); power.set(Math.max(0, in.getIntOr("portEnergy", 0)));
     }
 
     @Override
@@ -111,84 +122,6 @@ public class CleanroomPortBlockEntity extends BlockEntity {
     // ============================================================
     // Forwarding Energy Handler
     // ============================================================
-
-    private static final class ForwardingEnergyHandler implements EnergyHandler {
-        private final CleanroomPortBlockEntity port;
-        private final Direction side;
-
-        ForwardingEnergyHandler(CleanroomPortBlockEntity port, Direction side) {
-            this.port = port; this.side = side;
-        }
-
-        private @Nullable EnergyHandler neighborHandler() {
-            Level level = port.getLevel();
-            if (level == null || level.isClientSide() || port.isRemoved() || !level.hasChunkAt(port.getBlockPos()) || level.getBlockEntity(port.getBlockPos()) != port) return null;
-            if(port.role()!=CleanroomPortBlock.PortRole.POWER || side!=port.insideSide()&&side!=port.outsideSide())return null;
-            BlockPos neighborPos = port.worldPosition.relative(side.getOpposite());
-            if (!level.hasChunkAt(neighborPos)) return null;
-            // Never force an endpoint chunk to load.
-            return level.getCapability(Capabilities.Energy.BLOCK, neighborPos, side);
-        }
-
-        private boolean enterRecursion() {
-            int depth = ENERGY_DEPTH.get();
-            if (depth >= MAX_CHAIN_DEPTH) return false;
-            ENERGY_DEPTH.set(depth + 1);
-            return true;
-        }
-
-        private void exitRecursion() {
-            ENERGY_DEPTH.set(ENERGY_DEPTH.get() - 1);
-        }
-
-        @Override
-        public long getAmountAsLong() {
-            if (!enterRecursion()) return 0L;
-            try {
-                EnergyHandler handler = neighborHandler();
-                return handler != null ? handler.getAmountAsLong() : 0L;
-            } finally {
-                exitRecursion();
-            }
-        }
-
-        @Override
-        public long getCapacityAsLong() {
-            if (!enterRecursion()) return 0L;
-            try {
-                EnergyHandler handler = neighborHandler();
-                return handler != null ? handler.getCapacityAsLong() : 0L;
-            } finally {
-                exitRecursion();
-            }
-        }
-
-        @Override
-        public int insert(int amount, TransactionContext transaction) {
-            Objects.requireNonNull(transaction);
-            if (amount <= 0) return 0;
-            if (!enterRecursion()) return 0;
-            try {
-                EnergyHandler handler = neighborHandler();
-                return handler != null ? handler.insert(amount, transaction) : 0;
-            } finally {
-                exitRecursion();
-            }
-        }
-
-        @Override
-        public int extract(int amount, TransactionContext transaction) {
-            Objects.requireNonNull(transaction);
-            if (amount <= 0) return 0;
-            if (!enterRecursion()) return 0;
-            try {
-                EnergyHandler handler = neighborHandler();
-                return handler != null ? handler.extract(amount, transaction) : 0;
-            } finally {
-                exitRecursion();
-            }
-        }
-    }
 
     // ============================================================
     // Forwarding Fluid Handler
