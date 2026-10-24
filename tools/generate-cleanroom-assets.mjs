@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import{readFileSync,writeFileSync,mkdirSync,existsSync}from'node:fs';
 import{dirname,resolve,join}from'node:path';import{fileURLToPath}from'node:url';import{deflateSync,crc32}from'node:zlib';
+import{connectedWindowAssets}from'./lib/cleanroom-windows.mjs';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..'),A='src/main/resources/assets/lithmod/',D='src/main/resources/data/lithmod/';
 export const BLOCKS=['cleanroom_floor','cleanroom_wall','cleanroom_window','cleanroom_door','cleanroom_controller','cleanroom_filter','cleanroom_power_port','cleanroom_fluid_port','cleanroom_item_port'];
 export const ITEMS=['cleanroom_filter_medium','cleanroom_hood','cleanroom_suit','cleanroom_trousers','cleanroom_boots'];
@@ -146,69 +147,25 @@ function tile(id,item=false,w=16,h=16,layer=null){
   pixel=(x,y,c)=>{if(x<0||y<0||x>=w||y>=h)return;for(let k=0;k<4;k++)p[(y*w+x)*4+k]=c[k]??255;},
   rect=(x,y,rw,rh,c)=>{for(let j=y;j<y+rh;j++)for(let i=x;i<x+rw;i++)pixel(i,j,c);};
 
-  // 64x32 armor texture (cleanroom gown) - standard UV layout
+  // Standard 64x32 humanoid armor UVs. Each mirrored leg uses the same 16x16 net.
   if(w===64 && h===32){
-    // Start fully transparent
-    // Humanoid layer (layer 1): helmet, chestplate, legs+boots
-    // Humanoid_leggings layer (layer 2): leggings only (y=16..32)
-    const isHumanoid = layer === 'humanoid';
-    const isLeggings = layer === 'humanoid_leggings';
-
-    if(isHumanoid){
-      // Helmet/hood: x=0..16, y=0..16
-      // Top (0,0)-(8,8): white
-      rect(0,0,8,8,WHITE);
-      // Front face (8,0)-(16,8): transparent opening with 1px white border
-      // Border: x=8, x=15, y=0, y=7
-      rect(8,0,8,8,WHITE); // fill white first
-      // Clear inner 6x6 at (9,1)-(14,7)
-      rect(9,1,6,6,TRANSPARENT);
-      // Right side (0,8)-(8,16): white
-      rect(0,8,8,8,WHITE);
-      // Left side (8,8)-(16,16): white
-      rect(8,8,8,8,WHITE);
-      // Helmet back (16,0)-(24,8): white (shared with chestplate front)
-      rect(16,0,8,8,WHITE);
-
-      // Chestplate: x=16..32, y=0..16
-      // Front (16,0)-(24,8): white (overlaps helmet back)
-      rect(16,0,8,8,WHITE);
-      // Back (24,0)-(32,8): white
-      rect(24,0,8,8,WHITE);
-      // Right side (16,8)-(24,16): white
-      rect(16,8,8,8,WHITE);
-      // Left side (24,8)-(32,16): white
-      rect(24,8,8,8,WHITE);
-
-      // Right leg: x=0..16, y=16..32
-      // Upper leg (0,16)-(16,24): white suit
-      rect(0,16,16,8,WHITE);
-      // Lower leg/boot (0,24)-(16,32): BLUE booties
-      rect(0,24,16,8,BLUE_BOOT);
-      rect(1,25,14,6,BLUE_BOOT_DARK); // shading
-
-      // Left leg: x=16..32, y=16..32
-      // Upper leg (16,16)-(32,24): white suit
-      rect(16,16,16,8,WHITE);
-      // Lower leg/boot (16,24)-(32,32): BLUE booties
-      rect(16,24,16,8,BLUE_BOOT);
-      rect(17,25,14,6,BLUE_BOOT_DARK);
-
-      // Arms (not used by gown but keep white for completeness)
-      // Right arm: x=40..48, y=16..32
-      rect(40,16,8,16,WHITE);
-      // Left arm: x=48..56, y=16..32
-      rect(48,16,8,16,WHITE);
+    const box=(u,v,dx,dy,dz,color)=>{
+      rect(u+dz,v,dx,dz,color);rect(u+dz+dx,v,dx,dz,color);
+      rect(u,v+dz,dz,dy,color);rect(u+dz,v+dz,dx,dy,color);
+      rect(u+dz+dx,v+dz,dz,dy,color);rect(u+2*dz+dx,v+dz,dx,dy,color);
+    };
+    if(layer==='humanoid'){
+      box(0,0,8,8,8,WHITE);       // head: front is [8,8..16,16]
+      rect(9,9,6,6,TRANSPARENT);  // reveal only the face through a white hood border
+      box(16,16,8,12,4,WHITE);    // torso
+      box(40,16,4,12,4,WHITE);    // arms (mirrored)
+      box(0,16,4,12,4,WHITE);     // legs/boots (mirrored)
+      // Lower six rows of all leg side faces, plus foot sole: blue boot covers.
+      rect(0,26,16,6,BLUE_BOOT);rect(8,16,4,4,BLUE_BOOT_DARK);
+      rect(0,26,16,1,[123,193,229,255]);rect(0,31,16,1,BLUE_BOOT_DARK);
+    }else if(layer==='humanoid_leggings'){
+      box(16,16,8,12,4,WHITE);box(0,16,4,12,4,WHITE);
     }
-
-    if(isLeggings){
-      // Leggings layer only defines leg regions (y=16..32), rest transparent
-      // Right leg: x=0..16, y=16..32 - white trousers, no blue boots
-      rect(0,16,16,16,WHITE);
-      // Left leg: x=16..32, y=16..32 - white trousers, no blue boots
-      rect(16,16,16,16,WHITE);
-    }
-
     return png(w,h,p);
   }
 
@@ -218,7 +175,7 @@ function tile(id,item=false,w=16,h=16,layer=null){
     const isBoots = id.includes('boots');
     if(isHood){
       // Hood item: dark display with open face appearance
-      rect(0,0,16,16,DARK_DISPLAY);
+      rect(0,0,16,16,TRANSPARENT);
       rect(2,2,12,12,WHITE);
       // Face opening (dark)
       rect(5,4,6,8,DARK_DISPLAY);
@@ -226,11 +183,9 @@ function tile(id,item=false,w=16,h=16,layer=null){
       return png(w,h,p);
     }
     if(isBoots){
-      // Boots item: blue booties
-      rect(0,0,16,16,TRANSPARENT);
-      rect(3,4,10,10,BLUE_BOOT);
-      rect(4,5,8,8,BLUE_BOOT_DARK);
-      rect(5,6,6,6,[100,180,230,255]);
+      rect(3,3,4,9,BLUE_BOOT);rect(9,3,4,9,BLUE_BOOT);
+      rect(2,10,5,3,BLUE_BOOT_DARK);rect(8,10,5,3,BLUE_BOOT_DARK);
+      rect(3,3,4,1,[123,193,229,255]);rect(9,3,4,1,[123,193,229,255]);
       return png(w,h,p);
     }
     // Other items (filter_medium, suit, trousers, etc.) - original logic
@@ -267,7 +222,7 @@ export function outputs(){const out=new Map(),put=(path,value)=>{if(out.has(path
  for(const[role,material]of Object.entries({power:'minecraft:redstone',fluid:'minecraft:bucket',item:'minecraft:hopper'}))craft('cleanroom_'+role+'_port',['III','WMW','III'],{I:'minecraft:iron_ingot',W:'lithmod:cleanroom_wall',M:material});
  craft('cleanroom_filter_medium',['PPP','CFC','PPP'],{P:'minecraft:paper',C:'minecraft:charcoal',F:'lithmod:fine_air_filter'},4);
  for(const[id,pattern]of Object.entries({hood:['WWW','WLW','   '],suit:['W W','WLW','WWW'],trousers:['WWW','WLW','W W'],boots:['   ','W W','L L']}))craft('cleanroom_'+id,pattern,{W:'minecraft:white_wool',L:'minecraft:leather'});
- put(A+'equipment/cleanroom_gown.json',{layers:{humanoid:[{texture:'lithmod:cleanroom_gown'}],humanoid_leggings:[{texture:'lithmod:cleanroom_gown'}]}});for(const layer of['humanoid','humanoid_leggings'])put(A+'textures/entity/equipment/'+layer+'/cleanroom_gown.png',tile('gown',false,64,32,layer));return out;
+ put(A+'equipment/cleanroom_gown.json',{layers:{humanoid:[{texture:'lithmod:cleanroom_gown'}],humanoid_leggings:[{texture:'lithmod:cleanroom_gown'}]}});for(const layer of['humanoid','humanoid_leggings'])put(A+'textures/entity/equipment/'+layer+'/cleanroom_gown.png',tile('gown',false,64,32,layer));for(const[path,bytes]of connectedWindowAssets())out.set(path,bytes);return out;
 }
 export function main(){const args=process.argv.slice(2);if(args.length>1||args.length===1&&args[0]!=='--check')throw Error('Usage: node tools/generate-cleanroom-assets.mjs [--check]');const map=outputs();let stale=0;for(const[path,bytes]of map){if(!(path.startsWith(A)||path.startsWith(D+'recipe/crafting/cleanroom_')||path.startsWith(D+'loot_table/blocks/cleanroom_')))throw Error('Output escapes scope '+path);const to=join(root,path);if(args[0]==='--check'){if(!existsSync(to)||!readFileSync(to).equals(bytes)){console.error('Missing/stale '+path);stale++;}}else{mkdirSync(dirname(to),{recursive:true});writeFileSync(to,bytes);}}if(stale)throw Error('Stale cleanroom outputs: '+stale);console.log((args[0]==='--check'?'Checked ':'Generated ')+map.size+' deterministic cleanroom assets');}
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url))main();

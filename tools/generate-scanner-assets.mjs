@@ -288,39 +288,13 @@ const MODULE_DRAWERS = {
   diagnostic_panel: drawDiagnosticFace,
 };
 
-// Generate the t4_unformed_casing texture (matches T4 casing unformed recipe exactly)
-function generateUnformedCasing() {
-  const raw = fill16(PALETTE.casing_base);
-  // Exact match to T4 unformedRecipes.casing from t4-panels.json
-  frame(raw, 0, 0, 16, 16, PALETTE.casing_edge);
-  rect(raw, 1, 1, 14, 1, PALETTE.casing_light);
-  rect(raw, 1, 2, 1, 12, PALETTE.casing_light);
-  rect(raw, 14, 2, 1, 12, PALETTE.casing_dark);
-  rect(raw, 2, 13, 12, 1, PALETTE.casing_dark);
-  // Teal accents at specific positions from T4 config
-  // teal at (3,5) 10x1 and (3,10) 10x1
-  rect(raw, 3, 5, 10, 1, [0x27, 0xA8, 0xB4, 0xFF]); // teal
-  rect(raw, 3, 10, 10, 1, [0x27, 0xA8, 0xB4, 0xFF]);
-  // cyan_glow dots at (5,6), (10,6), (5,11), (10,11)
-  dot(raw, 5, 6, [0x00, 0xD4, 0xE4, 0xFF]); // cyan
-  dot(raw, 10, 6, [0x00, 0xD4, 0xE4, 0xFF]);
-  dot(raw, 5, 11, [0x00, 0xD4, 0xE4, 0xFF]);
-  dot(raw, 10, 11, [0x00, 0xD4, 0xE4, 0xFF]);
-  return raw;
-}
-
 // Generate all assets
-function outputs() {
+export function outputs() {
   const out = new Map();
   const put = (path, value) => {
     if (out.has(path)) throw Error('Duplicate ' + path);
     out.set(path, Buffer.isBuffer(value) ? value : Buffer.from(json(value)));
   };
-
-  // Generate t4_unformed_casing texture (shared top/bottom)
-  const unformedCasingRaw = generateUnformedCasing();
-  const unformedCasingPng = png(16, 16, Buffer.from(unformedCasingRaw));
-  put(A + 'textures/block/t4_unformed_casing.png', unformedCasingPng);
 
   // Generate each scanner module
   for (const module of SCANNER_MODULES) {
@@ -348,19 +322,7 @@ function outputs() {
     };
     put(A + 'models/block/' + blockId + '.json', model);
 
-    // Blockstate (simple, no variants needed - modules are nondirectional)
-    const blockstate = {
-      variants: {
-        '': { model: 'lithmod:block/' + blockId }
-      }
-    };
-    put(A + 'blockstates/' + blockId + '.json', blockstate);
 
-    // Block item model
-    put(A + 'models/item/' + blockId + '.json', { parent: 'lithmod:block/' + blockId });
-
-    // Client item reference
-    put(A + 'items/' + blockId + '.json', { model: { type: 'minecraft:model', model: 'lithmod:item/' + blockId } });
   }
 
   return out;

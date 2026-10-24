@@ -1,12 +1,12 @@
 {
   "parent": "minecraft:block/cube",
   "textures": {
-    "particle": "lithmod:block/t4_unformed_casing",
-    "down": "lithmod:block/t4_unformed_casing",
+    "particle": "lithmod:block/scanner_metrology_module",
+    "north": "lithmod:block/scanner_metrology_module",
+    "south": "lithmod:block/scanner_metrology_module",
+    "east": "lithmod:block/scanner_metrology_module",
+    "west": "lithmod:block/scanner_metrology_module",
     "up": "lithmod:block/t4_unformed_casing",
-    "north": "lithmod:item/precision_overlay_scope",
-    "south": "lithmod:item/precision_overlay_scope",
-    "east": "lithmod:item/precision_overlay_scope",
-    "west": "lithmod:item/precision_overlay_scope"
+    "down": "lithmod:block/t4_unformed_casing"
   }
 }

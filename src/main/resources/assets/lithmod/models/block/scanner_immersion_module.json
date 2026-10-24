@@ -1,6 +1,12 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube",
   "textures": {
-    "all": "lithmod:item/arf_dry_lens"
+    "particle": "lithmod:block/scanner_immersion_module",
+    "north": "lithmod:block/scanner_immersion_module",
+    "south": "lithmod:block/scanner_immersion_module",
+    "east": "lithmod:block/scanner_immersion_module",
+    "west": "lithmod:block/scanner_immersion_module",
+    "up": "lithmod:block/t4_unformed_casing",
+    "down": "lithmod:block/t4_unformed_casing"
   }
 }
