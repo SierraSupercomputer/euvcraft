@@ -6,11 +6,19 @@ import net.minecraft.core.*;import net.minecraft.core.registries.Registries;impo
 import net.minecraft.world.level.Level;import net.minecraft.world.level.block.*;import net.minecraft.world.item.Items;import net.minecraft.world.level.material.Fluids;
 import net.neoforged.bus.api.IEventBus;import net.neoforged.neoforge.event.RegisterGameTestsEvent;import net.neoforged.neoforge.registries.DeferredRegister;import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.transfer.transaction.Transaction;import net.neoforged.neoforge.transfer.item.ItemResource;import net.neoforged.neoforge.transfer.fluid.FluidResource;
+import net.zagdrath.arcforge.blockentity.conduit.ConduitBlockEntity;
+import net.zagdrath.arcforge.blockentity.storage.EnergyCellBlockEntity;
+import net.zagdrath.arcforge.conduit.ConduitCapabilities;
+import net.zagdrath.arcforge.conduit.ConduitType;
+import net.zagdrath.arcforge.conduit.SideSetting;
+import net.zagdrath.arcforge.conduit.network.ConduitNetworkManager;
+import net.zagdrath.arcforge.machine.config.RelativeSide;
+import net.zagdrath.arcforge.machine.config.SideMode;
 import java.util.*;import java.util.function.Consumer;
 public final class CleanroomPortGameTests {
  private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS=DeferredRegister.create(Registries.TEST_FUNCTION,"lithmod");
  private static final Map<String,Consumer<GameTestHelper>> CASES=new LinkedHashMap<>();
- static{add("t5_cleanroom_port_power",CleanroomPortGameTests::power);add("t5_cleanroom_port_items",CleanroomPortGameTests::items);add("t5_cleanroom_port_fluids",CleanroomPortGameTests::fluids);add("t5_cleanroom_port_chain_stale",CleanroomPortGameTests::chain);}
+ static{add("t5_cleanroom_port_power",CleanroomPortGameTests::power);add("t5_cleanroom_port_items",CleanroomPortGameTests::items);add("t5_cleanroom_port_fluids",CleanroomPortGameTests::fluids);add("t5_cleanroom_port_chain_stale",CleanroomPortGameTests::chain);add("t5_cleanroom_port_arcforge_network",CleanroomPortGameTests::arcforgeNetwork);}
  private static void add(String id,Consumer<GameTestHelper> run){CASES.put(id,run);FUNCTIONS.register(id,()->run);}
  public static void register(IEventBus bus){FUNCTIONS.register(bus);bus.addListener((Consumer<RegisterGameTestsEvent>)event->{Holder<TestEnvironmentDefinition<?>> env=event.registerEnvironment(Identifier.parse("lithmod:cleanroom_ports"),new TestEnvironmentDefinition[0]);var data=new TestData<>(env,Level.OVERWORLD,Identifier.withDefaultNamespace("empty"),400,0,true,Rotation.NONE,false,1,1,false,0);for(var name:CASES.keySet()){var id=Identifier.fromNamespaceAndPath("lithmod",name);event.registerTest(id,new FunctionGameTestInstance(ResourceKey.<Consumer<GameTestHelper>>create(Registries.TEST_FUNCTION,id),data));}});}
  private static void clear(GameTestHelper h,List<BlockPos> positions){for(var p:positions){if(h.getLevel().getBlockEntity(p) instanceof net.minecraft.world.Container c)c.clearContent();h.getLevel().setBlock(p,Blocks.AIR.defaultBlockState(),3);}}
