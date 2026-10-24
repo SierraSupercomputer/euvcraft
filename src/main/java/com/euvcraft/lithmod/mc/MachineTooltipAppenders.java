@@ -1,12 +1,5 @@
 package com.euvcraft.lithmod.mc;
 
-import com.euvcraft.lithmod.mc.multiblock.ModMultiblocks;
-import com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedMachines;
-import com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMachines;
-import com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines;
-import com.euvcraft.lithmod.mc.multiblock.support.SupportMachines;
-import com.euvcraft.lithmod.mc.multiblock.utilities.UtilityMachines;
-import com.euvcraft.lithmod.mc.cleanroom.CleanroomBlocks;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -32,7 +25,7 @@ import java.util.Map;
  * No world lookups, no broad collection mutation, no custom data requirements. Uses a small
  * immutable metadata map keyed by the actual registry item IDs.</p>
  */
-@EventBusSubscriber(modid = EUVCRAFTMod.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = EUVCRAFTMod.MODID, value = Dist.CLIENT)
 public final class MachineTooltipAppenders {
 
     private MachineTooltipAppenders() {}
@@ -107,9 +100,15 @@ public final class MachineTooltipAppenders {
                     "tooltip.lithmod.port.advanced",
                     new String[] {
                             "tooltip.lithmod.panel.scanner_operating_panel_above",
-                            "tooltip.lithmod.modules.five_physical",
+                            "tooltip.lithmod.modules.exposure",
+                            "tooltip.lithmod.modules.optics",
+                            "tooltip.lithmod.modules.stage",
+                            "tooltip.lithmod.modules.filtration",
+                            "tooltip.lithmod.modules.metrology",
                             "tooltip.lithmod.panel.calibration_panel",
-                            "tooltip.lithmod.optional.diagnostic_and_water_inlet"
+                            "tooltip.lithmod.t5.immersion",
+                            "tooltip.lithmod.t5.diagnostic",
+                            "tooltip.lithmod.t5.water"
                     }
             )),
 
@@ -154,7 +153,9 @@ public final class MachineTooltipAppenders {
                     ControllerMeta meta = CONTROLLER_META.get(itemId);
                     if (meta == null) return;
 
-                    boolean shift = Minecraft.getInstance().hasShiftDown();
+                    // Creative search also builds tooltips off-thread; never poll native input there.
+                    var minecraft = Minecraft.getInstance();
+                    boolean shift = minecraft.isSameThread() && minecraft.hasShiftDown();
 
                     // Always show frame category line
                     builder.accept(Component.translatable(meta.frameCategoryKey)
