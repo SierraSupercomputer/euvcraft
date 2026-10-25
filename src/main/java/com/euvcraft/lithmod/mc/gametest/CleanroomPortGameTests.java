@@ -106,6 +106,10 @@ public final class CleanroomPortGameTests {
  }
 
  private static void configurePipes(net.minecraft.server.level.ServerLevel l,BlockPos p,boolean reverse){
+  // Arcforge tanks default to bottom-only output. Configure endpoint faces as well as conduit modes.
+  for(var pos:List.of(p.west(2),p.east(2)))if(l.getBlockEntity(pos) instanceof net.zagdrath.arcforge.blockentity.storage.FluidTankBlockEntity tank){
+   boolean source=pos.equals(reverse?p.east(2):p.west(2));for(var side:RelativeSide.values())tank.setSideMode(side,source?SideMode.OUTPUT:SideMode.INPUT);
+  }
   var outside=(ConduitBlockEntity)l.getBlockEntity(p.west());var inside=(ConduitBlockEntity)l.getBlockEntity(p.east());
   for(var side:Direction.values()){outside.setSetting(side,SideSetting.DISABLED);inside.setSetting(side,SideSetting.DISABLED);}
   outside.setSetting(Direction.WEST,reverse?SideSetting.INPUT:SideSetting.OUTPUT);outside.setSetting(Direction.EAST,reverse?SideSetting.OUTPUT:SideSetting.INPUT);
