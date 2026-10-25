@@ -1,0 +1,10 @@
+{
+  "id": "cleanroom_fluid_port",
+  "energy_capacity": 1,
+  "max_receive": 1,
+  "energy_per_tick": 0,
+  "params": {
+    "fluid_capacity": 16000,
+    "transfer_per_tick": 1000
+  }
+}

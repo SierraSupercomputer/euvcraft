@@ -1,0 +1,9 @@
+{
+  "id": "cleanroom_item_port",
+  "energy_capacity": 1,
+  "max_receive": 1,
+  "energy_per_tick": 0,
+  "params": {
+    "transfer_per_tick": 16
+  }
+}
