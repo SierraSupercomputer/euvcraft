@@ -1,6 +1,6 @@
 # Cleanroom item/fluid ports between Arcforge pipes
 
-Status: implementation and automated verification in progress; owner recheck pending.
+Status: repair implemented; owner recheck pending. Automated verification evidence is retained separately by the coordinator.
 
 Both original handlers forwarded to the opposite adjacent block. Arcforge pipes are network nodes without ordinary endpoint inventories/tanks, so pipes on both sides could not exchange contents. Native regressions reproduced both failures on unchanged production code, while conservation assertions passed.
 

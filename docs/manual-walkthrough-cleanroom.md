@@ -30,7 +30,7 @@ Place Cleanroom Power, Fluid and Item Ports anywhere on the shell. The clicked s
 
 The Power Port is a saved transactional FE buffer connecting separate energy networks. Configure the outside conduit to extract from the source and supply the port, and the inside conduit to extract from the port and supply its machine. It also delivers buffered power to directly adjacent receivers. See the [power-port walkthrough](manual-walkthrough-power-port.md) for editable limits and save/reload checks.
 
-Fluid and Item Ports remain dynamic pass-throughs to the opposite adjacent handler, without tanks or inventories. Endpoint rules govern allowed resources and extraction. Their lens chains are bounded to eight; avoid unnecessary chains. Power hops are buffered and nonrecursive. Verify water delivery and FE across a closed shell; try medium supply through an item port to a filter. A broken shell port is a breach like any other shell block.
+Fluid and Item Ports use saved transactional buffers: a single-fluid tank and a nine-slot inventory. They connect separate conduit networks on both sides and deliver to compatible direct receivers. Configure conduit endpoint modes on each side; see the [item/fluid port walkthrough](manual-walkthrough-resource-ports.md) for capacities, save/reload and reverse-flow checks. All port hops are buffered and nonrecursive. Verify water delivery and FE across a closed shell; try medium supply through an item port to a filter. A broken shell port is a breach like any other shell block.
 
 ## 5. T5 wafer yield
 
