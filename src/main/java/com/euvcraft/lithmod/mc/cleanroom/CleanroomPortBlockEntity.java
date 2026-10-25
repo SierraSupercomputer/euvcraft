@@ -8,6 +8,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import net.neoforged.neoforge.transfer.ResourceHandler;
 import net.neoforged.neoforge.transfer.energy.EnergyHandler;
 import net.neoforged.neoforge.transfer.fluid.FluidResource;
 import net.neoforged.neoforge.transfer.item.ItemResource;
@@ -112,8 +113,8 @@ public class CleanroomPortBlockEntity extends BlockEntity {
         super.loadAdditional(in);
         power.refresh();
         power.set(Math.max(0, in.getIntOr("portEnergy", 0)));
-        items.load(in.child("portItems"));
-        fluids.load(in.child("portFluids"));
+        items.load(in.childOrEmpty("portItems"));
+        fluids.load(in.childOrEmpty("portFluids"));
     }
 
     @Override
@@ -127,7 +128,9 @@ public class CleanroomPortBlockEntity extends BlockEntity {
      * Called before the block entity is removed from the world (e.g., block broken).
      * Drops buffered item stacks exactly once. Fluids are lost like FE.
      */
-    public void preRemoveSideEffects() {
+    @Override
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+        super.preRemoveSideEffects(pos, state);
         if (role() == CleanroomPortBlock.PortRole.ITEM) {
             var level = getLevel();
             if (level != null && !level.isClientSide()) {

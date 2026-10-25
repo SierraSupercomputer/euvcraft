@@ -9,8 +9,9 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.ResourceHandlerUtil;
 import net.neoforged.neoforge.transfer.fluid.FluidResource;
-import net.neoforged.neoforge.transfer.fluid.FluidStack;
+import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.transfer.fluid.FluidStacksResourceHandler;
 import net.neoforged.neoforge.transfer.item.ItemResource;
 import net.neoforged.neoforge.transfer.item.ItemStacksResourceHandler;
@@ -152,27 +153,7 @@ public final class CleanroomResourceBuffer {
             var target = level.getCapability(Capabilities.Item.BLOCK, targetPos, direction.getOpposite());
             if (target == null) return 0;
 
-            int moved = 0;
-            try (var tx = Transaction.openRoot()) {
-                for (int i = 0; i < size() && moved < budget; i++) {
-                    var resource = getResource(i);
-                    if (resource.isEmpty()) continue;
-                    int available = (int) getAmountAsLong(i);
-                    int toMove = Math.min(budget - moved, available);
-                    int inserted = target.insert(resource, toMove, tx);
-                    if (inserted > 0) {
-                        int extracted = extract(i, resource, inserted, tx);
-                        if (extracted != inserted) {
-                            // Rollback this slot's insertion
-                            target.extract(resource, inserted, tx);
-                            continue;
-                        }
-                        moved += inserted;
-                    }
-                }
-                if (moved > 0) tx.commit();
-            }
-            return moved;
+            return ResourceHandlerUtil.move(this, target, resource -> true, budget, null);
         }
 
         private boolean isEmpty() {
@@ -180,6 +161,11 @@ public final class CleanroomResourceBuffer {
                 if (getAmountAsLong(i) > 0) return false;
             }
             return true;
+        }
+
+        @Override
+        protected int getCapacity(int index, ItemResource resource) {
+            return pushLimit > 0 ? super.getCapacity(index, resource) : 0;
         }
 
         /**
@@ -193,6 +179,7 @@ public final class CleanroomResourceBuffer {
          * Loads the buffer contents from the given input.
          */
         public void load(ValueInput input) {
+            for (int i = 0; i < size(); i++) set(i, getResource(i).isEmpty() ? getResource(i) : ItemResource.EMPTY, 0);
             deserialize(input);
         }
 
@@ -323,22 +310,14 @@ public final class CleanroomResourceBuffer {
          * Pushes fluid from this buffer to the neighbor in the given direction.
          */
         private int push(Direction direction, int budget) {
-            if (budget <= 0 || getAmountAsInt() <= 0) return 0;
+            if (budget <= 0 || getAmountAsInt(0) <= 0) return 0;
             var level = owner.getLevel();
             var targetPos = owner.getBlockPos().relative(direction);
             if (level == null || !level.hasChunkAt(targetPos)) return 0;
             var target = level.getCapability(Capabilities.Fluid.BLOCK, targetPos, direction.getOpposite());
             if (target == null) return 0;
 
-            var resource = getResource(0);
-            if (resource.isEmpty()) return 0;
-
-            try (var tx = Transaction.openRoot()) {
-                int inserted = target.insert(resource, Math.min(budget, getAmountAsInt()), tx);
-                if (inserted <= 0 || extract(0, resource, inserted, tx) != inserted) return 0;
-                tx.commit();
-                return inserted;
-            }
+            return ResourceHandlerUtil.move(this, target, resource -> true, budget, null);
         }
 
         /**
@@ -352,6 +331,7 @@ public final class CleanroomResourceBuffer {
          * Loads the buffer contents from the given input.
          */
         public void load(ValueInput input) {
+            for (int i = 0; i < size(); i++) set(i, getResource(i).isEmpty() ? getResource(i) : FluidResource.EMPTY, 0);
             deserialize(input);
         }
 
@@ -359,7 +339,7 @@ public final class CleanroomResourceBuffer {
          * Fluids are lost on break like FE - no drop.
          */
         public void clear() {
-            if (getAmountAsInt() > 0) {
+            if (getAmountAsInt(0) > 0) {
                 set(0, FluidResource.EMPTY, 0);
             }
         }
