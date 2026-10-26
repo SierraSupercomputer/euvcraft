@@ -70,10 +70,10 @@ public final class M1ShippingGameTests {
     /** Machine definitions loaded when fixtures are off (test_machine excluded). */
     private static final List<String> PRODUCTION_DEFINITIONS = List.of(
         "crystal_puller", "wafer_slicer", "pattern_generator", "test_package", "process_cell",
-        "boule_purifier", "ebeam_mask_writer", "deposition_etcher", "advanced_test_package", "lithography_scanner", "utility_plant", "pick_and_place", "cleanroom_controller", "cleanroom_filter", "foup_cleaner");
+        "boule_purifier", "ebeam_mask_writer", "deposition_etcher", "advanced_test_package", "lithography_scanner", "utility_plant", "pick_and_place", "cleanroom_controller", "cleanroom_filter", "foup_cleaner", "cleanroom_power_port", "cleanroom_item_port", "cleanroom_fluid_port", "zone_refiner", "reflow_oven");
     /** Machine recipe machines loaded when fixtures are off (test_machine excluded). */
     private static final List<String> PRODUCTION_RECIPE_MACHINES = List.of(
-        "crystal_puller", "pattern_generator", "pick_and_place");
+        "crystal_puller", "pattern_generator", "pick_and_place", "zone_refiner", "reflow_oven");
 
     private static final String ENVIRONMENT_ID = "m1_shipping";
 
@@ -125,7 +125,7 @@ public final class M1ShippingGameTests {
         if (definitions != null) {
             helper.assertTrue(definitions.byId("test_machine").isEmpty(),
                 "test_machine definition must be absent when fixtures are off");
-            helper.assertValueEqual(15, definitions.size(),
+            helper.assertValueEqual(20, definitions.size(),
                 "production machine definition inventory when fixtures are off");
             for (String machineId : PRODUCTION_DEFINITIONS) {
                 helper.assertTrue(definitions.byId(machineId).isPresent(),
@@ -145,16 +145,16 @@ public final class M1ShippingGameTests {
                     "production recipes for '" + machineId + "' must be loaded");
             }
             // 4 production recipe JSONs remain once the two test_machine fixtures are filtered.
-            helper.assertValueEqual(16, recipes.size(),
+            helper.assertValueEqual(19, recipes.size(),
                 "production machine recipe inventory when fixtures are off");
         }
 
         SupportRecipeLoader.Registry support = SupportRecipeLoader.getRegistry();
-        helper.assertValueEqual(16, support.size(), "shipping support recipe inventory");
+        helper.assertValueEqual(19, support.size(), "shipping support recipe inventory");
         helper.assertValueEqual(1, support.forMachine("boule_purifier").size(), "shipping purifier recipe");
-        helper.assertValueEqual(15, support.forMachine("ebeam_mask_writer").size(), "shipping mask designs");
+        helper.assertValueEqual(18, support.forMachine("ebeam_mask_writer").size(), "shipping mask designs");
         var binning=com.euvcraft.lithmod.mc.data.HighBinningDataLoader.getRegistry().orElseThrow();
-        helper.assertValueEqual(4,binning.size(),"Shipping high bin transition inventory");
+        helper.assertValueEqual(5,binning.size(),"Shipping high bin transition inventory");
         helper.assertTrue(binning.forSource("logic",3).isPresent()&&binning.forSource("compute",3).isPresent(),"Shipping T3 to T4 transitions resolve");
         helper.assertTrue(binning.forSource("logic",4).isPresent()&&binning.forSource("compute",4).isPresent(),"Shipping T4 to T5 transitions resolve");
         for(String id:java.util.List.of("utility_plant","utility_water_inlet","utility_pure_outlet","pick_and_place","scanner_diagnostic_panel","scanner_water_inlet","scanner_immersion_module","assembly_casing","assembly_power_port"))helper.assertTrue(BuiltInRegistries.BLOCK.containsKey(Identifier.fromNamespaceAndPath("lithmod",id)),"Shipping T5 block "+id);
@@ -162,6 +162,8 @@ public final class M1ShippingGameTests {
         for(String id:java.util.List.of("cleanroom_floor","cleanroom_wall","cleanroom_window","cleanroom_door","cleanroom_controller","cleanroom_filter","cleanroom_power_port","cleanroom_fluid_port","cleanroom_item_port"))helper.assertTrue(BuiltInRegistries.BLOCK.containsKey(Identifier.fromNamespaceAndPath("lithmod",id)),"Shipping cleanroom block "+id);
         helper.assertTrue(com.euvcraft.lithmod.mc.cleanroom.CleanroomRulesLoader.rules().maxSpan()==32,"Shipping cleanroom balance loaded");
         helper.assertTrue(BuiltInRegistries.BLOCK.containsKey(Identifier.parse("lithmod:foup_cleaner"))&&BuiltInRegistries.ITEM.containsKey(Identifier.parse("lithmod:wafer_scrap")),"Shipping cleaner and wafer scrap");
+        for(String id:java.util.List.of("zone_refiner","zone_casing","zone_power_port","zone_operating_panel","zone_water_inlet","reflow_oven","reflow_casing","reflow_power_port","reflow_operating_panel","reflow_calibration_panel","scanner_multipatterning_module"))helper.assertTrue(BuiltInRegistries.BLOCK.containsKey(Identifier.parse("lithmod:"+id)),"Shipping T6 block "+id);
+        helper.assertTrue(binning.forSource("compute",5).isPresent(),"Shipping T5 to T6 compute transition");
         assertCreativeAbsence(helper);
     }
 
