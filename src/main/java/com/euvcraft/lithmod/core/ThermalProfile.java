@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Pure thermal-profile model for a T6 diffusion / drive-in furnace run.
+ * Pure thermal-profile model for a T6 reflow assembly run.
  *
  * <p><strong>The model.</strong> A run is described by three player-facing knobs,
  * {@link Controls heater / conveyor / airflow}, all in 0..100, and by the
@@ -58,6 +58,8 @@ public final class ThermalProfile {
 
     /** How fast the score decays per half-width of travel beyond a band edge. */
     private static final double OUT_OF_BAND_SLOPE = 1.75;
+
+    public static Response response(long seed) { return Response.of(seed); }
 
     private ThermalProfile() {
     }
