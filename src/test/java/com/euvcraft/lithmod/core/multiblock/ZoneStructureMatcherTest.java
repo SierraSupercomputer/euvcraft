@@ -177,6 +177,6 @@ class ZoneStructureMatcherTest {
     private static boolean isCoreJvmType(Class<?> type) {
         while (type.isArray()) type = type.getComponentType();
         String name = type.getName();
-        return name.startsWith("java.") || name.equals(ZoneStructureMatcher.class.getPackageName());
+        return type.isPrimitive() || name.startsWith("java.") || name.startsWith(ZoneStructureMatcher.class.getPackageName()+".");
     }
 }
