@@ -2,6 +2,7 @@ package com.euvcraft.lithmod.mc.multiblock.zone;
 
 import com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedControllerBlock;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 

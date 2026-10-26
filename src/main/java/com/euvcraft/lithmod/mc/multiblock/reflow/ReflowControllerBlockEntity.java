@@ -803,7 +803,7 @@ public final class ReflowControllerBlockEntity extends FabMachineBlockEntity imp
         return null;
     }
 
-    private @Nullable ThermalProfile.Response equipmentResponse() {
+    private ThermalProfile.@Nullable Response equipmentResponse() {
         if (hardwareFingerprint.isEmpty()) {
             return null;
         }

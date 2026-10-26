@@ -4,6 +4,7 @@ import com.euvcraft.lithmod.core.multiblock.BlockKind;
 import com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedCasingBlock;
 import com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedControllerBlock;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
