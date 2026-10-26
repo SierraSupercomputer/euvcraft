@@ -118,4 +118,65 @@ class ZoneStructureMatcherTest {
         }
         assertFalse(match(short3, f).success(), "2-tall volume must be refused");
     }
+
+    @Test void structureBuiltForOneFacingIsRefusedUnderAnyOtherFacing() {
+        for (var f : MultiblockDirection.values()) {
+            var cells = fixture(f, 1);
+            for (var other : MultiblockDirection.values()) {
+                if (other == f) continue;
+                var result = match(cells, other);
+                assertFalse(result.success(), f+" volume must not match under facing "+other);
+                assertNotNull(result.failureReason(), "failed match must report a reason");
+                assertFalse(result.failureReason().isBlank(), "failure reason must not be blank");
+            }
+        }
+    }
+
+    @Test void inletAndPortsMaySitOnAnyNonReservedCell() {
+        var f = MultiblockDirection.SOUTH;
+        // One inlet, relocated from behind the controller to the front row, far column.
+        var movedInlet = fixture(f, 0);
+        movedInlet.put(ANCHOR.add(f.back().multiply(2)), BlockKind.CASING);
+        movedInlet.put(ANCHOR.add(f.right().multiply(2)), BlockKind.WATER_INLET);
+        var inletResult = match(movedInlet, f);
+        assertTrue(inletResult.success(), "one inlet anywhere except controller/panel must be accepted");
+        assertEquals(SHAPE.volume(), new HashSet<>(inletResult.memberPositions()).size());
+        // second power port on the top layer at the deepest position.
+        var twoPorts = fixture(f, 0);
+        twoPorts.put(ANCHOR.add(f.right().multiply(2)).add(new MultiblockPos(0,2,0)).add(f.back().multiply(4)),
+            BlockKind.POWER_PORT);
+        var portResult = match(twoPorts, f);
+        assertTrue(portResult.success(), "one or two power ports anywhere must be accepted");
+        assertEquals(SHAPE.volume(), new HashSet<>(portResult.memberPositions()).size());
+    }
+
+    @Test void nullArgumentsAreRejected() {
+        var f = MultiblockDirection.WEST;
+        var cells = fixture(f, 1);
+        assertThrows(NullPointerException.class, () -> ZoneStructureMatcher.match(null, f, p -> cells.getOrDefault(p, BlockKind.OTHER)));
+        assertThrows(NullPointerException.class, () -> ZoneStructureMatcher.match(ANCHOR, null, p -> cells.getOrDefault(p, BlockKind.OTHER)));
+        assertThrows(NullPointerException.class, () -> ZoneStructureMatcher.match(ANCHOR, f, null));
+    }
+
+    @Test void matcherStaysPureCoreJava() {
+        assertEquals(Object.class, ZoneStructureMatcher.class.getSuperclass(), "no base class beyond Object");
+        for (var field : ZoneStructureMatcher.class.getDeclaredFields()) {
+            if (field.isSynthetic()) continue;
+            assertTrue(isCoreJvmType(field.getType()), "field "+field.getName()+" must be a core JVM type");
+        }
+        for (var method : ZoneStructureMatcher.class.getDeclaredMethods()) {
+            if (method.isSynthetic()) continue;
+            assertTrue(isCoreJvmType(method.getReturnType()), "return of "+method.getName()+" must be a core JVM type");
+            for (var parameter : method.getParameterTypes()) {
+                assertTrue(isCoreJvmType(parameter), "parameter of "+method.getName()+" must be a core JVM type");
+            }
+        }
+    }
+
+    /** True when the type is a JDK type or declared in the pure core multiblock package. */
+    private static boolean isCoreJvmType(Class<?> type) {
+        while (type.isArray()) type = type.getComponentType();
+        String name = type.getName();
+        return name.startsWith("java.") || name.equals(ZoneStructureMatcher.class.getPackageName());
+    }
 }
