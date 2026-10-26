@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "PGP",
+    " R "
+  ],
+  "key": {
+    "P": "minecraft:paper",
+    "G": "minecraft:gold_nugget",
+    "R": "minecraft:redstone"
+  },
+  "result": {
+    "id": "lithmod:thermal_test_coupon",
+    "count": 8
+  }
+}

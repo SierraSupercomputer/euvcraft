@@ -43,9 +43,7 @@ record FoupTooltip(FoupPublicView view) implements TooltipProvider {
             consumer.accept(Component.translatable("tooltip.lithmod.foup.empty")
                 .withStyle(ChatFormatting.GRAY));
         } else {
-            String substrateKey = this.view.grade() == com.euvcraft.lithmod.core.WaferSubstrate.PURE
-                ? "tooltip.lithmod.foup.substrate.pure"
-                : "tooltip.lithmod.foup.substrate.ordinary";
+            String substrateKey = "tooltip.lithmod.foup.substrate." + this.view.grade().id();
             consumer.accept(Component.translatable(substrateKey)
                 .withStyle(ChatFormatting.GRAY));
             if (this.view.lotLayer() == 0) {

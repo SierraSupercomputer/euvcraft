@@ -63,7 +63,10 @@ public final class ChipCatalog {
         new Entry(new Design(DieTypes.LOGIC, 5), ModItems.LOGIC_CHIP_T5),
         new Entry(new Design(DieTypes.MEMORY, 5), ModItems.MEMORY_CHIP_T5),
         new Entry(new Design(DieTypes.COMPUTE, 5), ModItems.COMPUTE_CHIP_T5),
-        new Entry(new Design(DieTypes.NAND, 5), ModItems.NAND_CHIP_T5));
+        new Entry(new Design(DieTypes.NAND, 5), ModItems.NAND_CHIP_T5),
+        new Entry(new Design(DieTypes.MEMORY, 6), ModItems.MEMORY_CHIP_T6),
+        new Entry(new Design(DieTypes.COMPUTE, 6), ModItems.COMPUTE_CHIP_T6),
+        new Entry(new Design(DieTypes.NAND, 6), ModItems.NAND_CHIP_T6));
 
     private static volatile Tables tables;
 

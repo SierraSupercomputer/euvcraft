@@ -399,6 +399,31 @@ public final class ModItems {
     public static final DeferredItem<LineComponentItem> IMMERSION_FILTRATION = ITEMS.registerItem("immersion_filtration", p -> new LineComponentItem(p,"cleanroom",5), p -> p.stacksTo(1));
     public static final DeferredItem<LineComponentItem> IMMERSION_METROLOGY = ITEMS.registerItem("immersion_metrology", p -> new LineComponentItem(p,"metrology",5), p -> p.stacksTo(1));
 
+
+    // T6 multi-patterning and calibrated assembly.
+    public static final DeferredItem<Item> MEMORY_CHIP_T6 = ITEMS.registerSimpleItem("memory_chip_t6");
+    public static final DeferredItem<Item> COMPUTE_CHIP_T6 = ITEMS.registerSimpleItem("compute_chip_t6");
+    public static final DeferredItem<Item> NAND_CHIP_T6 = ITEMS.registerSimpleItem("nand_chip_t6");
+    public static final DeferredItem<Item> CPU_T6 = ITEMS.registerSimpleItem("cpu_t6");
+    public static final DeferredItem<Item> DIMM_T6 = ITEMS.registerSimpleItem("dimm_t6");
+    public static final DeferredItem<Item> RESIST_T6 = ITEMS.registerSimpleItem("resist_t6", q -> q.component(ModDataComponents.RESIST_TIER,6));
+    public static final DeferredItem<LineComponentItem> MULTIPATTERN_LIGHT_SOURCE = ITEMS.registerItem("multipattern_light_source", q -> new LineComponentItem(q,"light_source",6), q -> q.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> MULTIPATTERN_OPTICS = ITEMS.registerItem("multipattern_optics", q -> new LineComponentItem(q,"optics",6), q -> q.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> MULTIPATTERN_STAGE = ITEMS.registerItem("multipattern_stage", q -> new LineComponentItem(q,"stage",6), q -> q.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> MULTIPATTERN_FILTRATION = ITEMS.registerItem("multipattern_filtration", q -> new LineComponentItem(q,"cleanroom",6), q -> q.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> MULTIPATTERN_METROLOGY = ITEMS.registerItem("multipattern_metrology", q -> new LineComponentItem(q,"metrology",6), q -> q.stacksTo(1));
+    public static final DeferredItem<BlockItem> ZONE_REFINER = ITEMS.registerSimpleBlockItem("zone_refiner", () -> com.euvcraft.lithmod.mc.multiblock.zone.ZoneMachines.CONTROLLER.get());
+    public static final DeferredItem<BlockItem> ZONE_CASING = ITEMS.registerSimpleBlockItem("zone_casing", () -> com.euvcraft.lithmod.mc.multiblock.zone.ZoneMachines.CASING.get());
+    public static final DeferredItem<BlockItem> ZONE_POWER_PORT = ITEMS.registerSimpleBlockItem("zone_power_port", () -> com.euvcraft.lithmod.mc.multiblock.zone.ZoneMachines.POWER_PORT.get());
+    public static final DeferredItem<BlockItem> ZONE_OPERATING_PANEL = ITEMS.registerSimpleBlockItem("zone_operating_panel", () -> com.euvcraft.lithmod.mc.multiblock.zone.ZoneMachines.OPERATING_PANEL.get());
+    public static final DeferredItem<BlockItem> ZONE_WATER_INLET = ITEMS.registerSimpleBlockItem("zone_water_inlet", () -> com.euvcraft.lithmod.mc.multiblock.zone.ZoneMachines.WATER_INLET.get());
+    public static final DeferredItem<BlockItem> REFLOW_OVEN = ITEMS.registerSimpleBlockItem("reflow_oven", () -> com.euvcraft.lithmod.mc.multiblock.reflow.ReflowMachines.CONTROLLER.get());
+    public static final DeferredItem<BlockItem> REFLOW_CASING = ITEMS.registerSimpleBlockItem("reflow_casing", () -> com.euvcraft.lithmod.mc.multiblock.reflow.ReflowMachines.CASING.get());
+    public static final DeferredItem<BlockItem> REFLOW_POWER_PORT = ITEMS.registerSimpleBlockItem("reflow_power_port", () -> com.euvcraft.lithmod.mc.multiblock.reflow.ReflowMachines.POWER_PORT.get());
+    public static final DeferredItem<BlockItem> REFLOW_OPERATING_PANEL = ITEMS.registerSimpleBlockItem("reflow_operating_panel", () -> com.euvcraft.lithmod.mc.multiblock.reflow.ReflowMachines.OPERATING_PANEL.get());
+    public static final DeferredItem<BlockItem> REFLOW_CALIBRATION_PANEL = ITEMS.registerSimpleBlockItem("reflow_calibration_panel", () -> com.euvcraft.lithmod.mc.multiblock.reflow.ReflowMachines.CALIBRATION_PANEL.get());
+    public static final DeferredItem<BlockItem> SCANNER_MULTIPATTERNING_MODULE = ITEMS.registerSimpleBlockItem("scanner_multipatterning_module", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.MULTIPATTERNING_MODULE.get());
+
     private ModItems() {
     }
 }

@@ -5,7 +5,8 @@
   "energy_per_tick": 160,
   "per_tier_energy_per_tick": {
     "T4": 160,
-    "T5": 240
+    "T5": 240,
+    "T6": 480
   },
   "params": {
     "calibration_min_quality": 50,
@@ -15,6 +16,9 @@
     "diagnostic_min_multiplier_permille": 500,
     "diagnostic_max_multiplier_permille": 1000,
     "pure_capacity_mb": 16000,
-    "pure_water_per_tick_mb": 2
+    "pure_water_per_tick_mb": 2,
+    "multipattern_passes": 2,
+    "contamination_ppm": 2500,
+    "contamination_ticks": 1200
   }
 }

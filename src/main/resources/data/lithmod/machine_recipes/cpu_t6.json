@@ -1,0 +1,18 @@
+{
+  "machine": "reflow_oven",
+  "ingredients": [
+    {
+      "item": "lithmod:compute_chip_t6",
+      "count": 1
+    },
+    {
+      "item": "lithmod:cpu_blank",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:cpu_t6",
+    "count": 1
+  },
+  "ticks": 240
+}

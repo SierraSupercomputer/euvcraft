@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CCC",
+    "GRG",
+    "CCC"
+  ],
+  "key": {
+    "C": "lithmod:reflow_casing",
+    "G": "minecraft:gold_ingot",
+    "R": "minecraft:redstone"
+  },
+  "result": {
+    "id": "lithmod:reflow_power_port",
+    "count": 1
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CDC",
+    "GPG",
+    "CCC"
+  ],
+  "key": {
+    "C": "lithmod:zone_casing",
+    "D": "minecraft:diamond",
+    "G": "minecraft:gold_ingot",
+    "P": "lithmod:compute_chip_t5"
+  },
+  "result": {
+    "id": "lithmod:zone_refiner",
+    "count": 1
+  }
+}

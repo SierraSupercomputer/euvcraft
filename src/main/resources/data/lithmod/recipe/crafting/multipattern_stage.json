@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "GCG",
+    "IRI",
+    "GCG"
+  ],
+  "key": {
+    "G": "minecraft:gold_ingot",
+    "C": "lithmod:compute_chip_t5",
+    "I": "minecraft:iron_ingot",
+    "R": "lithmod:immersion_stage"
+  },
+  "result": {
+    "id": "lithmod:multipattern_stage",
+    "count": 1
+  }
+}

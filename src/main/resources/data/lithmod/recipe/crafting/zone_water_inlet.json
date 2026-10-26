@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CCC",
+    "GBG",
+    "CCC"
+  ],
+  "key": {
+    "C": "lithmod:zone_casing",
+    "G": "minecraft:gold_ingot",
+    "B": "minecraft:bucket"
+  },
+  "result": {
+    "id": "lithmod:zone_water_inlet",
+    "count": 1
+  }
+}

@@ -28,7 +28,17 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
  public final com.euvcraft.lithmod.core.WaterTank pureWater=new com.euvcraft.lithmod.core.WaterTank(16000);
  public final net.minecraft.world.SimpleContainer diagnosticPaper=new net.minecraft.world.SimpleContainer(1);
  final PureJournal pureJournal=new PureJournal(this);
- private boolean immersion,diagnosticPlotted;
+ private boolean immersion,diagnosticPlotted,multipatterning;
+ private CalibrationExposure.State exposure=CalibrationExposure.recalibrated();
+ public boolean multipatterning(){return multipatterning;}
+ public boolean contaminationInvalidated(){return exposure.invalidated();}
+ private void acceptedRecalibration(){if(calibrated()&&diagnosed())exposure=CalibrationExposure.recalibrated();}
+ private void sampleCalibrationExposure(com.euvcraft.lithmod.mc.cleanroom.CleanroomRooms.Sample sample){
+  if(tierIndex()!=6)return;boolean dirty=sample.room()==null||sample.room().ppm()>definition().map(d->d.paramOrDefault("contamination_ppm",2500)).orElse(2500);
+  var next=CalibrationExposure.advance(exposure,dirty,true,definition().map(d->d.paramOrDefault("contamination_ticks",1200)).orElse(1200));
+  if(!exposure.invalidated()&&next.invalidated()){calibratedHardware="";acceptedQuality=-1;acceptedMultiplier=0;diagnosticHardware="";diagnosticQuality=-1;diagnosticMultiplier=0;}
+  exposure=next;setChanged();
+ }
  public boolean immersion(){return immersion;}
  public DiagnosticFit diagnostic(){return diagnostic;}public boolean diagnosticPlotted(){return diagnosticPlotted;}
  public int diagnosticQuality(){return diagnosticQuality;}
@@ -42,12 +52,12 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
   if(level==null||level.isClientSide())return false;revalidate();if(!isFormed()||!immersion||inputsLocked()||!diagnosticParams()||!diagnosticPaper.getItem(0).is(ModItems.BURN_PAPER.get())||a< -200||a>200||b< -200||b>200||c< -200||c>200)return false;
   var next=diagnostic.plot(a,b,c);diagnosticPaper.removeItem(0,1);diagnostic=next;diagnosticPlotted=true;diagnosticHardware="";diagnosticQuality=-1;diagnosticMultiplier=0;setChanged();return true;
  }
- public boolean acceptDiagnostic(){if(level==null||level.isClientSide())return false;revalidate();if(!isFormed()||!immersion||inputsLocked()||!diagnosticParams()||!diagnosticPlotted||diagnostic.quality()<diagnosticMinimum())return false;diagnosticHardware=hardware;diagnosticQuality=diagnostic.quality();diagnosticMultiplier=diagnosticPreview();setChanged();return true;}
+ public boolean acceptDiagnostic(){if(level==null||level.isClientSide())return false;revalidate();if(!isFormed()||!immersion||inputsLocked()||!diagnosticParams()||!diagnosticPlotted||diagnostic.quality()<diagnosticMinimum())return false;diagnosticHardware=hardware;diagnosticQuality=diagnostic.quality();diagnosticMultiplier=diagnosticPreview();acceptedRecalibration();setChanged();return true;}
  private int maskTier(){var mask=slot(SLOT_MASK).get(com.euvcraft.lithmod.mc.registry.ModDataComponents.MASK_DATA.get());return mask==null?0:mask.tierIndex();}
- public boolean operatingCalibrated(){return calibrated()&&(maskTier()!=5||diagnosed());}
+ public boolean operatingCalibrated(){return calibrated()&&(maskTier()<5||diagnosed())&&(maskTier()!=6||multipatterning&&!exposure.invalidated());}
  public int waterPerTick(){return definition().map(d->d.paramOrDefault("pure_water_per_tick_mb",2)).orElse(0);}
  @Override public int extractEnergy(int amount,boolean simulate){
-  if(amount<0)return 0;if(tierIndex()!=5)return super.extractEnergy(amount,simulate);
+  if(amount<0)return 0;if(tierIndex()<5)return super.extractEnergy(amount,simulate);
   int water=waterPerTick();if(water<1||water>pureWater.capacity()||pureWater.amount()<water)return 0;
   int drawn=super.extractEnergy(amount,simulate);if(!simulate&&drawn==amount){pureWater.drainExact(water,false);setChanged();}return drawn;
  }
@@ -71,10 +81,11 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
   for(var pos:members())if(level.getBlockEntity(pos) instanceof ScannerMemberBlockEntity m&&module(m.structureKind())){
    positions.put(m.structureKind(),pos);fingerprint.append(m.structureKind().name()).append('@').append(pos.asLong()).append(':').append(m.installation()).append(';');
   }
-  boolean hasDiagnostic=false,hasInlet=false,hasImmersion=false;
+  boolean hasDiagnostic=false,hasInlet=false,hasImmersion=false; multipatterning=false;
   for(var pos:members())if(level.getBlockEntity(pos) instanceof ScannerMemberBlockEntity m){
    if(m.structureKind()==BlockKind.DIAGNOSTIC_PANEL){hasDiagnostic=true;fingerprint.append("diagnostic:").append(m.installation());}
    if(m.structureKind()==BlockKind.WATER_INLET)hasInlet=true;
+   if(m.structureKind()==BlockKind.MULTIPATTERNING_MODULE){multipatterning=true;fingerprint.append("multipattern:").append(m.installation());}
    if(m.getBlockState().getBlock()==ScannerMachines.IMMERSION_MODULE.get())hasImmersion=true;
   }
   immersion=hasDiagnostic&&hasInlet&&hasImmersion;
@@ -87,7 +98,7 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
  }
  public boolean calibrated(){return hardwareValidated&&!hardware.isEmpty()&&hardware.equals(calibratedHardware)&&acceptedQuality>=minimumQuality()&&acceptedQuality<=100&&acceptedMultiplier>0&&acceptedMultiplier<=1;}
  public int calibrationQuality(){return acceptedQuality;}
- public double calibratedMultiplier(){return operatingCalibrated()?acceptedMultiplier*(maskTier()==5?diagnosticMultiplier:1.0):0;}
+ public double calibratedMultiplier(){return operatingCalibrated()?acceptedMultiplier*(maskTier()>=5?diagnosticMultiplier:1.0):0;}
  public BeamAlignment alignment(){return alignment;}
  public int minimumQuality(){return definition().map(d->d.paramOrDefault("calibration_min_quality",50)).orElse(101);}
  private boolean validParameters(){return minimumQuality()>=1&&minimumQuality()<=100&&minPermille()>0&&maxPermille()>=minPermille()&&maxPermille()<=1000;}
@@ -98,28 +109,29 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
  boolean calibrationControl(int control){
   if(level==null||level.isClientSide()||control<0||control>6)return false;
   revalidate();if(!isFormed()||inputsLocked()||!validParameters())return false;
-  if(control==6){if(alignment.quality()<minimumQuality())return false;calibratedHardware=hardware;acceptedQuality=alignment.quality();acceptedMultiplier=previewMultiplier();}
+  if(control==6){if(alignment.quality()<minimumQuality())return false;calibratedHardware=hardware;acceptedQuality=alignment.quality();acceptedMultiplier=previewMultiplier();acceptedRecalibration();}
   else {alignment=alignment.adjust(control);calibratedHardware="";acceptedQuality=-1;acceptedMultiplier=0;}
   setChanged();return true;
  }
  @Override protected int utilityGeneration(){return immersion?2:1;}
- @Override protected boolean supportsTier(Tier tier){return tier.index()==4||tier.index()==5;}
- @Override protected boolean readyForAdmission(){return operatingCalibrated()&&validParameters()&&(maskTier()!=5||immersion&&diagnosticParams()&&waterPerTick()>0&&waterPerTick()<=pureWater.capacity()&&pureWater.amount()>=waterPerTick());}
- @Override protected double admissionYieldMultiplier(){acceptedHardware=hardware;setChanged();return acceptedMultiplier*(maskTier()==5?diagnosticMultiplier:1.0);}
+ @Override protected boolean supportsTier(Tier tier){return tier.index()==4||tier.index()==5||tier.index()==6;}
+ @Override protected boolean readyForAdmission(){return operatingCalibrated()&&validParameters()&&(maskTier()<5||immersion&&diagnosticParams()&&waterPerTick()>0&&waterPerTick()<=pureWater.capacity()&&pureWater.amount()>=waterPerTick());}
+ @Override protected double admissionYieldMultiplier(){acceptedHardware=hardware;setChanged();return acceptedMultiplier*(maskTier()>=5?diagnosticMultiplier:1.0);}
 
- @Override public boolean structureFormed(){return (tierIndex()!=5||roomSample().available())&&isFormed()&&definition().isPresent()&&hardwareValidated&&(!inputsLocked()||hardware.equals(acceptedHardware))&&(tierIndex()!=5||waterPerTick()>=1&&waterPerTick()<=pureWater.capacity()&&pureWater.amount()>=waterPerTick());}
+ @Override public boolean structureFormed(){return (tierIndex()<5||roomSample().available())&&isFormed()&&definition().isPresent()&&hardwareValidated&&(!inputsLocked()||hardware.equals(acceptedHardware))&&(tierIndex()<5||waterPerTick()>=1&&waterPerTick()<=pureWater.capacity()&&pureWater.amount()>=waterPerTick());}
  @Override protected boolean inputsTemporarilyUnavailable(){return !isFormed();}
  @Override protected ItemStack equipment(int logicalSlot){
   BlockKind kind=switch(logicalSlot){case 3->BlockKind.EXPOSURE_MODULE;case 4->BlockKind.OPTICS_MODULE;case 5->BlockKind.STAGE_MODULE;case 6->BlockKind.FILTRATION_MODULE;case 7->BlockKind.METROLOGY_MODULE;default->BlockKind.OTHER;};
   var pos=modulePositions.get(kind);
   if(level==null||pos==null||!level.hasChunkAt(pos)||!(level.getBlockEntity(pos) instanceof ScannerMemberBlockEntity m)||m.structureKind()!=kind)return ItemStack.EMPTY;
+  if(multipatterning&&maskTier()==6)return switch(kind){case EXPOSURE_MODULE->new ItemStack(ModItems.MULTIPATTERN_LIGHT_SOURCE.get());case OPTICS_MODULE->new ItemStack(ModItems.MULTIPATTERN_OPTICS.get());case STAGE_MODULE->new ItemStack(ModItems.MULTIPATTERN_STAGE.get());case FILTRATION_MODULE->new ItemStack(ModItems.MULTIPATTERN_FILTRATION.get());case METROLOGY_MODULE->new ItemStack(ModItems.MULTIPATTERN_METROLOGY.get());default->ItemStack.EMPTY;};
   if(immersion)return switch(kind){case EXPOSURE_MODULE->new ItemStack(ModItems.IMMERSION_LIGHT_SOURCE.get());case OPTICS_MODULE->new ItemStack(ModItems.IMMERSION_OPTICS.get());case STAGE_MODULE->new ItemStack(ModItems.IMMERSION_STAGE.get());case FILTRATION_MODULE->new ItemStack(ModItems.IMMERSION_FILTRATION.get());case METROLOGY_MODULE->new ItemStack(ModItems.IMMERSION_METROLOGY.get());default->ItemStack.EMPTY;};
   return switch(kind){case EXPOSURE_MODULE->new ItemStack(ModItems.ARF_EXCIMER_LASER.get());case OPTICS_MODULE->new ItemStack(ModItems.ARF_DRY_LENS.get());case STAGE_MODULE->new ItemStack(ModItems.NANOPOSITIONING_STAGE.get());case FILTRATION_MODULE->new ItemStack(ModItems.ULPA_FILTER.get());case METROLOGY_MODULE->new ItemStack(ModItems.PRECISION_OVERLAY_SCOPE.get());default->ItemStack.EMPTY;};
  }
  private com.euvcraft.lithmod.mc.cleanroom.CleanroomRooms.Sample roomSample(){return level instanceof net.minecraft.server.level.ServerLevel server?com.euvcraft.lithmod.mc.cleanroom.CleanroomRooms.sample(server,members()):new com.euvcraft.lithmod.mc.cleanroom.CleanroomRooms.Sample(false,500,null);}
- @Override public FoupContents processingTick(FoupContents lot){if(tierIndex()!=5)return lot;var sample=roomSample();if(!sample.available())throw new IllegalStateException("Room chunk unavailable");var next=lot.withRoomExposure(lot.roomExposure().sample(sample.yieldPermille()),0);storeRoomLot(next);return next;}
+ @Override public FoupContents processingTick(FoupContents lot){if(tierIndex()<5)return lot;var sample=roomSample();if(!sample.available())throw new IllegalStateException("Room chunk unavailable");sampleCalibrationExposure(sample);var next=lot.withRoomExposure(lot.roomExposure().sample(sample.yieldPermille()),0);storeRoomLot(next);return next;}
  private void storeRoomLot(FoupContents lot){var carrier=slot(SLOT_FOUP).copy();carrier.set(com.euvcraft.lithmod.mc.registry.ModDataComponents.FOUP_CONTENTS.get(),lot);setSlot(SLOT_FOUP,carrier);}
- @Override public FoupContents applyLayer(FoupContents lot,int layer,double defectFactor){var next=super.applyLayer(lot,layer,defectFactor);if(tierIndex()==5){var tier=com.euvcraft.lithmod.mc.data.TierDataLoader.getRegistry().byIndex(5).orElseThrow();if(layer==tier.layers()){next=CleanroomYield.finish(next,tier);storeRoomLot(next);}}return next;}
+ @Override public FoupContents applyLayer(FoupContents lot,int layer,double defectFactor){var next=super.applyLayer(lot,layer,defectFactor);if(tierIndex()>=5){var tier=com.euvcraft.lithmod.mc.data.TierDataLoader.getRegistry().byIndex(tierIndex()).orElseThrow();if(layer==tier.layers()){next=CleanroomYield.finish(next,tier);storeRoomLot(next);}}return next;}
  @Override public void serverTick(){revalidate();pureWater.resize(Math.clamp(definition().map(d->d.paramOrDefault("pure_capacity_mb",16000)).orElse(16000),1,1000000));super.serverTick();}
  @Override protected void dropExtraContents(net.minecraft.world.level.Level level,BlockPos pos){super.dropExtraContents(level,pos);dropContainer(level,pos,diagnosticPaper);}
  @Override public void setRemoved(){formation.unload();super.setRemoved();}
@@ -133,10 +145,12 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
   diagnosticHardware=input.getString("diagnosticHardware").orElse("");diagnosticQuality=input.getIntOr("diagnosticQuality",-1);diagnosticMultiplier=input.getDoubleOr("diagnosticMultiplier",0);
   pureWater.restoreAmount(Math.clamp(input.getIntOr("scannerPureWater",0),0,1000000));diagnosticPaper.setItem(0,input.read("diagnosticPaper",ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY));
   if(!diagnosticValid||!diagnosticPlotted){diagnosticPlotted=false;diagnosticHardware="";diagnosticQuality=-1;diagnosticMultiplier=0;}
+  exposure=new CalibrationExposure.State(Math.max(0,input.getIntOr("calibrationDirtyTicks",0)),input.getBooleanOr("calibrationInvalidated",false));
   hardwareValidated=false;modulePositions.clear();
  }
  @Override protected void saveAdditional(ValueOutput out){
   super.saveAdditional(out);
+  out.putInt("calibrationDirtyTicks",exposure.dirtyTicks());out.putBoolean("calibrationInvalidated",exposure.invalidated());
   out.putBoolean("diagnosticPlotted",diagnosticPlotted);out.putString("diagnosticHardware",diagnosticHardware);out.putInt("diagnosticQuality",diagnosticQuality);out.putDouble("diagnosticMultiplier",diagnosticMultiplier);out.putInt("diagnosticA",diagnostic.a());out.putInt("diagnosticB",diagnostic.b());out.putInt("diagnosticC",diagnostic.c());out.putInt("diagnosticTargetA",diagnostic.targetA());out.putInt("diagnosticTargetB",diagnostic.targetB());out.putInt("diagnosticTargetC",diagnostic.targetC());out.putInt("scannerPureWater",pureWater.amount());out.store("diagnosticPaper",ItemStack.OPTIONAL_CODEC,diagnosticPaper.getItem(0));out.putString("scannerHardware",hardware);out.putString("scannerCalibratedHardware",calibratedHardware);out.putString("scannerAcceptedHardware",acceptedHardware);out.putInt("scannerQuality",acceptedQuality);out.putDouble("scannerMultiplier",acceptedMultiplier);
   out.putInt("scannerX",alignment.x());out.putInt("scannerY",alignment.y());out.putInt("scannerFocus",alignment.focus());out.putInt("scannerTargetX",alignment.targetX());out.putInt("scannerTargetY",alignment.targetY());out.putInt("scannerTargetFocus",alignment.targetFocus());
  }

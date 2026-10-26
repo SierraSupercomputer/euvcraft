@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "GRG",
+    "CCC"
+  ],
+  "key": {
+    "C": "lithmod:reflow_casing",
+    "G": "minecraft:glass_pane",
+    "R": "minecraft:redstone"
+  },
+  "result": {
+    "id": "lithmod:reflow_operating_panel",
+    "count": 1
+  }
+}
