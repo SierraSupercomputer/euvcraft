@@ -55,7 +55,23 @@ public final class ReflowCalibrationMenu extends AbstractContainerMenu {
     public static final int CAL_MEASURED_HEATER = 26;
     public static final int CAL_MEASURED_CONVEYOR = 27;
     public static final int CAL_MEASURED_AIRFLOW = 28;
-    public static final int CAL_PREVIEW_START = 29;
+    /**
+     * Server-synced rule bounds, in hundredths of their JSON unit: ramp/dwell/cooling bounds
+     * are the datapack hundredths values, peak bounds are centi-degrees. The measured metrics
+     * use the same scale so the screen readouts always match the JSON rule bands, without any
+     * client-side definition read.
+     */
+    public static final int CAL_MIN_RAMP = 29;
+    public static final int CAL_MAX_RAMP = 30;
+    public static final int CAL_MIN_DWELL = 31;
+    public static final int CAL_MAX_DWELL = 32;
+    public static final int CAL_MIN_COOLING = 33;
+    public static final int CAL_MAX_COOLING = 34;
+    public static final int CAL_MEASURED_RAMP = 35;
+    public static final int CAL_MEASURED_PEAK = 36;
+    public static final int CAL_MEASURED_DWELL = 37;
+    public static final int CAL_MEASURED_COOLING = 38;
+    public static final int CAL_PREVIEW_START = 39;
     public static final int CAL_MEASURED_START = CAL_PREVIEW_START + 49;
     public static final int CAL_COUNT = CAL_MEASURED_START + 49;
 
@@ -185,8 +201,30 @@ public final class ReflowCalibrationMenu extends AbstractContainerMenu {
             case CAL_MEASURED_HEATER -> controller.measuredHeater();
             case CAL_MEASURED_CONVEYOR -> controller.measuredConveyor();
             case CAL_MEASURED_AIRFLOW -> controller.measuredAirflow();
+            case CAL_MIN_RAMP -> hundredths(controller, ReflowControllerBlockEntity.ThermalSettings::minRamp);
+            case CAL_MAX_RAMP -> hundredths(controller, ReflowControllerBlockEntity.ThermalSettings::maxRamp);
+            case CAL_MIN_DWELL -> hundredths(controller, ReflowControllerBlockEntity.ThermalSettings::minDwell);
+            case CAL_MAX_DWELL -> hundredths(controller, ReflowControllerBlockEntity.ThermalSettings::maxDwell);
+            case CAL_MIN_COOLING -> hundredths(controller, ReflowControllerBlockEntity.ThermalSettings::minCooling);
+            case CAL_MAX_COOLING -> hundredths(controller, ReflowControllerBlockEntity.ThermalSettings::maxCooling);
+            case CAL_MEASURED_RAMP -> metricHundredths(controller.measuredRamp());
+            case CAL_MEASURED_PEAK -> metricHundredths(controller.measuredPeak());
+            case CAL_MEASURED_DWELL -> metricHundredths(controller.measuredDwell());
+            case CAL_MEASURED_COOLING -> metricHundredths(controller.measuredCooling());
             default -> 0;
         };
+    }
+
+    /** Hundredths of one {@code ThermalSettings} band from the datapack rules, 0 when missing. */
+    private static int hundredths(ReflowControllerBlockEntity controller,
+            java.util.function.ToDoubleFunction<ReflowControllerBlockEntity.ThermalSettings> band) {
+        return controller.thermalSettings()
+                .map(s -> metricHundredths(band.applyAsDouble(s)))
+                .orElse(0);
+    }
+
+    private static int metricHundredths(double value) {
+        return Double.isFinite(value) ? (int) Math.round(value * 100.0) : 0;
     }
 
     private static int curveValue(double[] curve, int index) {

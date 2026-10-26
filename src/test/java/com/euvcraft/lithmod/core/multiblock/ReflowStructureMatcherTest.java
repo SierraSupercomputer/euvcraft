@@ -385,6 +385,52 @@ class ReflowStructureMatcherTest {
         }
     }
 
+    // ---------------------------------------------------------------- dimensions and placement
+
+    @Test
+    void shape_isTheFixed3x3x2Box() {
+        assertEquals(3, SHAPE.width());
+        assertEquals(3, SHAPE.height());
+        assertEquals(2, SHAPE.length());
+        assertEquals(18, SHAPE.volume());
+    }
+
+    @ParameterizedTest
+    @EnumSource(MultiblockDirection.class)
+    void match_acceptsPowerPortsAnywhereInCasingCells(MultiblockDirection facing) {
+        for (int u0 = 0; u0 < SHAPE.width(); u0++) {
+            Map<Cell, BlockKind> layout = validLayout(u0);
+            // Replace the two corner ports with ports at arbitrary non-panel positions.
+            layout.put(new Cell(0, 0, SHAPE.length() - 1), BlockKind.CASING);
+            layout.put(new Cell(SHAPE.width() - 1, SHAPE.height() - 1, SHAPE.length() - 1), BlockKind.CASING);
+            layout.put(new Cell(1, 2, 1), BlockKind.POWER_PORT);
+            layout.put(new Cell(2, 2, 1), BlockKind.POWER_PORT);
+            Function<MultiblockPos, BlockKind> world = worldAt(CONTROLLER, facing, u0, 0, layout);
+            MatchResult result = ReflowStructureMatcher.match(CONTROLLER, facing, world);
+            assertTrue(result.success(), "facing=" + facing + " u0=" + u0 + ": " + result.failureReason());
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(MultiblockDirection.class)
+    void match_rejectsWrongDimensions(MultiblockDirection facing) {
+        for (int u0 = 0; u0 < SHAPE.width(); u0++) {
+            Function<MultiblockPos, BlockKind> base = worldAt(CONTROLLER, facing, u0, 0, validLayout(u0));
+            // A 3x3x1 world: the whole back layer (d = 1) reports OTHER, so the box is too small.
+            Set<MultiblockPos> backLayer = new HashSet<>();
+            for (int u = 0; u < SHAPE.width(); u++) {
+                for (int v = 0; v < SHAPE.height(); v++) {
+                    backLayer.add(expectedCell(CONTROLLER, facing, u0, 0, u, v, 1));
+                }
+            }
+            Function<MultiblockPos, BlockKind> wrongDim =
+                    pos -> backLayer.contains(pos) ? BlockKind.OTHER : base.apply(pos);
+            MatchResult result = ReflowStructureMatcher.match(CONTROLLER, facing, wrongDim);
+            assertFalse(result.success(), "facing=" + facing + " u0=" + u0
+                    + ": a 3x3x1 shell must not match");
+        }
+    }
+
     // ---------------------------------------------------------------- invariants
 
     @Test
