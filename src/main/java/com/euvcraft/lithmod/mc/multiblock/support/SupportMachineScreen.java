@@ -10,7 +10,7 @@ import java.util.Locale;
 /** Support menus keep the player inventory fixed; controls sit below the hotbar. */
 public class SupportMachineScreen extends FabMachineScreen<SupportMachineMenu> {
     private static final int COLOR = 0xFF404040;
-    private Button previous, next, start;
+    private Button previous, next, start, cores;
 
     public SupportMachineScreen(SupportMachineMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title, 176, 220);
@@ -35,6 +35,14 @@ public class SupportMachineScreen extends FabMachineScreen<SupportMachineMenu> {
         start = addRenderableWidget(Button.builder(Component.translatable("button.lithmod.ebeam.start"),
             b -> send(SupportMachineMenu.EBEAM_START_BUTTON))
             .bounds(leftPos + 8, topPos + 200, 88, 16).build());
+        // Core-count cycle button on the remaining lower-row width (x100..168), beside the
+        // still-original start button. The label shows the server-synced count and the
+        // click sends only the distinct cycle id; the configured options are never
+        // hardcoded client-side.
+        cores = addRenderableWidget(Button.builder(Component.literal("Cores: "
+                + menu.ebeamSelectedCores()),
+            b -> send(SupportMachineMenu.CORE_BUTTON))
+            .bounds(leftPos + 100, topPos + 200, 68, 16).build());
         updateButtons();
     }
 
@@ -52,6 +60,13 @@ public class SupportMachineScreen extends FabMachineScreen<SupportMachineMenu> {
         previous.active = canSelect;
         next.active = canSelect;
         start.active = canSelect && menu.ebeamDesignAvailable(menu.ebeamSelectedDesign());
+        // The core cycle button is enabled only for a formed idle T6 compute selection; the
+        // server-synced availability decides, not a client inference. For every other design
+        // the selection is pinned at 1 and the button shows that instead.
+        if (cores != null) {
+            cores.setMessage(Component.literal("Cores: " + menu.ebeamSelectedCores()));
+            cores.active = menu.ebeamCoresSelectable();
+        }
     }
 
     @Override protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {

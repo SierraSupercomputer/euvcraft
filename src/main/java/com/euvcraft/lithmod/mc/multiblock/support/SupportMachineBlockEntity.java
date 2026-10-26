@@ -107,17 +107,28 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
     // ---------------------------------------------------------------- e-beam job state
     // Purchased only for kind() == EBEAM.
 
-    /** The seven supported e-beam designs in selector order. */
+    /** The supported e-beam designs in selector order: T1-T5 (indices 0-14), then the T6 designs 15-17. */
     private static final String[] EBEAM_DESIGNS = {
-        "logic_t1", "logic_t2", "memory_t2", "logic_t3", "memory_t3", "compute_t3", "nand_t3", "logic_t4", "memory_t4", "compute_t4", "nand_t4", "logic_t5", "memory_t5", "compute_t5", "nand_t5"
+        "logic_t1", "logic_t2", "memory_t2", "logic_t3", "memory_t3", "compute_t3", "nand_t3", "logic_t4", "memory_t4", "compute_t4", "nand_t4", "logic_t5", "memory_t5", "compute_t5", "nand_t5", "memory_t6", "compute_t6", "nand_t6"
     };
     /** Die type for each design index. */
-    private static final String[] EBEAM_DIE_TYPES = {DieTypes.LOGIC,DieTypes.LOGIC,DieTypes.MEMORY,DieTypes.LOGIC,DieTypes.MEMORY,DieTypes.COMPUTE,DieTypes.NAND,DieTypes.LOGIC,DieTypes.MEMORY,DieTypes.COMPUTE,DieTypes.NAND,DieTypes.LOGIC,DieTypes.MEMORY,DieTypes.COMPUTE,DieTypes.NAND};
+    private static final String[] EBEAM_DIE_TYPES = {DieTypes.LOGIC,DieTypes.LOGIC,DieTypes.MEMORY,DieTypes.LOGIC,DieTypes.MEMORY,DieTypes.COMPUTE,DieTypes.NAND,DieTypes.LOGIC,DieTypes.MEMORY,DieTypes.COMPUTE,DieTypes.NAND,DieTypes.LOGIC,DieTypes.MEMORY,DieTypes.COMPUTE,DieTypes.NAND,DieTypes.MEMORY,DieTypes.COMPUTE,DieTypes.NAND};
     /** Tier index for each design index. */
-    private static final int[] EBEAM_TIER_INDICES = { 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5 };
+    private static final int[] EBEAM_TIER_INDICES = { 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6 };
 
-    /** Currently selected design index (0-6), or -1 for no selection. */
+    /** First design index of the T6 block; designs before this keep their pre-T6 behaviour. */
+    private static final int FIRST_T6_DESIGN = 15;
+
+    /** Currently selected design index (0-17), or -1 for no selection. */
     private int selectedDesign = -1;
+    /**
+     * The core count chosen for a T6 compute mask design; 1 otherwise.
+     *
+     * <p>Selection is a writer-side preference, not job data: it resets to 1 whenever the
+     * selected design is not a T6 compute design, and admission refuses a disallowed value,
+     * so this field can never raise a mask it was not cleared for.</p>
+     */
+    private int selectedCores = 1;
     /** Whether an e-beam job is in progress. */
     private boolean ebeamJobRunning;
     /** Started but stopped for want of energy, an unformed cell or a full output. */
@@ -555,6 +566,12 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
         MaskData maskData = new MaskData(pinned.dieType, pinned.tierIndex, pinned.uses, 2);
         ItemStack product = new ItemStack(pinned.outputItem);
         product.set(com.euvcraft.lithmod.mc.registry.ModDataComponents.MASK_DATA.get(), maskData);
+        // Only the produced T6-or-later compute design carries the public core count; the
+        // pre-T6 masks keep their implicit count of 1 and non-compute designs carry none.
+        // The count comes from the snapshot, so mid-run saves exactly the chosen number.
+        if (pinned.tierIndex() >= 6 && DieTypes.COMPUTE.equals(pinned.dieType()) && pinned.cores() >= 1) {
+            product.set(com.euvcraft.lithmod.mc.registry.ModDataComponents.CORE_COUNT.get(), pinned.cores());
+        }
 
         ItemStack existing = slot(SLOT_IN_0 + 2);
         if (existing.isEmpty()) {
@@ -583,7 +600,7 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
         setChanged();
     }
 
-    /** One pinned e-beam job: the recipe's numbers, design, and exact input state at start. */
+    /** One pinned e-beam job: the recipe's numbers, design, frozen core count, and exact input state at start. */
     private record EbeamJobSnapshot(
         int duration,
         int energyPerTick,
@@ -595,14 +612,15 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
         int outputCount,
         String dieType,
         int tierIndex,
-        int uses
+        int uses,
+        int cores
     ) { }
 
     // ---------------------------------------------------------------- e-beam menu actions
 
     /**
      * Server-side handler for design selection button.
-     * @param designIndex 0-6 for the seven designs, -1 to clear selection
+     * @param designIndex 0-17 for the supported designs, -1 to clear selection
      * @return true if the selection was accepted
      */
     public boolean selectDesign(int designIndex) {
@@ -610,8 +628,67 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
         if (designIndex < -1 || designIndex >= EBEAM_DESIGNS.length) return false;
         if (this.ebeamJobRunning) return false; // selection cannot change active job
         this.selectedDesign = designIndex;
+        // The core preference is only meaningful for a T6 compute design; switching to a
+        // non-compute or pre-T6 design resets it to 1 ("non-compute has none"). A switch onto
+        // a T6 compute design keeps the preference only when it is still a configured option.
+        if (!isT6ComputeDesign(designIndex)) {
+            this.selectedCores = 1;
+        } else if (!EUVCRAFTMod.settings().coreCountOptions().contains(this.selectedCores)) {
+            this.selectedCores = 1;
+        }
         setChanged();
         return true;
+    }
+
+    /** Whether the design index is the T6 compute design that carries a selectable core count. */
+    private static boolean isT6ComputeDesign(int designIndex) {
+        return designIndex >= FIRST_T6_DESIGN && designIndex < EBEAM_DESIGNS.length
+            && DieTypes.COMPUTE.equals(EBEAM_DIE_TYPES[designIndex]);
+    }
+
+    /**
+     * Server-side handler for the core-count cycle button: advances the selected core count
+     * through the configured {@code coreCountOptions}, in order, wrapping at the end.
+     *
+     * <p>Valid only for a formed idle e-beam writer whose selected design is a T6 compute
+     * design; the count is never read from the client — the client only sends the cycle
+     * button id and the server picks the next configured option. The menu choices are
+     * therefore exactly the configured, validated options and are never hardcoded.</p>
+     *
+     * @return true if the selection moved (it always lands on a configured option)
+     */
+    public boolean cycleCores() {
+        if (kind() != SupportMachineKind.EBEAM) return false;
+        if (!this.formed || this.ebeamJobRunning) return false;
+        if (!isT6ComputeDesign(this.selectedDesign)) return false;
+        List<Integer> options = EUVCRAFTMod.settings().coreCountOptions();
+        if (options.isEmpty()) return false;
+        int index = options.indexOf(this.selectedCores);
+        if (index < 0) index = 0; // a stale value outside the options restarts at the first option
+        this.selectedCores = options.get((index + 1) % options.size());
+        setChanged();
+        return true;
+    }
+
+    /**
+     * Whether core selection is currently allowed: formed idle writer, selected design a
+     * T6 compute design. Published to the menu so the screen needs no client-side guess.
+     */
+    public boolean coresSelectable() {
+        return kind() == SupportMachineKind.EBEAM && !this.ebeamJobRunning
+            && isT6ComputeDesign(this.selectedDesign);
+    }
+
+    /**
+     * The core count shown for the current selection.
+     *
+     * <p>While a job is running this is the count the active snapshot froze at start, never
+     * a live selection value; otherwise it is the writer's current preference (1 outside a
+     * T6 compute design).</p>
+     */
+    public int selectedCores() {
+        if (this.ebeamJobRunning && this.ebeamJob != null) return this.ebeamJob.cores();
+        return this.selectedCores;
     }
 
     /**
@@ -631,9 +708,19 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
                 || !canAcceptInto(2, resolved.outputItem(), 1)) return false;
         int uses = EUVCRAFTMod.settings().maskUses();
         if (uses <= 0) return false;
+        // Freeze the chosen core count into the snapshot at start, exactly like the recipe's
+        // own numbers: a running job is what the player configured, not a later config edit.
+        // A disallowed count (not one of the configured options) fails admission here.
+        int cores;
+        if (isT6ComputeDesign(this.selectedDesign)) {
+            if (!EUVCRAFTMod.settings().coreCountOptions().contains(this.selectedCores)) return false;
+            cores = this.selectedCores;
+        } else {
+            cores = 1;
+        }
         ebeamJob = new EbeamJobSnapshot(recipe.duration(), recipe.energyPerTick(), recipe.input().count(),
             recipe.secondary().count(), resolved.inputItem(), Items.REDSTONE, resolved.outputItem(), 1,
-            EBEAM_DIE_TYPES[selectedDesign], EBEAM_TIER_INDICES[selectedDesign], uses);
+            EBEAM_DIE_TYPES[selectedDesign], EBEAM_TIER_INDICES[selectedDesign], uses, cores);
         ebeamJobRunning = true;
         ebeamJobPaused = false;
         ebeamJobProgress = 0;
@@ -686,7 +773,7 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
         return this.ebeamJobRunning && this.ebeamJob != null ? this.ebeamJob.duration() : 0;
     }
 
-    /** Number of supported e-beam designs (7). */
+    /** Number of supported e-beam designs (15 pre-T6 plus the three T6 designs). */
     public int ebeamDesignCount() {
         return EBEAM_DESIGNS.length;
     }
@@ -937,6 +1024,7 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
         this.ebeamJobProgress = 0;
         this.ebeamJob = null;
         this.selectedDesign = -1;
+        this.selectedCores = 1;
         // The base load path already ran refreshDefinition; apply the definition's water capacity
         // before restoring the persisted amount, so a valid save round-trips capacity and amount.
         syncWaterCapacity();
@@ -956,6 +1044,11 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
         restorePurifierJob(input.childOrEmpty("purifierJob"));
         int savedSelection = input.getInt("selectedDesign").orElse(-1);
         this.selectedDesign = savedSelection >= -1 && savedSelection < EBEAM_DESIGNS.length ? savedSelection : -1;
+        // The core preference is restored only when plausible; anything else defaults to 1.
+        // Whether the restored value is still a configured option is decided at use time:
+        // admission refuses a disallowed count, cycling restarts at the first configured option.
+        int savedCores = input.getInt("selectedCores").orElse(1);
+        this.selectedCores = savedCores >= 1 && savedCores <= 256 ? savedCores : 1;
         restoreEbeamJob(input.childOrEmpty("ebeamJob"));
         publishData();
     }
@@ -1047,6 +1140,12 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
         String dieType = state.getString("die_type").orElse(null);
         Integer tierIndex = state.getInt("tier_index").orElse(null);
         Integer uses = state.getInt("uses").orElse(null);
+        // Legacy saves carry no "cores" key: every pre-T6 job implicitly ran at 1. A saved
+        // count that is not plausible is dropped with the rest of the malformed job below;
+        // the frozen count is otherwise honoured even if the configured options moved in
+        // between, because a running job's numbers are pinned, not re-validated against
+        // today's config.
+        Integer cores = state.getInt("cores").orElse(1);
         Item blankItem = itemFrom(state.getString("blank_item").orElse(null));
         Item redstoneItem = itemFrom(state.getString("redstone_item").orElse(null));
         Item outputItem = itemFrom(state.getString("output_item").orElse(null));
@@ -1055,6 +1154,7 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
             && redstoneCount != null && outputCount != null && progress != null
             && dieType != null && tierIndex != null && uses != null && uses > 0 && blankItem != null && redstoneItem != null
             && outputItem != null
+            && cores != null && cores >= 1 && cores <= 256
             && duration > 0 && energyPerTick > 0 && blankCount > 0 && redstoneCount > 0
             && outputCount > 0 && progress >= 0 && progress < duration;
         if (valid) {
@@ -1075,10 +1175,14 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
             return;
         }
         this.ebeamJob = new EbeamJobSnapshot(duration, energyPerTick, blankCount, redstoneCount,
-            blankItem, redstoneItem, outputItem, outputCount, dieType, tierIndex, uses);
+            blankItem, redstoneItem, outputItem, outputCount, dieType, tierIndex, uses, cores);
         this.ebeamJobRunning = true;
         this.ebeamJobProgress = progress;
         this.selectedDesign = designIndex(dieType, tierIndex); // active snapshot owns the display
+        // Keep the writer's core preference in step with the restored job so the screen shows
+        // the frozen count for its own design; cycling is refused while the job runs.
+        this.selectedCores = this.selectedDesign >= 0 && isT6ComputeDesign(this.selectedDesign)
+            ? cores : 1;
     }
 
     /** Writes the pinned e-beam job, if one is running, into its own save child. */
@@ -1098,6 +1202,7 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
         state.putString("die_type", pinned.dieType());
         state.putInt("tier_index", pinned.tierIndex());
         state.putInt("uses", pinned.uses());
+        state.putInt("cores", pinned.cores());
         state.putString("blank_item", BuiltInRegistries.ITEM.getKey(pinned.blankItem()).toString());
         state.putString("redstone_item", BuiltInRegistries.ITEM.getKey(pinned.redstoneItem()).toString());
         state.putString("output_item", BuiltInRegistries.ITEM.getKey(pinned.outputItem()).toString());
@@ -1126,6 +1231,7 @@ public class SupportMachineBlockEntity extends FabMachineBlockEntity implements 
         }
         savePurifierJob(output);
         output.putInt("selectedDesign", this.selectedDesign);
+        output.putInt("selectedCores", this.selectedCores);
         saveEbeamJob(output);
         // Capacity is definition data, not saved.
     }
