@@ -368,7 +368,7 @@ class ThermalProfileTest {
             // The defaults' ramp band bottom (1.0) is exactly what heater 0 produces, so the
             // HEATING case needs a genuinely narrower band to be reachable.
             ThermalProfile.Rules tighter = new ThermalProfile.Rules(
-                1.5, 3.0, 230, 245, 30, 70, 1, 4, 750);
+                1.5, 3.0, 170, 245, 30, 70, 1, 4, 750);
             ThermalProfile.Assessment sluggish = ThermalProfile.assess(
                 new ThermalProfile.Controls(0, 50, 50),
                 ThermalProfile.Response.nominal(), tighter);
