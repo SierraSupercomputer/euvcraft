@@ -110,7 +110,8 @@ public final class MachineTooltipAppenders {
                             "tooltip.lithmod.panel.calibration_panel",
                             "tooltip.lithmod.t5.immersion",
                             "tooltip.lithmod.t5.diagnostic",
-                            "tooltip.lithmod.t5.water"
+                            "tooltip.lithmod.t5.water",
+                            "tooltip.lithmod.optional.multipatterning"
                     }
             )),
 

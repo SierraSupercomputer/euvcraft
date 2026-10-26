@@ -113,7 +113,7 @@ Power the controller **and each filter**, insert Cleanroom Filter Medium, and al
 | DIMM | Four Memory Chips + DIMM Blank | T2–T5 |
 | CPU | One Compute Chip + CPU Blank | T3–T5 |
 
-Outputs retain chip tier. Assembly has no calibration requirement or extra yield roll. NAND assembly and the reflow successor are future content.
+Outputs retain chip tier. Assembly has no calibration requirement or extra yield roll. NAND assembly is future content; T6 uses the calibrated reflow successor described below.
 
 **FOUP Cleaner:** Supply FE and ordinary water, insert an unwanted FOUP and choose **Discard & Clean**. This destroys **all wafers** in that carrier. It returns the same empty FOUP and **one Wafer Scrap per wafer**; it does not selectively remove failures. Default water cost: 1,000 mB. No Chip Packages or UPW needed. Wafer Scrap differs from packaging's Chip Scrap; recycling is not implemented. See the [cleaner walkthrough](manual-walkthrough-foup-cleaner.md).
 
@@ -125,4 +125,4 @@ Outputs retain chip tier. Assembly has no calibration requirement or extra yield
 - **Paused:** Check FE, resist, UPW, filter media and output space. Same-resist top-ups are allowed; swapping resist during a run is not.
 - **Low yield:** Check calibration and T5 room cleanliness; turn off High Binning for normal production. Small batches can vary.
 
-Report tier/machine, visible status, FOUP tooltip, inputs, power/fluid supply and screenshots of the structure and GUI. The endpoint is the full T5 route; T6+ consequences, selectable compute cores and reflow are not implemented yet.
+Report tier/machine, visible status, FOUP tooltip, inputs, power/fluid supply and screenshots of the structure and GUI. The current endpoint includes T6 zone refining, multi-patterning, selectable compute cores and calibrated reflow. Follow the [T6 walkthrough](manual-walkthrough-t6.md) after T5. T7 damage, higher tiers and scrap recycling remain deferred.
