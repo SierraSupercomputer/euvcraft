@@ -358,5 +358,18 @@
   "tooltip.lithmod.required.zone_water_inlet": "One Zone water inlet (ultrapure water)",
   "tooltip.lithmod.required.reflow_calibration_panel": "One Reflow calibration panel in middle layer",
   "tooltip.lithmod.optional.multipatterning": "T6: multi-patterning module in middle layer",
-  "tooltip.lithmod.compute.cores": "%s cores"
+  "tooltip.lithmod.compute.cores": "%s cores",
+  "item.lithmod.zone_refiner": "Zone Refiner",
+  "item.lithmod.zone_casing": "Zone Casing",
+  "item.lithmod.zone_power_port": "Zone Power Port",
+  "item.lithmod.zone_operating_panel": "Zone Operating Panel",
+  "item.lithmod.zone_water_inlet": "Zone Water Inlet",
+  "item.lithmod.reflow_oven": "Reflow Oven",
+  "item.lithmod.reflow_casing": "Reflow Casing",
+  "item.lithmod.reflow_power_port": "Reflow Power Port",
+  "item.lithmod.reflow_operating_panel": "Reflow Operating Panel",
+  "item.lithmod.reflow_calibration_panel": "Reflow Calibration Panel",
+  "item.lithmod.scanner_multipatterning_module": "Scanner Multipatterning Module",
+  "message.lithmod.zone.form_first": "Form the zone refiner before using its panels.",
+  "message.lithmod.reflow.form_first": "Form the reflow oven before using its panels."
 }
