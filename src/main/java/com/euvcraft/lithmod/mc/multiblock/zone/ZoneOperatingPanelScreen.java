@@ -23,9 +23,13 @@ public final class ZoneOperatingPanelScreen extends AdvancedMachineScreen<ZoneOp
     }
 
     @Override protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
-        super.extractLabels(graphics, mouseX, mouseY);
-        line(graphics, Component.literal("Input boule"), 44, 24, 60);
-        line(graphics, Component.literal("Output boule"), 92, 24, 70);
+        line(graphics,title,8,6,160);
+        line(graphics,playerInventoryTitle,8,72,160);
+        line(graphics,Component.literal(menu.energy()+" / "+menu.energyCapacity()+" FE"),30,56,138);
+        line(graphics,Component.literal(formed()?"Formed":"Unformed: build 3x3x5"),8,168,160);
+        line(graphics,Component.literal("Progress: "+menu.progress()+" / "+menu.ticks()),8,180,160);
+        line(graphics, Component.literal("Input"), 56, 24, 32);
+        line(graphics, Component.literal("Output"), 90, 24, 40);
         line(graphics, Component.literal("Ultrapure water: " + menu.waterAmount() + " / " + menu.waterCapacity() + " mB"), 8, 192, 160);
         line(graphics, Component.literal(menu.hasJob()
             ? "Job in progress: slots are locked until it completes"

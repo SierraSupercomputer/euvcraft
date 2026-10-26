@@ -27,8 +27,11 @@ public final class ReflowOperatingScreen extends AdvancedMachineScreen<ReflowOpe
     protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         line(graphics, title, 8, 6, 160);
         line(graphics, playerInventoryTitle, 8, 72, 160);
-        line(graphics, Component.literal(menu.energy() + " / " + menu.energyCapacity() + " FE"), 30, 20, 138);
-        line(graphics, Component.literal("Chip     Blank    Product   Scrap"), 26, 20, 150);
+        line(graphics, Component.literal(menu.energy() + " / " + menu.energyCapacity() + " FE"), 30, 56, 138);
+        line(graphics, Component.literal("Chip"),36,24,30);
+        line(graphics, Component.literal("Blank"),72,24,30);
+        line(graphics, Component.literal("Out"),108,24,30);
+        line(graphics, Component.literal("Scrap"),140,24,28);
         line(graphics, Component.literal(formed() ? "Formed" : "Unformed: build 3x3x2"), 8, 168, 160);
         if (menu.calibrated()) {
             line(graphics, Component.literal("Calibration Q" + menu.acceptedQuality()

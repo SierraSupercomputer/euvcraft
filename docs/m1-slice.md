@@ -5,15 +5,15 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
 
 ## Package Layout (parsed from actual package declarations)
 
-  - com.euvcraft.lithmod.core (58 files)
+  - com.euvcraft.lithmod.core (60 files)
   - com.euvcraft.lithmod.core.cleanroom (3 files)
-  - com.euvcraft.lithmod.core.multiblock (11 files)
-  - com.euvcraft.lithmod.mc (21 files)
-  - com.euvcraft.lithmod.mc.cleanroom (17 files)
+  - com.euvcraft.lithmod.core.multiblock (13 files)
+  - com.euvcraft.lithmod.mc (22 files)
+  - com.euvcraft.lithmod.mc.cleanroom (20 files)
   - com.euvcraft.lithmod.mc.compat (1 files)
   - com.euvcraft.lithmod.mc.compat.mixin (1 files)
   - com.euvcraft.lithmod.mc.data (14 files)
-  - com.euvcraft.lithmod.mc.gametest (35 files)
+  - com.euvcraft.lithmod.mc.gametest (36 files)
   - com.euvcraft.lithmod.mc.machine (4 files)
   - com.euvcraft.lithmod.mc.machine.cleaner (7 files)
   - com.euvcraft.lithmod.mc.machine.client (1 files)
@@ -28,9 +28,11 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
   - com.euvcraft.lithmod.mc.multiblock (12 files)
   - com.euvcraft.lithmod.mc.multiblock.advanced (16 files)
   - com.euvcraft.lithmod.mc.multiblock.assembly (8 files)
+  - com.euvcraft.lithmod.mc.multiblock.reflow (13 files)
   - com.euvcraft.lithmod.mc.multiblock.scanner (13 files)
   - com.euvcraft.lithmod.mc.multiblock.support (12 files)
   - com.euvcraft.lithmod.mc.multiblock.utilities (10 files)
+  - com.euvcraft.lithmod.mc.multiblock.zone (11 files)
   - com.euvcraft.lithmod.mc.recipe (4 files)
   - com.euvcraft.lithmod.mc.registry (4 files)
 
@@ -57,6 +59,22 @@ public int focus();
 public int targetX();
 public int targetY();
 public int targetFocus();
+```
+
+### com.euvcraft.lithmod.core.CalibrationExposure$State
+```java
+public com.euvcraft.lithmod.core.CalibrationExposure$State(int, boolean);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public int dirtyTicks();
+public boolean invalidated();
+```
+
+### com.euvcraft.lithmod.core.CalibrationExposure
+```java
+public static com.euvcraft.lithmod.core.CalibrationExposure$State advance(com.euvcraft.lithmod.core.CalibrationExposure$State, boolean, boolean, int);
+public static com.euvcraft.lithmod.core.CalibrationExposure$State recalibrated();
 ```
 
 ### com.euvcraft.lithmod.core.CleanroomYield
@@ -753,6 +771,86 @@ public double penaltyPerTierDeficit();
 ```java
 ```
 
+### com.euvcraft.lithmod.core.ThermalProfile$Assessment
+```java
+public com.euvcraft.lithmod.core.ThermalProfile$Assessment(int, boolean, com.euvcraft.lithmod.core.ThermalProfile$Metrics, java.util.Set<com.euvcraft.lithmod.core.ThermalProfile$Problem>);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public int quality();
+public boolean acceptable();
+public com.euvcraft.lithmod.core.ThermalProfile$Metrics metrics();
+public java.util.Set<com.euvcraft.lithmod.core.ThermalProfile$Problem> problems();
+```
+
+### com.euvcraft.lithmod.core.ThermalProfile$Controls
+```java
+public com.euvcraft.lithmod.core.ThermalProfile$Controls(int, int, int);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public int heater();
+public int conveyor();
+public int airflow();
+```
+
+### com.euvcraft.lithmod.core.ThermalProfile$Metrics
+```java
+public com.euvcraft.lithmod.core.ThermalProfile$Metrics(double, double, double, double);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public double ramp();
+public double peak();
+public double dwell();
+public double cooling();
+```
+
+### com.euvcraft.lithmod.core.ThermalProfile$Problem
+```java
+public static com.euvcraft.lithmod.core.ThermalProfile$Problem[] values();
+public static com.euvcraft.lithmod.core.ThermalProfile$Problem valueOf(java.lang.String);
+```
+
+### com.euvcraft.lithmod.core.ThermalProfile$Response
+```java
+public com.euvcraft.lithmod.core.ThermalProfile$Response(double, double, double);
+public static com.euvcraft.lithmod.core.ThermalProfile$Response nominal();
+public static com.euvcraft.lithmod.core.ThermalProfile$Response of(long);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public double heatingScale();
+public double peakOffset();
+public double coolingScale();
+```
+
+### com.euvcraft.lithmod.core.ThermalProfile$Rules
+```java
+public com.euvcraft.lithmod.core.ThermalProfile$Rules(double, double, double, double, double, double, double, double, int);
+public static com.euvcraft.lithmod.core.ThermalProfile$Rules defaults();
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public double minRamp();
+public double maxRamp();
+public double minPeak();
+public double maxPeak();
+public double minDwell();
+public double maxDwell();
+public double minCooling();
+public double maxCooling();
+public int minimumQuality();
+```
+
+### com.euvcraft.lithmod.core.ThermalProfile
+```java
+public static com.euvcraft.lithmod.core.ThermalProfile$Response response(long);
+public static com.euvcraft.lithmod.core.ThermalProfile$Metrics metrics(com.euvcraft.lithmod.core.ThermalProfile$Controls, com.euvcraft.lithmod.core.ThermalProfile$Response);
+public static double[] curve(com.euvcraft.lithmod.core.ThermalProfile$Controls, com.euvcraft.lithmod.core.ThermalProfile$Response, int);
+public static com.euvcraft.lithmod.core.ThermalProfile$Assessment assess(com.euvcraft.lithmod.core.ThermalProfile$Controls, com.euvcraft.lithmod.core.ThermalProfile$Response, com.euvcraft.lithmod.core.ThermalProfile$Rules);
+```
+
 ### com.euvcraft.lithmod.core.Tier
 ```java
 public com.euvcraft.lithmod.core.Tier(java.lang.String, int, java.lang.String, java.lang.String, int, int, int, int, int, double, int, java.lang.Integer, boolean);
@@ -1060,6 +1158,11 @@ public int z();
 public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, com.euvcraft.lithmod.core.multiblock.StructureShape, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
 ```
 
+### com.euvcraft.lithmod.core.multiblock.ReflowStructureMatcher
+```java
+public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+```
+
 ### com.euvcraft.lithmod.core.multiblock.ScannerStructureMatcher
 ```java
 public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
@@ -1088,6 +1191,11 @@ public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraf
 ```
 
 ### com.euvcraft.lithmod.core.multiblock.UtilityStructureMatcher
+```java
+public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+```
+
+### com.euvcraft.lithmod.core.multiblock.ZoneStructureMatcher
 ```java
 public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
 ```
@@ -1279,6 +1387,23 @@ public int tier();
 public static com.euvcraft.lithmod.core.LineLoadout read(net.minecraft.world.item.ItemStack, net.minecraft.world.item.ItemStack, net.minecraft.world.item.ItemStack, net.minecraft.world.item.ItemStack, net.minecraft.world.item.ItemStack, net.minecraft.world.item.ItemStack, int);
 ```
 
+### com.euvcraft.lithmod.mc.MachineTooltipAppenders$ControllerMeta
+```java
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public java.lang.String frameCategoryKey();
+public java.lang.String dimensionsKey();
+public java.lang.String casingKey();
+public java.lang.String powerPortKey();
+public java.lang.String[] extraKeys();
+```
+
+### com.euvcraft.lithmod.mc.MachineTooltipAppenders
+```java
+public static void register(net.neoforged.neoforge.event.RegisterTooltipAppendersEvent);
+```
+
 ### com.euvcraft.lithmod.mc.ResistCatalog
 ```java
 public static int tierOf(net.minecraft.world.item.ItemStack);
@@ -1402,49 +1527,6 @@ public static com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlock$PortRole dete
 public static com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlock$PortRole detectRole(net.minecraft.world.level.block.state.BlockState);
 ```
 
-### com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity$ForwardingEnergyHandler
-```java
-com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity$ForwardingEnergyHandler(com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity, net.minecraft.core.Direction);
-public long getAmountAsLong();
-public long getCapacityAsLong();
-public int insert(int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
-public int extract(int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
-```
-
-### com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity$ForwardingFluidHandler
-```java
-com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity$ForwardingFluidHandler(com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity, net.minecraft.core.Direction);
-public int size();
-public net.neoforged.neoforge.transfer.fluid.FluidResource getResource(int);
-public long getAmountAsLong(int);
-public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.fluid.FluidResource);
-public boolean isValid(int, net.neoforged.neoforge.transfer.fluid.FluidResource);
-public int insert(int, net.neoforged.neoforge.transfer.fluid.FluidResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
-public int extract(int, net.neoforged.neoforge.transfer.fluid.FluidResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
-public int extract(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
-public int insert(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
-public boolean isValid(int, net.neoforged.neoforge.transfer.resource.Resource);
-public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.resource.Resource);
-public net.neoforged.neoforge.transfer.resource.Resource getResource(int);
-```
-
-### com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity$ForwardingItemHandler
-```java
-com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity$ForwardingItemHandler(com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity, net.minecraft.core.Direction);
-public int size();
-public net.neoforged.neoforge.transfer.item.ItemResource getResource(int);
-public long getAmountAsLong(int);
-public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.item.ItemResource);
-public boolean isValid(int, net.neoforged.neoforge.transfer.item.ItemResource);
-public int insert(int, net.neoforged.neoforge.transfer.item.ItemResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
-public int extract(int, net.neoforged.neoforge.transfer.item.ItemResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
-public int extract(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
-public int insert(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
-public boolean isValid(int, net.neoforged.neoforge.transfer.resource.Resource);
-public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.resource.Resource);
-public net.neoforged.neoforge.transfer.resource.Resource getResource(int);
-```
-
 ### com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity
 ```java
 public com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
@@ -1452,10 +1534,52 @@ public net.neoforged.neoforge.transfer.energy.EnergyHandler energy(net.minecraft
 public net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.fluid.FluidResource> fluids(net.minecraft.core.Direction);
 public net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.item.ItemResource> items(net.minecraft.core.Direction);
 public void serverTick();
+protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput);
+protected void loadAdditional(net.minecraft.world.level.storage.ValueInput);
 public void setRemoved();
-static net.minecraft.core.BlockPos access$000(com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity);
-static net.minecraft.core.BlockPos access$100(com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity);
-static net.minecraft.core.BlockPos access$200(com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity);
+public void preRemoveSideEffects(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomPowerBuffer
+```java
+com.euvcraft.lithmod.mc.cleanroom.CleanroomPowerBuffer(com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity);
+void refresh();
+net.neoforged.neoforge.transfer.energy.EnergyHandler view(net.minecraft.core.Direction);
+void tick();
+protected void onEnergyChanged(int);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomResourceBuffer$FluidBuffer
+```java
+public com.euvcraft.lithmod.mc.cleanroom.CleanroomResourceBuffer$FluidBuffer(com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity);
+public void refresh();
+public net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.fluid.FluidResource> view(net.minecraft.core.Direction);
+public void tick();
+public void save(net.minecraft.world.level.storage.ValueOutput);
+public void load(net.minecraft.world.level.storage.ValueInput);
+public void clear();
+protected void onContentsChanged(int, net.neoforged.neoforge.fluids.FluidStack);
+protected void onContentsChanged(int, java.lang.Object);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomResourceBuffer$ItemBuffer
+```java
+public com.euvcraft.lithmod.mc.cleanroom.CleanroomResourceBuffer$ItemBuffer(com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlockEntity);
+public void refresh();
+public net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.item.ItemResource> view(net.minecraft.core.Direction);
+public void tick();
+protected int getCapacity(int, net.neoforged.neoforge.transfer.item.ItemResource);
+public void save(net.minecraft.world.level.storage.ValueOutput);
+public void load(net.minecraft.world.level.storage.ValueInput);
+public void dropContents(net.minecraft.world.level.Level, net.minecraft.core.BlockPos);
+protected void onContentsChanged(int, net.minecraft.world.item.ItemStack);
+protected void onContentsChanged(int, java.lang.Object);
+protected int getCapacity(int, net.neoforged.neoforge.transfer.resource.Resource);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomResourceBuffer
+```java
+public com.euvcraft.lithmod.mc.cleanroom.CleanroomResourceBuffer();
 ```
 
 ### com.euvcraft.lithmod.mc.cleanroom.CleanroomRooms$Sample
@@ -1516,6 +1640,16 @@ public net.minecraft.core.BlockPos faultPos();
 ```java
 public static com.euvcraft.lithmod.mc.cleanroom.CleanroomTopology$Result discover(net.minecraft.server.level.ServerLevel, net.minecraft.core.BlockPos);
 public static com.euvcraft.lithmod.mc.cleanroom.CleanroomTopology$Result validate(net.minecraft.server.level.ServerLevel, net.minecraft.core.BlockPos, com.euvcraft.lithmod.mc.cleanroom.RoomBounds);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomWindowBlock
+```java
+public com.euvcraft.lithmod.mc.cleanroom.CleanroomWindowBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition$Builder<net.minecraft.world.level.block.Block, net.minecraft.world.level.block.state.BlockState>);
+public net.minecraft.world.level.block.state.BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext);
+protected net.minecraft.world.level.block.state.BlockState updateShape(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.LevelReader, net.minecraft.world.level.ScheduledTickAccess, net.minecraft.core.BlockPos, net.minecraft.core.Direction, net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState, net.minecraft.util.RandomSource);
+protected net.minecraft.world.level.block.state.BlockState rotate(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.Rotation);
+protected net.minecraft.world.level.block.state.BlockState mirror(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.Mirror);
 ```
 
 ### com.euvcraft.lithmod.mc.cleanroom.RoomBounds
@@ -2388,6 +2522,7 @@ public boolean isPaused();
 public int sliceProgress();
 public int sliceTicksRemaining();
 public static net.minecraft.world.item.Item bouleItem();
+public static net.minecraft.world.item.Item electronicBouleItem();
 public static net.minecraft.world.item.Item pureBouleItem();
 protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput);
 protected void loadAdditional(net.minecraft.world.level.storage.ValueInput);
@@ -2503,6 +2638,7 @@ protected boolean inputsTemporarilyUnavailable();
 protected net.minecraft.world.item.ItemStack equipment(int);
 protected boolean supportsTier(com.euvcraft.lithmod.core.Tier);
 protected int utilityGeneration();
+protected int admissionPasses(com.euvcraft.lithmod.core.Tier);
 protected boolean readyForAdmission();
 protected double admissionYieldMultiplier();
 protected java.lang.String admissionRefusal();
@@ -2814,6 +2950,224 @@ protected boolean cabinet();
 protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
 ```
 
+### com.euvcraft.lithmod.mc.multiblock.reflow.ReflowCalibrationMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.reflow.ReflowCalibrationMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerBlockEntity, net.minecraft.core.BlockPos);
+public com.euvcraft.lithmod.mc.multiblock.reflow.ReflowCalibrationMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+public int value(int);
+public boolean formed();
+public boolean tested();
+public boolean stillValid(net.minecraft.world.entity.player.Player);
+public boolean clickMenuButton(net.minecraft.world.entity.player.Player, int);
+public net.minecraft.world.item.ItemStack quickMoveStack(net.minecraft.world.entity.player.Player, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.reflow.ReflowCalibrationScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.reflow.ReflowCalibrationScreen(com.euvcraft.lithmod.mc.multiblock.reflow.ReflowCalibrationMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+protected void init();
+public void containerTick();
+public void extractBackground(net.minecraft.client.gui.GuiGraphicsExtractor, int, int, float);
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.reflow.ReflowClientEvents
+```java
+public static void registerScreens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.entity.player.Player, net.minecraft.world.InteractionHand, net.minecraft.world.phys.BlockHitResult);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerBlockEntity$Job
+```java
+com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerBlockEntity$Job(net.minecraft.world.item.ItemStack, net.minecraft.world.item.ItemStack, net.minecraft.world.item.ItemStack, int, int, int, int, double);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerBlockEntity$PauseReason
+```java
+public static com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerBlockEntity$PauseReason[] values();
+public static com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerBlockEntity$PauseReason valueOf(java.lang.String);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerBlockEntity$ThermalSettings
+```java
+public com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerBlockEntity$ThermalSettings(com.euvcraft.lithmod.core.ThermalProfile$Rules, int, int, int, int, int, int, int, double, double, double, double, double, double, double, double);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public com.euvcraft.lithmod.core.ThermalProfile$Rules rules();
+public int minQuality();
+public int testFe();
+public int couponCount();
+public int minPermille();
+public int maxPermille();
+public int contaminationPpm();
+public int contaminationTicks();
+public double minRamp();
+public double maxRamp();
+public double minPeak();
+public double maxPeak();
+public double minDwell();
+public double maxDwell();
+public double minCooling();
+public double maxCooling();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected java.lang.String machineId();
+public com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity machine();
+public com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedFormation formation();
+public boolean large();
+public com.euvcraft.lithmod.core.multiblock.MatchResult matchStructure(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+public void setRemoved();
+public void serverTick();
+public boolean inputsLocked();
+public boolean paused();
+public com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerBlockEntity$PauseReason pauseReason();
+public int jobProgress();
+public int jobTicks();
+public com.euvcraft.lithmod.core.ThermalProfile$Controls controls();
+public boolean measured();
+public int measuredQuality();
+public int measuredProblems();
+public boolean calibrationAccepted();
+public boolean readyForBatch();
+public boolean exposureInvalidated();
+public int exposureDirtyTicks();
+public int acceptedQuality();
+public int acceptedPermille();
+public int minimumQuality();
+public int minMultiplierPermille();
+public int maxMultiplierPermille();
+public int minPeakHundredths();
+public int maxPeakHundredths();
+public int testFe();
+public int couponCount();
+public boolean hasThermalParameters();
+public boolean couponReady();
+public boolean energyReadyForTest();
+public boolean testThermal();
+public boolean acceptThermal();
+public boolean acceptReady();
+public boolean adjustThermalControl(int);
+public double[] previewCurve();
+public double[] measuredCurve();
+public double measuredRamp();
+public double measuredPeak();
+public double measuredDwell();
+public double measuredCooling();
+public int measuredHeater();
+public int measuredConveyor();
+public int measuredAirflow();
+public boolean measuredAcceptable();
+public java.util.Optional<com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerBlockEntity$ThermalSettings> thermalSettings();
+protected void loadAdditional(net.minecraft.world.level.storage.ValueInput);
+protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput);
+protected void dropExtraContents(net.minecraft.world.level.Level, net.minecraft.core.BlockPos);
+public net.minecraft.network.chat.Component getDisplayName();
+protected net.minecraft.world.inventory.AbstractContainerMenu createMachineMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerBlockEntity, net.minecraft.core.BlockPos);
+public com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+protected void addMachineSlots();
+public int status(int);
+public boolean formed();
+public boolean calibrated();
+public boolean ready();
+public boolean inputsLocked();
+public boolean paused();
+public int reason();
+public int acceptedQuality();
+public int acceptedPermille();
+public int minimumQuality();
+public int scrapPerFailure();
+public boolean stillValid(net.minecraft.world.entity.player.Player);
+public boolean clickMenuButton(net.minecraft.world.entity.player.Player, int);
+static boolean entityAt(com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity, net.minecraft.core.BlockPos);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerScreen(com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+protected boolean formed();
+protected boolean cabinet();
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.reflow.ReflowMachines
+```java
+public static void register(net.neoforged.bus.api.IEventBus);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.reflow.ReflowMemberBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.reflow.ReflowMemberBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties, com.euvcraft.lithmod.core.multiblock.BlockKind);
+public com.euvcraft.lithmod.core.multiblock.BlockKind kind();
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.entity.player.Player, net.minecraft.world.InteractionHand, net.minecraft.world.phys.BlockHitResult);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.reflow.ReflowMemberBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.reflow.ReflowMemberBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public boolean supportsOwner(com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOwner);
+public com.euvcraft.lithmod.core.multiblock.BlockKind structureKind();
+protected boolean energyPort();
+public com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerBlockEntity reflowController();
+public java.util.UUID installation();
+public net.minecraft.network.chat.Component getDisplayName();
+public net.minecraft.world.inventory.AbstractContainerMenu createMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.world.entity.player.Player);
+protected void loadAdditional(net.minecraft.world.level.storage.ValueInput);
+protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.reflow.ReflowOperatingMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.reflow.ReflowOperatingMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerBlockEntity, net.minecraft.core.BlockPos);
+public com.euvcraft.lithmod.mc.multiblock.reflow.ReflowOperatingMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+protected void addMachineSlots();
+static boolean validChip(net.minecraft.world.item.ItemStack);
+public boolean inputsLocked();
+public int status(int);
+public boolean formed();
+public boolean calibrated();
+public boolean ready();
+public boolean paused();
+public int reason();
+public int acceptedPermille();
+public int acceptedQuality();
+public int minimumQuality();
+public int scrapPerFailure();
+public boolean stillValid(net.minecraft.world.entity.player.Player);
+public boolean clickMenuButton(net.minecraft.world.entity.player.Player, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.reflow.ReflowOperatingScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.reflow.ReflowOperatingScreen(com.euvcraft.lithmod.mc.multiblock.reflow.ReflowOperatingMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+protected boolean formed();
+protected boolean cabinet();
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.reflow.ReflowStatusData
+```java
+static net.minecraft.world.inventory.ContainerData of(com.euvcraft.lithmod.mc.multiblock.reflow.ReflowControllerBlockEntity);
+public int get(int);
+public void set(int, int);
+public int getCount();
+```
+
 ### com.euvcraft.lithmod.mc.multiblock.scanner.DiagnosticMenu
 ```java
 public com.euvcraft.lithmod.mc.multiblock.scanner.DiagnosticMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.scanner.ScannerControllerBlockEntity, net.minecraft.core.BlockPos);
@@ -2859,6 +3213,8 @@ protected java.lang.Object createSnapshot();
 
 ### com.euvcraft.lithmod.mc.multiblock.scanner.ScannerControllerBlockEntity
 ```java
+public boolean multipatterning();
+public boolean contaminationInvalidated();
 public boolean immersion();
 public com.euvcraft.lithmod.core.DiagnosticFit diagnostic();
 public boolean diagnosticPlotted();
@@ -2890,6 +3246,7 @@ public int minimumQuality();
 public double previewMultiplier();
 boolean calibrationControl(int);
 protected int utilityGeneration();
+protected int admissionPasses(com.euvcraft.lithmod.core.Tier);
 protected boolean supportsTier(com.euvcraft.lithmod.core.Tier);
 protected boolean readyForAdmission();
 protected double admissionYieldMultiplier();
@@ -2958,6 +3315,8 @@ public com.euvcraft.lithmod.mc.multiblock.scanner.ScannerOperatingMenu(int, net.
 public com.euvcraft.lithmod.mc.multiblock.scanner.ScannerOperatingMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
 public boolean isOperatingPanel();
 public boolean stillValid(net.minecraft.world.entity.player.Player);
+public boolean multipatterning();
+public boolean contaminationInvalidated();
 public int waterCost();
 public int water();
 public boolean diagnosed();
@@ -3019,6 +3378,7 @@ public int outputCount();
 public java.lang.String dieType();
 public int tierIndex();
 public int uses();
+public int cores();
 ```
 
 ### com.euvcraft.lithmod.mc.multiblock.support.SupportMachineBlockEntity$JobSnapshot
@@ -3054,6 +3414,9 @@ public boolean isJobPaused();
 public int jobProgress();
 public int jobDuration();
 public boolean selectDesign(int);
+public boolean cycleCores();
+public boolean coresSelectable();
+public int selectedCores();
 public boolean startEbeamJob();
 public int selectedDesign();
 public java.lang.String selectedDesignName();
@@ -3127,6 +3490,8 @@ public boolean ebeamJobRunning();
 public boolean ebeamJobPaused();
 public int ebeamSelectedDieType();
 public int ebeamSelectedTier();
+public int ebeamSelectedCores();
+public boolean ebeamCoresSelectable();
 public boolean ebeamDesignAvailable(int);
 public int ebeamBlankCost();
 public int ebeamRedstoneCost();
@@ -3323,6 +3688,132 @@ protected boolean cabinet();
 protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
 ```
 
+### com.euvcraft.lithmod.mc.multiblock.zone.ZoneClientEvents
+```java
+public static void screens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.zone.ZoneControllerBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.zone.ZoneControllerBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.zone.ZoneControllerBlockEntity$ZoneTankJournal
+```java
+com.euvcraft.lithmod.mc.multiblock.zone.ZoneControllerBlockEntity$ZoneTankJournal(com.euvcraft.lithmod.mc.multiblock.zone.ZoneControllerBlockEntity);
+protected java.lang.Integer createSnapshot();
+protected void revertToSnapshot(java.lang.Integer);
+protected void onRootCommit(java.lang.Integer);
+protected void onRootCommit(java.lang.Object);
+protected void revertToSnapshot(java.lang.Object);
+protected java.lang.Object createSnapshot();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.zone.ZoneControllerBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.zone.ZoneControllerBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected java.lang.String machineId();
+public net.minecraft.network.chat.Component getDisplayName();
+public com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity machine();
+public com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedFormation formation();
+public boolean large();
+public com.euvcraft.lithmod.core.multiblock.MatchResult matchStructure(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+public int waterAmount();
+public int waterCapacity();
+public int progress();
+public int duration();
+public boolean hasJob();
+public void serverTick();
+public void setRemoved();
+protected void dropExtraContents(net.minecraft.world.level.Level, net.minecraft.core.BlockPos);
+protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput);
+protected void loadAdditional(net.minecraft.world.level.storage.ValueInput);
+protected net.minecraft.world.inventory.AbstractContainerMenu createMachineMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.zone.ZoneFluidHandler
+```java
+com.euvcraft.lithmod.mc.multiblock.zone.ZoneFluidHandler(com.euvcraft.lithmod.mc.multiblock.zone.ZoneMemberBlockEntity, com.euvcraft.lithmod.mc.multiblock.zone.ZoneControllerBlockEntity);
+public int size();
+public net.neoforged.neoforge.transfer.fluid.FluidResource getResource(int);
+public long getAmountAsLong(int);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.fluid.FluidResource);
+public boolean isValid(int, net.neoforged.neoforge.transfer.fluid.FluidResource);
+public int insert(int, net.neoforged.neoforge.transfer.fluid.FluidResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.fluid.FluidResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int insert(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public boolean isValid(int, net.neoforged.neoforge.transfer.resource.Resource);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.resource.Resource);
+public net.neoforged.neoforge.transfer.resource.Resource getResource(int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.zone.ZoneMachines
+```java
+public static void register(net.neoforged.bus.api.IEventBus);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.zone.ZoneMemberBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.zone.ZoneMemberBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties, com.euvcraft.lithmod.core.multiblock.BlockKind);
+public com.euvcraft.lithmod.core.multiblock.BlockKind kind();
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public net.minecraft.world.level.block.state.BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext);
+protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.entity.player.Player, net.minecraft.world.InteractionHand, net.minecraft.world.phys.BlockHitResult);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.zone.ZoneMemberBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.zone.ZoneMemberBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public boolean supportsOwner(com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOwner);
+public com.euvcraft.lithmod.core.multiblock.BlockKind structureKind();
+protected boolean energyPort();
+public net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.fluid.FluidResource> handler();
+public net.minecraft.network.chat.Component getDisplayName();
+public net.minecraft.world.inventory.AbstractContainerMenu createMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.world.entity.player.Player);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.zone.ZoneOperatingPanelMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.zone.ZoneOperatingPanelMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity, net.minecraft.core.BlockPos);
+public com.euvcraft.lithmod.mc.multiblock.zone.ZoneOperatingPanelMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+protected void addMachineSlots();
+public boolean formed();
+public int waterAmount();
+public int waterCapacity();
+public boolean hasJob();
+public boolean stillValid(net.minecraft.world.entity.player.Player);
+static com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity access$000(com.euvcraft.lithmod.mc.multiblock.zone.ZoneOperatingPanelMenu);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.zone.ZoneOperatingPanelScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.zone.ZoneOperatingPanelScreen(com.euvcraft.lithmod.mc.multiblock.zone.ZoneOperatingPanelMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+protected boolean formed();
+protected boolean cabinet();
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.zone.ZoneStatusMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.zone.ZoneStatusMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.zone.ZoneControllerBlockEntity);
+public com.euvcraft.lithmod.mc.multiblock.zone.ZoneStatusMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+protected void addMachineSlots();
+public boolean formed();
+public int waterAmount();
+public int waterCapacity();
+public boolean hasJob();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.zone.ZoneStatusScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.zone.ZoneStatusScreen(com.euvcraft.lithmod.mc.multiblock.zone.ZoneStatusMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+protected boolean formed();
+protected boolean cabinet();
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
 ### com.euvcraft.lithmod.mc.recipe.HighBinningRecipe
 ```java
 public com.euvcraft.lithmod.mc.recipe.HighBinningRecipe(java.lang.String, com.euvcraft.lithmod.core.HighBinningRules$Transition);
@@ -3448,6 +3939,9 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/machines/boule_purifier.json | boule_purifier | 100000 | 10000 | 80 | production |
 | src/main/resources/data/lithmod/machines/cleanroom_controller.json | cleanroom_controller | 200000 | 10000 | 0 | production |
 | src/main/resources/data/lithmod/machines/cleanroom_filter.json | cleanroom_filter | 200000 | 10000 | 0 | production |
+| src/main/resources/data/lithmod/machines/cleanroom_fluid_port.json | cleanroom_fluid_port | 1 | 1 | 0 | production |
+| src/main/resources/data/lithmod/machines/cleanroom_item_port.json | cleanroom_item_port | 1 | 1 | 0 | production |
+| src/main/resources/data/lithmod/machines/cleanroom_power_port.json | cleanroom_power_port | 200000 | 20000 | 0 | production |
 | src/main/resources/data/lithmod/machines/crystal_puller.json | crystal_puller | 20000 | 2000 | 20 | production |
 | src/main/resources/data/lithmod/machines/deposition_etcher.json | deposition_etcher | 1000000 | 20000 | 1000 | production |
 | src/main/resources/data/lithmod/machines/ebeam_mask_writer.json | ebeam_mask_writer | 4000000 | 32000 | 2000 | production |
@@ -3456,10 +3950,12 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/machines/pattern_generator.json | pattern_generator | 20000 | 2000 | 20 | production |
 | src/main/resources/data/lithmod/machines/pick_and_place.json | pick_and_place | 100000 | 5000 | 20 | production |
 | src/main/resources/data/lithmod/machines/process_cell.json | process_cell | 100000 | 10000 | 20 | production |
+| src/main/resources/data/lithmod/machines/reflow_oven.json | reflow_oven | 500000 | 10000 | 240 | production |
 | src/main/resources/data/lithmod/machines/test_machine.json | test_machine | 10000 | 1000 | 40 | fixture (test-only) |
 | src/main/resources/data/lithmod/machines/test_package.json | test_package | 20000 | 2000 | 20 | production |
 | src/main/resources/data/lithmod/machines/utility_plant.json | utility_plant | 200000 | 10000 | 80 | production |
 | src/main/resources/data/lithmod/machines/wafer_slicer.json | wafer_slicer | 20000 | 2000 | 30 | production |
+| src/main/resources/data/lithmod/machines/zone_refiner.json | zone_refiner | 1000000 | 20000 | 480 | production |
 
 ### src/main/resources/data/lithmod/machines/advanced_test_package.json
 
@@ -3513,6 +4009,49 @@ test_machine definitions/recipes are dropped before validation outside fixture m
   "energy_capacity": 200000,
   "max_receive": 10000,
   "energy_per_tick": 0
+}
+```
+
+### src/main/resources/data/lithmod/machines/cleanroom_fluid_port.json
+
+```json
+{
+  "id": "cleanroom_fluid_port",
+  "energy_capacity": 1,
+  "max_receive": 1,
+  "energy_per_tick": 0,
+  "params": {
+    "fluid_capacity": 16000,
+    "transfer_per_tick": 1000
+  }
+}
+```
+
+### src/main/resources/data/lithmod/machines/cleanroom_item_port.json
+
+```json
+{
+  "id": "cleanroom_item_port",
+  "energy_capacity": 1,
+  "max_receive": 1,
+  "energy_per_tick": 0,
+  "params": {
+    "transfer_per_tick": 16
+  }
+}
+```
+
+### src/main/resources/data/lithmod/machines/cleanroom_power_port.json
+
+```json
+{
+  "id": "cleanroom_power_port",
+  "energy_capacity": 200000,
+  "max_receive": 20000,
+  "energy_per_tick": 0,
+  "params": {
+    "transfer_per_tick": 20000
+  }
 }
 ```
 
@@ -3588,7 +4127,8 @@ test_machine definitions/recipes are dropped before validation outside fixture m
   "energy_per_tick": 160,
   "per_tier_energy_per_tick": {
     "T4": 160,
-    "T5": 240
+    "T5": 240,
+    "T6": 480
   },
   "params": {
     "calibration_min_quality": 50,
@@ -3598,7 +4138,10 @@ test_machine definitions/recipes are dropped before validation outside fixture m
     "diagnostic_min_multiplier_permille": 500,
     "diagnostic_max_multiplier_permille": 1000,
     "pure_capacity_mb": 16000,
-    "pure_water_per_tick_mb": 2
+    "pure_water_per_tick_mb": 2,
+    "multipattern_passes": 2,
+    "contamination_ppm": 2500,
+    "contamination_ticks": 1200
   }
 }
 ```
@@ -3644,6 +4187,36 @@ test_machine definitions/recipes are dropped before validation outside fixture m
     "T2": 40
   },
   "params": {}
+}
+```
+
+### src/main/resources/data/lithmod/machines/reflow_oven.json
+
+```json
+{
+  "id": "reflow_oven",
+  "energy_capacity": 500000,
+  "max_receive": 10000,
+  "energy_per_tick": 240,
+  "params": {
+    "thermal_min_ramp": 100,
+    "thermal_max_ramp": 300,
+    "thermal_min_peak": 23000,
+    "thermal_max_peak": 24500,
+    "thermal_min_dwell": 3000,
+    "thermal_max_dwell": 7000,
+    "thermal_min_cooling": 100,
+    "thermal_max_cooling": 400,
+    "thermal_min_quality": 750,
+    "thermal_test_fe": 2000,
+    "thermal_test_coupon_count": 1,
+    "thermal_min_multiplier_permille": 500,
+    "thermal_max_multiplier_permille": 1000,
+    "scrap_per_failed_assembly": 1,
+    "contamination_ppm": 2500,
+    "contamination_ticks": 1200,
+    "thermal_peak_variation": 25
+  }
 }
 ```
 
@@ -3720,9 +4293,24 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 }
 ```
 
-## Recipe Summary (108 actual resources: 106 production + 2 fixture-gated)
+### src/main/resources/data/lithmod/machines/zone_refiner.json
 
-### Vanilla recipe datapack files (90 production)
+```json
+{
+  "id": "zone_refiner",
+  "energy_capacity": 1000000,
+  "max_receive": 20000,
+  "energy_per_tick": 480,
+  "params": {
+    "upw_capacity_mb": 16000,
+    "water_per_batch_mb": 4000
+  }
+}
+```
+
+## Recipe Summary (129 actual resources: 127 production + 2 fixture-gated)
+
+### Vanilla recipe datapack files (108 production)
 
 | Path | Type | Result | Count |
 |------|------|--------|-------|
@@ -3775,6 +4363,11 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/recipe/crafting/manual_aligner.json | minecraft:crafting_shaped | lithmod:manual_aligner | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/mercury_lamp.json | minecraft:crafting_shaped | lithmod:mercury_lamp | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/microcontroller_blank.json | minecraft:crafting_shaped | lithmod:microcontroller_blank | 4 |
+| src/main/resources/data/lithmod/recipe/crafting/multipattern_filtration.json | minecraft:crafting_shaped | lithmod:multipattern_filtration | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/multipattern_light_source.json | minecraft:crafting_shaped | lithmod:multipattern_light_source | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/multipattern_metrology.json | minecraft:crafting_shaped | lithmod:multipattern_metrology | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/multipattern_optics.json | minecraft:crafting_shaped | lithmod:multipattern_optics | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/multipattern_stage.json | minecraft:crafting_shaped | lithmod:multipattern_stage | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/nanopositioning_stage.json | minecraft:crafting_shaped | lithmod:nanopositioning_stage | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/optical_microscope.json | minecraft:crafting_shaped | lithmod:optical_microscope | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/overlay_scope.json | minecraft:crafting_shaped | lithmod:overlay_scope | 1 |
@@ -3787,11 +4380,17 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/recipe/crafting/process_cell_operating_panel.json | minecraft:crafting_shaped | lithmod:process_cell_operating_panel | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/process_cell_power_port.json | minecraft:crafting_shaped | lithmod:process_cell_power_port | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/reduction_lens.json | minecraft:crafting_shaped | lithmod:reduction_lens | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/reflow_calibration_panel.json | minecraft:crafting_shaped | lithmod:reflow_calibration_panel | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/reflow_casing.json | minecraft:crafting_shaped | lithmod:reflow_casing | 8 |
+| src/main/resources/data/lithmod/recipe/crafting/reflow_operating_panel.json | minecraft:crafting_shaped | lithmod:reflow_operating_panel | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/reflow_oven.json | minecraft:crafting_shaped | lithmod:reflow_oven | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/reflow_power_port.json | minecraft:crafting_shaped | lithmod:reflow_power_port | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/resist_t1.json | minecraft:crafting_shaped | lithmod:resist_t1 | 4 |
 | src/main/resources/data/lithmod/recipe/crafting/resist_t2.json | minecraft:crafting_shaped | lithmod:resist_t2 | 4 |
 | src/main/resources/data/lithmod/recipe/crafting/resist_t3.json | minecraft:crafting_shaped | lithmod:resist_t3 | 8 |
 | src/main/resources/data/lithmod/recipe/crafting/resist_t4.json | minecraft:crafting_shaped | lithmod:resist_t4 | 16 |
 | src/main/resources/data/lithmod/recipe/crafting/resist_t5.json | minecraft:crafting_shaped | lithmod:resist_t5 | 8 |
+| src/main/resources/data/lithmod/recipe/crafting/resist_t6.json | minecraft:crafting_shaped | lithmod:resist_t6 | 8 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_calibration_panel.json | minecraft:crafting_shaped | lithmod:scanner_calibration_panel | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_controller.json | minecraft:crafting_shaped | lithmod:scanner_controller | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_diagnostic_panel.json | minecraft:crafting_shaped | lithmod:scanner_diagnostic_panel | 1 |
@@ -3799,6 +4398,7 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/recipe/crafting/scanner_filtration_module.json | minecraft:crafting_shaped | lithmod:scanner_filtration_module | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_immersion_module.json | minecraft:crafting_shaped | lithmod:scanner_immersion_module | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_metrology_module.json | minecraft:crafting_shaped | lithmod:scanner_metrology_module | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/scanner_multipatterning_module.json | minecraft:crafting_shaped | lithmod:scanner_multipatterning_module | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_operating_panel.json | minecraft:crafting_shaped | lithmod:scanner_operating_panel | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_optics_module.json | minecraft:crafting_shaped | lithmod:scanner_optics_module | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_stage_module.json | minecraft:crafting_shaped | lithmod:scanner_stage_module | 1 |
@@ -3808,12 +4408,18 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/recipe/crafting/support_power_port.json | minecraft:crafting_shaped | lithmod:support_power_port | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/support_water_inlet.json | minecraft:crafting_shaped | lithmod:support_water_inlet | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/test_package.json | minecraft:crafting_shaped | lithmod:test_package | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/thermal_test_coupon.json | minecraft:crafting_shaped | lithmod:thermal_test_coupon | 8 |
 | src/main/resources/data/lithmod/recipe/crafting/ulpa_filter.json | minecraft:crafting_shaped | lithmod:ulpa_filter | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/utility_filter.json | minecraft:crafting_shaped | lithmod:utility_filter | 4 |
 | src/main/resources/data/lithmod/recipe/crafting/utility_plant.json | minecraft:crafting_shaped | lithmod:utility_plant | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/utility_pure_outlet.json | minecraft:crafting_shaped | lithmod:utility_pure_outlet | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/utility_water_inlet.json | minecraft:crafting_shaped | lithmod:utility_water_inlet | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/wafer_slicer.json | minecraft:crafting_shaped | lithmod:wafer_slicer | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/zone_casing.json | minecraft:crafting_shaped | lithmod:zone_casing | 8 |
+| src/main/resources/data/lithmod/recipe/crafting/zone_operating_panel.json | minecraft:crafting_shaped | lithmod:zone_operating_panel | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/zone_power_port.json | minecraft:crafting_shaped | lithmod:zone_power_port | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/zone_refiner.json | minecraft:crafting_shaped | lithmod:zone_refiner | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/zone_water_inlet.json | minecraft:crafting_shaped | lithmod:zone_water_inlet | 1 |
 | src/main/resources/data/lithmod/recipe/silicon_from_blasting.json | minecraft:blasting | lithmod:silicon | 1 |
 | src/main/resources/data/lithmod/recipe/silicon_from_smelting.json | minecraft:smelting | lithmod:silicon | 1 |
 
@@ -3826,11 +4432,14 @@ Loaded by MachineRecipeLoader (directory string "machine_recipes") on every serv
 | src/main/resources/data/lithmod/machine_recipes/cpu_t3.json | pick_and_place | lithmod:cpu_t3 | 1 | 140 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/cpu_t4.json | pick_and_place | lithmod:cpu_t4 | 1 | 160 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/cpu_t5.json | pick_and_place | lithmod:cpu_t5 | 1 | 180 | - | production |
+| src/main/resources/data/lithmod/machine_recipes/cpu_t6.json | reflow_oven | lithmod:cpu_t6 | 1 | 240 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/crystal_puller.json | crystal_puller | lithmod:silicon_boule | 1 | 400 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/dimm_t2.json | pick_and_place | lithmod:dimm_t2 | 1 | 120 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/dimm_t3.json | pick_and_place | lithmod:dimm_t3 | 1 | 140 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/dimm_t4.json | pick_and_place | lithmod:dimm_t4 | 1 | 160 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/dimm_t5.json | pick_and_place | lithmod:dimm_t5 | 1 | 180 | - | production |
+| src/main/resources/data/lithmod/machine_recipes/dimm_t6.json | reflow_oven | lithmod:dimm_t6 | 1 | 240 | - | production |
+| src/main/resources/data/lithmod/machine_recipes/electronic_grade_boule.json | zone_refiner | lithmod:electronic_grade_boule | 1 | 600 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/microcontroller_t1.json | pick_and_place | lithmod:microcontroller_t1 | 1 | 100 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/microcontroller_t2.json | pick_and_place | lithmod:microcontroller_t2 | 1 | 120 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/microcontroller_t3.json | pick_and_place | lithmod:microcontroller_t3 | 1 | 140 | - | production |
@@ -3910,6 +4519,29 @@ The two test_machine entries are the payload-gated fixtures: MachineRecipeLoader
     "count": 1
   },
   "ticks": 180
+}
+```
+
+#### src/main/resources/data/lithmod/machine_recipes/cpu_t6.json (production)
+
+```json
+{
+  "machine": "reflow_oven",
+  "ingredients": [
+    {
+      "item": "lithmod:compute_chip_t6",
+      "count": 1
+    },
+    {
+      "item": "lithmod:cpu_blank",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:cpu_t6",
+    "count": 1
+  },
+  "ticks": 240
 }
 ```
 
@@ -4018,6 +4650,48 @@ The two test_machine entries are the payload-gated fixtures: MachineRecipeLoader
     "count": 1
   },
   "ticks": 180
+}
+```
+
+#### src/main/resources/data/lithmod/machine_recipes/dimm_t6.json (production)
+
+```json
+{
+  "machine": "reflow_oven",
+  "ingredients": [
+    {
+      "item": "lithmod:memory_chip_t6",
+      "count": 4
+    },
+    {
+      "item": "lithmod:dimm_blank",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:dimm_t6",
+    "count": 1
+  },
+  "ticks": 240
+}
+```
+
+#### src/main/resources/data/lithmod/machine_recipes/electronic_grade_boule.json (production)
+
+```json
+{
+  "machine": "zone_refiner",
+  "ingredients": [
+    {
+      "item": "lithmod:pure_silicon_boule",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:electronic_grade_boule",
+    "count": 1
+  },
+  "ticks": 600
 }
 ```
 
@@ -4281,12 +4955,12 @@ Tier JSON fields per file (raw literals read from src/main/resources/data/lithmo
 | data/lithmod/tiers/t3.json | T3 | 3 | 24 | 100 | 90.0 | False |
 | data/lithmod/tiers/t4.json | T4 | 4 | 32 | 100 | 92.0 | False |
 | data/lithmod/tiers/t5.json | T5 | 5 | 42 | 100 | 93.0 | False |
-| data/lithmod/tiers/t6.json | T6 | 6 | 70 | 100 | 85.0 | True |
+| data/lithmod/tiers/t6.json | T6 | 6 | 70 | 100 | 85 | True |
 | data/lithmod/tiers/t7.json | T7 | 7 | 80 | 100 | 85.0 | False |
 | data/lithmod/tiers/t8.json | T8 | 8 | 90 | 100 | 80.0 | False |
 
 
-M0-owned data files stay as tracked: data/lithmod/die_rules/rules.json, data/lithmod/support_lines/matrix.json, and the 8 data/lithmod/tiers/t<index>.json files. Block loot tables: 46 files under data/lithmod/loot_table/blocks; block tag files: 1. Counts are read at generation time.
+M0-owned data files stay as tracked: data/lithmod/die_rules/rules.json, data/lithmod/support_lines/matrix.json, and the 8 data/lithmod/tiers/t<index>.json files. Block loot tables: 57 files under data/lithmod/loot_table/blocks; block tag files: 1. Counts are read at generation time.
 
 ### Machine data codecs (actual codec sources; core records stay game-independent)
 
