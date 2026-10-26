@@ -65,16 +65,6 @@ public final class ReflowMachines {
     public static final DeferredHolder<MenuType<?>, MenuType<ReflowCalibrationMenu>> CALIBRATION_MENU =
             MENU_TYPES.register("reflow_calibration", () -> IMenuTypeExtension.create(ReflowCalibrationMenu::new));
 
-    public static final DeferredItem<BlockItem> CONTROLLER_ITEM =
-            ITEMS.registerSimpleBlockItem("reflow_oven", () -> CONTROLLER.get());
-    public static final DeferredItem<BlockItem> CASING_ITEM =
-            ITEMS.registerSimpleBlockItem("reflow_casing", () -> CASING.get());
-    public static final DeferredItem<BlockItem> POWER_PORT_ITEM =
-            ITEMS.registerSimpleBlockItem("reflow_power_port", () -> POWER_PORT.get());
-    public static final DeferredItem<BlockItem> OPERATING_PANEL_ITEM =
-            ITEMS.registerSimpleBlockItem("reflow_operating_panel", () -> OPERATING_PANEL.get());
-    public static final DeferredItem<BlockItem> CALIBRATION_PANEL_ITEM =
-            ITEMS.registerSimpleBlockItem("reflow_calibration_panel", () -> CALIBRATION_PANEL.get());
 
     /** A cheap consumable for one paid thermal test. */
     public static final DeferredItem<Item> THERMAL_TEST_COUPON =

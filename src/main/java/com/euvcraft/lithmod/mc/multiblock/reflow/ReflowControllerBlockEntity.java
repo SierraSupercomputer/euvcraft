@@ -885,9 +885,9 @@ public final class ReflowControllerBlockEntity extends FabMachineBlockEntity imp
             return null;
         }
 
-        int contaminationPpm = definition.paramOrDefault("thermal_contamination_ppm",
+        int contaminationPpm = definition.paramOrDefault("contamination_ppm",
                 definition.paramOrDefault("contamination_ppm", DEFAULT_CONTAMINATION_PPM));
-        int contaminationTicks = definition.paramOrDefault("thermal_contamination_ticks",
+        int contaminationTicks = definition.paramOrDefault("contamination_ticks",
                 definition.paramOrDefault("contamination_ticks", DEFAULT_CONTAMINATION_TICKS));
         if (contaminationPpm < 0) {
             contaminationPpm = DEFAULT_CONTAMINATION_PPM;
