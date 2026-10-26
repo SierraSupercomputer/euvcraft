@@ -344,7 +344,7 @@ public final class ThermalProfile {
     private static double bandScore(double value, double lo, double hi) {
         double mid = (lo + hi) / 2.0;
         double half = (hi - lo) / 2.0;
-        double error = (value - mid) / half;
+        double error = (value - mid) / (half * 2.0);
         if (value >= lo && value <= hi) {
             return 1.0 - IN_BAND_SLOPE * Math.abs(error);
         }
