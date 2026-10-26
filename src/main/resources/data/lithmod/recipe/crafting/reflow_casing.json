@@ -2,9 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "III",
-    "GCG",
-    "III"
+    "IGI",
+    "ICI",
+    "IGI"
   ],
   "key": {
     "I": "minecraft:iron_ingot",

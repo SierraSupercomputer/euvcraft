@@ -594,6 +594,7 @@ public final class M1BoundaryGameTests {
                 "boule_purifier", "ebeam_mask_writer", "support_casing", "support_power_port", "support_water_inlet", "deposition_etcher", "advanced_test_package", "advanced_casing", "advanced_operating_panel", "advanced_power_port", "scanner_controller", "scanner_operating_panel", "scanner_calibration_panel", "scanner_exposure_module", "scanner_optics_module", "scanner_stage_module", "scanner_filtration_module", "scanner_metrology_module", "utility_plant", "utility_water_inlet", "utility_pure_outlet", "pick_and_place", "scanner_diagnostic_panel", "scanner_water_inlet", "scanner_immersion_module","assembly_casing","assembly_power_port"));
         Set<String> cleanroom = Set.of("cleanroom_floor","cleanroom_wall","cleanroom_window","cleanroom_door","cleanroom_controller","cleanroom_filter","cleanroom_power_port","cleanroom_fluid_port","cleanroom_item_port","foup_cleaner");
         expected.addAll(cleanroom);
+        expected.addAll(Set.of("zone_refiner","zone_casing","zone_power_port","zone_operating_panel","zone_water_inlet","reflow_oven","reflow_casing","reflow_power_port","reflow_operating_panel","reflow_calibration_panel","scanner_multipatterning_module"));
         var registry = net.minecraft.core.registries.BuiltInRegistries.BLOCK;
         Identifier fixture = Identifier.parse("lithmod:test_machine");
         if (registry.containsKey(fixture)) expected.add("test_machine");

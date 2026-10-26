@@ -199,7 +199,7 @@ public final class T3ContentGameTests {
 
         // T6+ entries remain deferred
         for (Tier tier : TierDataLoader.getRegistry().all()) {
-            if (tier.index() >= 6) {
+            if (tier.index() >= 7) {
                 for (String dieType : List.of(DieTypes.LOGIC, DieTypes.MEMORY, DieTypes.COMPUTE, DieTypes.NAND)) {
                     helper.assertTrue(ChipCatalog.chipFor(dieType, tier.index()).isEmpty(),
                         "ChipCatalog must not have " + dieType + " at " + tier.id());
