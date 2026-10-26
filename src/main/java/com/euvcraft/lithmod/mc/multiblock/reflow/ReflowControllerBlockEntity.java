@@ -235,6 +235,7 @@ public final class ReflowControllerBlockEntity extends FabMachineBlockEntity imp
                 continue;
             }
             ItemStack product = recipe.assemble();
+            if(slot(SLOT_CHIP).is(com.euvcraft.lithmod.mc.registry.ModItems.COMPUTE_CHIP_T6.get())&&product.is(com.euvcraft.lithmod.mc.registry.ModItems.CPU_T6.get()))product.set(com.euvcraft.lithmod.mc.registry.ModDataComponents.CORE_COUNT.get(),slot(SLOT_CHIP).getOrDefault(com.euvcraft.lithmod.mc.registry.ModDataComponents.CORE_COUNT.get(),1));
             if (product.isEmpty() || product.getCount() <= 0) {
                 continue;
             }
@@ -809,8 +810,9 @@ public final class ReflowControllerBlockEntity extends FabMachineBlockEntity imp
         }
         try {
             UUID installation = UUID.fromString(hardwareFingerprint);
-            return ThermalProfile.response(
-                    installation.getMostSignificantBits() ^ installation.getLeastSignificantBits());
+            var base=ThermalProfile.response(installation.getMostSignificantBits() ^ installation.getLeastSignificantBits());
+            int spread=definition().map(d->d.paramOrDefault("thermal_peak_variation",25)).orElse(25);
+            return new ThermalProfile.Response(base.heatingScale(),base.peakOffset()*Math.clamp(spread,1,30)/5.0,base.coolingScale());
         } catch (RuntimeException invalid) {
             return null;
         }

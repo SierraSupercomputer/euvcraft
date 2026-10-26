@@ -199,6 +199,9 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
      */
     protected int utilityGeneration(){return 1;}
 
+    /** Exposure passes are frozen into the admission settings and saved contract timing. */
+    protected int admissionPasses(Tier tier) { return 1; }
+
     protected boolean readyForAdmission() {
         return true;
     }
@@ -340,6 +343,14 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
             equipment(SLOT_STAGE), equipment(SLOT_CLEANROOM), equipment(SLOT_METROLOGY), slot(SLOT_RESIST), mask.tierIndex());
         DefaultStatRules rules = new DefaultStatRules(registry);
         FabSettings settings = EUVCRAFTMod.settings();
+        int passes=admissionPasses(tier);
+        if(passes<1||passes>8){lastRefusal=RefusalReason.LINE_CANNOT_RUN_TIER;return;}
+        if(passes>1){
+            var overrides=new java.util.HashMap<>(settings.layerTicksOverrides());
+            try{overrides.put(tier.id(),Math.multiplyExact(tier.layerTicks(settings),passes));}
+            catch(ArithmeticException invalid){lastRefusal=RefusalReason.LINE_CANNOT_RUN_TIER;return;}
+            settings=settings.toBuilder().layerTicksOverrides(overrides).build();
+        }
         GenerationMatrix matrix = SupportLineDataLoader.getMatrix();
 
         // Derive actual installed generations for T3 admission:

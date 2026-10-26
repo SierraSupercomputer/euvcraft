@@ -31,11 +31,10 @@ public final class ChipTooltipAppenders {
      * @param event the appender registration event
      */
     public static void register(RegisterTooltipAppendersEvent event) {
-        event.registerAppender(TooltipLocation.HEAD,
-            (stack, context, display, player, flag, builder) -> ChipCatalog.designOf(stack.getItem())
-                .ifPresent(design -> builder.accept(Component.translatable("tooltip.lithmod.chip",
-                    Component.translatable("dieType.lithmod." + design.dieType()),
-                    Component.translatable("tier.lithmod.t" + design.tierIndex()))
-                    .withStyle(ChatFormatting.GRAY))));
+        event.registerAppender(TooltipLocation.HEAD,(stack,context,display,player,flag,builder)->{
+            ChipCatalog.designOf(stack.getItem()).ifPresent(design->builder.accept(Component.translatable("tooltip.lithmod.chip",Component.translatable("dieType.lithmod."+design.dieType()),Component.translatable("tier.lithmod.t"+design.tierIndex())).withStyle(ChatFormatting.GRAY)));
+            var cores=stack.get(com.euvcraft.lithmod.mc.registry.ModDataComponents.CORE_COUNT.get());
+            if(cores!=null)builder.accept(Component.translatable("tooltip.lithmod.compute.cores",cores).withStyle(ChatFormatting.GRAY));
+        });
     }
 }
