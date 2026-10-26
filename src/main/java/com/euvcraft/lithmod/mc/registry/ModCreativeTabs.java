@@ -45,6 +45,32 @@ public final class ModCreativeTabs {
             .title(Component.translatable("itemGroup.lithmod"))
             .icon(() -> new ItemStack(ModItems.FOUP_MK1.get()))
             .displayItems((parameters, output) -> {
+                // T6 fabrication and assembly
+                output.accept(ModItems.ZONE_REFINER.get());
+                output.accept(ModItems.ZONE_CASING.get());
+                output.accept(ModItems.ZONE_POWER_PORT.get());
+                output.accept(ModItems.ZONE_OPERATING_PANEL.get());
+                output.accept(ModItems.ZONE_WATER_INLET.get());
+                output.accept(ModItems.REFLOW_OVEN.get());
+                output.accept(ModItems.REFLOW_CASING.get());
+                output.accept(ModItems.REFLOW_POWER_PORT.get());
+                output.accept(ModItems.REFLOW_OPERATING_PANEL.get());
+                output.accept(ModItems.REFLOW_CALIBRATION_PANEL.get());
+                output.accept(ModItems.SCANNER_MULTIPATTERNING_MODULE.get());
+                output.accept(ModItems.MEMORY_CHIP_T6.get());
+                output.accept(ModItems.COMPUTE_CHIP_T6.get());
+                output.accept(ModItems.NAND_CHIP_T6.get());
+                output.accept(ModItems.CPU_T6.get());
+                output.accept(ModItems.DIMM_T6.get());
+                output.accept(ModItems.RESIST_T6.get());
+                output.accept(ModItems.MULTIPATTERN_LIGHT_SOURCE.get());
+                output.accept(ModItems.MULTIPATTERN_OPTICS.get());
+                output.accept(ModItems.MULTIPATTERN_STAGE.get());
+                output.accept(ModItems.MULTIPATTERN_FILTRATION.get());
+                output.accept(ModItems.MULTIPATTERN_METROLOGY.get());
+                output.accept(com.euvcraft.lithmod.mc.multiblock.zone.ZoneMachines.ELECTRONIC_GRADE_BOULE.get());
+                output.accept(com.euvcraft.lithmod.mc.multiblock.reflow.ReflowMachines.THERMAL_TEST_COUPON.get());
+                output.accept(com.euvcraft.lithmod.mc.multiblock.reflow.ReflowMachines.ASSEMBLY_SCRAP.get());
                 // Silicon chain machines
                 output.accept(ModItems.CRYSTAL_PULLER.get());
                 output.accept(ModItems.WAFER_SLICER.get());

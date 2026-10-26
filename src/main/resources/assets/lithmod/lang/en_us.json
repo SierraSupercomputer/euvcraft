@@ -347,5 +347,16 @@
   "block.lithmod.reflow_calibration_panel": "Reflow Calibration Panel",
   "block.lithmod.scanner_multipatterning_module": "Scanner Multipatterning Module",
   "wafer_substrate.lithmod.electronic_grade": "Electronic-grade silicon",
-  "tooltip.lithmod.foup.substrate.electronic_grade": "Electronic-grade silicon"
+  "tooltip.lithmod.foup.substrate.electronic_grade": "Electronic-grade silicon",
+  "tooltip.lithmod.frame.zone": "Zone refining",
+  "tooltip.lithmod.frame.reflow": "Reflow assembly",
+  "tooltip.lithmod.casing.zone": "Zone casing",
+  "tooltip.lithmod.casing.reflow": "Reflow casing",
+  "tooltip.lithmod.port.zone": "1–2 Zone power ports",
+  "tooltip.lithmod.port.reflow": "1–2 Reflow power ports",
+  "tooltip.lithmod.dims.3x3x2": "3 wide × 3 tall × 2 deep",
+  "tooltip.lithmod.required.zone_water_inlet": "One Zone water inlet (ultrapure water)",
+  "tooltip.lithmod.required.reflow_calibration_panel": "One Reflow calibration panel in middle layer",
+  "tooltip.lithmod.optional.multipatterning": "T6: multi-patterning module in middle layer",
+  "tooltip.lithmod.compute.cores": "%s cores"
 }
