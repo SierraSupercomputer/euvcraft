@@ -139,58 +139,58 @@
       "model": "lithmod:block/t4_power_port_large_part44_formed"
     },
     "facing=north,formed=true,large=false,part=0": {
-      "model": "lithmod:block/t4_power_port_small_part0_formed"
+      "model": "lithmod:block/t4_power_port_large_part0_formed"
     },
     "facing=north,formed=true,large=false,part=1": {
-      "model": "lithmod:block/t4_power_port_small_part1_formed"
+      "model": "lithmod:block/t4_power_port_large_part4_formed"
     },
     "facing=north,formed=true,large=false,part=2": {
-      "model": "lithmod:block/t4_power_port_small_part2_formed"
+      "model": "lithmod:block/t4_power_port_large_part5_formed"
     },
     "facing=north,formed=true,large=false,part=3": {
-      "model": "lithmod:block/t4_power_port_small_part3_formed"
+      "model": "lithmod:block/t4_power_port_large_part9_formed"
     },
     "facing=north,formed=true,large=false,part=4": {
-      "model": "lithmod:block/t4_power_port_small_part4_formed"
+      "model": "lithmod:block/t4_power_port_large_part10_formed"
     },
     "facing=north,formed=true,large=false,part=5": {
-      "model": "lithmod:block/t4_power_port_small_part5_formed"
+      "model": "lithmod:block/t4_power_port_large_part14_formed"
     },
     "facing=north,formed=true,large=false,part=6": {
-      "model": "lithmod:block/t4_power_port_small_part6_formed"
+      "model": "lithmod:block/t4_power_port_large_part15_formed"
     },
     "facing=north,formed=true,large=false,part=7": {
-      "model": "lithmod:block/t4_power_port_small_part7_formed"
+      "model": "lithmod:block/t4_power_port_large_part19_formed"
     },
     "facing=north,formed=true,large=false,part=8": {
-      "model": "lithmod:block/t4_power_port_small_part8_formed"
+      "model": "lithmod:block/t4_power_port_large_part20_formed"
     },
     "facing=north,formed=true,large=false,part=9": {
-      "model": "lithmod:block/t4_power_port_small_part9_formed"
+      "model": "lithmod:block/t4_power_port_large_part24_formed"
     },
     "facing=north,formed=true,large=false,part=10": {
-      "model": "lithmod:block/t4_power_port_small_part10_formed"
+      "model": "lithmod:block/t4_power_port_large_part25_formed"
     },
     "facing=north,formed=true,large=false,part=11": {
-      "model": "lithmod:block/t4_power_port_small_part11_formed"
+      "model": "lithmod:block/t4_power_port_large_part29_formed"
     },
     "facing=north,formed=true,large=false,part=12": {
-      "model": "lithmod:block/t4_power_port_unformed"
+      "model": "lithmod:block/t4_power_port_large_part30_formed"
     },
     "facing=north,formed=true,large=false,part=13": {
-      "model": "lithmod:block/t4_power_port_unformed"
+      "model": "lithmod:block/t4_power_port_large_part34_formed"
     },
     "facing=north,formed=true,large=false,part=14": {
-      "model": "lithmod:block/t4_power_port_unformed"
+      "model": "lithmod:block/t4_power_port_large_part35_formed"
     },
     "facing=north,formed=true,large=false,part=15": {
-      "model": "lithmod:block/t4_power_port_unformed"
+      "model": "lithmod:block/t4_power_port_large_part39_formed"
     },
     "facing=north,formed=true,large=false,part=16": {
-      "model": "lithmod:block/t4_power_port_unformed"
+      "model": "lithmod:block/t4_power_port_large_part40_formed"
     },
     "facing=north,formed=true,large=false,part=17": {
-      "model": "lithmod:block/t4_power_port_unformed"
+      "model": "lithmod:block/t4_power_port_large_part44_formed"
     },
     "facing=north,formed=true,large=false,part=18": {
       "model": "lithmod:block/t4_power_port_unformed"
@@ -458,75 +458,75 @@
       "y": 90
     },
     "facing=east,formed=true,large=false,part=0": {
-      "model": "lithmod:block/t4_power_port_small_part0_formed",
+      "model": "lithmod:block/t4_power_port_large_part0_formed",
       "y": 90
     },
     "facing=east,formed=true,large=false,part=1": {
-      "model": "lithmod:block/t4_power_port_small_part1_formed",
+      "model": "lithmod:block/t4_power_port_large_part4_formed",
       "y": 90
     },
     "facing=east,formed=true,large=false,part=2": {
-      "model": "lithmod:block/t4_power_port_small_part2_formed",
+      "model": "lithmod:block/t4_power_port_large_part5_formed",
       "y": 90
     },
     "facing=east,formed=true,large=false,part=3": {
-      "model": "lithmod:block/t4_power_port_small_part3_formed",
+      "model": "lithmod:block/t4_power_port_large_part9_formed",
       "y": 90
     },
     "facing=east,formed=true,large=false,part=4": {
-      "model": "lithmod:block/t4_power_port_small_part4_formed",
+      "model": "lithmod:block/t4_power_port_large_part10_formed",
       "y": 90
     },
     "facing=east,formed=true,large=false,part=5": {
-      "model": "lithmod:block/t4_power_port_small_part5_formed",
+      "model": "lithmod:block/t4_power_port_large_part14_formed",
       "y": 90
     },
     "facing=east,formed=true,large=false,part=6": {
-      "model": "lithmod:block/t4_power_port_small_part6_formed",
+      "model": "lithmod:block/t4_power_port_large_part15_formed",
       "y": 90
     },
     "facing=east,formed=true,large=false,part=7": {
-      "model": "lithmod:block/t4_power_port_small_part7_formed",
+      "model": "lithmod:block/t4_power_port_large_part19_formed",
       "y": 90
     },
     "facing=east,formed=true,large=false,part=8": {
-      "model": "lithmod:block/t4_power_port_small_part8_formed",
+      "model": "lithmod:block/t4_power_port_large_part20_formed",
       "y": 90
     },
     "facing=east,formed=true,large=false,part=9": {
-      "model": "lithmod:block/t4_power_port_small_part9_formed",
+      "model": "lithmod:block/t4_power_port_large_part24_formed",
       "y": 90
     },
     "facing=east,formed=true,large=false,part=10": {
-      "model": "lithmod:block/t4_power_port_small_part10_formed",
+      "model": "lithmod:block/t4_power_port_large_part25_formed",
       "y": 90
     },
     "facing=east,formed=true,large=false,part=11": {
-      "model": "lithmod:block/t4_power_port_small_part11_formed",
+      "model": "lithmod:block/t4_power_port_large_part29_formed",
       "y": 90
     },
     "facing=east,formed=true,large=false,part=12": {
-      "model": "lithmod:block/t4_power_port_unformed",
+      "model": "lithmod:block/t4_power_port_large_part30_formed",
       "y": 90
     },
     "facing=east,formed=true,large=false,part=13": {
-      "model": "lithmod:block/t4_power_port_unformed",
+      "model": "lithmod:block/t4_power_port_large_part34_formed",
       "y": 90
     },
     "facing=east,formed=true,large=false,part=14": {
-      "model": "lithmod:block/t4_power_port_unformed",
+      "model": "lithmod:block/t4_power_port_large_part35_formed",
       "y": 90
     },
     "facing=east,formed=true,large=false,part=15": {
-      "model": "lithmod:block/t4_power_port_unformed",
+      "model": "lithmod:block/t4_power_port_large_part39_formed",
       "y": 90
     },
     "facing=east,formed=true,large=false,part=16": {
-      "model": "lithmod:block/t4_power_port_unformed",
+      "model": "lithmod:block/t4_power_port_large_part40_formed",
       "y": 90
     },
     "facing=east,formed=true,large=false,part=17": {
-      "model": "lithmod:block/t4_power_port_unformed",
+      "model": "lithmod:block/t4_power_port_large_part44_formed",
       "y": 90
     },
     "facing=east,formed=true,large=false,part=18": {
@@ -822,75 +822,75 @@
       "y": 180
     },
     "facing=south,formed=true,large=false,part=0": {
-      "model": "lithmod:block/t4_power_port_small_part0_formed",
+      "model": "lithmod:block/t4_power_port_large_part0_formed",
       "y": 180
     },
     "facing=south,formed=true,large=false,part=1": {
-      "model": "lithmod:block/t4_power_port_small_part1_formed",
+      "model": "lithmod:block/t4_power_port_large_part4_formed",
       "y": 180
     },
     "facing=south,formed=true,large=false,part=2": {
-      "model": "lithmod:block/t4_power_port_small_part2_formed",
+      "model": "lithmod:block/t4_power_port_large_part5_formed",
       "y": 180
     },
     "facing=south,formed=true,large=false,part=3": {
-      "model": "lithmod:block/t4_power_port_small_part3_formed",
+      "model": "lithmod:block/t4_power_port_large_part9_formed",
       "y": 180
     },
     "facing=south,formed=true,large=false,part=4": {
-      "model": "lithmod:block/t4_power_port_small_part4_formed",
+      "model": "lithmod:block/t4_power_port_large_part10_formed",
       "y": 180
     },
     "facing=south,formed=true,large=false,part=5": {
-      "model": "lithmod:block/t4_power_port_small_part5_formed",
+      "model": "lithmod:block/t4_power_port_large_part14_formed",
       "y": 180
     },
     "facing=south,formed=true,large=false,part=6": {
-      "model": "lithmod:block/t4_power_port_small_part6_formed",
+      "model": "lithmod:block/t4_power_port_large_part15_formed",
       "y": 180
     },
     "facing=south,formed=true,large=false,part=7": {
-      "model": "lithmod:block/t4_power_port_small_part7_formed",
+      "model": "lithmod:block/t4_power_port_large_part19_formed",
       "y": 180
     },
     "facing=south,formed=true,large=false,part=8": {
-      "model": "lithmod:block/t4_power_port_small_part8_formed",
+      "model": "lithmod:block/t4_power_port_large_part20_formed",
       "y": 180
     },
     "facing=south,formed=true,large=false,part=9": {
-      "model": "lithmod:block/t4_power_port_small_part9_formed",
+      "model": "lithmod:block/t4_power_port_large_part24_formed",
       "y": 180
     },
     "facing=south,formed=true,large=false,part=10": {
-      "model": "lithmod:block/t4_power_port_small_part10_formed",
+      "model": "lithmod:block/t4_power_port_large_part25_formed",
       "y": 180
     },
     "facing=south,formed=true,large=false,part=11": {
-      "model": "lithmod:block/t4_power_port_small_part11_formed",
+      "model": "lithmod:block/t4_power_port_large_part29_formed",
       "y": 180
     },
     "facing=south,formed=true,large=false,part=12": {
-      "model": "lithmod:block/t4_power_port_unformed",
+      "model": "lithmod:block/t4_power_port_large_part30_formed",
       "y": 180
     },
     "facing=south,formed=true,large=false,part=13": {
-      "model": "lithmod:block/t4_power_port_unformed",
+      "model": "lithmod:block/t4_power_port_large_part34_formed",
       "y": 180
     },
     "facing=south,formed=true,large=false,part=14": {
-      "model": "lithmod:block/t4_power_port_unformed",
+      "model": "lithmod:block/t4_power_port_large_part35_formed",
       "y": 180
     },
     "facing=south,formed=true,large=false,part=15": {
-      "model": "lithmod:block/t4_power_port_unformed",
+      "model": "lithmod:block/t4_power_port_large_part39_formed",
       "y": 180
     },
     "facing=south,formed=true,large=false,part=16": {
-      "model": "lithmod:block/t4_power_port_unformed",
+      "model": "lithmod:block/t4_power_port_large_part40_formed",
       "y": 180
     },
     "facing=south,formed=true,large=false,part=17": {
-      "model": "lithmod:block/t4_power_port_unformed",
+      "model": "lithmod:block/t4_power_port_large_part44_formed",
       "y": 180
     },
     "facing=south,formed=true,large=false,part=18": {
@@ -1186,75 +1186,75 @@
       "y": 270
     },
     "facing=west,formed=true,large=false,part=0": {
-      "model": "lithmod:block/t4_power_port_small_part0_formed",
+      "model": "lithmod:block/t4_power_port_large_part0_formed",
       "y": 270
     },
     "facing=west,formed=true,large=false,part=1": {
-      "model": "lithmod:block/t4_power_port_small_part1_formed",
+      "model": "lithmod:block/t4_power_port_large_part4_formed",
       "y": 270
     },
     "facing=west,formed=true,large=false,part=2": {
-      "model": "lithmod:block/t4_power_port_small_part2_formed",
+      "model": "lithmod:block/t4_power_port_large_part5_formed",
       "y": 270
     },
     "facing=west,formed=true,large=false,part=3": {
-      "model": "lithmod:block/t4_power_port_small_part3_formed",
+      "model": "lithmod:block/t4_power_port_large_part9_formed",
       "y": 270
     },
     "facing=west,formed=true,large=false,part=4": {
-      "model": "lithmod:block/t4_power_port_small_part4_formed",
+      "model": "lithmod:block/t4_power_port_large_part10_formed",
       "y": 270
     },
     "facing=west,formed=true,large=false,part=5": {
-      "model": "lithmod:block/t4_power_port_small_part5_formed",
+      "model": "lithmod:block/t4_power_port_large_part14_formed",
       "y": 270
     },
     "facing=west,formed=true,large=false,part=6": {
-      "model": "lithmod:block/t4_power_port_small_part6_formed",
+      "model": "lithmod:block/t4_power_port_large_part15_formed",
       "y": 270
     },
     "facing=west,formed=true,large=false,part=7": {
-      "model": "lithmod:block/t4_power_port_small_part7_formed",
+      "model": "lithmod:block/t4_power_port_large_part19_formed",
       "y": 270
     },
     "facing=west,formed=true,large=false,part=8": {
-      "model": "lithmod:block/t4_power_port_small_part8_formed",
+      "model": "lithmod:block/t4_power_port_large_part20_formed",
       "y": 270
     },
     "facing=west,formed=true,large=false,part=9": {
-      "model": "lithmod:block/t4_power_port_small_part9_formed",
+      "model": "lithmod:block/t4_power_port_large_part24_formed",
       "y": 270
     },
     "facing=west,formed=true,large=false,part=10": {
-      "model": "lithmod:block/t4_power_port_small_part10_formed",
+      "model": "lithmod:block/t4_power_port_large_part25_formed",
       "y": 270
     },
     "facing=west,formed=true,large=false,part=11": {
-      "model": "lithmod:block/t4_power_port_small_part11_formed",
+      "model": "lithmod:block/t4_power_port_large_part29_formed",
       "y": 270
     },
     "facing=west,formed=true,large=false,part=12": {
-      "model": "lithmod:block/t4_power_port_unformed",
+      "model": "lithmod:block/t4_power_port_large_part30_formed",
       "y": 270
     },
     "facing=west,formed=true,large=false,part=13": {
-      "model": "lithmod:block/t4_power_port_unformed",
+      "model": "lithmod:block/t4_power_port_large_part34_formed",
       "y": 270
     },
     "facing=west,formed=true,large=false,part=14": {
-      "model": "lithmod:block/t4_power_port_unformed",
+      "model": "lithmod:block/t4_power_port_large_part35_formed",
       "y": 270
     },
     "facing=west,formed=true,large=false,part=15": {
-      "model": "lithmod:block/t4_power_port_unformed",
+      "model": "lithmod:block/t4_power_port_large_part39_formed",
       "y": 270
     },
     "facing=west,formed=true,large=false,part=16": {
-      "model": "lithmod:block/t4_power_port_unformed",
+      "model": "lithmod:block/t4_power_port_large_part40_formed",
       "y": 270
     },
     "facing=west,formed=true,large=false,part=17": {
-      "model": "lithmod:block/t4_power_port_unformed",
+      "model": "lithmod:block/t4_power_port_large_part44_formed",
       "y": 270
     },
     "facing=west,formed=true,large=false,part=18": {
