@@ -69,6 +69,25 @@ public final class ModDataComponents {
             .persistent(MaskDataCodec.CODEC)
             .networkSynchronized(MaskDataCodec.STREAM_CODEC));
 
+    /**
+     * The designed core count a mask-design or a produced compute chip carries.
+     *
+     * <p>This is a stack component, not part of the {@link MaskData} record or its codecs
+     * (which are deliberately untouched): the count travels with a stack so a mask-design
+     * core count frozen by the e-beam writer survives the mask item's own public codec and
+     * later carries the packaged compute chip/CPU core count. A stack without this
+     * component carries no designed core count; consumers default to 1 for compute dies,
+     * exactly like the pre-T6 masks.</p>
+     *
+     * <p>Only designed compute dies carry it: a non-compute die has none, and consumer
+     * admission (Process Cell, Test and Package) refuses a T6 compute count that is not
+     * one of the configured {@code coreCountOptions}.</p>
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> CORE_COUNT =
+        DATA_COMPONENTS.registerComponentType("core_count", builder -> builder
+            .persistent(Codec.intRange(1, 256))
+            .networkSynchronized(ByteBufCodecs.VAR_INT));
+
     private ModDataComponents() {
     }
 }

@@ -57,7 +57,11 @@ public class SupportMachineMenu extends FabMachineMenu {
     public static final int WIRE_EBEAM_REDSTONE = 10;
     public static final int WIRE_EBEAM_TICKS = 11;
     public static final int WIRE_EBEAM_FE = 12;
-    public static final int EXTRA_DATA_COUNT = 13;
+    /** Selected core count for a T6 compute design; 1 otherwise, frozen count while a job runs. */
+    public static final int WIRE_EBEAM_CORES = 13;
+    /** Whether core selection is currently allowed: formed idle writer, T6 compute selected. */
+    public static final int WIRE_EBEAM_CORES_SELECTABLE = 14;
+    public static final int EXTRA_DATA_COUNT = 15;
 
     // Slot coordinates per kind (relative to the 176x220 shell)
     private static final int IN_0_X = 62, IN_1_X = 80, OUT_A_X = 104, OUT_B_X = 122;
@@ -123,6 +127,8 @@ public class SupportMachineMenu extends FabMachineMenu {
                         case WIRE_EBEAM_REDSTONE -> machine.ebeamRedstoneCost();
                         case WIRE_EBEAM_TICKS -> machine.ebeamRecipeTicks();
                         case WIRE_EBEAM_FE -> machine.ebeamEnergyCost();
+                        case WIRE_EBEAM_CORES -> machine.selectedCores();
+                        case WIRE_EBEAM_CORES_SELECTABLE -> machine.coresSelectable() ? 1 : 0;
                         default -> 0;
                     };
                 }
@@ -194,6 +200,16 @@ public class SupportMachineMenu extends FabMachineMenu {
         return this.extraData.get(WIRE_EBEAM_TIER);
     }
 
+    /** Selected core count for a T6 compute design; 1 otherwise; frozen count while a job runs. */
+    public int ebeamSelectedCores() {
+        return this.extraData.get(WIRE_EBEAM_CORES);
+    }
+
+    /** Whether core selection is currently allowed (formed idle writer, T6 compute design). */
+    public boolean ebeamCoresSelectable() {
+        return this.extraData.get(WIRE_EBEAM_CORES_SELECTABLE) == 1;
+    }
+
     public boolean ebeamDesignAvailable(int index) {
         return index >= 0 && index < EBEAM_DESIGN_COUNT && (extraData.get(WIRE_EBEAM_AVAILABLE) & (1 << index)) != 0;
     }
@@ -228,11 +244,13 @@ public class SupportMachineMenu extends FabMachineMenu {
 
     // ---------------------------------------------------------------- button handling (e-beam)
 
-    /** Button IDs for design selection (0-6). */
+    /** Button IDs for design selection (0-17). */
     public static final int EBEAM_DESIGN_BUTTON_BASE = 0;
-    /** Button ID for WriteMask Start. */
-    public static final int EBEAM_DESIGN_COUNT=15;
+    /** Design count: 15 pre-T6 designs plus the T6 design block; the start button keeps its "count" id. */
+    public static final int EBEAM_DESIGN_COUNT=18;
     public static final int EBEAM_START_BUTTON = EBEAM_DESIGN_COUNT;
+    /** Button ID for the core-count cycle button; a distinct id outside the design/start range. */
+    public static final int CORE_BUTTON = 1000;
 
     @Override
     public boolean clickMenuButton(Player player, int buttonId) {
@@ -249,7 +267,7 @@ public class SupportMachineMenu extends FabMachineMenu {
         double dz = player.getZ() - (machine.getBlockPos().getZ() + 0.5);
         if (dx * dx + dy * dy + dz * dz > 64.0) return false; // 8^2 = 64
 
-        // Design selection buttons (0-6)
+        // Design selection buttons (0-17)
         if (buttonId >= EBEAM_DESIGN_BUTTON_BASE && buttonId < EBEAM_START_BUTTON) {
             int designIndex = buttonId - EBEAM_DESIGN_BUTTON_BASE;
             return machine.selectDesign(designIndex);
@@ -258,6 +276,14 @@ public class SupportMachineMenu extends FabMachineMenu {
         // WriteMask Start button
         if (buttonId == EBEAM_START_BUTTON) {
             return machine.startEbeamJob();
+        }
+
+        // Core-count cycle button: the server picks the next configured option, so no
+        // arbitrary client value is ever accepted. Idle/T6-compute/formed guards live in
+        // cycleCores(); the guards above already pin server, player, menu, formation and
+        // the formed-distance check.
+        if (buttonId == CORE_BUTTON) {
+            return machine.cycleCores();
         }
 
         return false;

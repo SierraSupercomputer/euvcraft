@@ -169,6 +169,8 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
     private static final String PAID_TICKS_KEY = "paid_ticks";
     private static final String DIE_TYPE_KEY = "die_type";
     private static final String TIER_KEY = "tier";
+    /** The frozen core count of the accepted run spec inside the queue snapshot. */
+    private static final String CORES_KEY = "cores";
 
     /** The vanilla maximum an output or consumable slot holds. */
     private static final int MAX_STACK = 64;
@@ -184,6 +186,14 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
     private String designDieType;
     /** Public frozen node tier of the accepted lot, for catalog resolution. */
     private int designTierIndex;
+    /**
+     * The core count frozen from the accepted run spec ({@code 0} when the die has none).
+     *
+     * <p>Server-only like the other design fields: only compute T6-or-later chips carry the
+     * public CORE_COUNT component, which then reads this value. A T5 to T6 high-binning
+     * queue inherits the source spec's count, which for T5 compute is 1.</p>
+     */
+    private int designCores;
     /** Why the lot in the input slot was refused, or {@code null}. Recomputed each tick. */
     private PackagingRefusalReason refusal;
     /** Started but blocked on packages, output room, energy or data. Not persisted. */
@@ -494,6 +504,10 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
         this.run = queue;
         this.designDieType = spec.dieType();
         this.designTierIndex = outputTier;
+        // Freeze the accepted run spec's core count with the same instant the queue is
+        // accepted: a T5 to T6 high-binning queue inherits the source spec's count (1 for
+        // T5 compute); ordinary T6 compute carries its own count; every other design has none.
+        this.designCores = RunSpec.coresOrZero(spec.coresOrNull());
         this.acceptedSourceTier=spec.tierIndex();this.acceptedHighBinning=high;
         this.refusal = null;
         this.paused = false;
@@ -738,6 +752,7 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
         state.putInt(PAID_TICKS_KEY, snapshot.paidTicks());
         state.putString(DIE_TYPE_KEY, this.designDieType);
         state.putInt(TIER_KEY, this.designTierIndex);
+        state.putInt(CORES_KEY, this.designCores);
         state.putBoolean("high_binning",acceptedHighBinning);
         state.putInt("source_tier",acceptedSourceTier);
     }
