@@ -101,7 +101,7 @@ public final class ReflowCalibrationMenu extends AbstractContainerMenu {
 
         SimpleContainer fallback = new SimpleContainer(ReflowControllerBlockEntity.SLOT_COUNT);
         net.minecraft.world.Container container = oven != null ? oven : fallback;
-        addSlot(new Slot(container, ReflowControllerBlockEntity.SLOT_COUPON, 283, 127) {
+        addSlot(new Slot(container, ReflowControllerBlockEntity.SLOT_COUPON, 283, 157) {
             @Override
             public boolean mayPlace(ItemStack stack) {
                 return !lockedNow() && stack.is(ReflowMachines.THERMAL_TEST_COUPON.get());
@@ -122,11 +122,11 @@ public final class ReflowCalibrationMenu extends AbstractContainerMenu {
         });
         for (int row = 0; row < 3; row++) {
             for (int column = 0; column < 9; column++) {
-                addSlot(new Slot(inventory, column + row * 9 + 9, 79 + column * 18, 160 + row * 18));
+                addSlot(new Slot(inventory, column + row * 9 + 9, 79 + column * 18, 190 + row * 18));
             }
         }
         for (int column = 0; column < 9; column++) {
-            addSlot(new Slot(inventory, column, 79 + column * 18, 214));
+            addSlot(new Slot(inventory, column, 79 + column * 18, 248));
         }
 
         this.values = oven == null ? new SimpleContainerData(CAL_COUNT) : new ContainerData() {

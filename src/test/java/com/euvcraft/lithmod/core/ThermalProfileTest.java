@@ -486,4 +486,13 @@ class ThermalProfileTest {
                     ThermalProfile.metrics(NOMINAL, ThermalProfile.Response.nominal()), null));
         }
     }
+
+    @org.junit.jupiter.api.Test void bandEdgesHaveContinuousQuality() {
+        var c=new ThermalProfile.Controls(50,50,50);var response=ThermalProfile.Response.nominal();
+        var m=ThermalProfile.assess(c,response,ThermalProfile.Rules.defaults()).metrics();
+        var edge=new ThermalProfile.Rules(m.ramp(),m.ramp()+2,m.peak(),m.peak()+20,m.dwell(),m.dwell()+40,m.cooling(),m.cooling()+2,0);
+        var a=ThermalProfile.assess(c,response,edge);assertEquals(875,a.quality());assertTrue(a.acceptable());
+        double e=0.000001;var outside=new ThermalProfile.Rules(m.ramp()+e,m.ramp()+2,m.peak()+e,m.peak()+20,m.dwell()+e,m.dwell()+40,m.cooling()+e,m.cooling()+2,0);
+        var b=ThermalProfile.assess(c,response,outside);assertTrue(Math.abs(a.quality()-b.quality())<=1);assertFalse(b.acceptable());
+    }
 }

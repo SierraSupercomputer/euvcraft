@@ -25,9 +25,9 @@ import java.util.Locale;
 public final class ReflowCalibrationScreen extends AbstractContainerScreen<ReflowCalibrationMenu> {
 
     private static final int GRAPH_X = 15;
-    private static final int GRAPH_Y = 24;
+    private static final int GRAPH_Y = 36;
     private static final int GRAPH_W = 290;
-    private static final int GRAPH_H = 60;
+    private static final int GRAPH_H = 48;
 
     /** Graph temperature window in centi-degrees: ambient 20.00 C up to a 320.00 C ceiling. */
     private static final int TEMP_MIN = 2_000;
@@ -54,7 +54,7 @@ public final class ReflowCalibrationScreen extends AbstractContainerScreen<Reflo
     private Button accept;
 
     public ReflowCalibrationScreen(ReflowCalibrationMenu menu, Inventory inventory, Component title) {
-        super(menu, inventory, title, 320, 238);
+        super(menu, inventory, title, 320, 270);
         this.inventoryLabelX = 8;
         this.inventoryLabelY = imageHeight - 94;
     }
@@ -77,10 +77,10 @@ public final class ReflowCalibrationScreen extends AbstractContainerScreen<Reflo
                 ReflowCalibrationMenu.BUTTON_AIRFLOW_PLUS, 120);
         test = addRenderableWidget(Button.builder(Component.literal("Test"),
                 b -> send(ReflowCalibrationMenu.BUTTON_TEST))
-                .bounds(leftPos + 232, topPos + 160, 78, 18).build());
+                .bounds(leftPos + 8, topPos + 194, 60, 18).build());
         accept = addRenderableWidget(Button.builder(Component.literal("Accept"),
                 b -> send(ReflowCalibrationMenu.BUTTON_ACCEPT))
-                .bounds(leftPos + 232, topPos + 182, 78, 18).build());
+                .bounds(leftPos + 8, topPos + 216, 60, 18).build());
     }
 
     /** The -/+ pair of one control row; both buttons share the row's enabled state. */
@@ -203,8 +203,9 @@ public final class ReflowCalibrationScreen extends AbstractContainerScreen<Reflo
     @Override
     protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         text(graphics, title.getString(), 8, 6, 300);
-        text(graphics, bandText(), 15, 14, 300);
-        text(graphics, playerInventoryTitle.getString(), 8, 144, 160);
+        text(graphics, "Ramp " + band(menu.value(29),menu.value(30)) + "  Peak " + centi(menu.value(21),menu.value(22)), 15,14,290);
+        text(graphics, "Dwell " + band(menu.value(31),menu.value(32)) + "  Cooling " + band(menu.value(33),menu.value(34)),15,24,290);
+        text(graphics, playerInventoryTitle.getString(), 79, 178, 160);
 
         text(graphics, "Heater " + menu.value(ReflowCalibrationMenu.CAL_HEATER), 52, 92, 110);
         text(graphics, "Conveyor " + menu.value(ReflowCalibrationMenu.CAL_CONVEYOR), 52, 108, 110);
@@ -213,9 +214,11 @@ public final class ReflowCalibrationScreen extends AbstractContainerScreen<Reflo
         text(graphics, qualityText(), 170, 92, 105);
         text(graphics, problemText(), 170, 108, 105);
         text(graphics, "Test: " + menu.value(ReflowCalibrationMenu.CAL_TEST_FE) + " FE + "
-                + menu.value(ReflowCalibrationMenu.CAL_COUPON_COUNT) + " coupon(s)", 170, 124, 105);
-        text(graphics, "Coupon", 278, 118, 40);
-        text(graphics, feedbackText(), 8, 137, 226);
+                + menu.value(ReflowCalibrationMenu.CAL_COUPON_COUNT) + " coupon(s)", 170, 124, 140);
+        text(graphics, "Coupon", 278, 148, 40);
+        text(graphics, "Measured R " + String.format(Locale.ROOT,"%.2f",menu.value(35)/100.0) + "  P " + String.format(Locale.ROOT,"%.2f C",menu.value(36)/100.0),8,138,260);
+        text(graphics, "Measured D " + String.format(Locale.ROOT,"%.2f",menu.value(37)/100.0) + "  C " + String.format(Locale.ROOT,"%.2f",menu.value(38)/100.0),8,150,260);
+        text(graphics, "Gray: preview. Cyan: paid test. Amber: target.",8,166,300);
     }
 
     /** The exact synced rule bands; readouts always match the datapack JSON values. */

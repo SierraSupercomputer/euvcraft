@@ -18,7 +18,7 @@ public final class ScannerOperatingScreen extends AdvancedMachineScreen<ScannerO
   line(g,playerInventoryTitle,8,72,160);
   line(g,Component.translatable(formed()?"state.lithmod.process_cell.formed":"state.lithmod.process_cell.unformed"),8,168,160);
   if(!menu.calibrated()){
-   line(g,Component.translatable("message.lithmod.scanner.calibration_required"),8,180,160);
+   line(g,menu.contaminationInvalidated()?Component.literal("Contamination: recalibrate"):Component.translatable("message.lithmod.scanner.calibration_required"),8,180,160);
    line(g,Component.literal(menu.immersion()?"Use Beam and Diagnostic Panels":"Use the Calibration Panel"),8,190,160);
   }else{
    line(g,Component.literal("Alignment: "+menu.quality()+"/100"),8,180,160);
@@ -28,7 +28,7 @@ public final class ScannerOperatingScreen extends AdvancedMachineScreen<ScannerO
   line(g,Component.literal("Layer "+menu.currentLayer()+" / "+menu.totalLayers()+(menu.immersion()?"  UPW: "+menu.water()+" mB":"")),8,214,160);
  }
  private Component statusText(){
-  if(menu.tierIndex()==5&&menu.inputsLocked()&&menu.water()<menu.waterCost())return Component.literal("Paused: supply ultrapure water");
+  if(menu.tierIndex()>=5&&menu.inputsLocked()&&menu.water()<menu.waterCost())return Component.literal("Paused: supply ultrapure water");
   int status=menu.status();
   if(menu.aborted())return Component.translatable("state.lithmod.process_cell.stopped_after_abort");
   if(status==com.euvcraft.lithmod.mc.machine.process.ProcessCellMenu.STATUS_DEFINITION_MISSING)return Component.translatable("state.lithmod.process_cell.missing_definition");

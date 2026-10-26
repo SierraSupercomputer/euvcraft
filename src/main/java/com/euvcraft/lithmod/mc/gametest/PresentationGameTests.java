@@ -166,15 +166,15 @@ public final class PresentationGameTests {
     }
     private static void recipeRegistry(GameTestHelper h) {
         var vanilla = resources(h, "recipe");
-        h.assertValueEqual(90, vanilla.size(), "M1 vanilla recipe inventory");
+        h.assertValueEqual(108, vanilla.size(), "M1 vanilla recipe inventory");
         for (var entry : vanilla.entrySet()) {
             JsonObject source = json(entry.getValue());
             expectedOutput(h, source, assemble(h, entry.getKey(), source), entry.getKey().toString());
         }
         var custom = resources(h, "machine_recipes");
         var resolved = MachineRecipeLoader.getRegistry().all();
-        h.assertValueEqual(18, custom.size(), "Custom source inventory");
-        h.assertValueEqual(18, resolved.size(), "Resolved custom inventory");
+        h.assertValueEqual(21, custom.size(), "Custom source inventory");
+        h.assertValueEqual(21, resolved.size(), "Resolved custom inventory");
         Set<com.euvcraft.lithmod.core.MachineRecipeSpec> expected = new HashSet<>();
         for (var entry : custom.entrySet()) {
             var spec = MachineRecipeSpecCodec.CODEC.parse(JsonOps.INSTANCE, json(entry.getValue())).getOrThrow();
@@ -211,7 +211,7 @@ public final class PresentationGameTests {
                 cooking++;
             }
         }
-        h.assertValueEqual(88, crafting, "Crafting lookup inventory");
+        h.assertValueEqual(106, crafting, "Crafting lookup inventory");
         h.assertValueEqual(2, cooking, "Cooking lookup inventory");
         var sand = manager.getRecipeFor(RecipeType.SMELTING, new SingleRecipeInput(new ItemStack(Items.SAND)), h.getLevel()).orElseThrow();
         h.assertTrue(sand.value().assemble(new SingleRecipeInput(new ItemStack(Items.SAND))).is(Items.GLASS), "Sand must still smelt to glass");
@@ -267,7 +267,7 @@ public final class PresentationGameTests {
                 missing.add(id.getPath());
         h.assertTrue(missing.equals(Set.of("foup_mk2", "logic_chip_t1", "logic_chip_t2", "memory_chip_t2", "chip_scrap", "wafer_scrap",
                 "logic_chip_t3", "memory_chip_t3", "compute_chip_t3", "nand_chip_t3",
-                "logic_chip_t4", "memory_chip_t4", "compute_chip_t4", "nand_chip_t4", "logic_chip_t5", "memory_chip_t5", "compute_chip_t5", "nand_chip_t5")),
+                "logic_chip_t4", "memory_chip_t4", "compute_chip_t4", "nand_chip_t4", "logic_chip_t5", "memory_chip_t5", "compute_chip_t5", "nand_chip_t5", "memory_chip_t6", "compute_chip_t6", "nand_chip_t6", "assembly_scrap")),
             "Unexpected recipe-less production items: " + missing);
         h.succeed();
     }
@@ -469,8 +469,38 @@ public final class PresentationGameTests {
         fullExpected.addAll(com.euvcraft.lithmod.mc.cleanroom.CleanroomItems.all());
         fullExpected.add(com.euvcraft.lithmod.mc.machine.cleaner.FoupCleanerMachines.ITEM.get());
         fullExpected.add(com.euvcraft.lithmod.mc.machine.cleaner.FoupCleanerMachines.WAFER_SCRAP.get());
-        h.assertValueEqual(128, actualEntries.size(), "MAIN tab exact entry count");
-        for (int i = 0; i < 128; i++) {
+        
+                fullExpected.add(ModItems.ZONE_REFINER.get());
+                fullExpected.add(ModItems.ZONE_CASING.get());
+                fullExpected.add(ModItems.ZONE_POWER_PORT.get());
+                fullExpected.add(ModItems.ZONE_OPERATING_PANEL.get());
+                fullExpected.add(ModItems.ZONE_WATER_INLET.get());
+                fullExpected.add(ModItems.REFLOW_OVEN.get());
+                fullExpected.add(ModItems.REFLOW_CASING.get());
+                fullExpected.add(ModItems.REFLOW_POWER_PORT.get());
+                fullExpected.add(ModItems.REFLOW_OPERATING_PANEL.get());
+                fullExpected.add(ModItems.REFLOW_CALIBRATION_PANEL.get());
+                fullExpected.add(ModItems.SCANNER_MULTIPATTERNING_MODULE.get());
+                fullExpected.add(ModItems.MEMORY_CHIP_T6.get());
+                fullExpected.add(ModItems.COMPUTE_CHIP_T6.get());
+                fullExpected.add(ModItems.NAND_CHIP_T6.get());
+                fullExpected.add(ModItems.CPU_T6.get());
+                fullExpected.add(ModItems.DIMM_T6.get());
+                fullExpected.add(ModItems.RESIST_T6.get());
+                fullExpected.add(ModItems.MULTIPATTERN_LIGHT_SOURCE.get());
+                fullExpected.add(ModItems.MULTIPATTERN_OPTICS.get());
+                fullExpected.add(ModItems.MULTIPATTERN_STAGE.get());
+                fullExpected.add(ModItems.MULTIPATTERN_FILTRATION.get());
+                fullExpected.add(ModItems.MULTIPATTERN_METROLOGY.get());
+                fullExpected.add(com.euvcraft.lithmod.mc.multiblock.zone.ZoneMachines.ELECTRONIC_GRADE_BOULE.get());
+                fullExpected.add(com.euvcraft.lithmod.mc.multiblock.reflow.ReflowMachines.THERMAL_TEST_COUPON.get());
+                fullExpected.add(com.euvcraft.lithmod.mc.multiblock.reflow.ReflowMachines.ASSEMBLY_SCRAP.get());
+                fullExpected.add(new ItemStack(ModItems.MASK.get()).getItem());
+                fullExpected.add(new ItemStack(ModItems.MASK.get()).getItem());
+                fullExpected.add(new ItemStack(ModItems.MASK.get()).getItem());
+
+          h.assertValueEqual(156, actualEntries.size(), "MAIN tab exact entry count");
+        for (int i = 0; i < 156; i++) {
             Item expected = fullExpected.get(i);
             Item actual = actualEntries.get(i).getItem();
             h.assertTrue(actual == expected,
