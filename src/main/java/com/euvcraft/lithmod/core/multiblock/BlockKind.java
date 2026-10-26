@@ -40,5 +40,7 @@ public enum BlockKind {
     FILTRATION_MODULE,
 
     /** Metrology module block - exactly one required in scanner middle layer. */
-    METROLOGY_MODULE
+    METROLOGY_MODULE,
+    /** T6 upgrade; appended to preserve old ordinals. */
+    MULTIPATTERNING_MODULE
 }

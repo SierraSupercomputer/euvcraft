@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "LSO",
+    "FCM",
+    "PGP"
+  ],
+  "key": {
+    "L": "lithmod:multipattern_light_source",
+    "S": "lithmod:multipattern_stage",
+    "O": "lithmod:multipattern_optics",
+    "F": "lithmod:multipattern_filtration",
+    "C": "lithmod:compute_chip_t5",
+    "M": "lithmod:multipattern_metrology",
+    "P": "lithmod:advanced_casing",
+    "G": "minecraft:diamond"
+  },
+  "result": {
+    "id": "lithmod:scanner_multipatterning_module",
+    "count": 1
+  }
+}

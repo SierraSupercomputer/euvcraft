@@ -8,7 +8,7 @@
   "throughput_wph": 125,
   "layers": 70,
   "layer_ticks": 100,
-  "default_yield_percent": 85.0,
+  "default_yield_percent": 85,
   "target_speed_mhz": 3900,
   "comfortable_cores": 4,
   "optional": true

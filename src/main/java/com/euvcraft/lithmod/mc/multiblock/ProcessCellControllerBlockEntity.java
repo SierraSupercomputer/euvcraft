@@ -199,6 +199,9 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
      */
     protected int utilityGeneration(){return 1;}
 
+    /** Exposure passes are frozen into the admission settings and saved contract timing. */
+    protected int admissionPasses(Tier tier) { return 1; }
+
     protected boolean readyForAdmission() {
         return true;
     }
@@ -315,7 +318,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         }
         var registry = TierDataLoader.getRegistry();
         Tier tier = registry.byIndex(mask.tierIndex()).orElse(null);
-        if (tier == null || tier.index() > 5) { lastRefusal = RefusalReason.NO_MASK; return; }
+        if (tier == null || tier.index() > 6) { lastRefusal = RefusalReason.NO_MASK; return; }
 
         // Admission hooks: structural formation, tier support, readiness, refusal
         if (!structureFormed()) { lastRefusal = RefusalReason.LINE_CANNOT_RUN_TIER; return; }
@@ -323,10 +326,31 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         if (!readyForAdmission()) { lastRefusal = RefusalReason.LINE_CANNOT_RUN_TIER; return; }
         // The scanner operating panel displays its public calibration-required status.
 
+        // Core count resolution, identical to applyLayer's rule (contract-family), so the
+        // frozen spec and every later layer agree:
+        // compute T3-T5 keep their fixed count of 1; compute T6 carries the mask stack's
+        // CORE_COUNT component (old or missing metadata defaults to 1) and the count must
+        // be one of the configured options, otherwise the lot is refused; non-compute
+        // (and T1/T2) dies carry no core count.
+        Integer cores = admissionCores(tier, mask.dieType(), maskStack);
+        if (cores != null && cores < 1) {
+            // only reachable for a disallowed T6 compute count; fail admission
+            lastRefusal = RefusalReason.LINE_CANNOT_RUN_TIER;
+            return;
+        }
+
         LineLoadout loadout = LineLoadoutReader.read(equipment(SLOT_LIGHT_SOURCE), equipment(SLOT_OPTICS),
             equipment(SLOT_STAGE), equipment(SLOT_CLEANROOM), equipment(SLOT_METROLOGY), slot(SLOT_RESIST), mask.tierIndex());
         DefaultStatRules rules = new DefaultStatRules(registry);
         FabSettings settings = EUVCRAFTMod.settings();
+        int passes=admissionPasses(tier);
+        if(passes<1||passes>8){lastRefusal=RefusalReason.LINE_CANNOT_RUN_TIER;return;}
+        if(passes>1){
+            var overrides=new java.util.HashMap<>(settings.layerTicksOverrides());
+            try{overrides.put(tier.id(),Math.multiplyExact(tier.layerTicks(settings),passes));}
+            catch(ArithmeticException invalid){lastRefusal=RefusalReason.LINE_CANNOT_RUN_TIER;return;}
+            settings=settings.toBuilder().layerTicksOverrides(overrides).build();
+        }
         GenerationMatrix matrix = SupportLineDataLoader.getMatrix();
 
         // Derive actual installed generations for T3 admission:
@@ -341,7 +365,6 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
             SupportLines.TEST_PACKAGING, 1
         );
 
-        Integer cores = (tier.index() >= 3 && tier.index() <= 5 && DieTypes.COMPUTE.equals(mask.dieType())) ? 1 : null;
         ProcessRunRequest request = new ProcessRunRequest(lot, mask.dieType(), tier, cores,
             mask.usesRemaining(), rules.stats(loadout.toLineComponents(), tier.index()),
             rules.canRunTier(loadout.toLineComponents(), tier.index()),
@@ -365,6 +388,43 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
             lastRefusal = null;
             setChanged();
         } catch (RuntimeException invalid) { stopInvalidRun(); }
+    }
+
+    /**
+     * Resolves the core count a fresh run of this mask is admitted under.
+     *
+     * <p>The rule is shared with the read-back in {@link #contractCores()}: a non-compute
+     * die carries no core count; compute T3-T5 keep their fixed pre-T6 count of 1; compute
+     * T6 reads the mask stack's public CORE_COUNT component — old or missing metadata
+     * defaults to 1 — but only when that count is one of the configured, validated
+     * {@code coreCountOptions}. A T6 compute count outside the options resolves to
+     * {@code 0}, which callers must treat as an admission refusal (never as "no cores").</p>
+     */
+    private static @Nullable Integer admissionCores(Tier tier, String dieType, ItemStack maskStack) {
+        if (!DieTypes.COMPUTE.equals(dieType) || tier.index() < 3) return null;
+        if (tier.index() <= 5) return 1;
+        if (maskStack.getCount() != 1) return 0;
+        int count = maskStack.getOrDefault(ModDataComponents.CORE_COUNT.get(), 1);
+        return EUVCRAFTMod.settings().coreCountOptions().contains(count) ? count : 0;
+    }
+
+    /**
+     * The frozen core count the accepted contract runs at, used for every layer.
+     *
+     * <p>The count is read from the contract's own frozen mask copy — the copied stack
+     * snapshot carries the CORE_COUNT component admission accepted — and mirrors
+     * {@link #admissionCores} without re-checking the configured options, so a mid-run
+     * settings change can never retroactively rewrite a lot that was calibrated under the
+     * accepted count. Pre-T6 compute stays the fixed 1 and non-compute stays none, so all
+     * pre-T6 behaviour is untouched.</p>
+     */
+    private @Nullable Integer contractCores() {
+        if (contract == null) return null;
+        Tier tier = contract.tier();
+        if (!DieTypes.COMPUTE.equals(contract.dieType()) || tier.index() < 3) return null;
+        if (tier.index() > 6) return null;
+        if (tier.index() <= 5) return 1;
+        return contract.mask().getOrDefault(ModDataComponents.CORE_COUNT.get(), 1);
     }
 
     private boolean inputsMatch() {
@@ -476,7 +536,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         if (!(level instanceof ServerLevel server) || contract == null || !inputsMatch()
                 || !Objects.equals(lot, trustedLot())) throw new IllegalStateException("Run inputs changed");
         double frozenYieldFactor = contract.frozenYieldFactor();
-        Integer cores = DieTypes.COMPUTE.equals(contract.dieType()) ? 1 : null;
+        Integer cores = contractCores();
         FoupContents updated = FabYieldService.applyLayerStep(server, lot, contract.tier(),
             contract.dieType(), cores, layer, defectFactor, frozenYieldFactor);
         ItemStack carrier = slot(SLOT_FOUP).copy();

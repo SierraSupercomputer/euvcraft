@@ -68,20 +68,21 @@ public final class ScannerStructureMatcher {
         java.util.Objects.requireNonNull(blockKindAt);
 
         final var original = blockKindAt;
-        blockKindAt = pos -> {var kind=original.apply(pos);return kind==BlockKind.DIAGNOSTIC_PANEL||kind==BlockKind.WATER_INLET?BlockKind.CASING:kind;};
+        blockKindAt = pos -> {var kind=original.apply(pos);return kind==BlockKind.DIAGNOSTIC_PANEL||kind==BlockKind.WATER_INLET||kind==BlockKind.MULTIPATTERNING_MODULE?BlockKind.CASING:kind;};
         String firstFailure = null;
         // Only lower row (v0=0) is valid for the anchor; try all three front-face columns (u0=0,1,2)
         for (int u0 = 0; u0 < SCANNER_SHAPE.width(); u0++) {
             int v0 = 0;
             MatchResult result = matchAtAnchor(controllerPos, facing, blockKindAt, u0, v0);
             if (result.success()) {
-                int diagnostic=0,inlet=0;
+                int diagnostic=0,inlet=0,multi=0;
                 for(var pos:result.memberPositions()){
                     var kind=original.apply(pos);
                     if(kind==BlockKind.DIAGNOSTIC_PANEL){diagnostic++;if(pos.y()!=controllerPos.y()+1)return MatchResult.failure("Diagnostic panel must be in middle layer");}
                     if(kind==BlockKind.WATER_INLET)inlet++;
+                    if(kind==BlockKind.MULTIPATTERNING_MODULE){multi++;if(pos.y()!=controllerPos.y()+1)return MatchResult.failure("Multi-patterning module must be in middle layer");}
                 }
-                if(diagnostic>1||inlet>1||diagnostic!=inlet)return MatchResult.failure("water inlet not allowed without exactly one diagnostic panel, and vice versa");
+                if(diagnostic>1||inlet>1||multi>1||diagnostic!=inlet||multi>0&&diagnostic!=1)return MatchResult.failure("water inlet not allowed without exactly one diagnostic panel, and vice versa");
                 return result;
             }
             if (firstFailure == null) {

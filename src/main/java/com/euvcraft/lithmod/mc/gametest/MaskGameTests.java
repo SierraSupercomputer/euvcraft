@@ -1599,7 +1599,7 @@ public final class MaskGameTests {
                 maskFiltered.add(stack);
             }
         }
-        helper.assertValueEqual(8, maskFiltered.size(),
+        helper.assertValueEqual(11, maskFiltered.size(),
             "the main tab holds " + maskFiltered.size() + " mask-related entries rather than four");
 
         // Entry 0: blank mask
@@ -1609,8 +1609,8 @@ public final class MaskGameTests {
             "the blank plate in the tab carries a design");
 
         // Entries 1-3: three sample masks in order (logic T1, logic T2, memory T2)
-        String[] sampleDieTypes = {DieTypes.LOGIC,DieTypes.LOGIC,DieTypes.MEMORY,DieTypes.LOGIC,DieTypes.MEMORY,DieTypes.COMPUTE,DieTypes.NAND};
-        int[] sampleTiers = {1,2,2,5,5,5,5};
+        String[] sampleDieTypes = {DieTypes.LOGIC,DieTypes.LOGIC,DieTypes.MEMORY,DieTypes.LOGIC,DieTypes.MEMORY,DieTypes.COMPUTE,DieTypes.NAND,DieTypes.MEMORY,DieTypes.COMPUTE,DieTypes.NAND};
+        int[] sampleTiers = {1,2,2,5,5,5,5,6,6,6};
         for (int sample = 0; sample < sampleDieTypes.length; sample++) {
             ItemStack entry = maskFiltered.get(1 + sample);
             helper.assertTrue(entry.getItem() == ModItems.MASK.get(),

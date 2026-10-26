@@ -1,0 +1,25 @@
+{
+  "id": "reflow_oven",
+  "energy_capacity": 500000,
+  "max_receive": 10000,
+  "energy_per_tick": 240,
+  "params": {
+    "thermal_min_ramp": 100,
+    "thermal_max_ramp": 300,
+    "thermal_min_peak": 23000,
+    "thermal_max_peak": 24500,
+    "thermal_min_dwell": 3000,
+    "thermal_max_dwell": 7000,
+    "thermal_min_cooling": 100,
+    "thermal_max_cooling": 400,
+    "thermal_min_quality": 750,
+    "thermal_test_fe": 2000,
+    "thermal_test_coupon_count": 1,
+    "thermal_min_multiplier_permille": 500,
+    "thermal_max_multiplier_permille": 1000,
+    "scrap_per_failed_assembly": 1,
+    "contamination_ppm": 2500,
+    "contamination_ticks": 1200,
+    "thermal_peak_variation": 25
+  }
+}

@@ -74,6 +74,8 @@ public class EUVCRAFTMod {
         com.euvcraft.lithmod.mc.multiblock.utilities.UtilityMachines.register(modEventBus);
         com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMachines.register(modEventBus);
         com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.register(modEventBus);
+        com.euvcraft.lithmod.mc.multiblock.zone.ZoneMachines.register(modEventBus);
+        com.euvcraft.lithmod.mc.multiblock.reflow.ReflowMachines.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(FoupTooltipAppenders::register);
@@ -110,6 +112,7 @@ modEventBus.addListener(ComponentTooltipAppenders::register);
             com.euvcraft.lithmod.mc.gametest.T4RuntimeGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.ScannerGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.T5GameTests.register(modEventBus);
+            com.euvcraft.lithmod.mc.gametest.T6GameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.CleanroomPortGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.CleanroomSafetyGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.FoupCleanerGameTests.register(modEventBus);

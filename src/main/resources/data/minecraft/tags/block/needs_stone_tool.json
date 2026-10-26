@@ -40,6 +40,17 @@
     "lithmod:cleanroom_power_port",
     "lithmod:cleanroom_fluid_port",
     "lithmod:cleanroom_item_port",
-    "lithmod:foup_cleaner"
+    "lithmod:foup_cleaner",
+    "lithmod:zone_refiner",
+    "lithmod:zone_casing",
+    "lithmod:zone_power_port",
+    "lithmod:zone_operating_panel",
+    "lithmod:zone_water_inlet",
+    "lithmod:reflow_oven",
+    "lithmod:reflow_casing",
+    "lithmod:reflow_power_port",
+    "lithmod:reflow_operating_panel",
+    "lithmod:reflow_calibration_panel",
+    "lithmod:scanner_multipatterning_module"
   ]
 }

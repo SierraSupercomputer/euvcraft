@@ -46,6 +46,8 @@ public final class MachineTooltipAppenders {
      * Keys are the actual item registry IDs (namespace omitted, e.g. "process_cell_controller").
      */
     private static final Map<String, ControllerMeta> CONTROLLER_META = Map.ofEntries(
+            Map.entry("zone_refiner",new ControllerMeta("tooltip.lithmod.frame.zone","tooltip.lithmod.dims.3x3x5","tooltip.lithmod.casing.zone","tooltip.lithmod.port.zone",new String[]{"tooltip.lithmod.panel.operating_panel_above","tooltip.lithmod.required.zone_water_inlet"})),
+            Map.entry("reflow_oven",new ControllerMeta("tooltip.lithmod.frame.reflow","tooltip.lithmod.dims.3x3x2","tooltip.lithmod.casing.reflow","tooltip.lithmod.port.reflow",new String[]{"tooltip.lithmod.panel.operating_panel_above","tooltip.lithmod.required.reflow_calibration_panel"})),
             // Process Cell: 2x2x3, Process Cell Casing, 1-2 Process Cell Power Ports, Operating Panel above
             Map.entry("process_cell_controller", new ControllerMeta(
                     "tooltip.lithmod.frame.assembly",
@@ -108,7 +110,8 @@ public final class MachineTooltipAppenders {
                             "tooltip.lithmod.panel.calibration_panel",
                             "tooltip.lithmod.t5.immersion",
                             "tooltip.lithmod.t5.diagnostic",
-                            "tooltip.lithmod.t5.water"
+                            "tooltip.lithmod.t5.water",
+                            "tooltip.lithmod.optional.multipatterning"
                     }
             )),
 

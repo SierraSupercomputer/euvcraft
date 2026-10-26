@@ -18,6 +18,7 @@ import com.euvcraft.lithmod.mc.FoupItems;
 import com.euvcraft.lithmod.mc.data.SupportLineDataLoader;
 import com.euvcraft.lithmod.mc.data.TierDataLoader;
 import com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity;
+import com.euvcraft.lithmod.mc.registry.ModDataComponents;
 import com.euvcraft.lithmod.mc.registry.ModItems;
 
 import net.minecraft.core.BlockPos;
@@ -169,6 +170,8 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
     private static final String PAID_TICKS_KEY = "paid_ticks";
     private static final String DIE_TYPE_KEY = "die_type";
     private static final String TIER_KEY = "tier";
+    /** The frozen core count of the accepted run spec inside the queue snapshot. */
+    private static final String CORES_KEY = "cores";
 
     /** The vanilla maximum an output or consumable slot holds. */
     private static final int MAX_STACK = 64;
@@ -184,6 +187,14 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
     private String designDieType;
     /** Public frozen node tier of the accepted lot, for catalog resolution. */
     private int designTierIndex;
+    /**
+     * The core count frozen from the accepted run spec ({@code 0} when the die has none).
+     *
+     * <p>Server-only like the other design fields: only compute T6-or-later chips carry the
+     * public CORE_COUNT component, which then reads this value. A T5 to T6 high-binning
+     * queue inherits the source spec's count, which for T5 compute is 1.</p>
+     */
+    private int designCores;
     /** Why the lot in the input slot was refused, or {@code null}. Recomputed each tick. */
     private PackagingRefusalReason refusal;
     /** Started but blocked on packages, output room, energy or data. Not persisted. */
@@ -494,6 +505,10 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
         this.run = queue;
         this.designDieType = spec.dieType();
         this.designTierIndex = outputTier;
+        // Freeze the accepted run spec's core count with the same instant the queue is
+        // accepted: a T5 to T6 high-binning queue inherits the source spec's count (1 for
+        // T5 compute); ordinary T6 compute carries its own count; every other design has none.
+        this.designCores = RunSpec.coresOrZero(spec.coresOrNull());
         this.acceptedSourceTier=spec.tierIndex();this.acceptedHighBinning=high;
         this.refusal = null;
         this.paused = false;
@@ -569,6 +584,33 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
         return ModItems.CHIP_SCRAP.get();
     }
 
+    /**
+     * Builds one product stack for the given item, exactly as this accepted queue's
+     * outputs are written.
+     *
+     * <p>Both output paths — the {@link #bankRoom} preflight and the
+     * {@link #insertIntoBank} write — build their reference stack through this single
+     * helper, so the stack a room count is measured against is always literally the same
+     * stack a write creates. That is what keeps two queues that were accepted with
+     * different core counts from ever merging into the same slots or mis-stating the
+     * capacity a partly full slot offers.</p>
+     *
+     * <p>The public {@code CORE_COUNT} component is set only when the accepted design is
+     * a compute die at tier 6 or later, a positive count was frozen at admission, and the
+     * item is exactly the catalog chip of the frozen design. Every other product —
+     * scrap, a pre-T6 chip, or any item resolved under a different design — comes back a
+     * plain vanilla stack with no component at all.</p>
+     */
+    private ItemStack productStack(Item item) {
+        ItemStack product = new ItemStack(item);
+        if (this.designTierIndex >= 6 && DieTypes.COMPUTE.equals(this.designDieType)
+                && this.designCores >= 1
+                && item == ChipCatalog.chipFor(this.designDieType, this.designTierIndex).orElse(null)) {
+            product.set(ModDataComponents.CORE_COUNT.get(), this.designCores);
+        }
+        return product;
+    }
+
     /** How many packages the package slot holds right now. */
     private int packageCount() {
         ItemStack stack = slot(PACKAGE_SLOT);
@@ -602,7 +644,7 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
      */
     private int bankRoom(int first, int count, Item item) {
         int room = 0;
-        ItemStack product = new ItemStack(item);
+        ItemStack product = productStack(item);
         for (int index = first; index < first + count; index++) {
             ItemStack stack = slot(index);
             if (stack.isEmpty()) {
@@ -623,12 +665,15 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
      */
     private void insertIntoBank(int first, int count, Item item, int amount) {
         int remaining = amount;
-        ItemStack product = new ItemStack(item);
+        ItemStack product = productStack(item);
         for (int index = first; index < first + count && remaining > 0; index++) {
             ItemStack stack = slot(index);
             if (stack.isEmpty()) {
                 int placed = Math.min(remaining, product.getMaxStackSize());
-                setSlot(index, new ItemStack(item, placed));
+                // copyWithCount rather than a fresh stack: whatever components the product
+                // carries travel onto the slot, so a written chip still matches the
+                // preflight's ItemStack.isSameItemSameComponents answer on the next wafer.
+                setSlot(index, product.copyWithCount(placed));
                 remaining -= placed;
             } else if (ItemStack.isSameItemSameComponents(stack, product)) {
                 int placed = Math.min(remaining, Math.max(0, stack.getMaxStackSize() - stack.getCount()));
@@ -738,6 +783,7 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
         state.putInt(PAID_TICKS_KEY, snapshot.paidTicks());
         state.putString(DIE_TYPE_KEY, this.designDieType);
         state.putInt(TIER_KEY, this.designTierIndex);
+        state.putInt(CORES_KEY, this.designCores);
         state.putBoolean("high_binning",acceptedHighBinning);
         state.putInt("source_tier",acceptedSourceTier);
     }
@@ -789,6 +835,24 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
                     "a packaging snapshot must name a die type the catalog resolves");
             }
 
+            // The frozen core count. Legacy saves carry no "cores" key: every compute
+            // design that existed before T6 ran at 1 (including the T5 side of a T5 to T6
+            // high-binned queue, which inherits that 1), and every other design carries
+            // none, so a missing key resolves to those same defaults instead of dropping
+            // the queue. A stored count must be in 0..256, and a compute design at tier 6
+            // or later must have frozen at least one core, or the snapshot is dropped by
+            // the catch below like any other malformed tag.
+            boolean computeDesign = DieTypes.COMPUTE.equals(dieType);
+            int cores = state.getIntOr(CORES_KEY, computeDesign ? 1 : 0);
+            if (cores < 0 || cores > 256) {
+                throw new IllegalArgumentException(
+                    "a packaging snapshot core count must be in 0..256");
+            }
+            if (computeDesign && tierIndex >= 6 && cores < 1) {
+                throw new IllegalArgumentException(
+                    "a packaging snapshot for a compute design at tier 6 or later needs at least one core");
+            }
+
             boolean high=state.getBooleanOr("high_binning",false);
             int sourceTier=state.getIntOr("source_tier",tierIndex);
             if(high&&(installedGeneration()<2||sourceTier<3||tierIndex!=sourceTier+1
@@ -800,6 +864,7 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
             this.run = restoredRun;
             this.designDieType = dieType;
             this.designTierIndex = tierIndex;
+            this.designCores = cores;
         } catch (RuntimeException malformed) {
             // Deliberately no logging and no partial recovery: the snapshot either describes
             // a consistent queue or it is dropped.
@@ -836,6 +901,7 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
         this.plan = null;
         this.designDieType = null;
         this.designTierIndex = 0;
+        this.designCores = 0;
         this.refusal = null;
         this.paused = false;
     }

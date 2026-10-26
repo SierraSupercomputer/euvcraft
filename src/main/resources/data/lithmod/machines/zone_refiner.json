@@ -1,0 +1,10 @@
+{
+  "id": "zone_refiner",
+  "energy_capacity": 1000000,
+  "max_receive": 20000,
+  "energy_per_tick": 480,
+  "params": {
+    "upw_capacity_mb": 16000,
+    "water_per_batch_mb": 4000
+  }
+}

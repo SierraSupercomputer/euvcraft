@@ -1,0 +1,14 @@
+{
+  "machine": "zone_refiner",
+  "ingredients": [
+    {
+      "item": "lithmod:pure_silicon_boule",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:electronic_grade_boule",
+    "count": 1
+  },
+  "ticks": 600
+}

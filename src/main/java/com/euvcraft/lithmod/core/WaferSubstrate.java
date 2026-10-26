@@ -25,7 +25,10 @@ public enum WaferSubstrate {
      * Pure silicon wafers (generation 2).
      * <p>Stable ID: {@code "pure"}</p>
      */
-    PURE("pure", 2);
+    PURE("pure", 2),
+
+    /** Electronic-grade material produced by zone refining; stable generation3 ID. */
+    ELECTRONIC_GRADE("electronic_grade", 3);
 
     private final String id;
     private final int generation;

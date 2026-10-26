@@ -29,7 +29,7 @@ public final class DepositionEtcherControllerBlockEntity extends AdvancedControl
         if(stack.isEmpty()||stack.getCount()!=1||!FoupItems.isFoup(stack))return null;
         try {
             var lot=FoupItems.trustedContentsOf(stack);
-            if(lot.isEmpty()||lot.grade()!=WaferSubstrate.PURE||lot.preparationGeneration()!=1||lot.isStarted()
+            if(lot.isEmpty()||lot.grade().generation()<WaferSubstrate.PURE.generation()||lot.preparationGeneration()!=1||lot.isStarted()
                 ||lot.wafers().stream().anyMatch(w->w.layerIndex()!=0))return null;
             return lot;
         } catch(RuntimeException invalid){return null;}

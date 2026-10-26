@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "lithmod:block/zone_water_inlet"
+    }
+  }
+}

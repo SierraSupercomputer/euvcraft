@@ -100,7 +100,7 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
      * refused upstream, so only the two boule items ever reach this).
      */
     public static WaferSubstrate gradeOf(Item bouleItem) {
-        return bouleItem == pureBouleItem() ? WaferSubstrate.PURE : WaferSubstrate.ORDINARY;
+        return bouleItem == electronicBouleItem() ? WaferSubstrate.ELECTRONIC_GRADE : bouleItem == pureBouleItem() ? WaferSubstrate.PURE : WaferSubstrate.ORDINARY;
     }
 
     /**
@@ -109,7 +109,7 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
      * the only thing the grade changes is the grade stamped onto the produced lot.
      */
     public static boolean acceptsBouleItem(ItemStack stack) {
-        return stack.is(bouleItem()) || stack.is(pureBouleItem());
+        return stack.is(bouleItem()) || stack.is(pureBouleItem()) || stack.is(electronicBouleItem());
     }
 
     /**
@@ -420,6 +420,8 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
     }
 
     /** The pure boule this machine also accepts, whose lots come out {@code PURE}. */
+    public static Item electronicBouleItem() { return com.euvcraft.lithmod.mc.multiblock.zone.ZoneMachines.ELECTRONIC_GRADE_BOULE.get(); }
+
     public static Item pureBouleItem() {
         return ModItems.PURE_SILICON_BOULE.get();
     }
@@ -493,7 +495,7 @@ public class WaferSlicerBlockEntity extends FabMachineBlockEntity {
             // into a lot of the grade it started under even if the slot's stack was saved with
             // it and the grade field is the only authority (it is — the stack round-trips
             // through the inventory, and the grade check below refuses a tampered swap).
-            this.slicingBouleItem = savedGrade == WaferSubstrate.PURE
+            this.slicingBouleItem = savedGrade == WaferSubstrate.ELECTRONIC_GRADE ? electronicBouleItem() : savedGrade == WaferSubstrate.PURE
                 ? pureBouleItem() : bouleItem();
             this.progress = savedProgress;
             this.ticks = savedTicks;

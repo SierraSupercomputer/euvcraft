@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "lithmod:item/zone_power_port"
+  }
+}

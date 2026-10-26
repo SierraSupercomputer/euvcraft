@@ -144,8 +144,8 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
             throw new IllegalArgumentException("preparationGeneration must be " + PREPARATION_LEGACY + " or " + PREPARATION_G2 + ", got " + preparationGeneration);
         }
         wafers = List.copyOf(wafers);
-        if (preparationGeneration == PREPARATION_G2 && (wafers.isEmpty() || grade != WaferSubstrate.PURE)) {
-            throw new IllegalArgumentException("G2 preparation requires nonempty pure wafers");
+        if (preparationGeneration == PREPARATION_G2 && (wafers.isEmpty() || grade.generation() < WaferSubstrate.PURE.generation())) {
+            throw new IllegalArgumentException("G2 preparation requires nonempty pure-or-better wafers");
         }
         if (wafers.size() > capacity) {
             throw new IllegalArgumentException(
@@ -314,8 +314,8 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
         if (isEmpty()) {
             throw new IllegalArgumentException("cannot prepare an empty lot");
         }
-        if (this.grade != WaferSubstrate.PURE) {
-            throw new IllegalArgumentException("only PURE grade lots can be prepared");
+        if (this.grade.generation() < WaferSubstrate.PURE.generation()) {
+            throw new IllegalArgumentException("only PURE-or-better grade lots can be prepared");
         }
         if (isStarted()) {
             throw new IllegalArgumentException("cannot prepare a lot that has already been started");
