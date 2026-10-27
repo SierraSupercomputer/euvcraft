@@ -324,8 +324,10 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         if (tier == null || tier.index() > 6) { lastRefusal = RefusalReason.NO_MASK; return; }
 
         // Admission hooks: structural formation, tier support, readiness, refusal
-        if (!structureFormed()) { lastRefusal = RefusalReason.LINE_CANNOT_RUN_TIER; return; }
         if (!supportsTier(tier)) { lastRefusal = RefusalReason.LINE_CANNOT_RUN_TIER; return; }
+        var blocker = admissionBlocker(tier);
+        if (blocker != null) { lastRefusal = blocker; return; }
+        if (!structureFormed()) { lastRefusal = RefusalReason.LINE_CANNOT_RUN_TIER; return; }
         if (!readyForAdmission()) { lastRefusal = RefusalReason.LINE_CANNOT_RUN_TIER; return; }
         // The scanner operating panel displays its public calibration-required status.
 
