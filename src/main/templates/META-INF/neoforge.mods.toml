@@ -46,6 +46,9 @@ Adds a complete semiconductor fab with FOUPs, lithography tiers T1-T8, and chip 
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.
 [[mixins]]
+config="lithmod.network.mixins.json"
+
+[[mixins]]
 config="lithmod.client.mixins.json"
 
 # The [[accessTransformers]] block allows you to declare where your AT file is.
