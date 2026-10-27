@@ -36,8 +36,23 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
  private void sampleCalibrationExposure(com.euvcraft.lithmod.mc.cleanroom.CleanroomRooms.Sample sample){
   if(tierIndex()!=6)return;boolean dirty=sample.room()==null||sample.room().ppm()>definition().map(d->d.paramOrDefault("contamination_ppm",2500)).orElse(2500);
   var next=CalibrationExposure.advance(exposure,dirty,true,definition().map(d->d.paramOrDefault("contamination_ticks",1200)).orElse(1200));
-  if(!exposure.invalidated()&&next.invalidated()){calibratedHardware="";acceptedQuality=-1;acceptedMultiplier=0;diagnosticHardware="";diagnosticQuality=-1;diagnosticMultiplier=0;}
+  if(!exposure.invalidated()&&next.invalidated())resetContaminatedCalibration();
   exposure=next;setChanged();
+ }
+ /** Runs exactly once at dirty-exposure invalidation; existing lot keeps its frozen contract. */
+ private void resetContaminatedCalibration(){
+  var rng=java.util.concurrent.ThreadLocalRandom.current();
+  var beam=BeamAlignment.create(rng.nextLong());
+  if(beam.targetX()==alignment.targetX()&&beam.targetY()==alignment.targetY()&&beam.targetFocus()==alignment.targetFocus())
+   beam=new BeamAlignment(beam.x(),beam.y(),beam.focus(),alignment.targetX()==5?-5:alignment.targetX()+1,beam.targetY(),beam.targetFocus());
+  if(beam.quality()>=minimumQuality())beam=new BeamAlignment(-10,-10,10,beam.targetX(),beam.targetY(),beam.targetFocus());
+  alignment=beam;
+  var fit=DiagnosticFit.create(rng.nextLong());
+  if(fit.targetA()==diagnostic.targetA()&&fit.targetB()==diagnostic.targetB()&&fit.targetC()==diagnostic.targetC())
+   fit=new DiagnosticFit(0,0,0,Math.floorMod(diagnostic.targetA()+101,201)-100,fit.targetB(),fit.targetC());
+  diagnostic=fit;diagnosticPlotted=false;
+  calibratedHardware="";acceptedQuality=-1;acceptedMultiplier=0;
+  diagnosticHardware="";diagnosticQuality=-1;diagnosticMultiplier=0;
  }
  public boolean immersion(){return immersion;}
  public DiagnosticFit diagnostic(){return diagnostic;}public boolean diagnosticPlotted(){return diagnosticPlotted;}
@@ -116,6 +131,19 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
  @Override protected int utilityGeneration(){return immersion?2:1;}
  @Override protected int admissionPasses(Tier tier){return tier.index()==6?definition().map(d->d.paramOrDefault("multipattern_passes",2)).orElse(0):1;}
  @Override protected boolean supportsTier(Tier tier){return tier.index()==4||tier.index()==5||tier.index()==6;}
+ /** Public reason for admission/pause; independent of hidden rolls or private fit targets. */
+ public int operatingIssue(){
+  if(!isFormed())return RefusalReason.Code.STRUCTURE_INCOMPLETE.ordinal()+1;
+  if(definition().isEmpty()||!hardwareValidated)return 0;
+  int tier=maskTier();
+  if(!inputsLocked()&&tier>=4&&tier<=6&&!operatingCalibrated())return RefusalReason.Code.CALIBRATION_REQUIRED.ordinal()+1;
+  if(tier>=5&&tier<=6){
+   if(!roomSample().available())return RefusalReason.Code.ROOM_UNAVAILABLE.ordinal()+1;
+   int cost=waterPerTick();if(cost>0&&cost<=pureWater.capacity()&&pureWater.amount()<cost)return RefusalReason.Code.ULTRAPURE_WATER_REQUIRED.ordinal()+1;
+  }
+  return 0;
+ }
+ @Override protected RefusalReason admissionBlocker(Tier tier){int issue=operatingIssue();return issue==0?null:new RefusalReason(RefusalReason.Code.values()[issue-1]);}
  @Override protected boolean readyForAdmission(){return operatingCalibrated()&&validParameters()&&(maskTier()<5||immersion&&diagnosticParams()&&waterPerTick()>0&&waterPerTick()<=pureWater.capacity()&&pureWater.amount()>=waterPerTick());}
  @Override protected double admissionYieldMultiplier(){acceptedHardware=hardware;setChanged();return acceptedMultiplier*(maskTier()>=5?diagnosticMultiplier:1.0);}
 

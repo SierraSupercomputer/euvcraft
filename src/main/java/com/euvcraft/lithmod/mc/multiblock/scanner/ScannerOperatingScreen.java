@@ -17,26 +17,11 @@ public final class ScannerOperatingScreen extends AdvancedMachineScreen<ScannerO
   line(g,Component.literal(menu.energy()+" / "+menu.energyCapacity()+" FE"),26,56,142);
   line(g,playerInventoryTitle,8,72,160);
   line(g,Component.translatable(formed()?"state.lithmod.process_cell.formed":"state.lithmod.process_cell.unformed"),8,168,160);
-  if(!menu.calibrated()){
-   line(g,menu.contaminationInvalidated()?Component.literal("Contamination: recalibrate"):Component.translatable("message.lithmod.scanner.calibration_required"),8,180,160);
-   line(g,Component.literal(menu.immersion()?"Use Beam and Diagnostic Panels":"Use the Calibration Panel"),8,190,160);
-  }else{
-   line(g,Component.literal("Alignment: "+menu.quality()+"/100"),8,180,160);
-   line(g,Component.literal("Yield multiplier: "+menu.multiplierPermille()/10.0+"%"),8,190,160);
-  }
-  line(g,statusText(),8,202,160);
-  line(g,Component.literal("Layer "+menu.currentLayer()+" / "+menu.totalLayers()+(menu.immersion()?"  UPW: "+menu.water()+" mB":"")),8,214,160);
- }
- private Component statusText(){
-  if(menu.tierIndex()>=5&&menu.inputsLocked()&&menu.water()<menu.waterCost())return Component.literal("Paused: supply ultrapure water");
-  int status=menu.status();
-  if(menu.aborted())return Component.translatable("state.lithmod.process_cell.stopped_after_abort");
-  if(status==com.euvcraft.lithmod.mc.machine.process.ProcessCellMenu.STATUS_DEFINITION_MISSING)return Component.translatable("state.lithmod.process_cell.missing_definition");
-  int refusal=menu.refusal();
-  if(refusal>0&&refusal<=com.euvcraft.lithmod.core.RefusalReason.Code.values().length)
-   return Component.translatable("state.lithmod.process_cell."+com.euvcraft.lithmod.core.RefusalReason.Code.values()[refusal-1].name().toLowerCase(java.util.Locale.ROOT));
-  return Component.translatable("state.lithmod.process_cell."+(status>=0&&status<com.euvcraft.lithmod.core.ProcessState.values().length?com.euvcraft.lithmod.core.ProcessState.values()[status]:com.euvcraft.lithmod.core.ProcessState.IDLE).name().toLowerCase(java.util.Locale.ROOT));
- }
-}
-
+  if(!menu.calibrated()&&!menu.inputsLocked())
+   line(g,Component.literal(menu.contaminationInvalidated()?"Recalibrate: Beam + Diagnostic":menu.immersion()?"Use Beam + Diagnostic Panels":"Use the Calibration Panel"),8,180,160);
+  else line(g,Component.literal(menu.inputsLocked()?"Calibration fixed for this lot":"Calibration yield: "+menu.multiplierPermille()/10.0+"%"),8,180,160);
+  line(g,statusText(),8,192,160);
+  line(g,Component.literal("Layer "+menu.currentLayer()+"/"+menu.totalLayers()+(menu.immersion()?"  UPW "+menu.water():"")),8,204,160);
+  int ticks=menu.ticks(),progress=menu.progress();
+  line(g,Component.literal("Exposure: "+progress+"/"+ticks+" t"+(ticks>0?" ("+(int)(100L*progress/ticks)+"%)":"")),8,216,160);
 

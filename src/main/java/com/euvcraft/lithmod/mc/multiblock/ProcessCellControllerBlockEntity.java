@@ -202,6 +202,9 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
     /** Exposure passes are frozen into the admission settings and saved contract timing. */
     protected int admissionPasses(Tier tier) { return 1; }
 
+    /** Additional public machine prerequisite; no hidden lot data. */
+    protected @Nullable RefusalReason admissionBlocker(Tier tier) { return null; }
+
     protected boolean readyForAdmission() {
         return true;
     }
