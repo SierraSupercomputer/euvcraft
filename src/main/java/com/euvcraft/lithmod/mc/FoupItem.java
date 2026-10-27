@@ -18,19 +18,31 @@ import org.jspecify.annotations.Nullable;
  * client view.
  *
  * <p>{@link FoupItems#initializeIfMissing(ItemStack)} gives crafted and /give FOUPs a
- * fresh server lot when the component is absent. The second hook covers the one
- * untrusted case the creative inventory creates: when a Creative player takes a FOUP,
- * {@code ServerboundSetCreativeModeSlotPacket} places a client-view stack
+ * fresh server lot when the component is absent. The second hook covers the
+ * untrusted cases the creative inventory creates: when a Creative player takes a
+ * FOUP, {@code ServerboundSetCreativeModeSlotPacket} places a client-view stack
  * ({@link FoupContentsCodec#fromPublicView(int, int, int)}) on the server slot, with
- * whatever capacity the network form carried. A registered FOUP stack of exactly one,
- * held by a Creative owner, whose lot is an empty client view with no run spec, is
- * repaired in place to a server empty lot: fresh lot id, configured capacity, same
- * custom name, components and stack count.
+ * whatever capacity the network form carried. A registered FOUP stack of exactly
+ * one, held by a Creative owner, whose lot is a client view is repaired in place:
+ * <ul>
+ *   <li>an <em>empty</em> client view, with no run spec, is replaced by a server
+ *       empty lot: fresh lot id, configured capacity, same custom name, components
+ *       and stack count;</li>
+ *   <li>an <em>unstarted filled</em> client view (no run spec, every wafer at layer
+ *       0) is replaced by the server lot it stands for, through
+ *       {@link FoupContentsCodec#unstartedServerLot}: for such a lot the hidden
+ *       rolls are exactly {@link com.euvcraft.lithmod.core.Wafer#NO_ROLLS} by
+ *       definition, so the recreated hidden state is server-created, nothing
+ *       fabricated is trusted and no private rolls, flags or run data ever reach
+ *       the client;</li>
+ *   <li>anything else - a client view of a processed lot whose rolls the server
+ *       cannot know again, a started view, an over-stacked view - is left
+ *       untouched, and {@link FoupItems#trustedContentsOf(ItemStack)} still
+ *       discards every client view it is ever asked to trust.</li>
+ * </ul>
  *
- * <p>Everything else stays untouched: sealed lots (empty or filled), non-empty or
- * over-stacked client views, Survival owners and non-player owners.
- * {@link FoupItems#trustedContentsOf(ItemStack)} still discards every client view it
- * is ever asked to trust.
+ * <p>Everything else stays untouched: sealed lots (empty or filled) are never
+ * network forms, Survival owners and non-player owners never trigger the repair.
  */
 public class FoupItem extends Item {
 
@@ -42,7 +54,7 @@ public class FoupItem extends Item {
     public void inventoryTick(ItemStack stack, ServerLevel level, Entity owner, @Nullable EquipmentSlot slot) {
         super.inventoryTick(stack, level, owner, slot);
         FoupItems.initializeIfMissing(stack);
-        maybeReplaceCreativeEmptyClientView(stack, owner);
+        maybeReplaceCreativeClientView(stack, owner);
     }
 
     @Override
@@ -58,17 +70,20 @@ public class FoupItem extends Item {
     }
 
     /**
-     * Replaces an empty client-view lot with a server empty lot for a Creative owner.
+     * Replaces an untrustworthy client-view lot with a server lot for a Creative
+     * owner.
      *
      * <p>All guards must pass: a ServerPlayer with {@code hasInfiniteMaterials()},
-     * a registered FOUP item, a stack of exactly one, a present client-view lot,
-     * no wafers and no run spec. Sealed lots, non-empty or over-stacked client
-     * views and Survival or non-player owners are never repaired.</p>
+     * a registered FOUP item, a stack of exactly one and a present client-view lot.
+     * Two shapes are repaired: an empty view becomes a fresh server empty lot, and
+     * an unstarted filled view (no run spec, all wafers at layer 0) is rebuilt by
+     * {@link FoupContentsCodec#unstartedServerLot}. Sealed lots, started or
+     * processed views and Survival or non-player owners are never repaired.</p>
      *
      * @param stack the stack to potentially fix, never null
      * @param owner the entity holding the stack, may be null
      */
-    private void maybeReplaceCreativeEmptyClientView(ItemStack stack, @Nullable Entity owner) {
+    private void maybeReplaceCreativeClientView(ItemStack stack, @Nullable Entity owner) {
         if (!(owner instanceof ServerPlayer player) || !player.hasInfiniteMaterials()) {
             return;
         }
@@ -80,13 +95,15 @@ public class FoupItem extends Item {
             return;
         }
         var contents = stack.get(ModDataComponents.FOUP_CONTENTS.get());
-        if (contents == null
-            || contents.run() != null
-            || !contents.isEmpty()
-            || !FoupContentsCodec.isClientView(contents)) {
+        if (contents == null || !FoupContentsCodec.isClientView(contents)) {
             return;
         }
-        var repaired = FoupItems.emptyFoup(item).get(ModDataComponents.FOUP_CONTENTS.get());
+        if (contents.run() != null) {
+            return;
+        }
+        var repaired = contents.isEmpty()
+            ? FoupItems.emptyFoup(item).get(ModDataComponents.FOUP_CONTENTS.get())
+            : FoupContentsCodec.unstartedServerLot(contents);
         if (repaired != null) {
             stack.set(ModDataComponents.FOUP_CONTENTS.get(), repaired);
         }

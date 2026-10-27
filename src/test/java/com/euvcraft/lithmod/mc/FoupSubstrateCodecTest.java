@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import com.euvcraft.lithmod.core.FoupContents;
 import com.euvcraft.lithmod.core.FoupPublicView;
+import com.euvcraft.lithmod.core.DieTypes;
 import com.euvcraft.lithmod.core.RunSpec;
 import com.euvcraft.lithmod.core.Wafer;
 import com.euvcraft.lithmod.core.WaferSubstrate;
@@ -258,5 +259,106 @@ class FoupSubstrateCodecTest {
         // But the difference should be small (just the string length difference)
         assertEquals("ordinary".length() - "pure".length(),
             bufOrdinary.readableBytes() - bufPure.readableBytes());
+    }
+
+    @Test
+    @DisplayName("persistent codec preserves an electronic-grade prepared lot exactly")
+    void persistentCodecPreservesElectronicGradePreparation() {
+        FoupContents original = FoupContents.of(LOT, 25, wafers(10, 0), WaferSubstrate.ELECTRONIC_GRADE)
+            .withPreparationGeneration(2);
+        FoupContents decoded = encodeDecode(original);
+
+        assertEquals(original, decoded, "a G3 G2-prepared lot did not survive the save round trip");
+        assertEquals(WaferSubstrate.ELECTRONIC_GRADE, decoded.grade());
+        assertEquals(2, decoded.preparationGeneration());
+        assertEquals(original.wafers(), decoded.wafers());
+        for (int i = 0; i < original.size(); i++) {
+            assertTrue(original.wafers().get(i).cumulativeRoll() == decoded.wafers().get(i).cumulativeRoll(),
+                "roll " + i + " changed across the save round trip");
+        }
+    }
+
+    @Test
+    @DisplayName("the network form keeps G2 preparation for electronic-grade lots")
+    void networkCodecRoundTripsPreparedElectronicGrade() {
+        FoupContents original = FoupContents.of(LOT, 25, List.of(Wafer.unprocessed()),
+            WaferSubstrate.ELECTRONIC_GRADE).withPreparationGeneration(2);
+
+        ByteBuf buffer = Unpooled.buffer();
+        try {
+            FoupContentsCodec.STREAM_CODEC.encode(buffer, original);
+            FoupContents received = FoupContentsCodec.STREAM_CODEC.decode(buffer);
+
+            assertEquals(original.publicView(), received.publicView(),
+                "the network form degraded an electronic-grade G2 preparation to G1");
+            assertEquals(2, received.preparationGeneration());
+            assertEquals(WaferSubstrate.ELECTRONIC_GRADE, received.grade());
+            assertEquals(null, received.run());
+            assertTrue(FoupContentsCodec.isClientView(received));
+        } finally {
+            buffer.release();
+        }
+    }
+
+    @Test
+    @DisplayName("public/private separation: identical public fields for different hidden rolls")
+    void preparedGradeSeparatesPublicFromPrivate() {
+        FoupContents lowRoll = new FoupContents(LOT, 25, List.of(new Wafer(0, 0.5f, Wafer.NO_FLAGS)),
+            null, WaferSubstrate.ELECTRONIC_GRADE, 2);
+        FoupContents highRoll = new FoupContents(LOT, 25, List.of(new Wafer(0, 1.0f, Wafer.NO_FLAGS)),
+            null, WaferSubstrate.ELECTRONIC_GRADE, 2);
+
+        ByteBuf first = Unpooled.buffer();
+        ByteBuf second = Unpooled.buffer();
+        try {
+            FoupContentsCodec.STREAM_CODEC.encode(first, lowRoll);
+            FoupContentsCodec.STREAM_CODEC.encode(second, highRoll);
+
+            byte[] firstBytes = new byte[first.readableBytes()];
+            first.readBytes(firstBytes);
+            byte[] secondBytes = new byte[second.readableBytes()];
+            second.readBytes(secondBytes);
+
+            assertTrue(java.util.Arrays.equals(firstBytes, secondBytes),
+                "hidden rolls changed the public bytes of a prepared lot");
+
+            FoupContents decoded1 = FoupContentsCodec.STREAM_CODEC.decode(Unpooled.wrappedBuffer(firstBytes));
+            FoupContents decoded2 = FoupContentsCodec.STREAM_CODEC.decode(Unpooled.wrappedBuffer(secondBytes));
+
+            assertEquals(2, decoded1.preparationGeneration(),
+                "prepared electronic-grade degraded to G1 in the network form");
+            assertEquals(2, decoded2.preparationGeneration());
+            assertEquals(decoded1.publicView(), decoded2.publicView());
+            for (Wafer wafer : List.of(decoded1.wafers().get(0), decoded2.wafers().get(0))) {
+                assertEquals(FoupContentsCodec.CLIENT_VIEW_ROLL, wafer.cumulativeRoll(),
+                    "a private roll reached the client");
+            }
+        } finally {
+            first.release();
+            second.release();
+        }
+    }
+
+    @Test
+    @DisplayName("a started electronic-grade lot hides its run spec on the network form")
+    void startedElectronicGradeHidesRunSpec() {
+        FoupContents started = new FoupContents(LOT, 25, wafers(10, 2),
+            new RunSpec(DieTypes.COMPUTE, 6, 4, 0.9, 2), WaferSubstrate.ELECTRONIC_GRADE, 1);
+
+        ByteBuf buffer = Unpooled.buffer();
+        try {
+            FoupContentsCodec.STREAM_CODEC.encode(buffer, started);
+            FoupContents received = FoupContentsCodec.STREAM_CODEC.decode(buffer);
+
+            assertEquals(null, received.run(), "the run spec reached the client");
+            assertEquals(started.publicView(), received.publicView(),
+                "the public view of a started electronic-grade lot changed");
+            assertEquals(2, received.lotLayer());
+            for (Wafer wafer : received.wafers()) {
+                assertEquals(FoupContentsCodec.CLIENT_VIEW_ROLL, wafer.cumulativeRoll());
+            }
+        } finally {
+            buffer.release();
+        }
     }
 }
