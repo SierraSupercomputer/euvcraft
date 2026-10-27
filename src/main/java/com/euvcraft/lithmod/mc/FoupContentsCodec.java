@@ -290,7 +290,7 @@ public final class FoupContentsCodec {
      * @return the rebuilt server lot, or {@code null} when the view must not be trusted
      */
     static FoupContents unstartedServerLot(FoupContents clientView) {
-        if (clientView.run() != null || clientView.isEmpty()
+        if (!isClientView(clientView) || clientView.run() != null || clientView.isEmpty()
             || clientView.size() > clientView.capacity()) {
             return null;
         }

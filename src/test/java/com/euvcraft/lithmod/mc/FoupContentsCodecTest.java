@@ -403,7 +403,7 @@ class FoupContentsCodecTest {
     }
 
     @Test
-    @DisplayName("unstartedServerLot refuses everything a fabricated client could invent value from")
+    @DisplayName("fresh Creative reconstruction rejects processed state and cannot upgrade invalid preparation")
     void unstartedServerLotRefusesUntrustworthyViews() {
         // empty view: the empty-shape repair path owns this, not the filled rebuild
         assertEquals(null, FoupContentsCodec.unstartedServerLot(FoupContentsCodec.fromPublicView(25, 0, 0)),
@@ -413,9 +413,11 @@ class FoupContentsCodecTest {
         assertEquals(null, FoupContentsCodec.unstartedServerLot(FoupContentsCodec.fromPublicView(25, 4, 3, "electronic_grade", 1)),
             "a processed view must not be trusted");
 
-        // ordinary grade with a hostile G2 generation: the record would refuse it
-        assertEquals(null, FoupContentsCodec.unstartedServerLot(FoupContentsCodec.fromPublicView(25, 1, 0, "ordinary", 2)),
-            "a hostile G2 generation on a lesser grade must not be rebuilt");
+        // The display decoder safely downgrades an impossible ordinary/G2 request.
+        var downgraded = FoupContentsCodec.unstartedServerLot(FoupContentsCodec.fromPublicView(25, 1, 0, "ordinary", 2));
+        assertTrue(downgraded != null);
+        assertEquals(WaferSubstrate.ORDINARY, downgraded.grade());
+        assertEquals(1, downgraded.preparationGeneration(), "ordinary wafers must never gain G2 preparation");
 
         // a client view marker carrying a run spec stays refused
         FoupContents startedView = new FoupContents(FoupContentsCodec.CLIENT_VIEW_LOT_ID, 25,
