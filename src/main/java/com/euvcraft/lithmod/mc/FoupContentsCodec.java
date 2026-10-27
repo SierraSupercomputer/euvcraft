@@ -1,5 +1,8 @@
 package com.euvcraft.lithmod.mc;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -11,13 +14,23 @@ import com.euvcraft.lithmod.core.RunSpec;
 import com.euvcraft.lithmod.core.Wafer;
 import com.euvcraft.lithmod.core.WaferPacking;
 import com.euvcraft.lithmod.core.WaferSubstrate;
+import com.euvcraft.lithmod.mc.network.FoupNetworkContext;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufInputStream;
+import io.netty.buffer.ByteBufOutputStream;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.DecoderException;
 
 import net.minecraft.core.UUIDUtil;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtAccounter;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 
@@ -34,14 +47,18 @@ import net.minecraft.network.codec.StreamCodec;
  * to 1 (legacy) ONLY when absent. Unknown, malformed, or out-of-range values fail
  * closed.</p>
  *
- * <p><strong>{@link #STREAM_CODEC} (network)</strong> writes
- * {@link FoupContents#publicView()} and nothing else: capacity, wafer count, lot
- * layer, wafer substrate grade, and preparation generation. A client therefore never
- * receives a {@link Wafer#cumulativeRoll()} or a {@link Wafer#flags()} value. The
- * other direction rebuilds a placeholder lot through {@link #fromPublicView(int, int, int)}
- * or {@link #fromPublicView(int, int, int, String)} or the new overload with preparation
- * generation, which is a display value and must never be treated as authoritative: see
- * the creative-mode spike in the M0-08 report.</p>
+ * <p><strong>{@link #STREAM_CODEC} (network)</strong> is self describing: it writes
+ * the public projection — capacity, wafer count, lot layer, wafer substrate grade
+ * and preparation generation — and never carries a {@link Wafer#cumulativeRoll()}
+ * or a {@link Wafer#flags()} value except inside the optional bounded full payload
+ * documented on {@link #STREAM_CODEC} below, which only exists when the enclosing
+ * packet context granted {@link FoupNetworkContext.Payload#FULL}. A client holding a
+ * payload without that grant still decodes through
+ * {@link #fromPublicView(int, int, int)}, or {@link #fromPublicView(int, int, int, String)}
+ * or the overload with preparation generation, which is a display value and must
+ * never be treated as authoritative: see the creative-mode spike in the M0-08
+ * report. A decode inside a FULL grant rebuilds the immutable lot exactly, so a
+ * Creative clone or move never rerolls.</p>
  *
  * <p>The persistent form stores the rolls as raw IEEE-754 bits in an integer array,
  * next to two more integer arrays, so a lot costs three NBT int arrays and no
@@ -115,6 +132,19 @@ public final class FoupContentsCodec {
         return DataResult.success(i);
     });
 
+    /**
+     * The largest full private payload this stream codec will write or read, sized so a
+     * 1 MiB cap covers a Mk2 FOUP of wafers plus room state with room to spare, while a
+     * hostile length claim is rejected before any unbounded allocation happens.
+     */
+    public static final int MAX_FULL_PAYLOAD_BYTES = 1024 * 1024;
+
+    /** Payload byte ending the record with the five public fields alone. */
+    public static final byte FLAG_NONE = 0;
+
+    /** Payload byte introducing a bounded length-prefixed full {@link #CODEC} payload. */
+    public static final byte FLAG_FULL = 1;
+
     private record ExposureFields(long ticks,long sum){}
     private static final Codec<com.euvcraft.lithmod.core.cleanroom.CleanroomExposure> EXPOSURE_CODEC = RecordCodecBuilder.<ExposureFields>create(i->i.group(
         Codec.LONG.fieldOf("ticks").forGetter(ExposureFields::ticks),
@@ -147,15 +177,78 @@ public final class FoupContentsCodec {
      * <p>Typed on {@link ByteBuf} rather than on the registry aware buffer because it
      * needs no registry lookup at all; a registry aware buffer is still a
      * {@code ByteBuf}, so this is accepted by the data component builder unchanged.</p>
+     *
+     * <p>Since the Creative-mode full-transport change this form is <em>self
+     * describing</em>: after the five public fields it carries one payload byte. A
+     * {@value #FLAG_NONE} prefix ends the record after the public fields; a
+     * {@value #FLAG_FULL} prefix is followed by a bounded var-int length and the exact
+     * {@link #CODEC} state of the lot as an unnamed NBT tag. The full variant is only
+     * written when {@link FoupNetworkContext#current()} is {@link Payload#FULL}, granted
+     * for one packet by the {@code PacketEncoder}/{@code PacketDecoder} mixins, and
+     * only for a real server lot: a nil client summary keeps its public-only form
+     * whatever the context, because it holds no private state worth freezing.</p>
+     *
+     * <p>Decoding enforces the same server authority: with no context, or
+     * {@link Payload#PUBLIC}, a full payload is consumed without being deserialized or
+     * trusted — the private bytes of a Survival read are skipped and the value stays
+     * the public placeholder. The full private payload is read back exactly only when
+     * the enclosing packet context was granted {@link Payload#FULL}: a client inbound
+     * packet, or a server connection whose play listener belongs to a player with
+     * infinite materials. Nothing outside the packet context grants permission: no
+     * incoming flag of any kind can widen a decode.</p>
      */
-    public static final StreamCodec<ByteBuf, FoupContents> STREAM_CODEC = StreamCodec.composite(
-        ByteBufCodecs.VAR_INT, contents -> contents.capacity(),
-        ByteBufCodecs.VAR_INT, contents -> contents.size(),
-        ByteBufCodecs.VAR_INT, contents -> contents.lotLayer(),
-        ByteBufCodecs.STRING_UTF8, contents -> contents.grade().id(),
-        ByteBufCodecs.VAR_INT, contents -> contents.preparationGeneration(),
-        FoupContentsCodec::fromPublicView
-    );
+    public static final StreamCodec<ByteBuf, FoupContents> STREAM_CODEC = new StreamCodec<>() {
+        @Override
+        public FoupContents decode(ByteBuf buffer) {
+            int capacity = ByteBufCodecs.VAR_INT.decode(buffer);
+            int waferCount = ByteBufCodecs.VAR_INT.decode(buffer);
+            int lotLayer = ByteBufCodecs.VAR_INT.decode(buffer);
+            String gradeId = ByteBufCodecs.STRING_UTF8.decode(buffer);
+            int preparation = ByteBufCodecs.VAR_INT.decode(buffer);
+            byte flag = buffer.readUnsignedByte();
+            if (flag == FLAG_NONE) {
+                return fromPublicView(capacity, waferCount, lotLayer, gradeId, preparation);
+            }
+            if (flag != FLAG_FULL) {
+                throw new DecoderException("Unknown FOUP full-payload flag: " + flag);
+            }
+            int length = ByteBufCodecs.VAR_INT.decode(buffer);
+            if (length < 0 || length > MAX_FULL_PAYLOAD_BYTES) {
+                throw new DecoderException("FOUP full payload length out of bounds: " + length);
+            }
+            if (FoupNetworkContext.current() != FoupNetworkContext.Payload.FULL) {
+                // Not authorized for the real contents: consume so the frame stays framed,
+                // never allocate for or trust private bytes, and fall back to the public view.
+                buffer.skipBytes(length);
+                return fromPublicView(capacity, waferCount, lotLayer, gradeId, preparation);
+            }
+            try {
+                FoupContents full = readFullPayload(buffer.readSlice(length));
+                return full;
+            } catch (IndexOutOfBoundsException truncated) {
+                throw new DecoderException("FOUP full payload truncated", truncated);
+            } catch (IOException corrupt) {
+                throw new DecoderException("Could not read the FOUP full payload", corrupt);
+            }
+        }
+
+        @Override
+        public void encode(ByteBuf buffer, FoupContents contents) {
+            ByteBufCodecs.VAR_INT.encode(buffer, contents.capacity());
+            ByteBufCodecs.VAR_INT.encode(buffer, contents.size());
+            ByteBufCodecs.VAR_INT.encode(buffer, contents.lotLayer());
+            ByteBufCodecs.STRING_UTF8.encode(buffer, contents.grade().id());
+            ByteBufCodecs.VAR_INT.encode(buffer, contents.preparationGeneration());
+            boolean fullAuthorized = FoupNetworkContext.current() == FoupNetworkContext.Payload.FULL
+                && !isClientView(contents);
+            if (!fullAuthorized) {
+                buffer.writeByte(FLAG_NONE);
+                return;
+            }
+            buffer.writeByte(FLAG_FULL);
+            writeFullPayload(buffer, contents);
+        }
+    };
 
     private FoupContentsCodec() {
     }
@@ -325,5 +418,74 @@ public final class FoupContentsCodec {
      */
     public static boolean isClientView(FoupContents contents) {
         return CLIENT_VIEW_LOT_ID.equals(contents.lotId());
+    }
+
+    /**
+     * Writes the exact {@link #CODEC} state of a real server lot behind the already
+     * written {@link #FLAG_FULL} byte: a bounded var-int length followed by the unnamed
+     * NBT form of the component. The encoding is sized first in a scratch buffer so an
+     * oversized lot fails loudly before any length is claimed on the wire, and so
+     * decoding can reject hostile length claims without allocating.
+     *
+     * @param buffer   the buffer under the current packet encode context, not null
+     * @param contents a real server lot, not a nil client view, not null
+     */
+    private static void writeFullPayload(ByteBuf buffer, FoupContents contents) {
+        DataResult<Tag> encoded = CODEC.encodeStart(NbtOps.INSTANCE, contents);
+        if (!encoded.result().isPresent()) {
+            throw new IllegalStateException("Full FOUP payload failed to encode: " + encoded.error());
+        }
+        ByteBuf scratch = Unpooled.buffer();
+        try {
+            DataOutputStream out = new DataOutputStream(new ByteBufOutputStream(scratch));
+            try {
+                NbtIo.writeUnnamedTag(encoded.result().get(), out);
+            } finally {
+                out.close();
+            }
+            int length = scratch.readableBytes();
+            if (length > MAX_FULL_PAYLOAD_BYTES) {
+                throw new IllegalStateException(
+                    "Full FOUP payload is " + length + " bytes, past the " + MAX_FULL_PAYLOAD_BYTES + " byte bound");
+            }
+            ByteBufCodecs.VAR_INT.encode(buffer, length);
+            buffer.writeBytes(scratch);
+        } catch (java.io.IOException broken) {
+            // A plain in-memory write cannot fail for IO reasons; keep the failure typed anyway.
+            throw new IllegalStateException("Full FOUP payload could not be serialized", broken);
+        } finally {
+            scratch.release();
+        }
+    }
+
+    /**
+     * Reads back the exact {@link #CODEC} state from the bounded slice a full payload
+     * claimed on the wire. The slice length was already validated; the NBT accounter is
+     * additionally bounded by the same cap.
+     *
+     * @param slice the payload bytes, exactly as many as the length prefix claimed
+     * @return the exact lot, never a client view
+     */
+    private static FoupContents readFullPayload(ByteBuf slice) throws IOException {
+        try {
+            Tag tag;
+            DataInputStream in = new DataInputStream(new ByteBufInputStream(slice));
+            try {
+                tag = NbtIo.readUnnamedTag(in, NbtAccounter.create(MAX_FULL_PAYLOAD_BYTES));
+            } finally {
+                in.close();
+            }
+            if (!(tag instanceof CompoundTag payload)) {
+                throw new DecoderException("The FOUP full payload is not a compound tag");
+            }
+            DataResult<FoupContents> parsed = CODEC.parse(NbtOps.INSTANCE, payload);
+            if (!parsed.result().isPresent()) {
+                throw new DecoderException(
+                    "The FOUP full payload failed to decode: " + parsed.error().orElse(null));
+            }
+            return parsed.result().get();
+        } finally {
+            slice.release();
+        }
     }
 }
