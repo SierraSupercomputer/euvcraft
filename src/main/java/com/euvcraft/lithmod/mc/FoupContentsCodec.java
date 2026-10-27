@@ -216,6 +216,7 @@ public final class FoupContentsCodec {
             if (length < 0 || length > MAX_FULL_PAYLOAD_BYTES) {
                 throw new DecoderException("FOUP full payload length out of bounds: " + length);
             }
+            if (length > buffer.readableBytes()) throw new DecoderException("FOUP full payload truncated");
             if (FoupNetworkContext.current() != FoupNetworkContext.Payload.FULL) {
                 // Not authorized for the real contents: consume so the frame stays framed,
                 // never allocate for or trust private bytes, and fall back to the public view.

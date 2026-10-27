@@ -1,5 +1,7 @@
 # T6 repair recheck
 
+October27 follow-up: processed Creative copies are now preserved for intact lots via Creative-only full transport. Earlier fresh-only limitations below describe the prior repair. See [Creative FOUP walkthrough](manual-walkthrough-creative-foup.md). Already lost results remain unrecoverable.
+
 Reflow oven mechanics are unchanged and its reported controls/ranges remain deferred. The old jar is backed up before publication. Restart with the updated project jar. Use a newly sliced FOUP for the Creative recheck, since an earlier client replacement may already have lost preparation metadata.
 
 1. In Creative, slice an Electronic-Grade Boule into a Mk2 FOUP. Move it through the player inventory and into the etch machine's upper panel, including an immediate carried click and shift-click. With the normal silicon and FE supplies it should start. Repeat with Mk1 and in Survival. Real server lots and unrelated item metadata should stay intact.

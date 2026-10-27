@@ -73,7 +73,10 @@ class FoupCreativeStreamCodecTest {
             try {
                 FoupContentsCodec.STREAM_CODEC.encode(buffer, original);
                 buffer.readerIndex(0);
-                return FoupContentsCodec.STREAM_CODEC.decode(buffer);
+                var decoded=FoupContentsCodec.STREAM_CODEC.decode(buffer);
+                assertEquals(1,buffer.refCnt(),"decoder released its borrowed parent buffer");
+                assertEquals(0,buffer.readableBytes(),"decoder left trailing component bytes");
+                return decoded;
             } finally {
                 buffer.release();
             }
@@ -161,7 +164,7 @@ class FoupCreativeStreamCodecTest {
             ByteBuf bare = Unpooled.buffer();
             try {
                 FoupContentsCodec.STREAM_CODEC.encode(full, original);
-                FoupContentsCodec.STREAM_CODEC.encode(bare, original);
+                FoupNetworkContext.section(FoupNetworkContext.Payload.PUBLIC, () -> FoupContentsCodec.STREAM_CODEC.encode(bare, original));
                 int delta = full.writerIndex() - bare.writerIndex();
                 assertTrue(delta >= 2,
                     "the full form is not the public form plus at least a flag and length prefix (delta " + delta + ")");
