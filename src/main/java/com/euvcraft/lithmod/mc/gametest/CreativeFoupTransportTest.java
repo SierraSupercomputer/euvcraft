@@ -30,6 +30,7 @@ final class CreativeFoupTransportTest {
         server.pipeline().addLast("capture",capture(serverPackets));
         serverConnection.configurePacketHandler(server.pipeline());
         server.pipeline().fireChannelActive();
+        net.neoforged.neoforge.network.registration.ChannelAttributes.setConnectionType(serverConnection,net.neoforged.neoforge.network.connection.ConnectionType.NEOFORGE);
         var listener=new ServerGamePacketListenerImpl(level.getServer(),serverConnection,player,cookie);
         var decorate=RegistryFriendlyByteBuf.decorator(level.registryAccess());
         var clientbound=GameProtocols.CLIENTBOUND_TEMPLATE.bind(decorate);
@@ -44,6 +45,7 @@ final class CreativeFoupTransportTest {
         client.pipeline().addLast("capture",capture(clientPackets));
         clientConnection.configurePacketHandler(client.pipeline());
         client.pipeline().fireChannelActive();
+        net.neoforged.neoforge.network.registration.ChannelAttributes.setConnectionType(clientConnection,net.neoforged.neoforge.network.connection.ConnectionType.NEOFORGE);
         var creativeContext=new GameProtocols.Context(){public boolean hasInfiniteMaterials(){return true;}public boolean canUseCommandBlocks(){return false;}};
         clientConnection.setupOutboundProtocol(GameProtocols.SERVERBOUND_TEMPLATE.bind(decorate,creativeContext));
         player.initInventoryMenu();pump(server,client);
