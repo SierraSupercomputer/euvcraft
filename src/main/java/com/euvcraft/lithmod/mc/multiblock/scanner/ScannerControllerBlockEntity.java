@@ -55,6 +55,7 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
    var candidate=new BeamAlignment(previousBeam.x(),previousBeam.y(),previousBeam.focus(),x,y,f);
    if(candidate.quality()<worst){worst=candidate.quality();far=candidate;}
   }
+  if(beam.targetX()==previousBeam.targetX()&&beam.targetY()==previousBeam.targetY()&&beam.targetFocus()==previousBeam.targetFocus())beam=far;
   if(new BeamAlignment(previousBeam.x(),previousBeam.y(),previousBeam.focus(),beam.targetX(),beam.targetY(),beam.targetFocus()).quality()>=minimumQuality())beam=far;
   if(beam.quality()>=minimumQuality())beam=new BeamAlignment(-10,-10,10,beam.targetX(),beam.targetY(),beam.targetFocus());
   alignment=beam;
