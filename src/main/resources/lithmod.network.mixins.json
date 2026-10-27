@@ -1,11 +1,11 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "com.euvcraft.lithmod.mc",
+  "package": "com.euvcraft.lithmod.mc.compat.mixin",
   "mixins": [
-    "compat.mixin.FoupPacketEncoderMixin",
-    "compat.mixin.FoupPacketDecoderMixin",
-    "network.FoupPlayerModeMixin"
+    "FoupPacketEncoderMixin",
+    "FoupPacketDecoderMixin",
+    "FoupPlayerModeMixin"
   ],
   "injectors": {
     "defaultRequire": 1

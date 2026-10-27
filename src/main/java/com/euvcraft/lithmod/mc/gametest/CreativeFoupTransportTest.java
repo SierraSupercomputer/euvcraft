@@ -29,6 +29,7 @@ final class CreativeFoupTransportTest {
         List<Object> serverPackets=new ArrayList<>();
         server.pipeline().addLast("capture",capture(serverPackets));
         serverConnection.configurePacketHandler(server.pipeline());
+        server.pipeline().fireChannelActive();
         var listener=new ServerGamePacketListenerImpl(level.getServer(),serverConnection,player,cookie);
         var decorate=RegistryFriendlyByteBuf.decorator(level.registryAccess());
         var clientbound=GameProtocols.CLIENTBOUND_TEMPLATE.bind(decorate);
@@ -42,6 +43,7 @@ final class CreativeFoupTransportTest {
         List<Object> clientPackets=new ArrayList<>();
         client.pipeline().addLast("capture",capture(clientPackets));
         clientConnection.configurePacketHandler(client.pipeline());
+        client.pipeline().fireChannelActive();
         var creativeContext=new GameProtocols.Context(){public boolean hasInfiniteMaterials(){return true;}public boolean canUseCommandBlocks(){return false;}};
         clientConnection.setupOutboundProtocol(GameProtocols.SERVERBOUND_TEMPLATE.bind(decorate,creativeContext));
         player.initInventoryMenu();pump(server,client);

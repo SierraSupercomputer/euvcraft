@@ -1,4 +1,4 @@
-package com.euvcraft.lithmod.mc.network;
+package com.euvcraft.lithmod.mc.compat.mixin;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameType;
