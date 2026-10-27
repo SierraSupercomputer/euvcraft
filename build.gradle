@@ -121,9 +121,9 @@ configurations {
 
 dependencies {
     // Encoded Logistics and Arcforge dependencies (local JARs in ./libs)
-    implementation files("libs/encodedlogistics-1.2.1+26.3.jar")
-    implementation files("libs/arcforge-2.5.1+26.3.jar")
-    implementation files("libs/arcforge-api-1.2.0+26.3.jar")
+    implementation files("libs/encodedlogistics-1.5.0+26.3.jar")
+    implementation files("libs/arcforge-2.8.1+26.3.jar")
+    compileOnly files("libs/arcforge-api-1.2.0+26.3.jar")
 
     testCompileOnly files(sourceSets.main.compileClasspath)
     testRuntimeOnly files(sourceSets.main.runtimeClasspath)

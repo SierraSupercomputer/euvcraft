@@ -88,7 +88,7 @@ config="lithmod.client.mixins.json"
 [[dependencies.${mod_id}]]
     modId="encodedlogistics"
     type="required"
-    versionRange="[1.2.1,)"
+    versionRange="[1.5.0,)"
     ordering="AFTER"
     side="BOTH"
 
@@ -96,7 +96,7 @@ config="lithmod.client.mixins.json"
 [[dependencies.${mod_id}]]
     modId="arcforge"
     type="required"
-    versionRange="[2.5.1,)"
+    versionRange="[2.8.1,)"
     ordering="AFTER"
     side="BOTH"
 
