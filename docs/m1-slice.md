@@ -11,9 +11,9 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
   - com.euvcraft.lithmod.mc (22 files)
   - com.euvcraft.lithmod.mc.cleanroom (20 files)
   - com.euvcraft.lithmod.mc.compat (1 files)
-  - com.euvcraft.lithmod.mc.compat.mixin (1 files)
+  - com.euvcraft.lithmod.mc.compat.mixin (4 files)
   - com.euvcraft.lithmod.mc.data (14 files)
-  - com.euvcraft.lithmod.mc.gametest (36 files)
+  - com.euvcraft.lithmod.mc.gametest (37 files)
   - com.euvcraft.lithmod.mc.machine (4 files)
   - com.euvcraft.lithmod.mc.machine.cleaner (7 files)
   - com.euvcraft.lithmod.mc.machine.client (1 files)
@@ -33,6 +33,7 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
   - com.euvcraft.lithmod.mc.multiblock.support (12 files)
   - com.euvcraft.lithmod.mc.multiblock.utilities (10 files)
   - com.euvcraft.lithmod.mc.multiblock.zone (11 files)
+  - com.euvcraft.lithmod.mc.network (1 files)
   - com.euvcraft.lithmod.mc.recipe (4 files)
   - com.euvcraft.lithmod.mc.registry (4 files)
 
@@ -1689,6 +1690,21 @@ public static java.util.List<net.minecraft.network.chat.FormattedText> wrap(net.
 ### com.euvcraft.lithmod.mc.compat.mixin.EncodedTooltipMixin
 ```java
 public com.euvcraft.lithmod.mc.compat.mixin.EncodedTooltipMixin();
+```
+
+### com.euvcraft.lithmod.mc.compat.mixin.FoupPacketDecoderMixin
+```java
+public com.euvcraft.lithmod.mc.compat.mixin.FoupPacketDecoderMixin();
+```
+
+### com.euvcraft.lithmod.mc.compat.mixin.FoupPacketEncoderMixin
+```java
+public com.euvcraft.lithmod.mc.compat.mixin.FoupPacketEncoderMixin();
+```
+
+### com.euvcraft.lithmod.mc.compat.mixin.FoupPlayerModeMixin
+```java
+public com.euvcraft.lithmod.mc.compat.mixin.FoupPlayerModeMixin();
 ```
 
 ### com.euvcraft.lithmod.mc.data.DieRuleCodec
@@ -3831,6 +3847,21 @@ public com.euvcraft.lithmod.mc.multiblock.zone.ZoneStatusScreen(com.euvcraft.lit
 protected boolean formed();
 protected boolean cabinet();
 protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
+### com.euvcraft.lithmod.mc.network.FoupNetworkContext$Payload
+```java
+public static com.euvcraft.lithmod.mc.network.FoupNetworkContext$Payload[] values();
+public static com.euvcraft.lithmod.mc.network.FoupNetworkContext$Payload valueOf(java.lang.String);
+```
+
+### com.euvcraft.lithmod.mc.network.FoupNetworkContext
+```java
+public static com.euvcraft.lithmod.mc.network.FoupNetworkContext$Payload current();
+public static void section(com.euvcraft.lithmod.mc.network.FoupNetworkContext$Payload, java.lang.Runnable);
+public static void push(com.euvcraft.lithmod.mc.network.FoupNetworkContext$Payload);
+public static void pop(com.euvcraft.lithmod.mc.network.FoupNetworkContext$Payload);
+public static com.euvcraft.lithmod.mc.network.FoupNetworkContext$Payload sideOf(io.netty.channel.ChannelHandlerContext);
 ```
 
 ### com.euvcraft.lithmod.mc.recipe.HighBinningRecipe
