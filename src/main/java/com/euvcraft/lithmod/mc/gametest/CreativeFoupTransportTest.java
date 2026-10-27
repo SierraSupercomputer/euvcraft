@@ -36,6 +36,8 @@ final class CreativeFoupTransportTest {
         var clientbound=GameProtocols.CLIENTBOUND_TEMPLATE.bind(decorate);
         var serverbound=GameProtocols.SERVERBOUND_TEMPLATE.bind(decorate,listener);
         serverConnection.setupInboundProtocol(serverbound,listener);
+        // Login is bypassed on both fixture ends; select the server play decoder explicitly too.
+        server.pipeline().replace("decoder","decoder",new PacketDecoder<>(serverbound));
         serverConnection.setupOutboundProtocol(clientbound);
         var clientConnection=new Connection(PacketFlow.CLIENTBOUND);
         var client=new EmbeddedChannel();
