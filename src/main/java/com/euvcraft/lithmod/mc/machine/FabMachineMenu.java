@@ -228,7 +228,7 @@ public abstract class FabMachineMenu extends AbstractContainerMenu {
         }
     }
     @Override
-    public void clicked(int index, int button, net.minecraft.world.inventory.ClickType type, Player player) {
+    public void clicked(int index, int button, net.minecraft.world.inventory.ContainerInput type, Player player) {
         if (player.containerMenu == this && stillValid(player)) {
             prepareCreativeFoup(getCarried(), player);
             if(index >= 0 && index < slots.size()) prepareCreativeFoup(slots.get(index).getItem(), player);
