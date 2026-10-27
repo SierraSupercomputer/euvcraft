@@ -16,6 +16,18 @@ public final class UtilityControllerBlockEntity extends FabMachineBlockEntity im
  @Override public FabMachineBlockEntity machine(){return this;}@Override public AdvancedFormation formation(){return formation;}@Override public boolean large(){return false;}
  @Override public MatchResult matchStructure(MultiblockPos p,MultiblockDirection f,java.util.function.Function<MultiblockPos,BlockKind> lookup){return UtilityStructureMatcher.match(p,f,lookup);}
  public int progress(){return progress;}public int duration(){return duration;}public boolean hasJob(){return pendingOutput>0;}
+ // Menu-facing batch snapshot: the admitted job wins while one runs, settings otherwise.
+ // All are 0 without a definition (fail-closed, matching serverTick which cannot admit).
+ /** Raw mB one batch draws, from settings; 0 with no definition. */
+ public int batchWaterMb(){return definition().isPresent()?param("water_per_batch_mb",8000):0;}
+ /** mB the batch produces: the admitted amount while running, else the configured amount. */
+ public int batchOutputMb(){if(hasJob())return pendingOutput;return definition().isPresent()?param("pure_per_batch_mb",8000):0;}
+ /** Filters charged per batch, from settings; 0 with no definition. */
+ public int batchFilters(){return definition().isPresent()?param("filters_per_batch",1):0;}
+ /** FE per tick: the admitted cost while running, else the configured cost; 0 with no definition. */
+ public int batchFePerTick(){return hasJob()?cost:definition().map(d->d.energyPerTick(null,com.euvcraft.lithmod.mc.EUVCRAFTMod.settings())).orElse(0);}
+ /** Ticks of the current or next batch, admitted duration or settings. */
+ public int batchTicks(){return hasJob()?duration:definition().isPresent()?param("duration",200):0;}
  private int param(String key,int fallback){return definition().map(d->d.paramOrDefault(key,fallback)).orElse(fallback);}
  @Override public void serverTick(){if(level==null||level.isClientSide())return;revalidate();refreshDefinition();
   raw.resize(Math.clamp(param("raw_capacity_mb",16000),1000,1000000));pure.resize(Math.clamp(param("pure_capacity_mb",16000),1000,1000000));
@@ -29,7 +41,8 @@ public final class UtilityControllerBlockEntity extends FabMachineBlockEntity im
    }
   }else if(pure.capacity()-pure.amount()>=pendingOutput&&energySource().draw(cost)==cost){progress++;if(progress>=duration){pure.fill(pendingOutput,false);pendingOutput=0;progress=0;}setChanged();}sync();
  }
- private void sync(){data().set(DATA_ENERGY,buffer().getAmountAsInt());data().set(DATA_CAPACITY,buffer().getCapacityAsInt());data().set(DATA_PROGRESS,progress);data().set(DATA_TICKS,pendingOutput==0?0:duration);}
+ // Preserve the admitted progress during pauses, including a temporarily missing frame.
+ private void sync(){data().set(DATA_ENERGY,buffer().getAmountAsInt());data().set(DATA_CAPACITY,buffer().getCapacityAsInt());data().set(DATA_PROGRESS,progress);data().set(DATA_TICKS,pendingOutput>0?duration:0);}
  @Override public void setRemoved(){formation.unload();super.setRemoved();}
  @Override protected AbstractContainerMenu createMachineMenu(int id,Inventory inv,FabMachineBlockEntity machine){return new UtilityMenu(id,inv,this);}
  @Override protected void saveAdditional(ValueOutput o){super.saveAdditional(o);o.putInt("rawMb",raw.amount());o.putInt("pureMb",pure.amount());o.putInt("utilityProgress",progress);o.putInt("utilityDuration",duration);o.putInt("utilityCost",cost);o.putInt("utilityPending",pendingOutput);}

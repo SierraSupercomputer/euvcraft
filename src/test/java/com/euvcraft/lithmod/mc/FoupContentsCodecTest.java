@@ -15,6 +15,8 @@ import java.util.UUID;
 import com.euvcraft.lithmod.core.FoupContents;
 import com.euvcraft.lithmod.core.FoupPublicView;
 import com.euvcraft.lithmod.core.FabSettings;
+import com.euvcraft.lithmod.core.DieTypes;
+import com.euvcraft.lithmod.core.RunSpec;
 import com.euvcraft.lithmod.core.Wafer;
 import com.euvcraft.lithmod.core.WaferSubstrate;
 
@@ -377,4 +379,58 @@ class FoupContentsCodecTest {
         }
     }
 
+    @Test
+    @DisplayName("an unstarted filled client view rebuilds a real electronic-grade server lot")
+    void unstartedFilledClientViewRebuildsServerLot() {
+        // Mk1 and Mk2 share the lot format, so both carrier items repair identically.
+        FoupContents view = FoupContentsCodec.fromPublicView(25, 2, 0, "electronic_grade", 2);
+        FoupContents rebuilt = FoupContentsCodec.unstartedServerLot(view);
+
+        assertTrue(rebuilt != null, "an unstarted electronic-grade client view was refused");
+        assertTrue(!FoupContentsCodec.isClientView(rebuilt), "the rebuilt lot still carries the client-view marker");
+        assertTrue(!FoupContentsCodec.CLIENT_VIEW_LOT_ID.equals(rebuilt.lotId()),
+            "the rebuilt lot kept the nil lot id");
+        assertEquals(25, rebuilt.capacity(), "the rebuilt lot lost the transmitted capacity");
+        assertEquals(2, rebuilt.size(), "the rebuilt lot lost the transmitted wafer count");
+        assertEquals(WaferSubstrate.ELECTRONIC_GRADE, rebuilt.grade(), "the rebuilt lot lost the transmitted grade");
+        assertEquals(2, rebuilt.preparationGeneration(), "the rebuilt lot lost the transmitted preparation");
+        assertEquals(null, rebuilt.run(), "an unstarted rebuilt lot must stay unstarted");
+        for (Wafer wafer : rebuilt.wafers()) {
+            assertEquals(Wafer.UNPROCESSED_LAYER, wafer.layerIndex());
+            assertEquals(Wafer.NO_ROLLS, wafer.cumulativeRoll());
+            assertEquals(Wafer.NO_FLAGS, wafer.flags());
+        }
+    }
+
+    @Test
+    @DisplayName("fresh Creative reconstruction rejects processed state and cannot upgrade invalid preparation")
+    void unstartedServerLotRefusesUntrustworthyViews() {
+        // empty view: the empty-shape repair path owns this, not the filled rebuild
+        assertEquals(null, FoupContentsCodec.unstartedServerLot(FoupContentsCodec.fromPublicView(25, 0, 0)),
+            "an empty view must not be rebuilt here");
+
+        // processed wafers: the server can never know their rolls again
+        assertEquals(null, FoupContentsCodec.unstartedServerLot(FoupContentsCodec.fromPublicView(25, 4, 3, "electronic_grade", 1)),
+            "a processed view must not be trusted");
+
+        // The display decoder safely downgrades an impossible ordinary/G2 request.
+        var downgraded = FoupContentsCodec.unstartedServerLot(FoupContentsCodec.fromPublicView(25, 1, 0, "ordinary", 2));
+        assertTrue(downgraded != null);
+        assertEquals(WaferSubstrate.ORDINARY, downgraded.grade());
+        assertEquals(1, downgraded.preparationGeneration(), "ordinary wafers must never gain G2 preparation");
+
+        // a client view marker carrying a run spec stays refused
+        FoupContents startedView = new FoupContents(FoupContentsCodec.CLIENT_VIEW_LOT_ID, 25,
+            List.of(Wafer.unprocessed()), new RunSpec(DieTypes.COMPUTE, 6, 4, 0.9, 2),
+            WaferSubstrate.ELECTRONIC_GRADE, 1);
+        assertEquals(null, FoupContentsCodec.unstartedServerLot(startedView),
+            "a started view must not be rebuilt");
+
+        // pure grade keeps working: G1 unstarted pure lots repair the same way
+        FoupContents pureView = FoupContentsCodec.fromPublicView(25, 1, 0, "pure", 1);
+        FoupContents pureRebuilt = FoupContentsCodec.unstartedServerLot(pureView);
+        assertTrue(pureRebuilt != null, "an unstarted pure client view was refused");
+        assertEquals(WaferSubstrate.PURE, pureRebuilt.grade());
+        assertEquals(1, pureRebuilt.preparationGeneration());
+    }
 }

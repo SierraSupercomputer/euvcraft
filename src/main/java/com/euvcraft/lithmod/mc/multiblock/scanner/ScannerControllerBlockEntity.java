@@ -36,9 +36,46 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
  private void sampleCalibrationExposure(com.euvcraft.lithmod.mc.cleanroom.CleanroomRooms.Sample sample){
   if(tierIndex()!=6)return;boolean dirty=sample.room()==null||sample.room().ppm()>definition().map(d->d.paramOrDefault("contamination_ppm",2500)).orElse(2500);
   var next=CalibrationExposure.advance(exposure,dirty,true,definition().map(d->d.paramOrDefault("contamination_ticks",1200)).orElse(1200));
-  if(!exposure.invalidated()&&next.invalidated()){calibratedHardware="";acceptedQuality=-1;acceptedMultiplier=0;diagnosticHardware="";diagnosticQuality=-1;diagnosticMultiplier=0;}
+  if(!exposure.invalidated()&&next.invalidated())resetContaminatedCalibration();
   exposure=next;setChanged();
  }
+ /** Runs exactly once at dirty-exposure invalidation; existing lot keeps its frozen contract. */
+ private void resetContaminatedCalibration(){
+  var rng=java.util.concurrent.ThreadLocalRandom.current();
+  var previousBeam=alignment;var previousFit=diagnostic;
+  var beam=BeamAlignment.create(rng.nextLong());
+  for(int attempt=0;attempt<128;attempt++){
+   var oldSettings=new BeamAlignment(previousBeam.x(),previousBeam.y(),previousBeam.focus(),beam.targetX(),beam.targetY(),beam.targetFocus());
+   if(oldSettings.quality()<minimumQuality()&&(beam.targetX()!=previousBeam.targetX()||beam.targetY()!=previousBeam.targetY()||beam.targetFocus()!=previousBeam.targetFocus()))break;
+   beam=BeamAlignment.create(rng.nextLong());
+  }
+  // Deterministic far-corner fallback keeps permissive configured quality floors solvable.
+  int worst=101;BeamAlignment far=beam;
+  for(int x:new int[]{-5,5})for(int y:new int[]{-5,5})for(int f:new int[]{-5,5}){
+   var candidate=new BeamAlignment(previousBeam.x(),previousBeam.y(),previousBeam.focus(),x,y,f);
+   if(candidate.quality()<worst){worst=candidate.quality();far=candidate;}
+  }
+  if(beam.targetX()==previousBeam.targetX()&&beam.targetY()==previousBeam.targetY()&&beam.targetFocus()==previousBeam.targetFocus())beam=far;
+  if(new BeamAlignment(previousBeam.x(),previousBeam.y(),previousBeam.focus(),beam.targetX(),beam.targetY(),beam.targetFocus()).quality()>=minimumQuality())beam=far;
+  if(beam.quality()>=minimumQuality())beam=new BeamAlignment(-10,-10,10,beam.targetX(),beam.targetY(),beam.targetFocus());
+  alignment=beam;
+  var fit=DiagnosticFit.create(rng.nextLong());
+  for(int attempt=0;attempt<128;attempt++){
+   if(fit.plot(previousFit.a(),previousFit.b(),previousFit.c()).quality()<diagnosticMinimum()&&(fit.targetA()!=previousFit.targetA()||fit.targetB()!=previousFit.targetB()||fit.targetC()!=previousFit.targetC()))break;
+   fit=DiagnosticFit.create(rng.nextLong());
+  }
+  worst=101;DiagnosticFit farFit=fit;
+  for(int x:new int[]{-100,100})for(int y:new int[]{-100,100})for(int c:new int[]{-100,100}){
+   var candidate=new DiagnosticFit(0,0,0,x,y,c);int quality=candidate.plot(previousFit.a(),previousFit.b(),previousFit.c()).quality();
+   if(quality<worst){worst=quality;farFit=candidate;}
+  }
+  if(fit.plot(previousFit.a(),previousFit.b(),previousFit.c()).quality()>=diagnosticMinimum())fit=farFit;
+  if(fit.targetA()==previousFit.targetA()&&fit.targetB()==previousFit.targetB()&&fit.targetC()==previousFit.targetC())fit=new DiagnosticFit(0,0,0,Math.floorMod(previousFit.targetA()+101,201)-100,fit.targetB(),fit.targetC());
+  diagnostic=fit;diagnosticPlotted=false;
+  calibratedHardware="";acceptedQuality=-1;acceptedMultiplier=0;
+  diagnosticHardware="";diagnosticQuality=-1;diagnosticMultiplier=0;
+ }
+
  public boolean immersion(){return immersion;}
  public DiagnosticFit diagnostic(){return diagnostic;}public boolean diagnosticPlotted(){return diagnosticPlotted;}
  public int diagnosticQuality(){return diagnosticQuality;}
@@ -116,6 +153,19 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
  @Override protected int utilityGeneration(){return immersion?2:1;}
  @Override protected int admissionPasses(Tier tier){return tier.index()==6?definition().map(d->d.paramOrDefault("multipattern_passes",2)).orElse(0):1;}
  @Override protected boolean supportsTier(Tier tier){return tier.index()==4||tier.index()==5||tier.index()==6;}
+ /** Public reason for admission/pause; independent of hidden rolls or private fit targets. */
+ public int operatingIssue(){
+  if(!isFormed())return RefusalReason.Code.STRUCTURE_INCOMPLETE.ordinal()+1;
+  if(definition().isEmpty()||!hardwareValidated)return 0;
+  int tier=maskTier();
+  if(!inputsLocked()&&tier>=4&&tier<=6&&!operatingCalibrated())return RefusalReason.Code.CALIBRATION_REQUIRED.ordinal()+1;
+  if(tier>=5&&tier<=6){
+   if(!roomSample().available())return RefusalReason.Code.ROOM_UNAVAILABLE.ordinal()+1;
+   int cost=waterPerTick();if(cost>0&&cost<=pureWater.capacity()&&pureWater.amount()<cost)return RefusalReason.Code.ULTRAPURE_WATER_REQUIRED.ordinal()+1;
+  }
+  return 0;
+ }
+ @Override protected RefusalReason admissionBlocker(Tier tier){int issue=operatingIssue();return issue==0?null:new RefusalReason(RefusalReason.Code.values()[issue-1]);}
  @Override protected boolean readyForAdmission(){return operatingCalibrated()&&validParameters()&&(maskTier()<5||immersion&&diagnosticParams()&&waterPerTick()>0&&waterPerTick()<=pureWater.capacity()&&pureWater.amount()>=waterPerTick());}
  @Override protected double admissionYieldMultiplier(){acceptedHardware=hardware;setChanged();return acceptedMultiplier*(maskTier()>=5?diagnosticMultiplier:1.0);}
 

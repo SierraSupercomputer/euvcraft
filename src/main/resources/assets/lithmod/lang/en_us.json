@@ -372,5 +372,9 @@
   "item.lithmod.scanner_multipatterning_module": "Scanner Multipatterning Module",
   "message.lithmod.zone.form_first": "Form the zone refiner before using its panels.",
   "message.lithmod.reflow.form_first": "Form the reflow oven before using its panels.",
-  "tier.lithmod.t6": "T6 Multi-patterned"
+  "tier.lithmod.t6": "T6 Multi-patterned",
+  "state.lithmod.process_cell.structure_incomplete": "Structure incomplete",
+  "state.lithmod.process_cell.calibration_required": "Calibration required",
+  "state.lithmod.process_cell.ultrapure_water_required": "Supply ultrapure water (UPW)",
+  "state.lithmod.process_cell.room_unavailable": "Cleanroom chunk unavailable"
 }

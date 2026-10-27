@@ -205,6 +205,22 @@ public final class FoupContentsCodec {
     }
 
     /**
+     * The display clamp of {@link #fromPublicView(int, int, int, String, int)}: a
+     * preparation generation of {@link FoupContents#PREPARATION_G2} survives a
+     * network round trip only for a non-empty pure-or-better grade, which is the
+     * same rule the {@link FoupContents} record itself enforces. Repairing this
+     * with any other value would build a lot the record refuses.
+     */
+    private static int clampedPreparation(int preparationGeneration, int waferCount, WaferSubstrate grade) {
+        if (waferCount == 0 || grade.generation() < WaferSubstrate.PURE.generation()) {
+            return FoupContents.PREPARATION_LEGACY;
+        }
+        return (preparationGeneration >= FoupContents.PREPARATION_LEGACY
+            && preparationGeneration <= FoupContents.PREPARATION_G2)
+            ? preparationGeneration : FoupContents.PREPARATION_LEGACY;
+    }
+
+    /**
      * Rebuilds the placeholder lot a client holds from the five numbers the network
      * form carries (including grade and preparation generation).
      *
@@ -214,8 +230,10 @@ public final class FoupContentsCodec {
      *
      * <p>Out-of-range values from a malformed or hostile buffer are clamped instead of
      * rejected: this is a display value and must never cost a player their
-     * connection. An invalid grade string is clamped to ORDINARY. An invalid preparation
-     * generation is clamped to 1 (legacy).</p>
+     * connection. An invalid grade string is clamped to ORDINARY. A preparation
+     * generation is clamped to 1 (legacy) unless a non-empty lot carries a
+     * pure-or-better grade, in which case 2 (G2) survives the round trip —
+     * electronic-grade G2 lots used to be degraded to G1 here.</p>
      *
      * @param capacity              transmitted capacity
      * @param waferCount            transmitted wafer count
@@ -229,15 +247,68 @@ public final class FoupContentsCodec {
         int safeCount = Math.min(Math.max(0, waferCount), safeCapacity);
         int safeLayer = Math.max(Wafer.UNPROCESSED_LAYER, lotLayer);
         WaferSubstrate safeGrade = WaferSubstrate.fromIdOrDefault(gradeId);
-        int safePreparation = (preparationGeneration >= FoupContents.PREPARATION_LEGACY && preparationGeneration <= FoupContents.PREPARATION_G2)
-            ? preparationGeneration : FoupContents.PREPARATION_LEGACY;
-        if (safeCount == 0 || safeGrade != WaferSubstrate.PURE) safePreparation = FoupContents.PREPARATION_LEGACY;
+        int safePreparation = clampedPreparation(preparationGeneration, safeCount, safeGrade);
 
         List<Wafer> placeholders = new ArrayList<>(safeCount);
         for (int i = 0; i < safeCount; i++) {
             placeholders.add(new Wafer(safeLayer, CLIENT_VIEW_ROLL, Wafer.NO_FLAGS));
         }
         return new FoupContents(CLIENT_VIEW_LOT_ID, safeCapacity, placeholders, null, safeGrade, safePreparation);
+    }
+
+    /**
+     * Rebuilds the server lot an unstarted filled client view stands for, or
+     * {@code null} when the view is not safe to rebuild.
+     *
+     * <p>This is the bounded server-authoritative repair for the Creative inventory
+     * round trip: a Creative player who moves a filled FOUP inside their inventory
+     * makes the client echo the network form back, and the server slot is
+     * overwritten with a {@link #fromPublicView(int, int, int, String, int)}
+     * placeholder. {@link FoupItems#trustedContentsOf(net.minecraft.world.item.ItemStack)}
+     * then discards it, so the lot loses its wafers completely.</p>
+     *
+     * <p>For an <em>unstarted</em> view the hidden values the network form does not
+     * carry can be recreated exactly, without trusting anything the client
+     * invented: a wafer at layer 0 of a lot with no run spec has never been rolled,
+     * so its true cumulative roll is {@link Wafer#NO_ROLLS} and its true flags are
+     * {@link Wafer#NO_FLAGS}. The rebuilt lot gets a fresh server lot id, the
+     * transmitted capacity, the transmitted grade and preparation generation (which
+     * the network form is allowed to know and which has already been validated by
+     * the {@link FoupContents} record) and exactly {@link Wafer#unprocessed()}
+     * wafers.</p>
+     *
+     * <p>Everything a fabricated client could turn into value is refused with
+     * {@code null}: a view with a run spec, an empty view, a view holding wafers at
+     * any layer above 0 (processed wafers are never trusted), a view with any other
+     * roll or flag value, a capacity smaller than the wafer count, and any lot the
+     * {@link FoupContents} record would refuse (for example a hostile G2 generation
+     * on a lesser grade). The server lot is left untouched in those cases and keeps
+     * the behaviour of
+     * {@link FoupItems#trustedContentsOf(net.minecraft.world.item.ItemStack)}.</p>
+     *
+     * @param clientView the client view to rebuild, not null
+     * @return the rebuilt server lot, or {@code null} when the view must not be trusted
+     */
+    static FoupContents unstartedServerLot(FoupContents clientView) {
+        if (!isClientView(clientView) || clientView.run() != null || clientView.isEmpty()
+            || clientView.size() > clientView.capacity()) {
+            return null;
+        }
+        List<Wafer> rebuilt = new ArrayList<>(clientView.size());
+        for (Wafer wafer : clientView.wafers()) {
+            if (wafer.layerIndex() != Wafer.UNPROCESSED_LAYER
+                || wafer.cumulativeRoll() != CLIENT_VIEW_ROLL
+                || wafer.flags() != Wafer.NO_FLAGS) {
+                return null;
+            }
+            rebuilt.add(Wafer.unprocessed());
+        }
+        try {
+            return new FoupContents(UUID.randomUUID(), clientView.capacity(), rebuilt, null,
+                clientView.grade(), clientView.preparationGeneration());
+        } catch (RuntimeException invalid) {
+            return null;
+        }
     }
 
     /**

@@ -1320,6 +1320,7 @@ public long sum();
 public static com.euvcraft.lithmod.core.FoupContents fromPublicView(int, int, int);
 public static com.euvcraft.lithmod.core.FoupContents fromPublicView(int, int, int, java.lang.String);
 static com.euvcraft.lithmod.core.FoupContents fromPublicView(int, int, int, java.lang.String, int);
+static com.euvcraft.lithmod.core.FoupContents unstartedServerLot(com.euvcraft.lithmod.core.FoupContents);
 public static boolean isClientView(com.euvcraft.lithmod.core.FoupContents);
 ```
 
@@ -1956,6 +1957,7 @@ public final float progressFraction();
 public final float energyFraction();
 public final boolean isRunning();
 public boolean stillValid(net.minecraft.world.entity.player.Player);
+public void clicked(int, int, net.minecraft.world.inventory.ContainerInput, net.minecraft.world.entity.player.Player);
 public net.minecraft.world.item.ItemStack quickMoveStack(net.minecraft.world.entity.player.Player, int);
 ```
 
@@ -2639,6 +2641,7 @@ protected net.minecraft.world.item.ItemStack equipment(int);
 protected boolean supportsTier(com.euvcraft.lithmod.core.Tier);
 protected int utilityGeneration();
 protected int admissionPasses(com.euvcraft.lithmod.core.Tier);
+protected com.euvcraft.lithmod.core.RefusalReason admissionBlocker(com.euvcraft.lithmod.core.Tier);
 protected boolean readyForAdmission();
 protected double admissionYieldMultiplier();
 protected java.lang.String admissionRefusal();
@@ -3248,6 +3251,8 @@ boolean calibrationControl(int);
 protected int utilityGeneration();
 protected int admissionPasses(com.euvcraft.lithmod.core.Tier);
 protected boolean supportsTier(com.euvcraft.lithmod.core.Tier);
+public int operatingIssue();
+protected com.euvcraft.lithmod.core.RefusalReason admissionBlocker(com.euvcraft.lithmod.core.Tier);
 protected boolean readyForAdmission();
 protected double admissionYieldMultiplier();
 public boolean structureFormed();
@@ -3315,6 +3320,7 @@ public com.euvcraft.lithmod.mc.multiblock.scanner.ScannerOperatingMenu(int, net.
 public com.euvcraft.lithmod.mc.multiblock.scanner.ScannerOperatingMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
 public boolean isOperatingPanel();
 public boolean stillValid(net.minecraft.world.entity.player.Player);
+public int operatingIssue();
 public boolean multipatterning();
 public boolean contaminationInvalidated();
 public int waterCost();
@@ -3334,6 +3340,7 @@ protected boolean cabinet();
 protected void init();
 protected void containerTick();
 protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+public void extractBackground(net.minecraft.client.gui.GuiGraphicsExtractor, int, int, float);
 ```
 
 ### com.euvcraft.lithmod.mc.multiblock.scanner.ScannerWaterHandler
@@ -3620,6 +3627,11 @@ public com.euvcraft.lithmod.core.multiblock.MatchResult matchStructure(com.euvcr
 public int progress();
 public int duration();
 public boolean hasJob();
+public int batchWaterMb();
+public int batchOutputMb();
+public int batchFilters();
+public int batchFePerTick();
+public int batchTicks();
 public void serverTick();
 public void setRemoved();
 protected net.minecraft.world.inventory.AbstractContainerMenu createMachineMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
@@ -3664,6 +3676,13 @@ public int raw();
 public int rawCapacity();
 public int pure();
 public int pureCapacity();
+public boolean active();
+public int batchWaterMb();
+public int batchOutputMb();
+public int batchFilters();
+public int batchFePerTick();
+public int batchTicks();
+public int filterCount();
 ```
 
 ### com.euvcraft.lithmod.mc.multiblock.utilities.UtilityPortBlock

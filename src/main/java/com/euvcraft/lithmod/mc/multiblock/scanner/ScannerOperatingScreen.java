@@ -1,9 +1,13 @@
 package com.euvcraft.lithmod.mc.multiblock.scanner;
+import com.euvcraft.lithmod.core.RefusalReason;
+import com.euvcraft.lithmod.core.ProcessState;
+import com.euvcraft.lithmod.mc.machine.process.ProcessCellMenu;
 import com.euvcraft.lithmod.mc.machine.screen.AdvancedMachineScreen;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
+/** Public machine prerequisites and progress within the current exposure layer. */
 public final class ScannerOperatingScreen extends AdvancedMachineScreen<ScannerOperatingMenu> {
  private Button abort;
  public ScannerOperatingScreen(ScannerOperatingMenu menu,Inventory inventory,Component title){super(menu,inventory,title,260);}
@@ -11,32 +15,35 @@ public final class ScannerOperatingScreen extends AdvancedMachineScreen<ScannerO
  @Override protected boolean cabinet(){return false;}
  @Override protected void init(){super.init();abort=addRenderableWidget(Button.builder(Component.translatable("button.lithmod.process_cell.abort"),b->{if(minecraft!=null&&minecraft.gameMode!=null)minecraft.gameMode.handleInventoryButtonClick(menu.containerId,0);}).bounds(leftPos+8,topPos+232,160,20).build());}
  @Override protected void containerTick(){super.containerTick();abort.active=menu.inputsLocked();}
- @Override protected void extractLabels(GuiGraphicsExtractor g,int mouseX,int mouseY){
+ @Override protected void extractLabels(GuiGraphicsExtractor g,int mx,int my){
   line(g,Component.translatable("block.lithmod.scanner_operating_panel"),8,6,160);
   line(g,Component.literal("FOUP     Mask    Resist"),24,22,142);
   line(g,Component.literal(menu.energy()+" / "+menu.energyCapacity()+" FE"),26,56,142);
   line(g,playerInventoryTitle,8,72,160);
   line(g,Component.translatable(formed()?"state.lithmod.process_cell.formed":"state.lithmod.process_cell.unformed"),8,168,160);
-  if(!menu.calibrated()){
-   line(g,menu.contaminationInvalidated()?Component.literal("Contamination: recalibrate"):Component.translatable("message.lithmod.scanner.calibration_required"),8,180,160);
-   line(g,Component.literal(menu.immersion()?"Use Beam and Diagnostic Panels":"Use the Calibration Panel"),8,190,160);
-  }else{
-   line(g,Component.literal("Alignment: "+menu.quality()+"/100"),8,180,160);
-   line(g,Component.literal("Yield multiplier: "+menu.multiplierPermille()/10.0+"%"),8,190,160);
-  }
-  line(g,statusText(),8,202,160);
-  line(g,Component.literal("Layer "+menu.currentLayer()+" / "+menu.totalLayers()+(menu.immersion()?"  UPW: "+menu.water()+" mB":"")),8,214,160);
+  if(!menu.calibrated()&&!menu.inputsLocked())
+   line(g,Component.literal(menu.contaminationInvalidated()?"Retune Beam + Diagnostic":menu.immersion()?"Use Beam + Diagnostic Panels":"Use the Calibration Panel"),8,180,160);
+  else line(g,Component.literal(menu.inputsLocked()?"Calibration fixed for this lot":"Calibration yield: "+menu.multiplierPermille()/10.0+"%"),8,180,160);
+  line(g,statusText(),8,192,160);
+  line(g,Component.literal("Layer "+menu.currentLayer()+"/"+menu.totalLayers()+(menu.immersion()?"  UPW "+menu.water():"")),8,204,160);
+  int ticks=menu.ticks(),progress=menu.progress();
+  line(g,Component.literal("Exposure: "+progress+"/"+ticks+" t"+(ticks>0?" ("+(int)(100L*progress/ticks)+"%)":"")),8,216,160);
  }
+ @Override public void extractBackground(GuiGraphicsExtractor g,int mx,int my,float partial){
+  super.extractBackground(g,mx,my,partial);
+  g.fill(leftPos+8,topPos+227,leftPos+168,topPos+230,0xFF555555);
+  int fill=menu.ticks()>0?(int)Math.clamp(160L*menu.progress()/menu.ticks(),0,160):0;
+  if(fill>0)g.fill(leftPos+8,topPos+227,leftPos+8+fill,topPos+230,0xFF55BB99);
+ }
+ private Component refusalText(int issue){return Component.translatable("state.lithmod.process_cell."+RefusalReason.Code.values()[issue-1].name().toLowerCase(java.util.Locale.ROOT));}
  private Component statusText(){
-  if(menu.tierIndex()>=5&&menu.inputsLocked()&&menu.water()<menu.waterCost())return Component.literal("Paused: supply ultrapure water");
-  int status=menu.status();
   if(menu.aborted())return Component.translatable("state.lithmod.process_cell.stopped_after_abort");
-  if(status==com.euvcraft.lithmod.mc.machine.process.ProcessCellMenu.STATUS_DEFINITION_MISSING)return Component.translatable("state.lithmod.process_cell.missing_definition");
+  if(menu.status()==ProcessCellMenu.STATUS_DEFINITION_MISSING)return Component.translatable("state.lithmod.process_cell.missing_definition");
+  int issue=menu.operatingIssue();
+  if(issue>0&&issue<=RefusalReason.Code.values().length)return refusalText(issue);
   int refusal=menu.refusal();
-  if(refusal>0&&refusal<=com.euvcraft.lithmod.core.RefusalReason.Code.values().length)
-   return Component.translatable("state.lithmod.process_cell."+com.euvcraft.lithmod.core.RefusalReason.Code.values()[refusal-1].name().toLowerCase(java.util.Locale.ROOT));
-  return Component.translatable("state.lithmod.process_cell."+(status>=0&&status<com.euvcraft.lithmod.core.ProcessState.values().length?com.euvcraft.lithmod.core.ProcessState.values()[status]:com.euvcraft.lithmod.core.ProcessState.IDLE).name().toLowerCase(java.util.Locale.ROOT));
+  if(refusal>0&&refusal<=RefusalReason.Code.values().length)return refusalText(refusal);
+  int status=menu.status();
+  return Component.translatable("state.lithmod.process_cell."+(status>=0&&status<ProcessState.values().length?ProcessState.values()[status]:ProcessState.IDLE).name().toLowerCase(java.util.Locale.ROOT));
  }
 }
-
-

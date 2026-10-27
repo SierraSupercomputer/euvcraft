@@ -16,7 +16,11 @@ public record RefusalReason(Code code, List<String> unmetLines) implements Proce
         MASK_SPENT,
         DIE_NOT_MAKEABLE,
         LINE_CANNOT_RUN_TIER,
-        GENERATION_UNMET
+        GENERATION_UNMET,
+        STRUCTURE_INCOMPLETE,
+        CALIBRATION_REQUIRED,
+        ULTRAPURE_WATER_REQUIRED,
+        ROOM_UNAVAILABLE
     }
 
     public RefusalReason {
