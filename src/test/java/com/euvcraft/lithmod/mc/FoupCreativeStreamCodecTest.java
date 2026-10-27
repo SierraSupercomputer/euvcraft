@@ -63,7 +63,7 @@ class FoupCreativeStreamCodecTest {
         return new FoupContents(UUID.fromString("00000000-0000-4000-8000-0000000000f9"), 64,
             processedWafers(64, 7), new RunSpec("memory", 2, 1, 0.8, 12), WaferSubstrate.PURE,
             FoupContents.PREPARATION_G2, CleanroomExposure.empty(), 500)
-            .withRoomExposure(new CleanroomExposure(1200, 411), 376);
+            .withRoomExposure(new CleanroomExposure(1200, 493200), 376);
     }
 
     private static FoupContents encodeDecode(FoupContents original, FoupNetworkContext.Payload context) {
@@ -218,7 +218,7 @@ class FoupCreativeStreamCodecTest {
             ByteBuf bare = Unpooled.buffer();
             try {
                 FoupContentsCodec.STREAM_CODEC.encode(full, original);
-                FoupContentsCodec.STREAM_CODEC.encode(bare, original);
+                FoupNetworkContext.section(FoupNetworkContext.Payload.PUBLIC, () -> FoupContentsCodec.STREAM_CODEC.encode(bare, original));
                 FoupContents fullRead = FoupContentsCodec.STREAM_CODEC.decode(full.readerIndex(0));
                 FoupContents bareRead = FoupContentsCodec.STREAM_CODEC.decode(bare.readerIndex(0));
                 assertEquals(bareRead.publicView(), fullRead.publicView(),
