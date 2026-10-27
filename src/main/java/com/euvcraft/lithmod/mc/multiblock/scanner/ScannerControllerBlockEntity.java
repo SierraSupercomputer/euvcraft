@@ -42,18 +42,39 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
  /** Runs exactly once at dirty-exposure invalidation; existing lot keeps its frozen contract. */
  private void resetContaminatedCalibration(){
   var rng=java.util.concurrent.ThreadLocalRandom.current();
+  var previousBeam=alignment;var previousFit=diagnostic;
   var beam=BeamAlignment.create(rng.nextLong());
-  if(beam.targetX()==alignment.targetX()&&beam.targetY()==alignment.targetY()&&beam.targetFocus()==alignment.targetFocus())
-   beam=new BeamAlignment(beam.x(),beam.y(),beam.focus(),alignment.targetX()==5?-5:alignment.targetX()+1,beam.targetY(),beam.targetFocus());
+  for(int attempt=0;attempt<128;attempt++){
+   var oldSettings=new BeamAlignment(previousBeam.x(),previousBeam.y(),previousBeam.focus(),beam.targetX(),beam.targetY(),beam.targetFocus());
+   if(oldSettings.quality()<minimumQuality()&&(beam.targetX()!=previousBeam.targetX()||beam.targetY()!=previousBeam.targetY()||beam.targetFocus()!=previousBeam.targetFocus()))break;
+   beam=BeamAlignment.create(rng.nextLong());
+  }
+  // Deterministic far-corner fallback keeps permissive configured quality floors solvable.
+  int worst=101;BeamAlignment far=beam;
+  for(int x:new int[]{-5,5})for(int y:new int[]{-5,5})for(int f:new int[]{-5,5}){
+   var candidate=new BeamAlignment(previousBeam.x(),previousBeam.y(),previousBeam.focus(),x,y,f);
+   if(candidate.quality()<worst){worst=candidate.quality();far=candidate;}
+  }
+  if(new BeamAlignment(previousBeam.x(),previousBeam.y(),previousBeam.focus(),beam.targetX(),beam.targetY(),beam.targetFocus()).quality()>=minimumQuality())beam=far;
   if(beam.quality()>=minimumQuality())beam=new BeamAlignment(-10,-10,10,beam.targetX(),beam.targetY(),beam.targetFocus());
   alignment=beam;
   var fit=DiagnosticFit.create(rng.nextLong());
-  if(fit.targetA()==diagnostic.targetA()&&fit.targetB()==diagnostic.targetB()&&fit.targetC()==diagnostic.targetC())
-   fit=new DiagnosticFit(0,0,0,Math.floorMod(diagnostic.targetA()+101,201)-100,fit.targetB(),fit.targetC());
+  for(int attempt=0;attempt<128;attempt++){
+   if(fit.plot(previousFit.a(),previousFit.b(),previousFit.c()).quality()<diagnosticMinimum()&&(fit.targetA()!=previousFit.targetA()||fit.targetB()!=previousFit.targetB()||fit.targetC()!=previousFit.targetC()))break;
+   fit=DiagnosticFit.create(rng.nextLong());
+  }
+  worst=101;DiagnosticFit farFit=fit;
+  for(int x:new int[]{-100,100})for(int y:new int[]{-100,100})for(int c:new int[]{-100,100}){
+   var candidate=new DiagnosticFit(0,0,0,x,y,c);int quality=candidate.plot(previousFit.a(),previousFit.b(),previousFit.c()).quality();
+   if(quality<worst){worst=quality;farFit=candidate;}
+  }
+  if(fit.plot(previousFit.a(),previousFit.b(),previousFit.c()).quality()>=diagnosticMinimum())fit=farFit;
+  if(fit.targetA()==previousFit.targetA()&&fit.targetB()==previousFit.targetB()&&fit.targetC()==previousFit.targetC())fit=new DiagnosticFit(0,0,0,Math.floorMod(previousFit.targetA()+101,201)-100,fit.targetB(),fit.targetC());
   diagnostic=fit;diagnosticPlotted=false;
   calibratedHardware="";acceptedQuality=-1;acceptedMultiplier=0;
   diagnosticHardware="";diagnosticQuality=-1;diagnosticMultiplier=0;
  }
+
  public boolean immersion(){return immersion;}
  public DiagnosticFit diagnostic(){return diagnostic;}public boolean diagnosticPlotted(){return diagnosticPlotted;}
  public int diagnosticQuality(){return diagnosticQuality;}
