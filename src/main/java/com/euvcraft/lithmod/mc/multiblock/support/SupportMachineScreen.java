@@ -24,17 +24,21 @@ public class SupportMachineScreen extends FabMachineScreen<SupportMachineMenu> {
     @Override protected void init() {
         super.init();
         if (menu.kind() != SupportMachineKind.EBEAM) return;
+        // Lower-band row map (local y in the opaque 176x220 window; hotbar well ends at 159):
+        // 166 status (right-aligned), 176 batch FE (right-aligned), 184..200 selector row
+        // (<  and  >  flanking the centered design text), 202..218 start + core picker.
+        // Rows are stacked front-to-back so nothing shares pixels with the FE readout.
         previous = addRenderableWidget(Button.builder(Component.literal("<"), b -> {
             int selected = menu.ebeamSelectedDesign();
             send(selected <= 0 ? SupportMachineMenu.EBEAM_DESIGN_COUNT-1 : selected - 1);
-        }).bounds(leftPos + 8, topPos + 180, 20, 16).build());
+        }).bounds(leftPos + 8, topPos + 184, 20, 16).build());
         next = addRenderableWidget(Button.builder(Component.literal(">"), b -> {
             int selected = menu.ebeamSelectedDesign();
             send(selected < 0 ? 0 : (selected + 1) % SupportMachineMenu.EBEAM_DESIGN_COUNT);
-        }).bounds(leftPos + 148, topPos + 180, 20, 16).build());
+        }).bounds(leftPos + 148, topPos + 184, 20, 16).build());
         start = addRenderableWidget(Button.builder(Component.translatable("button.lithmod.ebeam.start"),
             b -> send(SupportMachineMenu.EBEAM_START_BUTTON))
-            .bounds(leftPos + 8, topPos + 200, 88, 16).build());
+            .bounds(leftPos + 8, topPos + 202, 88, 16).build());
         // Core-count cycle button on the remaining lower-row width (x100..168), beside the
         // still-original start button. The label shows the server-synced count and the
         // click sends only the distinct cycle id; the configured options are never
@@ -42,7 +46,7 @@ public class SupportMachineScreen extends FabMachineScreen<SupportMachineMenu> {
         cores = addRenderableWidget(Button.builder(Component.literal("Cores: "
                 + menu.ebeamSelectedCores()),
             b -> send(SupportMachineMenu.CORE_BUTTON))
-            .bounds(leftPos + 100, topPos + 200, 68, 16).build());
+            .bounds(leftPos + 100, topPos + 202, 68, 16).build());
         updateButtons();
     }
 
@@ -81,24 +85,26 @@ public class SupportMachineScreen extends FabMachineScreen<SupportMachineMenu> {
         Component status = menu.ebeamJobRunning()
             ? Component.translatable(menu.ebeamJobPaused() ? "label.lithmod.ebeam.paused" : "label.lithmod.ebeam.running")
             : Component.translatable("label.lithmod.support.formed", formed);
-        right(graphics, status, 168);
+        right(graphics, status, 166);
         int selected = menu.ebeamSelectedDesign();
         Component design = selected < 0 ? Component.translatable("label.lithmod.ebeam.no_selection")
             : Component.translatable("label.lithmod.ebeam.design",
                 Component.translatable("dieType.lithmod." + SupportMachineMenu.intToDieType(menu.ebeamSelectedDieType())),
                 menu.ebeamSelectedTier());
         String selectedLabel = clipped(design, 116);
-        graphics.text(font, selectedLabel, (176 - font.width(selectedLabel)) / 2, 184, COLOR, false);
+        graphics.text(font, selectedLabel, (176 - font.width(selectedLabel)) / 2, 188, COLOR, false);
         if (selected >= 0) {
             Component ingredients = menu.ebeamDesignAvailable(selected) || menu.ebeamJobRunning()
                 ? Component.translatable("label.lithmod.ebeam.ingredients", menu.ebeamBlankCost(), menu.ebeamRedstoneCost())
                 : Component.translatable("label.lithmod.ebeam.unavailable");
             graphics.text(font, clipped(ingredients, 116), 26, 58, COLOR, false);
-            right(graphics, Component.literal(compact(menu.ebeamTotalEnergy()) + " FE"), 204);
+            // Batch energy total sits on its own row above the selector row; drawing it at
+            // the old y=204 landed it on the core picker button (x100..168, y200..216).
+            right(graphics, Component.literal(compact(menu.ebeamTotalEnergy()) + " FE"), 176);
         }
     }
     private void right(GuiGraphicsExtractor graphics, Component text, int y) {
-        String label = clipped(text, y == 204 ? 68 : 160);
+        String label = clipped(text, 160);
         graphics.text(font, label, 168 - font.width(label), y, COLOR, false);
     }
     private String clipped(Component text, int width) {
