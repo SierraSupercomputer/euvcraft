@@ -47,7 +47,8 @@ final class CreativeFoupTransportTest {
         client.pipeline().fireChannelActive();
         net.neoforged.neoforge.network.registration.ChannelAttributes.setConnectionType(clientConnection,net.neoforged.neoforge.network.connection.ConnectionType.NEOFORGE);
         var creativeContext=new GameProtocols.Context(){public boolean hasInfiniteMaterials(){return true;}public boolean canUseCommandBlocks(){return false;}};
-        clientConnection.setupOutboundProtocol(GameProtocols.SERVERBOUND_TEMPLATE.bind(decorate,creativeContext));
+        // The fixture skips login/handshake terminal packets; install the play encoder explicitly.
+        client.pipeline().replace("encoder","encoder",new PacketEncoder<>(GameProtocols.SERVERBOUND_TEMPLATE.bind(decorate,creativeContext)));
         player.initInventoryMenu();pump(server,client);
         try {
             for(var item:List.of(ModItems.FOUP_MK1.get(),ModItems.FOUP_MK2.get())) {
