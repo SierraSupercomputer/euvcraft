@@ -6,8 +6,8 @@ import java.util.Deque;
 import io.netty.channel.ChannelHandlerContext;
 
 import net.minecraft.network.Connection;
-import net.minecraft.network.PacketFlow;
-import net.minecraft.network.protocol.PacketListener;
+import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.PacketListener;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 
 /**
@@ -131,7 +131,7 @@ public final class FoupNetworkContext {
      * @param ctx the pipeline context of the wrapped call, not null
      * @return the payload mode, never null, {@link Payload#PUBLIC} outside of known context
      */
-    static Payload sideOf(ChannelHandlerContext ctx) {
+    public static Payload sideOf(ChannelHandlerContext ctx) {
         Connection connection = ctx.pipeline().get(Connection.class);
         if (connection == null) {
             return Payload.PUBLIC;

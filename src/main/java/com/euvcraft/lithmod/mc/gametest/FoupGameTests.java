@@ -88,6 +88,8 @@ public final class FoupGameTests {
         DeferredRegister.create(net.minecraft.core.registries.Registries.TEST_FUNCTION, "lithmod");
 
     static {
+        FUNCTIONS.register("foup_creative_local_packets", () -> h -> CreativeFoupTransportTest.run(h,true));
+        FUNCTIONS.register("foup_creative_remote_packets", () -> h -> CreativeFoupTransportTest.run(h,false));
         FUNCTIONS.register("foup_stack_round_trip", () -> FoupGameTests::stackRoundTrip);
         FUNCTIONS.register("foup_network_view_is_public_only", () -> FoupGameTests::networkViewIsPublicOnly);
         FUNCTIONS.register("foup_encoded_size", () -> FoupGameTests::encodedSize);
@@ -119,6 +121,8 @@ public final class FoupGameTests {
             environment, Level.OVERWORLD, Identifier.withDefaultNamespace("empty"),
             200, 0, true, Rotation.NONE, false, 1, 1, false, 0);
 
+        register(event, data, "foup_creative_local_packets");
+        register(event, data, "foup_creative_remote_packets");
         register(event, data, "foup_stack_round_trip");
         register(event, data, "foup_network_view_is_public_only");
         register(event, data, "foup_encoded_size");

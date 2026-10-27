@@ -3,8 +3,8 @@ package com.euvcraft.lithmod.mc.compat.mixin;
 import java.util.List;
 
 import com.euvcraft.lithmod.mc.network.FoupNetworkContext;
-import com.llamalad7.mixinextras.injector.WrapMethod;
-import com.llamalad7.mixinextras.sugar.Operation;
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 
 import org.spongepowered.asm.mixin.Mixin;
 

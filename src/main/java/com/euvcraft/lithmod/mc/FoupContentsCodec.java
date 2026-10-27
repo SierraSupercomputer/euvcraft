@@ -205,7 +205,7 @@ public final class FoupContentsCodec {
             int lotLayer = ByteBufCodecs.VAR_INT.decode(buffer);
             String gradeId = ByteBufCodecs.STRING_UTF8.decode(buffer);
             int preparation = ByteBufCodecs.VAR_INT.decode(buffer);
-            byte flag = buffer.readUnsignedByte();
+            int flag = buffer.readUnsignedByte();
             if (flag == FLAG_NONE) {
                 return fromPublicView(capacity, waferCount, lotLayer, gradeId, preparation);
             }
@@ -435,7 +435,7 @@ public final class FoupContentsCodec {
         if (!encoded.result().isPresent()) {
             throw new IllegalStateException("Full FOUP payload failed to encode: " + encoded.error());
         }
-        ByteBuf scratch = Unpooled.buffer();
+        ByteBuf scratch = Unpooled.buffer(256, MAX_FULL_PAYLOAD_BYTES);
         try {
             DataOutputStream out = new DataOutputStream(new ByteBufOutputStream(scratch));
             try {
@@ -483,9 +483,10 @@ public final class FoupContentsCodec {
                 throw new DecoderException(
                     "The FOUP full payload failed to decode: " + parsed.error().orElse(null));
             }
+            if (slice.isReadable()) throw new DecoderException("Trailing FOUP payload bytes");
             return parsed.result().get();
         } finally {
-            slice.release();
+            // readSlice borrows the parent buffer; its owner releases it.
         }
     }
 }
