@@ -41,10 +41,8 @@ public final class UtilityControllerBlockEntity extends FabMachineBlockEntity im
    }
   }else if(pure.capacity()-pure.amount()>=pendingOutput&&energySource().draw(cost)==cost){progress++;if(progress>=duration){pure.fill(pendingOutput,false);pendingOutput=0;progress=0;}setChanged();}sync();
  }
- // Display-only accuracy: data slots mirror the runner one-for-one while formed; while
- // unformed (or definitionless) a saved job's stale numbers would otherwise keep showing
- // on the client, so the synced progress/ticks read zero. Fields and save paths untouched.
- private void sync(){boolean live=isFormed()&&definition().isPresent();data().set(DATA_ENERGY,buffer().getAmountAsInt());data().set(DATA_CAPACITY,buffer().getCapacityAsInt());data().set(DATA_PROGRESS,live?progress:0);data().set(DATA_TICKS,live&&pendingOutput>0?duration:0);}
+ // Preserve the admitted progress during pauses, including a temporarily missing frame.
+ private void sync(){data().set(DATA_ENERGY,buffer().getAmountAsInt());data().set(DATA_CAPACITY,buffer().getCapacityAsInt());data().set(DATA_PROGRESS,progress);data().set(DATA_TICKS,pendingOutput>0?duration:0);}
  @Override public void setRemoved(){formation.unload();super.setRemoved();}
  @Override protected AbstractContainerMenu createMachineMenu(int id,Inventory inv,FabMachineBlockEntity machine){return new UtilityMenu(id,inv,this);}
  @Override protected void saveAdditional(ValueOutput o){super.saveAdditional(o);o.putInt("rawMb",raw.amount());o.putInt("pureMb",pure.amount());o.putInt("utilityProgress",progress);o.putInt("utilityDuration",duration);o.putInt("utilityCost",cost);o.putInt("utilityPending",pendingOutput);}

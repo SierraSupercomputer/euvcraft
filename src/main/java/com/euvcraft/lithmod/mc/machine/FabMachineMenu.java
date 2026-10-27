@@ -218,6 +218,23 @@ public abstract class FabMachineMenu extends AbstractContainerMenu {
             this.blockEntity.getBlockPos().getZ() + 0.5) <= 64.0;
     }
 
+    /** Creative packets carry only public FOUP data; repair fresh wafers before slot validation,
+     * including carried stacks and immediate transfers that precede the next inventory tick. */
+    private static void prepareCreativeFoup(ItemStack stack, Player player) {
+        if (player instanceof net.minecraft.server.level.ServerPlayer server && server.hasInfiniteMaterials()
+                && stack.getItem() instanceof com.euvcraft.lithmod.mc.FoupItem
+                && server.level() instanceof net.minecraft.server.level.ServerLevel level) {
+            stack.getItem().inventoryTick(stack, level, server, null);
+        }
+    }
+    @Override
+    public void clicked(int index, int button, net.minecraft.world.inventory.ClickType type, Player player) {
+        if (player.containerMenu == this && stillValid(player)) {
+            prepareCreativeFoup(getCarried(), player);
+            if(index >= 0 && index < slots.size()) prepareCreativeFoup(slots.get(index).getItem(), player);
+        }
+        super.clicked(index, button, type, player);
+    }
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
         if (index < 0 || index >= slots.size()) {
@@ -229,6 +246,7 @@ public abstract class FabMachineMenu extends AbstractContainerMenu {
         }
 
         ItemStack original = slot.getItem();
+        if(player.containerMenu==this&&stillValid(player))prepareCreativeFoup(original,player);
         ItemStack copy = original.copy();
 
         boolean moved = index < this.machineSlotCount

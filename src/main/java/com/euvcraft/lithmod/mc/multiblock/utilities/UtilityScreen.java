@@ -15,11 +15,11 @@ public final class UtilityScreen extends AdvancedMachineScreen<UtilityMenu>{publ
  private Component batchStatus(){
   int water=menu.batchWaterMb(),output=menu.batchOutputMb(),filters=menu.batchFilters(),fe=menu.batchFePerTick();
   if(menu.active()){
-   if(water<=0||output<=0||filters<=0||fe<=0)return Component.literal("Paused: settings not loaded");
+   if(output<=0||fe<=0)return Component.literal("Paused: settings not loaded");
    int free=menu.pureCapacity()-menu.pure();
-   if(free<output)return Component.literal("Paused: pure tank needs "+(output-free)+" mB more free");
+   if(free<output)return Component.literal("Paused: pure tank full");
    if(menu.energy()<fe)return Component.literal("Paused: waiting for "+fe+" FE/t");
-   return Component.translatable("screen.lithmod.progress",menu.progress(),menu.ticks());
+   return Component.literal("Batch: "+menu.progress()+"/"+menu.ticks()+" ticks");
   }
   if(water<=0||output<=0||filters<=0||fe<=0)return Component.literal("Idle: settings not loaded");
   if(menu.raw()<water)return Component.literal("Idle: waiting for "+(water-menu.raw())+" mB raw");
@@ -30,10 +30,8 @@ public final class UtilityScreen extends AdvancedMachineScreen<UtilityMenu>{publ
   return Component.literal("Ready: next batch queued");
  }
  /** The current or next batch's costs, straight from the synced menu state. */
- private Component batchCosts(){
-  long fe=(long)menu.batchFePerTick()*Math.max(1,menu.batchTicks());
-  return Component.literal("Batch: "+menu.batchFilters()+" filter(s), "+menu.batchWaterMb()+" mB raw -> "+menu.batchOutputMb()+" mB pure, "+compact(fe)+" FE");
- }
+ private Component batchCosts(){return Component.literal("Output: "+menu.batchOutputMb()+" mB UPW");}
+
  private static String compact(long value){
   if(value>=1_000_000_000_000L)return String.format(Locale.ROOT,"%.1fT",value/1e12);
   if(value>=1_000_000_000L)return String.format(Locale.ROOT,"%.1fB",value/1e9);
