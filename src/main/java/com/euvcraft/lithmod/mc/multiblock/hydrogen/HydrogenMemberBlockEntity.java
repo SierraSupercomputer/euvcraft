@@ -1,33 +1,44 @@
 package com.euvcraft.lithmod.mc.multiblock.hydrogen;
 
+import com.euvcraft.lithmod.core.WaterTank;
 import com.euvcraft.lithmod.core.multiblock.BlockKind;
-import com.euvcraft.lithmod.mc.multiblock.utilities.UtilityPortBlockEntity;
+import com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedMemberBlockEntity;
+import com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOwner;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.energy.EnergyHandler;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
-import net.neoforged.neoforge.transfer.energy.SimpleEnergyHandler;
-import net.neoforged.neoforge.transfer.fluid.FluidStack;
-import net.neoforged.neoforge.transfer.fluid.FluidVariant;
-import net.neoforged.neoforge.transfer.fluid.FluidHandler;
+import net.neoforged.neoforge.transfer.energy.EnergyHandler;
+import net.neoforged.neoforge.transfer.fluid.FluidResource;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 import org.jspecify.annotations.Nullable;
 
-import java.util.function.Predicate;
+import java.util.Objects;
 
 /**
  * Shared member block entity for the hydrogen purifier: casing, power port, gas inlet, gas outlet, operating panel.
- * Extends the same pattern as UtilityPortBlockEntity but with hydrogen-specific fluid handling.
+ * Extends AdvancedMemberBlockEntity directly (UtilityPortBlockEntity is final).
+ * Uses the new NeoForge transfer API (ResourceHandler<FluidResource>) for fluid handling.
  */
-public final class HydrogenMemberBlockEntity extends UtilityPortBlockEntity {
+public final class HydrogenMemberBlockEntity extends AdvancedMemberBlockEntity {
 
-    private final HydrogenTankHandler fluidHandler;
+    private final BlockKind kind;
+    private final HydrogenFluidHandler fluidHandler;
 
     public HydrogenMemberBlockEntity(BlockPos pos, BlockState state) {
-        super(HydrogenMachines.MEMBER_BE.get(), pos, state);
-        this.fluidHandler = new HydrogenTankHandler(this);
+        super(pos, state);
+        this.kind = computeKind();
+        this.fluidHandler = new HydrogenFluidHandler(this);
+    }
+
+    private BlockKind computeKind() {
+        var block = getBlockState().getBlock();
+        if (block instanceof HydrogenMemberBlock hmb) {
+            return hmb.kind();
+        }
+        return BlockKind.OTHER;
     }
 
     @Override
@@ -36,102 +47,189 @@ public final class HydrogenMemberBlockEntity extends UtilityPortBlockEntity {
     }
 
     @Override
-    protected IFluidHandler createFluidHandler() {
-        return fluidHandler;
+    protected boolean energyPort() {
+        return kind == BlockKind.POWER_PORT;
     }
 
     @Override
-    protected EnergyHandler createEnergyHandler() {
-        return new SimpleEnergyHandler(0, 0, 0); // only power ports expose energy
+    public com.euvcraft.lithmod.core.multiblock.BlockKind structureKind() {
+        return kind;
+    }
+
+    @Override
+    public @Nullable EnergyHandler energy() {
+        var expected = controller();
+        if (expected == null || !valid(expected)) return null;
+        if (kind != BlockKind.POWER_PORT) return null;
+        return new EnergyHandler() {
+            @Override
+            public long getAmountAsLong() {
+                return valid(expected) ? expected.machine().energy().getAmountAsLong() : 0;
+            }
+
+            @Override
+            public long getCapacityAsLong() {
+                return valid(expected) ? expected.machine().energy().getCapacityAsLong() : 0;
+            }
+
+            @Override
+            public int insert(int amount, TransactionContext transaction) {
+                return valid(expected) ? expected.machine().energy().insert(amount, transaction) : 0;
+            }
+
+            @Override
+            public int extract(int amount, TransactionContext transaction) {
+                return 0; // hydrogen purifier does not allow extraction through member ports
+            }
+        };
+    }
+
+    /** Returns the fluid handler capability for gas inlet/outlet, or null for other kinds. */
+    public @Nullable ResourceHandler<FluidResource> handler() {
+        if (kind != BlockKind.GAS_INLET && kind != BlockKind.GAS_OUTLET) {
+            return null;
+        }
+        var owner = controller();
+        if (owner instanceof HydrogenControllerBlockEntity controller) {
+            return fluidHandler;
+        }
+        return null;
     }
 
     /**
      * Fluid handler for gas inlet (accepts raw H2) and gas outlet (outputs fab H2).
-     * Other member kinds return null from the capability.
+     * Uses the new NeoForge transfer API (ResourceHandler<FluidResource>).
      */
-    public static final class HydrogenTankHandler implements IFluidHandler {
+    public static final class HydrogenFluidHandler implements ResourceHandler<FluidResource> {
 
         private final HydrogenMemberBlockEntity member;
-        private final HydrogenControllerBlockEntity controller;
+        private final FluidResource fabFluid;
+        private @Nullable FluidResource rawFluid;
 
-        HydrogenTankHandler(HydrogenMemberBlockEntity member) {
+        HydrogenFluidHandler(HydrogenMemberBlockEntity member) {
             this.member = member;
+            // Fabricated hydrogen from this mod
+            this.fabFluid = FluidResource.of(HydrogenFluids.FAB_HYDROGEN.get());
+            // Raw hydrogen from Arcforge - resolved lazily
+            this.rawFluid = null;
+        }
+
+        private @Nullable FluidResource rawFluid() {
+            if (rawFluid != null) return rawFluid;
+            return HydrogenFluids.rawHydrogenFluid().map(FluidResource::of).orElse(null);
+        }
+
+        private @Nullable HydrogenControllerBlockEntity liveController() {
             var level = member.getLevel();
+            if (level == null || level.isClientSide()) return null;
             var ctrlPos = member.getBlockPos();
-            BlockEntity ctrlEntity = level != null ? level.getBlockEntity(ctrlPos) : null;
-            this.controller = ctrlEntity instanceof HydrogenControllerBlockEntity be ? be : null;
+            BlockEntity ctrlEntity = level.getBlockEntity(ctrlPos);
+            if (!(ctrlEntity instanceof HydrogenControllerBlockEntity controller)) return null;
+            // Validate the link
+            if (controller.isRemoved() || member.isRemoved() || member.controller() != controller) return null;
+            if (!controller.isFormed() || !controller.members().contains(member.getBlockPos())) return null;
+            controller.revalidate();
+            return controller;
         }
 
         @Override
-        public int getTanks() {
-            return controller != null ? 2 : 0; // raw tank + pure tank
+        public int size() {
+            return 1;
         }
 
         @Override
-        public FluidStack getFluidInTank(int tank) {
-            if (controller == null) return FluidStack.EMPTY;
-            return switch (tank) {
-                case 0 -> new FluidStack(HydrogenFluids.RAW_HYDROGEN.get(), controller.rawHydrogen.amount());
-                case 1 -> new FluidStack(HydrogenFluids.FAB_HYDROGEN.get(), controller.pureHydrogen.amount());
-                default -> FluidStack.EMPTY;
-            };
-        }
-
-        @Override
-        public int getTankCapacity(int tank) {
-            if (controller == null) return 0;
-            return switch (tank) {
-                case 0 -> controller.rawHydrogen.capacity();
-                case 1 -> controller.pureHydrogen.capacity();
-                default -> 0;
-            };
-        }
-
-        @Override
-        public boolean isFluidValid(int tank, FluidStack stack) {
-            if (controller == null) return false;
-            if (tank == 0) { // raw hydrogen inlet only accepts arcforge:hydrogen
-                return stack.is(HydrogenFluids.RAW_HYDROGEN.get());
+        public FluidResource getResource(int index) {
+            Objects.checkIndex(index, 1);
+            var controller = liveController();
+            if (controller == null) return FluidResource.EMPTY;
+            if (member.kind == BlockKind.GAS_INLET) {
+                // Inlet exposes raw hydrogen if available
+                var rf = rawFluid();
+                return rf != null && controller.rawHydrogen.amount() > 0 ? rf : FluidResource.EMPTY;
+            } else if (member.kind == BlockKind.GAS_OUTLET) {
+                // Outlet exposes fab hydrogen if available
+                return controller.pureHydrogen.amount() > 0 ? fabFluid : FluidResource.EMPTY;
             }
-            if (tank == 1) { // pure hydrogen outlet only outputs fab_hydrogen
-                return stack.is(HydrogenFluids.FAB_HYDROGEN.get());
+            return FluidResource.EMPTY;
+        }
+
+        @Override
+        public long getAmountAsLong(int index) {
+            Objects.checkIndex(index, 1);
+            var controller = liveController();
+            if (controller == null) return 0;
+            if (member.kind == BlockKind.GAS_INLET) {
+                return controller.rawHydrogen.amount();
+            } else if (member.kind == BlockKind.GAS_OUTLET) {
+                return controller.pureHydrogen.amount();
+            }
+            return 0;
+        }
+
+        @Override
+        public long getCapacityAsLong(int index, FluidResource resource) {
+            Objects.checkIndex(index, 1);
+            var controller = liveController();
+            if (controller == null) return 0;
+            if (member.kind == BlockKind.GAS_INLET) {
+                var rf = rawFluid();
+                return rf != null && (resource.isEmpty() || resource.equals(rf)) ? controller.rawHydrogen.capacity() : 0;
+            } else if (member.kind == BlockKind.GAS_OUTLET) {
+                return resource.isEmpty() || resource.equals(fabFluid) ? controller.pureHydrogen.capacity() : 0;
+            }
+            return 0;
+        }
+
+        @Override
+        public boolean isValid(int index, FluidResource resource) {
+            Objects.checkIndex(index, 1);
+            var controller = liveController();
+            if (controller == null) return false;
+            if (member.kind == BlockKind.GAS_INLET) {
+                var rf = rawFluid();
+                return rf != null && resource.equals(rf);
+            } else if (member.kind == BlockKind.GAS_OUTLET) {
+                return resource.equals(fabFluid);
             }
             return false;
         }
 
         @Override
-        public int fill(FluidStack resource, FluidAction action) {
+        public int insert(int index, FluidResource resource, int amount, TransactionContext transaction) {
+            Objects.checkIndex(index, 1);
+            Objects.requireNonNull(resource);
+            Objects.requireNonNull(transaction);
+            if (resource.isEmpty() || amount < 0) return 0;
+            var controller = liveController();
             if (controller == null || member.kind != BlockKind.GAS_INLET) return 0;
-            if (!resource.is(HydrogenFluids.RAW_HYDROGEN.get())) return 0;
-            int filled = controller.rawHydrogen.fill(resource.getAmount(), action.simulate());
-            if (filled > 0 && !action.simulate()) {
+            var rf = rawFluid();
+            if (rf == null || !resource.equals(rf)) return 0;
+            int filled = controller.rawHydrogen.fill(amount, true);
+            if (filled > 0) {
+                controller.rawJournal.updateSnapshots(transaction);
+                controller.rawHydrogen.fill(filled, false);
                 member.setChanged();
             }
             return filled;
         }
 
         @Override
-        public FluidStack drain(FluidStack resource, FluidAction action) {
-            if (controller == null || member.kind != BlockKind.GAS_OUTLET) return FluidStack.EMPTY;
-            if (!resource.is(HydrogenFluids.FAB_HYDROGEN.get())) return FluidStack.EMPTY;
-            int drained = controller.pureHydrogen.drainExact(resource.getAmount(), action.simulate()) ? resource.getAmount() : 0;
-            if (drained > 0) {
-                return new FluidStack(resource, drained);
-            }
-            return FluidStack.EMPTY;
-        }
-
-        @Override
-        public FluidStack drain(int maxAmount, FluidAction action) {
-            if (controller == null || member.kind != BlockKind.GAS_OUTLET) return FluidStack.EMPTY;
+        public int extract(int index, FluidResource resource, int amount, TransactionContext transaction) {
+            Objects.checkIndex(index, 1);
+            Objects.requireNonNull(resource);
+            Objects.requireNonNull(transaction);
+            if (resource.isEmpty() || amount < 0) return 0;
+            var controller = liveController();
+            if (controller == null || member.kind != BlockKind.GAS_OUTLET) return 0;
+            if (!resource.equals(fabFluid)) return 0;
             int available = controller.pureHydrogen.amount();
-            int drained = Math.min(maxAmount, available);
-            if (drained <= 0) return FluidStack.EMPTY;
-            if (controller.pureHydrogen.drainExact(drained, action.simulate())) {
-                if (!action.simulate()) member.setChanged();
-                return new FluidStack(HydrogenFluids.FAB_HYDROGEN.get(), drained);
+            int drained = Math.min(amount, available);
+            if (drained > 0) {
+                controller.pureJournal.updateSnapshots(transaction);
+                controller.pureHydrogen.drainExact(drained, false);
+                member.setChanged();
             }
-            return FluidStack.EMPTY;
+            return drained;
         }
     }
 }

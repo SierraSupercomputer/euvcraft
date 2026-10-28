@@ -1,6 +1,7 @@
 package com.euvcraft.lithmod.mc.multiblock.hydrogen;
 
 import com.euvcraft.lithmod.mc.machine.FabMachineMenu;
+import com.euvcraft.lithmod.mc.registry.ModItems;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ContainerData;

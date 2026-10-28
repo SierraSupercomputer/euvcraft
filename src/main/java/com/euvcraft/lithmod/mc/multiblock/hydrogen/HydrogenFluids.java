@@ -2,6 +2,7 @@ package com.euvcraft.lithmod.mc.multiblock.hydrogen;
 
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.material.Fluid;
 import net.neoforged.bus.api.IEventBus;
@@ -53,7 +54,7 @@ public final class HydrogenFluids {
      * or empty if not loaded. Fail-closed: callers must check presence before use.
      */
     public static Optional<Fluid> rawHydrogenFluid() {
-        return Optional.ofNullable(net.minecraftforge.registries.ForgeRegistries.FLUIDS.getValue(new Identifier("arcforge", "hydrogen")));
+        return Optional.ofNullable(BuiltInRegistries.FLUID.getValue(Identifier.parse("arcforge:hydrogen")));
     }
 
     /**
