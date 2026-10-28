@@ -424,6 +424,13 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> REFLOW_CALIBRATION_PANEL = ITEMS.registerSimpleBlockItem("reflow_calibration_panel", () -> com.euvcraft.lithmod.mc.multiblock.reflow.ReflowMachines.CALIBRATION_PANEL.get());
     public static final DeferredItem<BlockItem> SCANNER_MULTIPATTERNING_MODULE = ITEMS.registerSimpleBlockItem("scanner_multipatterning_module", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.MULTIPATTERNING_MODULE.get());
 
+    public static final DeferredItem<Item> COMPUTE_CHIP_T7 = ITEMS.registerSimpleItem("compute_chip_t7");
+    public static final DeferredItem<Item> MEMORY_CHIP_T7 = ITEMS.registerSimpleItem("memory_chip_t7");
+    public static final DeferredItem<Item> NAND_CHIP_T7 = ITEMS.registerSimpleItem("nand_chip_t7");
+    public static final DeferredItem<Item> CPU_T7 = ITEMS.registerSimpleItem("cpu_t7");
+    public static final DeferredItem<Item> DIMM_T7 = ITEMS.registerSimpleItem("dimm_t7");
+    public static final DeferredItem<Item> RESIST_T7 = ITEMS.registerSimpleItem("resist_t7", p -> p.component(ModDataComponents.RESIST_TIER, 7));
+
     private ModItems() {
     }
 }

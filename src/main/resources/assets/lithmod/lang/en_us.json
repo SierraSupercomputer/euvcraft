@@ -376,5 +376,11 @@
   "state.lithmod.process_cell.structure_incomplete": "Structure incomplete",
   "state.lithmod.process_cell.calibration_required": "Calibration required",
   "state.lithmod.process_cell.ultrapure_water_required": "Supply ultrapure water (UPW)",
-  "state.lithmod.process_cell.room_unavailable": "Cleanroom chunk unavailable"
+  "state.lithmod.process_cell.room_unavailable": "Cleanroom chunk unavailable",
+  "item.lithmod.compute_chip_t7": "T7 Compute Chip",
+  "item.lithmod.memory_chip_t7": "T7 Memory Chip",
+  "item.lithmod.nand_chip_t7": "T7 NAND Chip",
+  "item.lithmod.cpu_t7": "T7 CPU",
+  "item.lithmod.dimm_t7": "T7 DIMM",
+  "item.lithmod.resist_t7": "EUV Photoresist (T7)"
 }

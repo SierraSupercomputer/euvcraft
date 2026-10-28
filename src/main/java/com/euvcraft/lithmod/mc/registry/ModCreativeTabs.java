@@ -189,6 +189,12 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.COMPUTE_CHIP_T6.get());
                 output.accept(ModItems.NAND_CHIP_T6.get());
                 output.accept(ModItems.CPU_T6.get());
+                output.accept(ModItems.COMPUTE_CHIP_T7.get());
+                output.accept(ModItems.MEMORY_CHIP_T7.get());
+                output.accept(ModItems.NAND_CHIP_T7.get());
+                output.accept(ModItems.CPU_T7.get());
+                output.accept(ModItems.DIMM_T7.get());
+                output.accept(ModItems.RESIST_T7.get());
                 output.accept(ModItems.DIMM_T6.get());
                 output.accept(ModItems.RESIST_T6.get());
                 output.accept(ModItems.MULTIPATTERN_LIGHT_SOURCE.get());
