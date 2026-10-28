@@ -3,16 +3,17 @@ package com.euvcraft.lithmod.mc.multiblock.euv;
 import com.euvcraft.lithmod.core.multiblock.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.*;
 
 /** Formation lifecycle for EUV Light Source (3x3x5 = 45 cells). */
-public final class EuvLightSourceFormation {
+public final class EuvLightSourceFormation implements Formation {
 
     private final EuvFormationOwner owner;
-    private final net.minecraft.world.inventory.ContainerData data = new net.minecraft.world.inventory.SimpleContainerData(1);
+    private final ContainerData data = new net.minecraft.world.inventory.SimpleContainerData(1);
     private List<BlockPos> members = List.of();
     private boolean formed;
     private boolean validating;
@@ -22,11 +23,16 @@ public final class EuvLightSourceFormation {
         this.owner = owner;
     }
 
+    @Override
     public boolean formed() { return formed; }
+    @Override
     public String failureReason() { return failure; }
+    @Override
     public List<BlockPos> members() { return members; }
-    public net.minecraft.world.inventory.ContainerData data() { return data; }
+    @Override
+    public ContainerData data() { return data; }
 
+    @Override
     public void validate() {
         var machine = owner.machine();
         var level = machine.getLevel();
@@ -54,6 +60,17 @@ public final class EuvLightSourceFormation {
         } finally { validating = false; }
     }
 
+    @Override
+    public void unload() { formed = false; data.set(0, 0); members = List.of(); }
+    @Override
+    public void detach() { formed = false; data.set(0, 0); for (var pos : members) clear(pos); members = List.of(); }
+
+    @Override
+    public MatchResult matchStructure(MultiblockPos anchor, MultiblockDirection facing,
+            Function<MultiblockPos, BlockKind> lookup) {
+        return LightSourceStructureMatcher.match(anchor, facing, lookup);
+    }
+
     private BlockKind kind(BlockPos pos) {
         var machine = owner.machine(); var level = machine.getLevel();
         if (level == null || !level.hasChunkAt(pos)) return BlockKind.OTHER;
@@ -68,8 +85,6 @@ public final class EuvLightSourceFormation {
         return member.structureKind();
     }
 
-    public void unload() { formed = false; data.set(0, 0); members = List.of(); }
-    public void detach() { formed = false; data.set(0, 0); for (var pos : members) clear(pos); members = List.of(); }
     private void clear(BlockPos pos) {
         var level = owner.machine().getLevel();
         if (level == null || !level.hasChunkAt(pos)) return;

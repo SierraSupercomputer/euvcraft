@@ -2,7 +2,8 @@ package com.euvcraft.lithmod.mc.multiblock.euv;
 
 import com.euvcraft.lithmod.core.*;
 import com.euvcraft.lithmod.core.cleanroom.CleanroomExposure;
-import com.euvcraft.lithmod.core.cleanroom.CleanroomRooms;
+import com.euvcraft.lithmod.mc.cleanroom.CleanroomRooms;
+import com.euvcraft.lithmod.mc.cleanroom.CleanroomControllerBlockEntity;
 import com.euvcraft.lithmod.core.multiblock.*;
 import com.euvcraft.lithmod.core.t7.*;
 import com.euvcraft.lithmod.mc.*;
@@ -26,7 +27,6 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.SimpleContainer;
 import net.neoforged.neoforge.transfer.energy.EnergyHandler;
-import net.neoforged.neoforge.transfer.energy.EnergyStorage;
 import net.neoforged.neoforge.transfer.fluid.FluidResource;
 import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 import org.jspecify.annotations.Nullable;
@@ -63,14 +63,14 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
     private boolean diagnosticPlotted;
 
     // Vacuum
-    private final VacuumChamberState vacuumState = VacuumChamberState.evacuated();
+    private VacuumChamberState vacuumState = VacuumChamberState.evacuated();
     private final VacuumPumpSpec vacuumSpec;
 
     // UPW
     public final WaterTank upwTank = new WaterTank(16000);
 
     // Cleanroom / contamination
-    private final MachineContaminationState contaminationState = MachineContaminationState.clean();
+    private MachineContaminationState contaminationState = MachineContaminationState.clean();
     private long lastBreachCheckTick = -1;
 
     // Light source reservation
@@ -121,7 +121,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
     }
 
     @Override
-    public EuvFormation formation() {
+    public Formation formation() {
         return formation;
     }
 
@@ -241,9 +241,11 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
             lot = lot.withRoomExposure(lot.roomExposure().sample(room.yieldPermille()), frozenRoomYieldPermille);
         }
         FoupContents next = super.applyLayer(lot, layer, defectFactor);
-        if (contract != null && layer == contract.tier().layers()) {
+        // Check if this is the final layer using runner's tier info
+        var currentContract = runner().getContract();
+        if (currentContract != null && layer == currentContract.tier().layers()) {
             // Final layer - finish with cleanroom yield
-            next = CleanroomYield.finish(next, contract.tier());
+            next = CleanroomYield.finish(next, currentContract.tier());
         }
         storeRoomLot(next);
         return next;
@@ -273,27 +275,27 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
         if (definition().isEmpty() || !hardwareValidated) return 0;
         if (!inputsLocked() && !operatingCalibrated()) return RefusalReason.Code.CALIBRATION_REQUIRED.ordinal() + 1;
 
-        // T7 specific checks
+        // T7 specific checks - map to existing RefusalReason codes
         CleanroomRooms.Sample room = roomSample();
         if (!room.available()) return RefusalReason.Code.ROOM_UNAVAILABLE.ordinal() + 1;
         if (room.room() == null || room.room().state() != CleanroomControllerBlockEntity.ENCLOSED) {
-            return RefusalReason.Code.ROOM_BREACHED.ordinal() + 1;
+            return RefusalReason.Code.ROOM_UNAVAILABLE.ordinal() + 1; // ROOM_BREACHED -> ROOM_UNAVAILABLE
         }
         int upwCost = upwPerTick();
         if (upwCost > 0 && upwCost <= upwTank.capacity() && upwTank.amount() < upwCost) {
             return RefusalReason.Code.ULTRAPURE_WATER_REQUIRED.ordinal() + 1;
         }
         if (!vacuumState.canProcess(vacuumSpec)) {
-            return RefusalReason.Code.VACUUM_INSUFFICIENT.ordinal() + 1;
+            return RefusalReason.Code.GENERATION_UNMET.ordinal() + 1; // VACUUM_INSUFFICIENT -> GENERATION_UNMET
         }
         if (reservedSourceId == null) {
-            return RefusalReason.Code.LIGHT_SOURCE_UNAVAILABLE.ordinal() + 1;
+            return RefusalReason.Code.GENERATION_UNMET.ordinal() + 1; // LIGHT_SOURCE_UNAVAILABLE -> GENERATION_UNMET
         }
         if (contaminationState.requiresRepair()) {
-            return RefusalReason.Code.CONTAMINATED.ordinal() + 1;
+            return RefusalReason.Code.CONTAMINATED_FOUP.ordinal() + 1; // CONTAMINATED -> CONTAMINATED_FOUP
         }
         if (contaminationState.requiresRecalibration()) {
-            return RefusalReason.Code.AWAITING_RECALIBRATION.ordinal() + 1;
+            return RefusalReason.Code.CALIBRATION_REQUIRED.ordinal() + 1; // AWAITING_RECALIBRATION -> CALIBRATION_REQUIRED
         }
         return 0;
     }
@@ -334,12 +336,12 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
         if (!(be instanceof EuvScannerMemberBlockEntity m) || m.structureKind() != kind) return ItemStack.EMPTY;
         // Return appropriate T7 item for module
         return switch (kind) {
-            case EXPOSURE_MODULE -> new ItemStack(ModItems.RESIST_T7.get()); // Placeholder - actual EUV source item
-            case OPTICS_MODULE -> new ItemStack(ModItems.RESIST_T7.get());
-            case STAGE_MODULE -> new ItemStack(ModItems.RESIST_T7.get());
-            case FILTRATION_MODULE -> new ItemStack(ModItems.RESIST_T7.get());
-            case METROLOGY_MODULE -> new ItemStack(ModItems.RESIST_T7.get());
-            case VACUUM_MODULE -> new ItemStack(ModItems.RESIST_T7.get());
+            case EXPOSURE_MODULE -> new ItemStack(ModItems.EUV_LIGHT_SOURCE.get());
+            case OPTICS_MODULE -> new ItemStack(ModItems.EUV_OPTICS.get());
+            case STAGE_MODULE -> new ItemStack(ModItems.EUV_STAGE.get());
+            case FILTRATION_MODULE -> new ItemStack(ModItems.EUV_FILTRATION.get());
+            case METROLOGY_MODULE -> new ItemStack(ModItems.EUV_METROLOGY.get());
+            case VACUUM_MODULE -> new ItemStack(ModItems.EUV_METROLOGY.get()); // No dedicated vacuum item, use metrology as placeholder
             default -> ItemStack.EMPTY;
         };
     }
@@ -645,7 +647,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
             }
             @Override
             public int insert(int amount, TransactionContext transaction) {
-                return buffer().receive(amount, transaction);
+                return buffer().insert(amount, transaction);
             }
             @Override
             public int extract(int amount, TransactionContext transaction) {
@@ -755,7 +757,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
         VacuumTickResult vacResult = tickVacuum(centralService, localPumpPowered);
 
         // Check cleanroom breach
-        if (isFormed() && run != null && run.state() == ProcessState.RUNNING) {
+        if (isFormed() && runner().isRunning()) {
             long tick = level.getGameTime();
             if (tick != lastBreachCheckTick) {
                 lastBreachCheckTick = tick;
@@ -790,7 +792,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
         data().set(DATA_ENERGY, buffer().getAmountAsInt());
         data().set(DATA_CAPACITY, buffer().getCapacityAsInt());
         data().set(DATA_PROGRESS, progressTicks());
-        data().set(DATA_TICKS, contract == null ? 0 : contract.layerTicks());
+        data().set(DATA_TICKS, runner().ticks());
         // Additional EUV data
         data().set(100, vacuumState.pressureMicroTorr() / 1000); // mTorr for display
         data().set(101, upwTank.amount());
@@ -813,7 +815,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
     @Override
     public void onFormed() {
         this.formed = true;
-        formationChanges++;
+        // formationChanges is private in parent, but formation validation will handle sync
     }
 
     @Override

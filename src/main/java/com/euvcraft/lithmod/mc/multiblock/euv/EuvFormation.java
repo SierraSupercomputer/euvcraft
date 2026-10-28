@@ -3,6 +3,7 @@ package com.euvcraft.lithmod.mc.multiblock.euv;
 import com.euvcraft.lithmod.core.multiblock.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -13,7 +14,7 @@ import java.util.*;
  * Owns formed boolean, facing, part indices 0..174.
  * Unload-safe teardown, no stale claims, bounded loaded lookup.
  */
-public final class EuvFormation {
+public final class EuvFormation implements Formation {
 
     private final EuvFormationOwner owner;
     private final net.minecraft.world.inventory.ContainerData data = new net.minecraft.world.inventory.SimpleContainerData(1);
