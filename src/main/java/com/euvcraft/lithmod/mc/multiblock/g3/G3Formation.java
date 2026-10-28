@@ -126,7 +126,7 @@ public final class G3Formation {
             for (int i = 0; i < members.size(); i++) {
                 var pos = members.get(i);
                 if (level.getBlockEntity(pos) instanceof G3MemberBlockEntity member) {
-                    member.attach(owner, true);
+                    member.attach(owner.machine(), true, i, facing);
                 }
                 visual(pos, true, i, facing);
             }
@@ -155,8 +155,8 @@ public final class G3Formation {
     private void clear(BlockPos pos) {
         var level = owner.machine().getLevel();
         if (level == null || !level.hasChunkAt(pos)) return;
-        if (level.getBlockEntity(pos) instanceof G3MemberBlockEntity member && member.controller() == owner) {
-            member.attach(null, false);
+        if (level.getBlockEntity(pos) instanceof G3MemberBlockEntity member && member.controller() == owner.machine()) {
+            member.attach(null, false, 0, null);
             visual(pos, false, 0, Direction.NORTH);
         }
     }
@@ -183,7 +183,7 @@ public final class G3Formation {
             return entity == machine ? BlockKind.CONTROLLER : BlockKind.OTHER;
         }
         if (!(entity instanceof G3MemberBlockEntity member)) return BlockKind.OTHER;
-        if (!member.supportsOwner(owner)) return BlockKind.OTHER;
+        if (!member.supportsOwner(owner.machine())) return BlockKind.OTHER;
         var other = member.controller();
         if (other != null && other != owner && other.isFormed() && !other.machine().isRemoved()
                 && level.getBlockEntity(other.machine().getBlockPos()) == other.machine()) {

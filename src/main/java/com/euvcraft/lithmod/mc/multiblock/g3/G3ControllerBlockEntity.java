@@ -22,6 +22,7 @@ import com.euvcraft.lithmod.core.t7.G3Preparation;
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import com.euvcraft.lithmod.mc.FoupItems;
 import com.euvcraft.lithmod.mc.FoupContentsCodec;
+import com.euvcraft.lithmod.mc.registry.ModItems;
 import com.euvcraft.lithmod.mc.data.SupportRecipeLoader;
 import com.euvcraft.lithmod.mc.recipe.SupportRecipe;
 import com.euvcraft.lithmod.mc.multiblock.EnergyBufferProvider;
@@ -35,7 +36,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
-import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -45,6 +45,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import org.jspecify.annotations.Nullable;
+
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -73,41 +75,38 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
     private final G3MachineKind kind;
 
     /** Water tank for deposition etcher (UPW for rinse phase). Null for writer. */
-    private @Nullable WaterTank waterTank;
+    protected @Nullable WaterTank waterTank;
 
     /** Water journal for transactional fluid handling. */
     final G3WaterInletHandler.TankJournal waterJournal = new G3WaterInletHandler.TankJournal(this);
 
     /** Vacuum chamber state for deposition etcher. Null for writer. */
-    private @Nullable VacuumChamberState vacuumState;
+    protected @Nullable VacuumChamberState vacuumState;
 
     /** Local vacuum pump spec (from definition). */
-    private @Nullable VacuumPumpSpec vacuumSpec;
+    protected @Nullable VacuumPumpSpec vacuumSpec;
 
     /** Machine contamination state for T7 processing. */
-    private MachineContaminationState contaminationState = MachineContaminationState.clean();
+    protected MachineContaminationState contaminationState = MachineContaminationState.clean();
 
     /** Central vacuum allocation cursor (persisted, advanced each tick). */
-    private int vacuumCursor = 0;
+    protected int vacuumCursor = 0;
 
     /** Pending job state — common fields. */
-    private boolean jobRunning;
-    private boolean jobPaused;
-    private int jobProgress;
-    private int jobDuration;
-    private int jobEnergyPerTick;
+    protected boolean jobRunning;
+    protected boolean jobPaused;
+    protected int jobProgress;
+    protected int jobDuration;
+    protected int jobEnergyPerTick;
 
     /** Job input/output tracking for conservation. */
-    private @Nullable ItemStack pendingInput0;
-    private @Nullable ItemStack pendingInput1;
-    private @Nullable ItemStack pendingOutput;
-    private int pendingOutputCount;
-    private int pendingInput0Count;
-    private int pendingInput1Count;
-    private int pendingWaterMb;
-
-    /** Menu data container. */
-    private final ContainerData data = new SimpleContainerData(16);
+    protected @Nullable ItemStack pendingInput0;
+    protected @Nullable ItemStack pendingInput1;
+    protected @Nullable ItemStack pendingOutput;
+    protected int pendingOutputCount;
+    protected int pendingInput0Count;
+    protected int pendingInput1Count;
+    protected int pendingWaterMb;
 
     protected G3ControllerBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state,
                                       G3MachineKind kind, int inputSlots, int outputSlots) {
@@ -154,10 +153,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         return formation.members();
     }
 
-    @Override
-    public final ContainerData data() {
-        return data;
-    }
+    
 
     /** Returns the water tank (deposition etcher only). */
     public @Nullable WaterTank waterTank() {
@@ -180,7 +176,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
     }
 
     @Override
-    protected void serverTick() {
+    public void serverTick() {
         if (!(this.level instanceof net.minecraft.server.level.ServerLevel) || this.isRemoved()
                 || this.level.getBlockEntity(this.worldPosition) != this) return;
 
@@ -188,9 +184,12 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         syncWaterCapacity();
         syncVacuumSpec();
 
-        if (this.formation.needsValidation() || ++this.formation.ticksSinceValidation() >= REVALIDATE_INTERVAL) {
+        if (this.formation.needsValidation() || this.formation.ticksSinceValidation() + 1 >= REVALIDATE_INTERVAL) {
             this.formation.setNeedsValidation(false);
+            this.formation.setTicksSinceValidation(0);
             this.formation.validate();
+        } else {
+            this.formation.setTicksSinceValidation(this.formation.ticksSinceValidation() + 1);
         }
 
         if (this.kind == G3MachineKind.RETICLE_WRITER) {
@@ -227,25 +226,13 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
     }
 
     private void publishData() {
-        data.set(FabMachineBlockEntity.DATA_ENERGY, this.buffer().getAmountAsInt());
-        data.set(FabMachineBlockEntity.DATA_CAPACITY, this.buffer().getCapacityAsInt());
-        data.set(FabMachineBlockEntity.DATA_PROGRESS, this.jobRunning ? this.jobProgress : 0);
-        data.set(FabMachineBlockEntity.DATA_TICKS, this.jobRunning ? this.jobDuration : 0);
-        // Additional data slots for G3-specific UI
-        data.set(4, this.formation.formed() ? 1 : 0);
-        data.set(5, this.jobPaused ? 1 : 0);
-        if (this.waterTank != null) {
-            data.set(6, this.waterTank.amount());
-            data.set(7, this.waterTank.capacity());
-        }
-        if (this.vacuumState != null && this.vacuumSpec != null) {
-            data.set(8, this.vacuumState.pressureMicroTorr());
-            data.set(9, this.vacuumSpec.operatingPressureMicroTorr());
-            data.set(10, this.vacuumState.reserveMicroTorr());
-            data.set(11, this.vacuumSpec.reserveCapacityMicroTorr());
-        }
-        data.set(12, this.contaminationState.phase().ordinal());
-        data.set(13, (int) Math.max(0, this.contaminationState.lastBreachTick()));
+        data().set(FabMachineBlockEntity.DATA_ENERGY, this.buffer().getAmountAsInt());
+        data().set(FabMachineBlockEntity.DATA_CAPACITY, this.buffer().getCapacityAsInt());
+        data().set(FabMachineBlockEntity.DATA_PROGRESS, this.jobRunning ? this.jobProgress : 0);
+        data().set(FabMachineBlockEntity.DATA_TICKS, this.jobRunning ? this.jobDuration : 0);
+        // Note: Base class data container only has 4 slots (0-3). Extra G3-specific UI data
+        // (formed, paused, water, vacuum, contamination) requires custom packet syncing
+        // which will be implemented in a follow-up. For now, only base energy/progress sync works.
     }
 
     // ==================== Writer job logic ====================
@@ -281,7 +268,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         if (registry == null) return false;
 
         SupportRecipeLoader.Resolved resolved = registry.byId(
-                net.minecraft.resources.ResourceLocation.tryParse(recipeId))
+                net.minecraft.resources.Identifier.tryParse(recipeId))
                 .filter(r -> r.recipe().machine().equals("g3_reticle_writer")).orElse(null);
         if (resolved == null) return false;
 
@@ -391,7 +378,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
     // ==================== Deposition Etcher job logic ====================
 
     /** Deposition etcher job phases. */
-    private enum PrepPhase {
+    protected enum PrepPhase {
         IDLE,
         VACUUM_DEP_ETCH,
         UPW_RINSE,
@@ -399,16 +386,16 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         COMPLETE
     }
 
-    private PrepPhase prepPhase = PrepPhase.IDLE;
-    private int phaseProgress;
-    private int phaseDuration;
-    private int phaseEnergyPerTick;
-    private int phaseWaterMb;
-    private int phaseVacuumDemand;
-    private boolean phaseLocalPumpPowered;
-    private @Nullable FoupContents admittedLot;
-    private @Nullable UUID admittedLotId;
-    private int admittedSlot = 0; // FOUP input slot
+    protected PrepPhase prepPhase = PrepPhase.IDLE;
+    protected int phaseProgress;
+    protected int phaseDuration;
+    protected int phaseEnergyPerTick;
+    protected int phaseWaterMb;
+    protected int phaseVacuumDemand;
+    protected boolean phaseLocalPumpPowered;
+    protected @Nullable FoupContents admittedLot;
+    protected @Nullable UUID admittedLotId;
+    protected int admittedSlot = 0; // FOUP input slot
 
     private void tickDepositionEtcherJob() {
         // Handle vacuum tick if we have a spec
@@ -447,8 +434,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
 
         // Validate FOUP contents: fresh, unstarted, electronic-grade
         FoupContents lot = FoupItems.trustedContentsOf(foupStack);
-        if (result == null || result.contents().isEmpty()) return false;
-        FoupContents lot = result.contents();
+        if (lot == null || lot.isEmpty()) return false;
         if (lot.isStarted() || lot.grade().generation() < com.euvcraft.lithmod.core.WaferSubstrate.ELECTRONIC_GRADE.generation()
                 || lot.preparationGeneration() != FoupContents.PREPARATION_LEGACY) return false;
         for (com.euvcraft.lithmod.core.Wafer wafer : lot.wafers()) {
@@ -607,7 +593,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         // Placeholder: for now, return the FOUP to output slot unmodified to avoid silent downgrade
         if (this.admittedLot != null && this.admittedLotId != null) {
             // Reconstruct the FOUP item with the admitted lot
-            ItemStack outputFoup = FoupItems.with(ModItems.FOUP_MK1.get(), this.admittedLot);
+            ItemStack outputFoup = FoupItems.with(com.euvcraft.lithmod.mc.registry.ModItems.FOUP_MK1.get(), this.admittedLot);
             if (this.canAcceptInto(1, outputFoup.getItem(), 1)) {
                 this.setSlot(1, outputFoup);
             } else {
@@ -859,7 +845,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         }
         // Drop admitted prep lot if any
         if (this.admittedLot != null && level != null) {
-            ItemStack foup = FoupItems.with(ModItems.FOUP_MK1.get(), this.admittedLot);
+            ItemStack foup = FoupItems.with(com.euvcraft.lithmod.mc.registry.ModItems.FOUP_MK1.get(), this.admittedLot);
             dropContainer(level, pos, new net.minecraft.world.SimpleContainer(foup));
         }
     }

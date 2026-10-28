@@ -24,7 +24,7 @@ final class G3WaterInletHandler implements ResourceHandler<FluidResource> {
     G3WaterInletHandler(G3MemberBlockEntity port, G3ControllerBlockEntity owner) {
         this.port = port;
         this.owner = owner;
-        this.fluid = FluidResource.of(com.euvcraft.lithmod.mc.registry.ModFluids.ULTRAPURE_WATER.get());
+        this.fluid = FluidResource.of(com.euvcraft.lithmod.mc.multiblock.utilities.UtilityFluids.ULTRAPURE_WATER.get());
     }
 
     /** Returns the live water tank if all ownership/formation checks pass. */

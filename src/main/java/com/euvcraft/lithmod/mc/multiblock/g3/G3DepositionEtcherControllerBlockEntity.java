@@ -3,6 +3,8 @@ package com.euvcraft.lithmod.mc.multiblock.g3;
 import com.euvcraft.lithmod.core.FoupContents;
 import com.euvcraft.lithmod.core.FoupDisposal;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.Nullable;
 
@@ -33,6 +35,11 @@ public class G3DepositionEtcherControllerBlockEntity extends G3ControllerBlockEn
         return "g3_deposition_etcher";
     }
 
+    @Override
+    protected AbstractContainerMenu createMachineMenu(int containerId, Inventory playerInventory, FabMachineBlockEntity machine) {
+        return new G3DepositionEtcherMenu(containerId, playerInventory, this);
+    }
+
     /** Current prep phase for UI display. */
     public PrepPhase currentPhase() {
         return this.prepPhase;
@@ -50,13 +57,13 @@ public class G3DepositionEtcherControllerBlockEntity extends G3ControllerBlockEn
 
     /** Whether the current phase is paused (power loss, output blocked, vacuum not ready, water shortage). */
     public boolean isPhasePaused() {
-        if (!this.formed) return true;
+        if (!isFormed()) return true;
         return switch (this.prepPhase) {
             case VACUUM_DEP_ETCH -> this.vacuumState != null && this.vacuumSpec != null
                     && !this.vacuumState.canProcess(this.vacuumSpec);
             case UPW_RINSE -> this.waterTank != null && this.waterTank.amount() < this.phaseWaterMb;
             case POWERED_DRY, IDLE, COMPLETE -> false;
-        } || (this.energySource().getAmountAsLong() < this.phaseEnergyPerTick);
+        } || (this.buffer().getAmountAsLong() < this.phaseEnergyPerTick);
     }
 
     /** Vacuum chamber pressure (µTorr), or -1 if not applicable. */

@@ -54,7 +54,6 @@ public abstract class G3MemberBlock extends Block implements EntityBlock {
         return SHAPE;
     }
 
-    @Override
     public VoxelShape getOcclusionShape(BlockState state, BlockGetter level, BlockPos pos) {
         return SHAPE;
     }
