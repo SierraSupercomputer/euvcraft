@@ -1,26 +1,38 @@
 package com.euvcraft.lithmod.mc.multiblock.vacuum;
 
 import com.euvcraft.lithmod.core.multiblock.BlockKind;
-import com.euvcraft.lithmod.mc.multiblock.utilities.UtilityPortBlockEntity;
+import com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedMemberBlockEntity;
+import com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOwner;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.energy.EnergyHandler;
+import net.neoforged.neoforge.transfer.energy.EnergyHandler;
 import net.neoforged.neoforge.transfer.energy.SimpleEnergyHandler;
 import org.jspecify.annotations.Nullable;
 
 /**
  * Shared member block entity for the central vacuum plant: casing, power port, operating panel,
  * conduit, passthrough, service outlet.
+ * Extends AdvancedMemberBlockEntity directly (UtilityPortBlockEntity is final).
  */
-public final class VacuumMemberBlockEntity extends UtilityPortBlockEntity implements VacuumAccess {
+public final class VacuumMemberBlockEntity extends AdvancedMemberBlockEntity implements VacuumAccess {
 
+    private final BlockKind kind;
     private VacuumConsumer consumer; // set by the controller during network discovery
 
     public VacuumMemberBlockEntity(BlockPos pos, BlockState state) {
-        super(VacuumMachines.MEMBER_BE.get(), pos, state);
+        super(pos, state);
+        this.kind = computeKind();
+    }
+
+    private BlockKind computeKind() {
+        var block = getBlockState().getBlock();
+        if (block instanceof VacuumMemberBlock vmb) {
+            return vmb.kind();
+        }
+        return BlockKind.OTHER;
     }
 
     @Override
@@ -29,13 +41,41 @@ public final class VacuumMemberBlockEntity extends UtilityPortBlockEntity implem
     }
 
     @Override
-    protected IFluidHandler createFluidHandler() {
-        return null; // vacuum plant has no fluid handlers
+    protected boolean energyPort() {
+        return kind == BlockKind.POWER_PORT;
     }
 
     @Override
-    protected EnergyHandler createEnergyHandler() {
-        return kind == BlockKind.POWER_PORT ? new SimpleEnergyHandler(0, 0, 0) : new SimpleEnergyHandler(0, 0, 0);
+    public com.euvcraft.lithmod.core.multiblock.BlockKind structureKind() {
+        return kind;
+    }
+
+    @Override
+    public @Nullable EnergyHandler energy() {
+        var expected = controller();
+        if (expected == null || !valid(expected)) return null;
+        if (kind != BlockKind.POWER_PORT) return null;
+        return new EnergyHandler() {
+            @Override
+            public long getAmountAsLong() {
+                return valid(expected) ? expected.machine().energy().getAmountAsLong() : 0;
+            }
+
+            @Override
+            public long getCapacityAsLong() {
+                return valid(expected) ? expected.machine().energy().getCapacityAsLong() : 0;
+            }
+
+            @Override
+            public int insert(int amount, net.neoforged.neoforge.transfer.transaction.TransactionContext transaction) {
+                return valid(expected) ? expected.machine().energy().insert(amount, transaction) : 0;
+            }
+
+            @Override
+            public int extract(int amount, net.neoforged.neoforge.transfer.transaction.TransactionContext transaction) {
+                return 0; // vacuum plant does not allow extraction through member ports
+            }
+        };
     }
 
     @Override

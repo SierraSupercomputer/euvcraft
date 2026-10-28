@@ -56,9 +56,6 @@ public final class VacuumControllerBlockEntity extends FabMachineBlockEntity imp
 
     private final AdvancedFormation formation = new AdvancedFormation(this);
 
-    /** Energy buffer for the plant. */
-    private final MachineEnergy buffer;
-
     /** Plant configuration: max network nodes for BFS. */
     private int maxNetworkNodes = 512;
 
@@ -92,9 +89,7 @@ public final class VacuumControllerBlockEntity extends FabMachineBlockEntity imp
 
     public VacuumControllerBlockEntity(BlockPos pos, BlockState state) {
         super(VacuumMachines.CONTROLLER_BE.get(), pos, state, 0, 0);
-        this.buffer = new MachineEnergy(this, 0, 0);
-        this.exposed = new WithdrawNothing(this.buffer);
-        this.data.set(DATA_CAPACITY, 0);
+        // Parent constructor creates buffer, exposed, and data with fallback 0,0
     }
 
     @Override protected String machineId() {
@@ -152,14 +147,14 @@ public final class VacuumControllerBlockEntity extends FabMachineBlockEntity imp
             MachineDefinition def = definition().get();
             int capacity = def.paramOrDefault("vacuum_energy_capacity", 100000);
             int maxReceive = def.paramOrDefault("vacuum_max_receive", 10000);
-            buffer.reconfigure(capacity, maxReceive);
+            buffer().reconfigure(capacity, maxReceive);
             this.maxNetworkNodes = def.paramOrDefault("vacuum_max_nodes", 512);
             this.standingFePerTick = def.paramOrDefault("vacuum_standing_fe_per_tick", 100);
             this.fePerServiceMicroTorr = def.paramOrDefault("vacuum_fe_per_service_microtorr", 1);
-            this.data.set(DATA_CAPACITY, buffer.getCapacityAsInt());
+            data().set(DATA_CAPACITY, buffer().getCapacityAsInt());
         } else {
-            buffer.reconfigure(0, 0);
-            this.data.set(DATA_CAPACITY, 0);
+            buffer().reconfigure(0, 0);
+            data().set(DATA_CAPACITY, 0);
         }
 
         if (!isFormed() || definition().isEmpty() || !enabled) {
@@ -306,7 +301,7 @@ public final class VacuumControllerBlockEntity extends FabMachineBlockEntity imp
         if (consumers.isEmpty()) {
             // No consumers: still pay standing cost if enabled
             if (standingFePerTick > 0) {
-                buffer.extract(standingFePerTick, null); // best effort
+                buffer().extract(standingFePerTick, null); // best effort
             }
             return;
         }
@@ -325,14 +320,14 @@ public final class VacuumControllerBlockEntity extends FabMachineBlockEntity imp
         int totalFeCost = standingFePerTick + serviceFe;
 
         // Check if we can afford the total cost (full-or-nothing for service)
-        boolean canPay = buffer.getAmountAsLong() >= totalFeCost;
+        boolean canPay = buffer().getAmountAsLong() >= totalFeCost;
 
         networkFePaused = canPay ? 0 : totalFeCost;
 
         if (!canPay) {
             // Cannot afford: no grants, only standing cost if possible
-            if (buffer.getAmountAsLong() >= standingFePerTick) {
-                buffer.extract(standingFePerTick, null);
+            if (buffer().getAmountAsLong() >= standingFePerTick) {
+                buffer().extract(standingFePerTick, null);
             }
             // All consumers get zero grant
             for (DiscoveredConsumer dc : consumers) {
@@ -342,7 +337,7 @@ public final class VacuumControllerBlockEntity extends FabMachineBlockEntity imp
         }
 
         // Pay the full cost
-        buffer.extract(totalFeCost, null);
+        buffer().extract(totalFeCost, null);
 
         // Grant to each consumer
         for (int i = 0; i < consumers.size(); i++) {
@@ -357,8 +352,8 @@ public final class VacuumControllerBlockEntity extends FabMachineBlockEntity imp
     }
 
     private void sync() {
-        data().set(DATA_ENERGY, buffer.getAmountAsInt());
-        data().set(DATA_CAPACITY, buffer.getCapacityAsInt());
+        data().set(DATA_ENERGY, buffer().getAmountAsInt());
+        data().set(DATA_CAPACITY, buffer().getCapacityAsInt());
         data().set(DATA_PROGRESS, (int) (plantTick & 0x7FFFFFFF)); // reuse progress for tick display
         data().set(DATA_TICKS, networkCapacity); // reuse ticks for capacity display
     }
@@ -388,7 +383,7 @@ public final class VacuumControllerBlockEntity extends FabMachineBlockEntity imp
 
     @Override protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
-        buffer.serialize(output);
+        buffer().serialize(output);
         output.putInt("vacuumMaxNodes", maxNetworkNodes);
         output.putInt("vacuumStandingFe", standingFePerTick);
         output.putInt("vacuumFePerService", fePerServiceMicroTorr);
@@ -400,7 +395,7 @@ public final class VacuumControllerBlockEntity extends FabMachineBlockEntity imp
 
     @Override protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
-        buffer.deserialize(input);
+        buffer().deserialize(input);
         this.maxNetworkNodes = input.getIntOr("vacuumMaxNodes", 512);
         this.standingFePerTick = input.getIntOr("vacuumStandingFe", 100);
         this.fePerServiceMicroTorr = input.getIntOr("vacuumFePerService", 1);
@@ -415,7 +410,7 @@ public final class VacuumControllerBlockEntity extends FabMachineBlockEntity imp
         this.networkFePaused = 0;
         this.networkConflict = false;
         this.networkClientCount = 0;
-        this.data.set(DATA_CAPACITY, buffer.getCapacityAsInt());
+        data().set(DATA_CAPACITY, buffer().getCapacityAsInt());
         sync();
     }
 

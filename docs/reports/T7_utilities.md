@@ -169,28 +169,58 @@ Each implementation should:
 
 ## Limitations & Follow-Up
 
-1. **BlockKind Edit Required**: The `BlockKind` enum edit (adding `GAS_INLET`, `GAS_OUTLET`, `VACUUM_CONDUIT`, `VACUUM_PORT`) was not accepted by the tool. This must be applied manually for the matcher and block entities to compile.
-2. **Arcforge Gas Integration**: The coordinator must supply the Arcforge gas tag + gas properties JSON for `lithmod:fab_hydrogen` as noted in `HydrogenFluids` javadoc. Runtime verification of `arcforge:hydrogen` is fail-closed.
+1. **BlockKind Extensions Applied**: The `BlockKind` enum in `src/main/java/com/euvcraft/lithmod/core/multiblock/BlockKind.java` already contains `GAS_INLET`, `GAS_OUTLET`, `VACUUM_CONDUIT`, `VACUUM_PORT` (appended to preserve ordinals).
+2. **Arcforge Gas Integration**: The coordinator must supply the Arcforge gas tag + gas properties JSON for `lithmod:fab_hydrogen` as noted in `HydrogenFluids` javadoc. Runtime verification of `arcforge:hydrogen` is fail-closed via `HydrogenFluids.rawHydrogenFluid()`.
 3. **Cleanroom Shell Tag**: The coordinator must tag the cleanroom shell blocks so the `cleanroom_vacuum_port` (passthrough) can be recognized as a sealed wall block.
 4. **Consumer Implementation**: `VacuumConsumer` / `VacuumAccess` are public interfaces; concrete implementations in G3 prep, EUV source, and scanner are coordinator scope.
 5. **Fluid Model Textures**: `HydrogenClientEvents` references `block/gas_still` and `block/gas_flow` texture sprites; coordinator must ensure these exist or provide custom sprites.
-6. **NeoForge Fluid Capability**: The hydrogen member BE uses `Capabilities.Fluid.BLOCK` with `ResourceHandler<FluidResource>` semantics (modern NeoForge). Verified against `GAS_API.txt` precedence note.
+6. **NeoForge Fluid Capability**: The hydrogen member BE uses `Capabilities.Fluid.BLOCK` with `ResourceHandler<FluidResource>` semantics (modern NeoForge 26.3). Verified against `GAS_API.txt` precedence note.
 7. **Transaction Journals**: Both hydrogen tanks use `TankJournal` extending `SnapshotJournal` for simulation/rollback — matches `UtilityControllerBlockEntity` and `ZoneControllerBlockEntity` patterns.
-8. **AdvancedFormation Visual Properties**: The purifier (18 cells) and vacuum plant (45 cells) use the existing `AdvancedVisualProperties.PART` (0-44) safely; no new shape indices passed into old `AdvancedFormation`.
-9. **96-Step Reserve**: Implementation complete within scope; report delivered.
+8. **AdvancedFormation Visual Properties**: The purifier (12 cells) and vacuum plant (45 cells) use the existing `AdvancedVisualProperties.PART` (0-44) safely; no new shape indices passed into old `AdvancedFormation`.
+9. **Modern API Migration Complete**: All scoped files migrated from old Forge APIs (IFluidHandler, FluidStack, FluidVariant, EnergyHandler from net.neoforged.neoforge.energy) to NeoForge 26.3 transfer API (ResourceHandler<FluidResource>, FluidResource, SimpleEnergyHandler, EnergyHandler from net.neoforged.neoforge.transfer.energy).
+10. **Identifier API Fixed**: All `new Identifier(...)` replaced with `Identifier.parse(...)` or `Identifier.fromNamespaceAndPath(...)`; `ForgeRegistries.FLUIDS` replaced with `BuiltInRegistries.FLUID`.
+11. **Final/Constructor Invariants Respected**: `UtilityPortBlock` and `UtilityPortBlockEntity` are final; member blocks now extend `AdvancedCasingBlock` and member BEs extend `AdvancedMemberBlockEntity` with protected `(BlockPos, BlockState)` constructor.
+12. **FabMachineBlockEntity Encapsulation**: Vacuum controller uses `buffer()`, `data()`, `energySource()` accessors instead of accessing private fields.
 
 ---
 
 ## Summary
 
-All scoped files implemented per BRIEF and SCOPE:
-- ✅ `T7UtilityStructureMatcher` + test
-- ✅ `HydrogenMachines.register`, `HydrogenFluids.register`, `VacuumMachines.register` + client events
-- ✅ Hydrogen purifier (2x2x3) with raw H2 inlet, fab H2 outlet, filter slot, FE, batch progress
-- ✅ Central vacuum plant (3x3x5) with conduit/passthrough BFS, allocator with cursor, FE accounting, conflict detection, network status UI
-- ✅ Public `VacuumConsumer` / `VacuumAccess` interfaces for coordinator integration
-- ✅ Pure T7 matcher (no Minecraft types), meaningful tests all facings/columns
+All scoped files implemented per BRIEF and SCOPE with compiler errors fixed:
+
+### Core Multiblock Matcher
+- ✅ `T7UtilityStructureMatcher` + test — purifier (2x2x3=12 cells) and vacuum plant (3x3x5=45 cells)
+
+### Hydrogen Package (migrated to NeoForge 26.3 APIs)
+- ✅ `HydrogenMachines.register`, `HydrogenFluids.register`, `HydrogenClientEvents`
+- ✅ `HydrogenControllerBlock` extends `BaseEntityBlock`; `HydrogenMemberBlock` extends `AdvancedCasingBlock`
+- ✅ `HydrogenControllerBlockEntity` — `@Nullable` annotations fixed, uses `T7UtilityStructureMatcher.matchPurifier`
+- ✅ `HydrogenMemberBlockEntity` extends `AdvancedMemberBlockEntity` — uses `ResourceHandler<FluidResource>` for fluid capability
+- ✅ `HydrogenFluids` — uses `Identifier.parse` and `BuiltInRegistries.FLUID` for `arcforge:hydrogen` lookup
+- ✅ `HydrogenMenu` — imports `ModItems` for filter slot validation
+- ✅ `HydrogenScreen` — GUI within bounds
+
+### Vacuum Package (migrated to NeoForge 26.3 APIs)
+- ✅ `VacuumMachines.register`, `VacuumClientEvents`
+- ✅ `VacuumControllerBlock` extends `BaseEntityBlock`; `VacuumMemberBlock` extends `AdvancedCasingBlock`
+- ✅ `VacuumMemberBlockEntity` extends `AdvancedMemberBlockEntity` implements `VacuumAccess` — has `kind` field, `energy()` override
+- ✅ `VacuumControllerBlockEntity` — uses `buffer()`, `data()` accessors from `FabMachineBlockEntity`; BFS discovery, allocator, FE accounting, conflict detection
+- ✅ `VacuumMenu`, `VacuumScreen` — network status UI
+- ✅ Public interfaces `VacuumConsumer`, `VacuumAccess` for coordinator integration
+
+### Data-Driven Parameters
+- ✅ Hydrogen purifier: 9 params with defaults
+- ✅ Central vacuum plant: 7 params with defaults
+
+### Verification
+- ✅ Structure matcher tests cover all facings, columns, missing cells, port counts, foreign kinds, panel positions, determinism
+- ✅ Pure core Java invariants maintained (no Minecraft types in matcher)
 - ✅ Visual state properties represent up to 45 cells safely
 - ✅ Teardown unload-safe, no world queries in `setRemoved`, loaded-only ownership, stale-handler guards
 - ✅ Formed/phase/tanks/power statuses and actual slot positions visible within GUI bounds
-- ✅ Data-driven numeric params with defaults documented for coordinator
+
+### Remaining Coordinator Scope
+- Arcforge gas tag + properties JSON for `lithmod:fab_hydrogen`
+- Cleanroom shell tag for `cleanroom_vacuum_port`
+- `VacuumConsumer` implementations on G3 prep, EUV source, scanner controllers
+- Fluid model textures for hydrogen gas sprites
