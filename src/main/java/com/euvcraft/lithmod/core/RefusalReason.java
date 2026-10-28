@@ -20,7 +20,8 @@ public record RefusalReason(Code code, List<String> unmetLines) implements Proce
         STRUCTURE_INCOMPLETE,
         CALIBRATION_REQUIRED,
         ULTRAPURE_WATER_REQUIRED,
-        ROOM_UNAVAILABLE
+        ROOM_UNAVAILABLE,
+        CONTAMINATED_FOUP
     }
 
     public RefusalReason {
@@ -39,6 +40,7 @@ public record RefusalReason(Code code, List<String> unmetLines) implements Proce
     }
 
     public static final RefusalReason NO_LOT = new RefusalReason(Code.NO_LOT);
+    public static final RefusalReason CONTAMINATED_FOUP = new RefusalReason(Code.CONTAMINATED_FOUP);
     public static final RefusalReason EMPTY_LOT = new RefusalReason(Code.EMPTY_LOT);
     public static final RefusalReason LOT_ALREADY_COMPLETE = new RefusalReason(Code.LOT_ALREADY_COMPLETE);
     public static final RefusalReason SPEC_MISMATCH = new RefusalReason(Code.SPEC_MISMATCH);

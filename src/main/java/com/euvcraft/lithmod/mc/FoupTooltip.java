@@ -28,11 +28,14 @@ import net.minecraft.world.item.component.TooltipProvider;
  *
  * @param view the client-safe view of the lot
  */
-record FoupTooltip(FoupPublicView view) implements TooltipProvider {
+record FoupTooltip(FoupPublicView view, boolean contaminated) implements TooltipProvider {
+    FoupTooltip(FoupPublicView view) { this(view,false); }
 
     @Override
     public void addToTooltip(Item.TooltipContext context, Consumer<Component> consumer, TooltipFlag flag,
         DataComponentGetter components) {
+        if (contaminated) consumer.accept(Component.translatable("state.lithmod.foup.contaminated")
+            .withStyle(ChatFormatting.RED));
         consumer.accept(Component.translatable("tooltip.lithmod.foup.wafers", this.view.waferCount(), this.view.capacity())
             .withStyle(ChatFormatting.GRAY));
         consumer.accept(Component.translatable("tooltip.lithmod.foup.layer", this.view.lotLayer())

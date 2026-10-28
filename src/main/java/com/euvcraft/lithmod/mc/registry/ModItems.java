@@ -431,6 +431,12 @@ public final class ModItems {
     public static final DeferredItem<Item> DIMM_T7 = ITEMS.registerSimpleItem("dimm_t7");
     public static final DeferredItem<Item> RESIST_T7 = ITEMS.registerSimpleItem("resist_t7", p -> p.component(ModDataComponents.RESIST_TIER, 7));
 
+    public static final DeferredItem<LineComponentItem> EUV_LIGHT_SOURCE = ITEMS.registerItem("euv_light_source", p -> new LineComponentItem(p,"light_source",7), p -> p.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> EUV_OPTICS = ITEMS.registerItem("euv_optics", p -> new LineComponentItem(p,"optics",7), p -> p.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> EUV_STAGE = ITEMS.registerItem("euv_stage", p -> new LineComponentItem(p,"stage",7), p -> p.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> EUV_FILTRATION = ITEMS.registerItem("euv_filtration", p -> new LineComponentItem(p,"cleanroom",7), p -> p.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> EUV_METROLOGY = ITEMS.registerItem("euv_metrology", p -> new LineComponentItem(p,"metrology",7), p -> p.stacksTo(1));
+
     private ModItems() {
     }
 }

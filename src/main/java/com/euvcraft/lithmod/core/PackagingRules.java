@@ -65,6 +65,7 @@ public final class PackagingRules {
         if (lot == null || lot.isEmpty()) {
             return PackagingRefusalReason.NO_LOT;
         }
+        if (lot.isContaminated()) return PackagingRefusalReason.CONTAMINATED_FOUP;
         RunSpec spec = lot.run();
         if (spec == null) {
             return PackagingRefusalReason.NO_SPEC;

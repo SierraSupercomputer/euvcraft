@@ -115,6 +115,7 @@ public class TestPackageScreen extends FabMachineScreen<TestPackageMenu> {
             case NO_CHIP_FOR_DIE -> "state.lithmod.test_package.no_chip_for_die";
             case GENERATION_UNMET -> "state.lithmod.test_package.generation_unmet";
             case CLEANROOM_REQUIRED -> "state.lithmod.test_package.cleanroom_required";
+            case CONTAMINATED_FOUP -> "state.lithmod.foup.contaminated";
         };
     }
 }

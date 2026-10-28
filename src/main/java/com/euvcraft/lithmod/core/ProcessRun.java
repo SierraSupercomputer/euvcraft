@@ -30,6 +30,7 @@ public final class ProcessRun implements ProcessStartResult {
         FoupContents lot = request.lot();
         if (lot == null) return RefusalReason.NO_LOT;
         if (lot.isEmpty()) return RefusalReason.EMPTY_LOT;
+        if (lot.isContaminated()) return RefusalReason.CONTAMINATED_FOUP;
         Tier tier = request.tier();
         String dieType = request.dieType();
         if (tier == null || dieType == null) return RefusalReason.NO_MASK;

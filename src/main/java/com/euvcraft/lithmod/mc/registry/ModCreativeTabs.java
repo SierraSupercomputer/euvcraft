@@ -193,6 +193,12 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.MEMORY_CHIP_T7.get());
                 output.accept(ModItems.NAND_CHIP_T7.get());
                 output.accept(ModItems.CPU_T7.get());
+                output.accept(ModItems.EUV_LIGHT_SOURCE.get());
+                output.accept(ModItems.EUV_OPTICS.get());
+                output.accept(ModItems.EUV_STAGE.get());
+                output.accept(ModItems.EUV_FILTRATION.get());
+                output.accept(ModItems.EUV_METROLOGY.get());
+                com.euvcraft.lithmod.mc.T7Content.blockItems().forEach(output::accept);
                 output.accept(ModItems.DIMM_T7.get());
                 output.accept(ModItems.RESIST_T7.get());
                 output.accept(ModItems.DIMM_T6.get());

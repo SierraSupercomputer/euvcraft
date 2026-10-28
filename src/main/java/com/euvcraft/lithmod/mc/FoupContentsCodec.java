@@ -269,10 +269,12 @@ public final class FoupContentsCodec {
             int waferCount = ByteBufCodecs.VAR_INT.decode(buffer);
             int lotLayer = ByteBufCodecs.VAR_INT.decode(buffer);
             String gradeId = ByteBufCodecs.STRING_UTF8.decode(buffer);
-            int preparation = ByteBufCodecs.VAR_INT.decode(buffer);
+            int wirePreparation = ByteBufCodecs.VAR_INT.decode(buffer);
+            boolean contaminated = (wirePreparation & 256) != 0;
+            int preparation = wirePreparation & ~256;
             int flag = buffer.readUnsignedByte();
             if (flag == FLAG_NONE) {
-                return fromPublicView(capacity, waferCount, lotLayer, gradeId, preparation);
+                return fromPublicView(capacity, waferCount, lotLayer, gradeId, preparation, contaminated);
             }
             if (flag != FLAG_FULL) {
                 throw new DecoderException("Unknown FOUP full-payload flag: " + flag);
@@ -286,7 +288,7 @@ public final class FoupContentsCodec {
                 // Not authorized for the real contents: consume so the frame stays framed,
                 // never allocate for or trust private bytes, and fall back to the public view.
                 buffer.skipBytes(length);
-                return fromPublicView(capacity, waferCount, lotLayer, gradeId, preparation);
+                return fromPublicView(capacity, waferCount, lotLayer, gradeId, preparation, contaminated);
             }
             try {
                 FoupContents full = readFullPayload(buffer.readSlice(length));
@@ -304,7 +306,8 @@ public final class FoupContentsCodec {
             ByteBufCodecs.VAR_INT.encode(buffer, contents.size());
             ByteBufCodecs.VAR_INT.encode(buffer, contents.lotLayer());
             ByteBufCodecs.STRING_UTF8.encode(buffer, contents.grade().id());
-            ByteBufCodecs.VAR_INT.encode(buffer, contents.preparationGeneration());
+            // The aggregate contamination bit is public; original per-wafer flags remain hidden.
+            ByteBufCodecs.VAR_INT.encode(buffer, contents.preparationGeneration() | (contents.isContaminated() ? 256 : 0));
             boolean fullAuthorized = FoupNetworkContext.current() == FoupNetworkContext.Payload.FULL
                 && !isClientView(contents);
             if (!fullAuthorized) {
@@ -411,6 +414,10 @@ public final class FoupContentsCodec {
      * @return the placeholder lot
      */
     static FoupContents fromPublicView(int capacity, int waferCount, int lotLayer, String gradeId, int preparationGeneration) {
+        return fromPublicView(capacity,waferCount,lotLayer,gradeId,preparationGeneration,false);
+    }
+
+    private static FoupContents fromPublicView(int capacity, int waferCount, int lotLayer, String gradeId, int preparationGeneration, boolean contaminated) {
         int safeCapacity = Math.max(1, capacity);
         int safeCount = Math.min(Math.max(0, waferCount), safeCapacity);
         int safeLayer = Math.max(Wafer.UNPROCESSED_LAYER, lotLayer);
@@ -421,7 +428,7 @@ public final class FoupContentsCodec {
 
         List<Wafer> placeholders = new ArrayList<>(safeCount);
         for (int i = 0; i < safeCount; i++) {
-            placeholders.add(new Wafer(safeLayer, CLIENT_VIEW_ROLL, Wafer.NO_FLAGS));
+            placeholders.add(new Wafer(safeLayer, CLIENT_VIEW_ROLL, contaminated ? Wafer.CONTAMINATED : Wafer.NO_FLAGS));
         }
         return new FoupContents(CLIENT_VIEW_LOT_ID, safeCapacity, placeholders, null, safeGrade,
             safePreparation, com.euvcraft.lithmod.core.cleanroom.CleanroomExposure.empty(), 0, safeEvidence);
@@ -464,7 +471,7 @@ public final class FoupContentsCodec {
         if (!isClientView(clientView) || clientView.run() != null || clientView.isEmpty()
             || clientView.size() > clientView.capacity()
             || clientView.preparationGeneration() == FoupContents.PREPARATION_G3
-            || clientView.g3Preparation().isPrepared()) {
+            || clientView.g3Preparation().isPrepared() || clientView.isContaminated()) {
             // A G3 public projection is redacted: its per-wafer factors are not
             // recoverable, so rebuilding a server lot here would fabricate a valid
             // prepared result. FULL Creative transport is the only lossless path.

@@ -31,5 +31,6 @@ public enum PackagingRefusalReason {
     GENERATION_UNMET,
 
     /** T7 targets, including high binning, require an enclosed cleanroom. */
-    CLEANROOM_REQUIRED
+    CLEANROOM_REQUIRED,
+    CONTAMINATED_FOUP
 }

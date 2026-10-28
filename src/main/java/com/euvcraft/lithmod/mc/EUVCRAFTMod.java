@@ -76,6 +76,7 @@ public class EUVCRAFTMod {
         com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.register(modEventBus);
         com.euvcraft.lithmod.mc.multiblock.zone.ZoneMachines.register(modEventBus);
         com.euvcraft.lithmod.mc.multiblock.reflow.ReflowMachines.register(modEventBus);
+        T7Content.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(FoupTooltipAppenders::register);

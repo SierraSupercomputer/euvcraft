@@ -79,6 +79,7 @@ public final class HighBinningRules {
         if (lot == null || sourceTier == null || transition == null) {
             throw new IllegalArgumentException("lot, source tier and transition are required");
         }
+        if (lot.isContaminated()) throw new IllegalArgumentException("Contaminated wafers require the FOUP cleaner");
         if (lot.isEmpty()) {
             throw new IllegalArgumentException("lot must not be empty");
         }

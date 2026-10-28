@@ -89,6 +89,19 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
         return new FoupContents(lotId,capacity,wafers,run,grade,preparationGeneration,exposure,frozenPermille,g3Preparation);
     }
 
+    /** A contaminated lot cannot be processed again; the cleaner disposes of its wafers. */
+    public boolean isContaminated() {
+        return wafers.stream().anyMatch(wafer -> (wafer.flags() & Wafer.CONTAMINATED) != 0);
+    }
+
+    /** Preserve identity, progress, private rolls and preparation; mark wafers as scrap. */
+    public FoupContents contaminated() {
+        if (isEmpty() || isContaminated()) return this;
+        return new FoupContents(lotId,capacity,wafers.stream()
+            .map(w -> new Wafer(w.layerIndex(),w.cumulativeRoll(),w.flags() | Wafer.CONTAMINATED)).toList(),
+            run,grade,preparationGeneration,roomExposure,roomYieldPermille,g3Preparation);
+    }
+
     /** Saved/source compatibility with pre-T4 lots. */
     public FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec run, WaferSubstrate grade) {
         this(lotId, capacity, wafers, run, grade, PREPARATION_LEGACY);
@@ -402,6 +415,7 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
      *                                  already started, already prepared, or any wafer is not at layer 0
      */
     public FoupContents withPreparationGeneration(int generation) {
+        if (isContaminated()) throw new IllegalStateException("Contaminated wafers require disposal");
         if (generation != PREPARATION_G2) {
             throw new IllegalArgumentException("only generation " + PREPARATION_G2 + " can be set via this method");
         }
