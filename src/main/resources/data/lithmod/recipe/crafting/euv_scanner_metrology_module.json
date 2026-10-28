@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CGC",
+    "PMP",
+    "CGC"
+  ],
+  "key": {
+    "C": "lithmod:euv_scanner_casing",
+    "G": "minecraft:gold_ingot",
+    "P": "lithmod:compute_chip_t6",
+    "M": "lithmod:euv_metrology"
+  },
+  "result": {
+    "id": "lithmod:euv_scanner_metrology_module",
+    "count": 1
+  }
+}

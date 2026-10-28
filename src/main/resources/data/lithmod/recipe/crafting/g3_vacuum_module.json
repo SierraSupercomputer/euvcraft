@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CGC",
+    "PMP",
+    "CGC"
+  ],
+  "key": {
+    "C": "lithmod:g3_casing",
+    "G": "minecraft:gold_ingot",
+    "P": "lithmod:compute_chip_t6",
+    "M": "lithmod:memory_chip_t6"
+  },
+  "result": {
+    "id": "lithmod:g3_vacuum_module",
+    "count": 1
+  }
+}

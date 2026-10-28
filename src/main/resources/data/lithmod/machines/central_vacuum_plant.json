@@ -1,0 +1,13 @@
+{
+  "id": "central_vacuum_plant",
+  "energy_capacity": 4000000,
+  "max_receive": 80000,
+  "energy_per_tick": 350,
+  "params": {
+    "vacuum_max_nodes": 512,
+    "vacuum_standing_fe_per_tick": 120,
+    "vacuum_active_fe_per_tick": 350,
+    "vacuum_service_per_fe": 100,
+    "vacuum_capacity_microtorr_per_tick": 20000
+  }
+}

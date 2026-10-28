@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CGC",
+    "G G",
+    "CGC"
+  ],
+  "key": {
+    "C": "lithmod:vacuum_casing",
+    "G": "minecraft:glass"
+  },
+  "result": {
+    "id": "lithmod:vacuum_service_conduit",
+    "count": 8
+  }
+}

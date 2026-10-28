@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "lithmod:block/cleanroom_vacuum_port",
+    "north": "lithmod:block/cleanroom_vacuum_port",
+    "south": "lithmod:block/cleanroom_vacuum_port",
+    "east": "lithmod:block/cleanroom_vacuum_port",
+    "west": "lithmod:block/cleanroom_vacuum_port",
+    "up": "lithmod:block/t4_unformed_casing",
+    "down": "lithmod:block/t4_unformed_casing"
+  }
+}

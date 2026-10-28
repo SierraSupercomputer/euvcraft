@@ -1,0 +1,16 @@
+{
+  "machine": "g3_reticle_writer",
+  "input": {
+    "item": "lithmod:blank_mask",
+    "count": 1
+  },
+  "secondary": {
+    "item": "minecraft:redstone",
+    "count": 64
+  },
+  "output": "lithmod:mask",
+  "count": 1,
+  "duration": 3600,
+  "energy_per_tick": 8000,
+  "water_mb": 0
+}

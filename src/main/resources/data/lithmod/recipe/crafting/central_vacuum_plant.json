@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CDC",
+    "PMP",
+    "CDC"
+  ],
+  "key": {
+    "C": "lithmod:vacuum_casing",
+    "D": "minecraft:diamond",
+    "P": "lithmod:cpu_t7",
+    "M": "lithmod:memory_chip_t6"
+  },
+  "result": {
+    "id": "lithmod:central_vacuum_plant",
+    "count": 1
+  }
+}

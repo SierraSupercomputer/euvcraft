@@ -1,0 +1,15 @@
+{
+  "id": "hydrogen_purifier",
+  "energy_capacity": 4000000,
+  "max_receive": 80000,
+  "energy_per_tick": 600,
+  "params": {
+    "raw_capacity_mb": 32000,
+    "pure_capacity_mb": 32000,
+    "raw_hydrogen_per_batch": 8000,
+    "fab_hydrogen_per_batch": 6000,
+    "filter_per_batch": 1,
+    "ticks_per_batch": 400,
+    "fe_per_tick": 600
+  }
+}

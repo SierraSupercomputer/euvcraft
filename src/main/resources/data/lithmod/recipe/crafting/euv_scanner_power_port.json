@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CRC",
+    "RPR",
+    "CRC"
+  ],
+  "key": {
+    "C": "lithmod:euv_scanner_casing",
+    "R": "minecraft:redstone",
+    "P": "minecraft:copper_ingot"
+  },
+  "result": {
+    "id": "lithmod:euv_scanner_power_port",
+    "count": 1
+  }
+}

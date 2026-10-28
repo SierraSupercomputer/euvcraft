@@ -1,0 +1,25 @@
+{
+  "id": "euv_light_source",
+  "energy_capacity": 4000000,
+  "max_receive": 80000,
+  "energy_per_tick": 1200,
+  "params": {
+    "vacuum_pump_rate": 5000,
+    "vacuum_idle_leak": 100,
+    "vacuum_process_load": 2000,
+    "vacuum_operating_pressure": 10000,
+    "vacuum_reserve_capacity": 50000,
+    "vacuum_reserve_recharge": 1000,
+    "local_pump_fe_per_tick": 200,
+    "repair_upw_mb": 8000,
+    "repair_fe": 200000,
+    "repair_redstone": 16,
+    "repair_filter_medium": 2,
+    "contamination_ppm": 2500,
+    "contamination_ticks": 1200,
+    "hydrogen_capacity_mb": 32000,
+    "hydrogen_per_tick_mb": 10,
+    "tin_exposure_ticks": 1000,
+    "beamline_max_length": 16
+  }
+}

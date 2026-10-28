@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "lithmod:block/euv_light_source_hydrogen_inlet",
+    "north": "lithmod:block/euv_light_source_hydrogen_inlet",
+    "south": "lithmod:block/euv_light_source_hydrogen_inlet",
+    "east": "lithmod:block/euv_light_source_hydrogen_inlet",
+    "west": "lithmod:block/euv_light_source_hydrogen_inlet",
+    "up": "lithmod:block/t4_unformed_casing",
+    "down": "lithmod:block/t4_unformed_casing"
+  }
+}

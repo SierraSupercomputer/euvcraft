@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CRC",
+    "RPR",
+    "CRC"
+  ],
+  "key": {
+    "C": "lithmod:g3_casing",
+    "R": "minecraft:redstone",
+    "P": "minecraft:copper_ingot"
+  },
+  "result": {
+    "id": "lithmod:g3_power_port",
+    "count": 1
+  }
+}

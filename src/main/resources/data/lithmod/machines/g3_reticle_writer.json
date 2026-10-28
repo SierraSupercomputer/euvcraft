@@ -1,0 +1,11 @@
+{
+  "id": "g3_reticle_writer",
+  "energy_capacity": 4000000,
+  "max_receive": 80000,
+  "energy_per_tick": 8000,
+  "params": {
+    "water_capacity": 16000,
+    "mask_min_uses_permille": 250,
+    "mask_max_uses_permille": 1000
+  }
+}

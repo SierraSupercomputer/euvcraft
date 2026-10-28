@@ -1,0 +1,640 @@
+{
+  "blocks": [
+    {
+      "id": "g3_reticle_writer",
+      "role": "controller",
+      "casing": "g3_casing",
+      "tone": [
+        139,
+        136,
+        211
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "g3_deposition_etcher",
+      "role": "controller",
+      "casing": "g3_casing",
+      "tone": [
+        139,
+        136,
+        211
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "g3_casing",
+      "role": "casing",
+      "casing": "g3_casing",
+      "tone": [
+        139,
+        136,
+        211
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "g3_power_port",
+      "role": "port",
+      "casing": "g3_casing",
+      "tone": [
+        139,
+        136,
+        211
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "g3_operating_panel",
+      "role": "panel",
+      "casing": "g3_casing",
+      "tone": [
+        139,
+        136,
+        211
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "g3_water_inlet",
+      "role": "port",
+      "casing": "g3_casing",
+      "tone": [
+        139,
+        136,
+        211
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "g3_writing_module",
+      "role": "module",
+      "casing": "g3_casing",
+      "tone": [
+        139,
+        136,
+        211
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "g3_metrology_module",
+      "role": "module",
+      "casing": "g3_casing",
+      "tone": [
+        139,
+        136,
+        211
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "g3_deposition_module",
+      "role": "module",
+      "casing": "g3_casing",
+      "tone": [
+        139,
+        136,
+        211
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "g3_rinse_module",
+      "role": "module",
+      "casing": "g3_casing",
+      "tone": [
+        139,
+        136,
+        211
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "g3_vacuum_module",
+      "role": "module",
+      "casing": "g3_casing",
+      "tone": [
+        139,
+        136,
+        211
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "euv_scanner_controller",
+      "role": "controller",
+      "casing": "euv_scanner_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "euv_scanner_operating_panel",
+      "role": "panel",
+      "casing": "euv_scanner_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "euv_scanner_calibration_panel",
+      "role": "panel",
+      "casing": "euv_scanner_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "euv_scanner_exposure_module",
+      "role": "module",
+      "casing": "euv_scanner_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": true,
+      "facing": true,
+      "recipe": {
+        "type": "minecraft:crafting_shaped",
+        "category": "misc",
+        "pattern": [
+          "CGC",
+          "PMP",
+          "CGC"
+        ],
+        "key": {
+          "C": "lithmod:euv_scanner_casing",
+          "G": "minecraft:gold_ingot",
+          "P": "lithmod:compute_chip_t6",
+          "M": "lithmod:euv_light_source"
+        },
+        "result": {
+          "id": "lithmod:euv_scanner_exposure_module",
+          "count": 1
+        }
+      }
+    },
+    {
+      "id": "euv_scanner_optics_module",
+      "role": "module",
+      "casing": "euv_scanner_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": true,
+      "facing": true,
+      "recipe": {
+        "type": "minecraft:crafting_shaped",
+        "category": "misc",
+        "pattern": [
+          "CGC",
+          "PMP",
+          "CGC"
+        ],
+        "key": {
+          "C": "lithmod:euv_scanner_casing",
+          "G": "minecraft:gold_ingot",
+          "P": "lithmod:compute_chip_t6",
+          "M": "lithmod:euv_optics"
+        },
+        "result": {
+          "id": "lithmod:euv_scanner_optics_module",
+          "count": 1
+        }
+      }
+    },
+    {
+      "id": "euv_scanner_stage_module",
+      "role": "module",
+      "casing": "euv_scanner_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": true,
+      "facing": true,
+      "recipe": {
+        "type": "minecraft:crafting_shaped",
+        "category": "misc",
+        "pattern": [
+          "CGC",
+          "PMP",
+          "CGC"
+        ],
+        "key": {
+          "C": "lithmod:euv_scanner_casing",
+          "G": "minecraft:gold_ingot",
+          "P": "lithmod:compute_chip_t6",
+          "M": "lithmod:euv_stage"
+        },
+        "result": {
+          "id": "lithmod:euv_scanner_stage_module",
+          "count": 1
+        }
+      }
+    },
+    {
+      "id": "euv_scanner_filtration_module",
+      "role": "module",
+      "casing": "euv_scanner_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": true,
+      "facing": true,
+      "recipe": {
+        "type": "minecraft:crafting_shaped",
+        "category": "misc",
+        "pattern": [
+          "CGC",
+          "PMP",
+          "CGC"
+        ],
+        "key": {
+          "C": "lithmod:euv_scanner_casing",
+          "G": "minecraft:gold_ingot",
+          "P": "lithmod:compute_chip_t6",
+          "M": "lithmod:euv_filtration"
+        },
+        "result": {
+          "id": "lithmod:euv_scanner_filtration_module",
+          "count": 1
+        }
+      }
+    },
+    {
+      "id": "euv_scanner_metrology_module",
+      "role": "module",
+      "casing": "euv_scanner_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": true,
+      "facing": true,
+      "recipe": {
+        "type": "minecraft:crafting_shaped",
+        "category": "misc",
+        "pattern": [
+          "CGC",
+          "PMP",
+          "CGC"
+        ],
+        "key": {
+          "C": "lithmod:euv_scanner_casing",
+          "G": "minecraft:gold_ingot",
+          "P": "lithmod:compute_chip_t6",
+          "M": "lithmod:euv_metrology"
+        },
+        "result": {
+          "id": "lithmod:euv_scanner_metrology_module",
+          "count": 1
+        }
+      }
+    },
+    {
+      "id": "euv_scanner_vacuum_module",
+      "role": "module",
+      "casing": "euv_scanner_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "euv_scanner_diagnostic_panel",
+      "role": "panel",
+      "casing": "euv_scanner_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "euv_scanner_water_inlet",
+      "role": "port",
+      "casing": "euv_scanner_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "euv_scanner_power_port",
+      "role": "port",
+      "casing": "euv_scanner_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "euv_scanner_casing",
+      "role": "casing",
+      "casing": "euv_scanner_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "euv_light_source_controller",
+      "role": "controller",
+      "casing": "euv_light_source_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "euv_light_source_operating_panel",
+      "role": "panel",
+      "casing": "euv_light_source_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "euv_light_source_tin_inlet",
+      "role": "port",
+      "casing": "euv_light_source_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "euv_light_source_hydrogen_inlet",
+      "role": "port",
+      "casing": "euv_light_source_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "euv_light_source_vacuum_module",
+      "role": "module",
+      "casing": "euv_light_source_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "euv_light_source_power_port",
+      "role": "port",
+      "casing": "euv_light_source_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "euv_light_source_casing",
+      "role": "casing",
+      "casing": "euv_light_source_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "euv_beam_line",
+      "role": "conduit",
+      "casing": "euv_light_source_casing",
+      "tone": [
+        178,
+        133,
+        230
+      ],
+      "formed": false,
+      "facing": false
+    },
+    {
+      "id": "hydrogen_purifier",
+      "role": "controller",
+      "casing": "hydrogen_casing",
+      "tone": [
+        117,
+        200,
+        232
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "hydrogen_casing",
+      "role": "casing",
+      "casing": "hydrogen_casing",
+      "tone": [
+        117,
+        200,
+        232
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "hydrogen_power_port",
+      "role": "port",
+      "casing": "hydrogen_casing",
+      "tone": [
+        117,
+        200,
+        232
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "hydrogen_gas_inlet",
+      "role": "port",
+      "casing": "hydrogen_casing",
+      "tone": [
+        117,
+        200,
+        232
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "hydrogen_gas_outlet",
+      "role": "port",
+      "casing": "hydrogen_casing",
+      "tone": [
+        117,
+        200,
+        232
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "hydrogen_operating_panel",
+      "role": "panel",
+      "casing": "hydrogen_casing",
+      "tone": [
+        117,
+        200,
+        232
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "central_vacuum_plant",
+      "role": "controller",
+      "casing": "vacuum_casing",
+      "tone": [
+        207,
+        166,
+        94
+      ],
+      "formed": true,
+      "facing": true,
+      "optionalT7": true
+    },
+    {
+      "id": "vacuum_casing",
+      "role": "casing",
+      "casing": "vacuum_casing",
+      "tone": [
+        207,
+        166,
+        94
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "vacuum_power_port",
+      "role": "port",
+      "casing": "vacuum_casing",
+      "tone": [
+        207,
+        166,
+        94
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "vacuum_operating_panel",
+      "role": "panel",
+      "casing": "vacuum_casing",
+      "tone": [
+        207,
+        166,
+        94
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "vacuum_service_conduit",
+      "role": "conduit",
+      "casing": "vacuum_casing",
+      "tone": [
+        207,
+        166,
+        94
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "cleanroom_vacuum_port",
+      "role": "port",
+      "casing": "vacuum_casing",
+      "tone": [
+        207,
+        166,
+        94
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "vacuum_service_outlet",
+      "role": "port",
+      "casing": "vacuum_casing",
+      "tone": [
+        207,
+        166,
+        94
+      ],
+      "formed": true,
+      "facing": true
+    }
+  ]
+}
