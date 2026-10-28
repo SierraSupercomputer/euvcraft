@@ -22,11 +22,11 @@ class EuvStructureMatcherTest {
         TestWorld(MultiblockDirection facing, int u0) {
             this.facing = facing;
             this.u0 = u0;
-            this.blocks = new BlockKind[5][7][5];
+            this.blocks = new BlockKind[5][5][7];
             // Initialize all to CASING
             for (int u = 0; u < 5; u++) {
-                for (int v = 0; v < 7; v++) {
-                    for (int d = 0; d < 5; d++) {
+                for (int v = 0; v < 5; v++) {
+                    for (int d = 0; d < 7; d++) {
                         blocks[u][v][d] = BlockKind.CASING;
                     }
                 }
@@ -93,7 +93,7 @@ class EuvStructureMatcherTest {
             // Adjust for anchor offset u0
             localU += u0;
 
-            if (localU < 0 || localU >= 5 || localV < 0 || localV >= 7 || localD < 0 || localD >= 5) {
+            if (localU < 0 || localU >= 5 || localV < 0 || localV >= 5 || localD < 0 || localD >= 7) {
                 return BlockKind.OTHER;
             }
             return blocks[localU][localV][localD];
@@ -106,17 +106,20 @@ class EuvStructureMatcherTest {
 
     private static TestWorld createValidWorld(MultiblockDirection facing, int u0) {
         TestWorld world = new TestWorld(facing, u0);
-        // Place the six required modules in middle layers (v=1..5)
+        // Place the six required modules in middle layers (v=1..3)
         // Spread them across different layers and positions
         world.set(0, 1, 1, BlockKind.EXPOSURE_MODULE);
-        world.set(1, 2, 1, BlockKind.OPTICS_MODULE);
-        world.set(2, 3, 1, BlockKind.STAGE_MODULE);
-        world.set(3, 4, 1, BlockKind.FILTRATION_MODULE);
-        world.set(4, 5, 1, BlockKind.METROLOGY_MODULE);
-        world.set(0, 2, 2, BlockKind.VACUUM_MODULE);
+        world.set(1, 1, 1, BlockKind.OPTICS_MODULE);
+        world.set(2, 2, 1, BlockKind.STAGE_MODULE);
+        world.set(3, 2, 1, BlockKind.FILTRATION_MODULE);
+        world.set(4, 3, 1, BlockKind.METROLOGY_MODULE);
+        world.set(0, 3, 2, BlockKind.VACUUM_MODULE);
+        // Place required diagnostic panel and water inlet in middle layers
+        world.set(1, 1, 2, BlockKind.DIAGNOSTIC_PANEL);
+        world.set(2, 1, 2, BlockKind.WATER_INLET);
         // Add power ports (1-4)
-        world.set(1, 1, 2, BlockKind.POWER_PORT);
-        world.set(2, 2, 2, BlockKind.POWER_PORT);
+        world.set(3, 1, 2, BlockKind.POWER_PORT);
+        world.set(4, 2, 2, BlockKind.POWER_PORT);
         return world;
     }
 
@@ -199,19 +202,21 @@ class EuvStructureMatcherTest {
     }
 
     @Test
-    void testWaterInletNotAllowed() {
+    void testWaterInletRequired() {
         TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
-        world.set(1, 1, 1, BlockKind.WATER_INLET); // Water inlet in middle layer
+        world.set(2, 1, 2, BlockKind.CASING); // Remove water inlet
         MatchResult result = world.match();
         assertFalse(result.success());
+        assertTrue(result.failureReason().contains("water inlet"));
     }
 
     @Test
-    void testDiagnosticPanelNotAllowed() {
+    void testDiagnosticPanelRequired() {
         TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
-        world.set(1, 1, 1, BlockKind.DIAGNOSTIC_PANEL); // Diagnostic panel in middle layer
+        world.set(1, 1, 2, BlockKind.CASING); // Remove diagnostic panel
         MatchResult result = world.match();
         assertFalse(result.success());
+        assertTrue(result.failureReason().contains("diagnostic panel"));
     }
 
     @Test
@@ -234,7 +239,7 @@ class EuvStructureMatcherTest {
     @Test
     void testTopFrameLayerNonCasing() {
         TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
-        world.set(1, 6, 1, BlockKind.OPTICS_MODULE); // Module in top frame layer
+        world.set(1, 4, 1, BlockKind.OPTICS_MODULE); // Module in top frame layer
         MatchResult result = world.match();
         assertFalse(result.success());
         assertTrue(result.failureReason().contains("frame layer"));
@@ -243,8 +248,8 @@ class EuvStructureMatcherTest {
     @Test
     void testPowerPortCountMin() {
         TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
-        world.set(1, 1, 2, BlockKind.CASING); // Remove one power port
-        world.set(2, 2, 2, BlockKind.CASING); // Remove second power port
+        world.set(3, 1, 2, BlockKind.CASING); // Remove one power port
+        world.set(4, 2, 2, BlockKind.CASING); // Remove second power port
         MatchResult result = world.match();
         assertFalse(result.success());
         assertTrue(result.failureReason().contains("at least one power port"));
@@ -254,9 +259,9 @@ class EuvStructureMatcherTest {
     void testPowerPortCountMax() {
         TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
         // Add 3 more power ports (total 5, max is 4)
-        world.set(3, 1, 2, BlockKind.POWER_PORT);
-        world.set(4, 2, 2, BlockKind.POWER_PORT);
-        world.set(0, 3, 2, BlockKind.POWER_PORT);
+        world.set(0, 1, 3, BlockKind.POWER_PORT);
+        world.set(1, 2, 3, BlockKind.POWER_PORT);
+        world.set(2, 3, 3, BlockKind.POWER_PORT);
         MatchResult result = world.match();
         assertFalse(result.success());
         assertTrue(result.failureReason().contains("at most four power ports"));
@@ -264,7 +269,7 @@ class EuvStructureMatcherTest {
 
     @Test
     void testControllerOnTopRow() {
-        // Create a world with controller at v0=6 (top row) - should fail
+        // Create a world with controller at v0=4 (top row) - should fail
         // This is implicitly tested since we only try v0=0
         TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
         // The matcher only tries v0=0, so this is implicitly tested
