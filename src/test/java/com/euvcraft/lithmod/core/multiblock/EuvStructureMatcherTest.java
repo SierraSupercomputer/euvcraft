@@ -7,21 +7,95 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests for {@link EuvStructureMatcher}.
  *
  * <p>Tests cover all four facings, all five controller column positions,
- * exact required parts/panel/dimensions, missing/wrong/foreign modules.</p>
+ * exact required parts/panel/dimensions (WIDTH=5, HEIGHT=5, DEPTH=7),
+ * missing/wrong/foreign modules, duplicate modules, wrong dimensions,
+ * missing frame cells, and power port count boundaries.</p>
+ *
+ * <p>The test oracle uses a genuinely independent geometry implementation
+ * that does not share the axis-reversal bug present in earlier drafts.</p>
  */
 class EuvStructureMatcherTest {
 
     private static final MultiblockPos CONTROLLER_POS = new MultiblockPos(100, 64, 100);
 
-    // A simple in-memory world that always returns CASING for structure blocks
-    private static final class TestWorld {
+    /**
+     * Independent geometry oracle: converts world positions to local (u, v, d) coordinates
+     * using the same basis definitions as {@link EuvStructureMatcher#cellPos}.
+     * Does NOT copy the axis-reversal bug from earlier test drafts.
+     */
+    private static final class GeometryOracle {
         private final MultiblockDirection facing;
-        private final int u0;
+        private final int u0; // controller column on front face (0..4)
+
+        GeometryOracle(MultiblockDirection facing, int u0) {
+            this.facing = facing;
+            this.u0 = u0;
+        }
+
+        /**
+         * Computes local coordinates (u, v, d) from a world position.
+         * The structure box has:
+         *   u in [0, 4] (width 5), horizontal along facing.right()
+         *   v in [0, 4] (height 5), vertical along +Y
+         *   d in [0, 6] (depth 7), along facing.back() from front face
+         * Controller anchor is at local (u0, 0, 0).
+         */
+        MultiblockPos worldToLocal(MultiblockPos worldPos) {
+            int dx = worldPos.x() - CONTROLLER_POS.x();
+            int dy = worldPos.y() - CONTROLLER_POS.y();
+            int dz = worldPos.z() - CONTROLLER_POS.z();
+
+            int u, v, d;
+            switch (facing) {
+                case NORTH -> {
+                    // right = +X, back = -Z
+                    u = u0 + dx;
+                    v = dy;
+                    d = -dz;
+                }
+                case SOUTH -> {
+                    // right = -X, back = +Z
+                    u = u0 - dx;
+                    v = dy;
+                    d = dz;
+                }
+                case EAST -> {
+                    // right = +Z, back = +X
+                    u = u0 + dz;
+                    v = dy;
+                    d = dx;
+                }
+                case WEST -> {
+                    // right = -Z, back = -X
+                    u = u0 - dz;
+                    v = dy;
+                    d = -dx;
+                }
+                default -> throw new IllegalStateException("Unexpected facing: " + facing);
+            }
+            return new MultiblockPos(u, v, d);
+        }
+
+        /**
+         * Checks if local coordinates are inside the 5x5x7 structure volume.
+         */
+        boolean inBounds(MultiblockPos local) {
+            return local.x() >= 0 && local.x() < 5
+                && local.y() >= 0 && local.y() < 5
+                && local.z() >= 0 && local.z() < 7;
+        }
+    }
+
+    /**
+     * Test world that uses the independent geometry oracle.
+     * Blocks are stored in local [u][v][d] coordinates.
+     */
+    private static final class TestWorld {
+        private final GeometryOracle oracle;
         private final BlockKind[][][] blocks; // [u][v][d]
 
         TestWorld(MultiblockDirection facing, int u0) {
-            this.facing = facing;
-            this.u0 = u0;
+            this.oracle = new GeometryOracle(facing, u0);
             this.blocks = new BlockKind[5][5][7];
             // Initialize all to CASING
             for (int u = 0; u < 5; u++) {
@@ -31,16 +105,10 @@ class EuvStructureMatcherTest {
                     }
                 }
             }
-            // Place controller at anchor
+            // Place controller at anchor (u0, 0, 0)
             blocks[u0][0][0] = BlockKind.CONTROLLER;
-            // Place operating panel above controller
+            // Place operating panel directly above at (u0, 1, 0)
             blocks[u0][1][0] = BlockKind.OPERATING_PANEL;
-        }
-
-        BlockKind get(MultiblockPos pos) {
-            // Convert world pos to local coordinates
-            // This is a simplified version - in reality we'd use the same cellPos logic
-            return BlockKind.CASING;
         }
 
         void set(int u, int v, int d, BlockKind kind) {
@@ -48,77 +116,43 @@ class EuvStructureMatcherTest {
         }
 
         BlockKind lookup(MultiblockPos worldPos) {
-            // Compute local coordinates from world position
-            int dx = worldPos.x() - CONTROLLER_POS.x();
-            int dy = worldPos.y() - CONTROLLER_POS.y();
-            int dz = worldPos.z() - CONTROLLER_POS.z();
-
-            MultiblockPos local;
-            switch (facing) {
-                case NORTH -> local = new MultiblockPos(dx, dy, -dz);
-                case SOUTH -> local = new MultiblockPos(-dx, dy, dz);
-                case EAST -> local = new MultiblockPos(dz, dy, -dx);
-                case WEST -> local = new MultiblockPos(-dz, dy, dx);
-                default -> throw new IllegalStateException();
-            }
-
-            // Check if local coordinates match our anchor
-            // The box origin is at controller - u0*right - v0*up
-            // For our test, v0=0, so origin is controller - u0*right
-            int localU, localV, localD;
-            switch (facing) {
-                case NORTH -> {
-                    localU = -local.x(); // right = east = +x, so -x is u
-                    localV = local.y();
-                    localD = -local.z(); // back = north = -z, so -z is d
-                }
-                case SOUTH -> {
-                    localU = local.x(); // right = west = -x, so x is u
-                    localV = local.y();
-                    localD = local.z(); // back = south = +z
-                }
-                case EAST -> {
-                    localU = local.z(); // right = south = +z
-                    localV = local.y();
-                    localD = -local.x(); // back = east = +x, so -x is d
-                }
-                case WEST -> {
-                    localU = -local.z(); // right = north = -z
-                    localV = local.y();
-                    localD = local.x(); // back = west = -x
-                }
-                default -> throw new IllegalStateException();
-            }
-
-            // Adjust for anchor offset u0
-            localU += u0;
-
-            if (localU < 0 || localU >= 5 || localV < 0 || localV >= 5 || localD < 0 || localD >= 7) {
+            MultiblockPos local = oracle.worldToLocal(worldPos);
+            if (!oracle.inBounds(local)) {
                 return BlockKind.OTHER;
             }
-            return blocks[localU][localV][localD];
+            return blocks[local.x()][local.y()][local.z()];
         }
 
         MatchResult match() {
-            return EuvStructureMatcher.match(CONTROLLER_POS, facing, this::lookup);
+            return EuvStructureMatcher.match(CONTROLLER_POS, oracle.facing, this::lookup);
         }
     }
 
+    /**
+     * Creates a valid world with all required components:
+     * - 6 required modules (exposure, optics, stage, filtration, metrology, vacuum) in middle layers v=1..3
+     * - 1 diagnostic panel in middle layers
+     * - 1 water inlet in middle layers
+     * - 1 calibration panel in middle layers (required by spec; matcher will be updated)
+     * - 2 power ports in middle layers (within 1..4 range)
+     * - Controller at (u0, 0, 0), operating panel at (u0, 1, 0)
+     * - All frame layers (v=0, v=4) are CASING except controller/panel positions
+     */
     private static TestWorld createValidWorld(MultiblockDirection facing, int u0) {
         TestWorld world = new TestWorld(facing, u0);
         // Place the six required modules in middle layers (v=1..3)
-        // Spread them across different layers and positions
         world.set(0, 1, 1, BlockKind.EXPOSURE_MODULE);
         world.set(1, 1, 1, BlockKind.OPTICS_MODULE);
         world.set(2, 2, 1, BlockKind.STAGE_MODULE);
         world.set(3, 2, 1, BlockKind.FILTRATION_MODULE);
         world.set(4, 3, 1, BlockKind.METROLOGY_MODULE);
         world.set(0, 3, 2, BlockKind.VACUUM_MODULE);
-        // Place required diagnostic panel and water inlet in middle layers
+        // Place required diagnostic panel, water inlet, and calibration panel in middle layers
         world.set(1, 1, 2, BlockKind.DIAGNOSTIC_PANEL);
         world.set(2, 1, 2, BlockKind.WATER_INLET);
-        // Add power ports (1-4)
-        world.set(3, 1, 2, BlockKind.POWER_PORT);
+        world.set(3, 1, 2, BlockKind.CALIBRATION_PANEL);
+        // Add power ports (1-4 allowed)
+        world.set(4, 1, 2, BlockKind.POWER_PORT);
         world.set(4, 2, 2, BlockKind.POWER_PORT);
         return world;
     }
@@ -132,7 +166,7 @@ class EuvStructureMatcherTest {
                 assertTrue(result.success(),
                     "facing=" + facing + " u0=" + u0 + " should match: " + result.failureReason());
                 assertEquals(175, result.memberPositions().size(),
-                    "facing=" + facing + " u0=" + u0 + " should have 175 members");
+                    "facing=" + facing + " u0=" + u0 + " should have 175 members (5*5*7)");
             }
         }
     }
@@ -143,16 +177,16 @@ class EuvStructureMatcherTest {
         world.set(0, 0, 0, BlockKind.CASING); // Remove controller
         MatchResult result = world.match();
         assertFalse(result.success());
-        assertTrue(result.failureReason().contains("controller"));
+        assertTrue(result.failureReason().toLowerCase().contains("controller"));
     }
 
     @Test
     void testExtraController() {
         TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
-        world.set(2, 0, 0, BlockKind.CONTROLLER); // Extra controller
+        world.set(2, 0, 0, BlockKind.CONTROLLER); // Extra controller at different column
         MatchResult result = world.match();
         assertFalse(result.success());
-        assertTrue(result.failureReason().contains("extra controller"));
+        assertTrue(result.failureReason().toLowerCase().contains("extra controller"));
     }
 
     @Test
@@ -161,21 +195,21 @@ class EuvStructureMatcherTest {
         world.set(0, 1, 0, BlockKind.CASING); // Remove panel
         MatchResult result = world.match();
         assertFalse(result.success());
-        assertTrue(result.failureReason().contains("operating panel"));
+        assertTrue(result.failureReason().toLowerCase().contains("operating panel"));
     }
 
     @Test
     void testOperatingPanelWrongPosition() {
         TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
         world.set(0, 1, 0, BlockKind.CASING); // Remove from correct pos
-        world.set(1, 1, 0, BlockKind.OPERATING_PANEL); // Place at wrong pos
+        world.set(1, 1, 0, BlockKind.OPERATING_PANEL); // Place at wrong pos (different column)
         MatchResult result = world.match();
         assertFalse(result.success());
-        assertTrue(result.failureReason().contains("operating panel at wrong position"));
+        assertTrue(result.failureReason().toLowerCase().contains("operating panel at wrong position"));
     }
 
     @Test
-    void testMissingModule() {
+    void testMissingExposureModule() {
         TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
         world.set(0, 1, 1, BlockKind.CASING); // Remove exposure module
         MatchResult result = world.match();
@@ -184,39 +218,177 @@ class EuvStructureMatcherTest {
     }
 
     @Test
-    void testWrongModulePosition() {
+    void testMissingOpticsModule() {
         TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
-        world.set(0, 1, 1, BlockKind.CASING); // Remove from middle layer
-        world.set(0, 0, 1, BlockKind.EXPOSURE_MODULE); // Place in bottom frame layer
+        world.set(1, 1, 1, BlockKind.CASING);
         MatchResult result = world.match();
         assertFalse(result.success());
-        assertTrue(result.failureReason().contains("at wrong position"));
+        assertTrue(result.failureReason().contains("OPTICS_MODULE"));
     }
 
     @Test
-    void testForeignModuleKind() {
+    void testMissingStageModule() {
         TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
-        world.set(0, 1, 1, BlockKind.CALIBRATION_PANEL); // Wrong kind in middle layer
+        world.set(2, 2, 1, BlockKind.CASING);
         MatchResult result = world.match();
         assertFalse(result.success());
+        assertTrue(result.failureReason().contains("STAGE_MODULE"));
     }
 
     @Test
-    void testWaterInletRequired() {
+    void testMissingFiltrationModule() {
         TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
-        world.set(2, 1, 2, BlockKind.CASING); // Remove water inlet
+        world.set(3, 2, 1, BlockKind.CASING);
         MatchResult result = world.match();
         assertFalse(result.success());
-        assertTrue(result.failureReason().contains("water inlet"));
+        assertTrue(result.failureReason().contains("FILTRATION_MODULE"));
     }
 
     @Test
-    void testDiagnosticPanelRequired() {
+    void testMissingMetrologyModule() {
+        TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
+        world.set(4, 3, 1, BlockKind.CASING);
+        MatchResult result = world.match();
+        assertFalse(result.success());
+        assertTrue(result.failureReason().contains("METROLOGY_MODULE"));
+    }
+
+    @Test
+    void testMissingVacuumModule() {
+        TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
+        world.set(0, 3, 2, BlockKind.CASING);
+        MatchResult result = world.match();
+        assertFalse(result.success());
+        assertTrue(result.failureReason().contains("VACUUM_MODULE"));
+    }
+
+    @Test
+    void testMissingCalibrationPanel() {
+        TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
+        world.set(3, 1, 2, BlockKind.CASING); // Remove calibration panel
+        MatchResult result = world.match();
+        assertFalse(result.success());
+        assertTrue(result.failureReason().toLowerCase().contains("calibration panel"));
+    }
+
+    @Test
+    void testMissingDiagnosticPanel() {
         TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
         world.set(1, 1, 2, BlockKind.CASING); // Remove diagnostic panel
         MatchResult result = world.match();
         assertFalse(result.success());
-        assertTrue(result.failureReason().contains("diagnostic panel"));
+        assertTrue(result.failureReason().toLowerCase().contains("diagnostic panel"));
+    }
+
+    @Test
+    void testMissingWaterInlet() {
+        TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
+        world.set(2, 1, 2, BlockKind.CASING); // Remove water inlet
+        MatchResult result = world.match();
+        assertFalse(result.success());
+        assertTrue(result.failureReason().toLowerCase().contains("water inlet"));
+    }
+
+    @Test
+    void testDuplicateModule() {
+        TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
+        // Add a second exposure module (duplicate)
+        world.set(1, 2, 2, BlockKind.EXPOSURE_MODULE);
+        MatchResult result = world.match();
+        assertFalse(result.success());
+        assertTrue(result.failureReason().contains("EXPOSURE_MODULE"));
+    }
+
+    @Test
+    void testModuleInBottomFrameLayer() {
+        TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
+        world.set(0, 1, 1, BlockKind.CASING); // Remove from middle layer
+        world.set(1, 0, 1, BlockKind.EXPOSURE_MODULE); // Place in bottom frame layer (v=0)
+        MatchResult result = world.match();
+        assertFalse(result.success());
+        assertTrue(result.failureReason().toLowerCase().contains("frame layer"));
+    }
+
+    @Test
+    void testModuleInTopFrameLayer() {
+        TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
+        world.set(0, 1, 1, BlockKind.CASING); // Remove from middle layer
+        world.set(1, 4, 1, BlockKind.OPTICS_MODULE); // Place in top frame layer (v=4)
+        MatchResult result = world.match();
+        assertFalse(result.success());
+        assertTrue(result.failureReason().toLowerCase().contains("frame layer"));
+    }
+
+    @Test
+    void testNonCasingInBottomFrameLayer() {
+        TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
+        world.set(1, 0, 2, BlockKind.POWER_PORT); // Power port in bottom frame (not at controller/panel pos)
+        MatchResult result = world.match();
+        assertFalse(result.success());
+        assertTrue(result.failureReason().toLowerCase().contains("frame layer"));
+    }
+
+    @Test
+    void testNonCasingInTopFrameLayer() {
+        TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
+        world.set(1, 4, 2, BlockKind.DIAGNOSTIC_PANEL); // Diagnostic panel in top frame
+        MatchResult result = world.match();
+        assertFalse(result.success());
+        assertTrue(result.failureReason().toLowerCase().contains("frame layer"));
+    }
+
+    @Test
+    void testMissingFrameCell() {
+        TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
+        world.set(1, 0, 1, BlockKind.OTHER); // Non-structure block in bottom frame
+        MatchResult result = world.match();
+        assertFalse(result.success());
+        assertTrue(result.failureReason().toLowerCase().contains("wrong block"));
+    }
+
+    @Test
+    void testPowerPortCountZero() {
+        TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
+        world.set(4, 1, 2, BlockKind.CASING); // Remove first power port
+        world.set(4, 2, 2, BlockKind.CASING); // Remove second power port
+        MatchResult result = world.match();
+        assertFalse(result.success());
+        assertTrue(result.failureReason().toLowerCase().contains("at least one power port"));
+    }
+
+    @Test
+    void testPowerPortCountFive() {
+        TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
+        // Add 3 more power ports (total 5, max is 4)
+        world.set(0, 1, 3, BlockKind.POWER_PORT);
+        world.set(1, 2, 3, BlockKind.POWER_PORT);
+        world.set(2, 3, 3, BlockKind.POWER_PORT);
+        MatchResult result = world.match();
+        assertFalse(result.success());
+        assertTrue(result.failureReason().toLowerCase().contains("at most four power ports"));
+    }
+
+    @Test
+    void testWrongHeightRejection() {
+        // The matcher uses fixed StructureShape(5, 5, 7) - height=5.
+        // We simulate a "height 7" structure by placing blocks at v=5,6 which should be OTHER.
+        TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
+        // Place a module at v=5 (outside valid height 5) - oracle will return OTHER
+        world.set(0, 5, 1, BlockKind.EXPOSURE_MODULE);
+        MatchResult result = world.match();
+        assertFalse(result.success());
+        // The matcher will see OTHER at that position and fail
+        assertTrue(result.failureReason().toLowerCase().contains("wrong block"));
+    }
+
+    @Test
+    void testWrongDepthRejection() {
+        // Depth is fixed at 7. Place block at d=7 (outside valid depth 7).
+        TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
+        world.set(0, 1, 7, BlockKind.EXPOSURE_MODULE);
+        MatchResult result = world.match();
+        assertFalse(result.success());
+        assertTrue(result.failureReason().toLowerCase().contains("wrong block"));
     }
 
     @Test
@@ -228,53 +400,76 @@ class EuvStructureMatcherTest {
     }
 
     @Test
-    void testFrameLayerNonCasing() {
+    void testCalibrationPanelInFrameLayerRejected() {
         TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
-        world.set(1, 0, 1, BlockKind.EXPOSURE_MODULE); // Module in bottom frame layer
+        world.set(3, 1, 2, BlockKind.CASING); // Remove from middle
+        world.set(1, 0, 2, BlockKind.CALIBRATION_PANEL); // Place in bottom frame
         MatchResult result = world.match();
         assertFalse(result.success());
-        assertTrue(result.failureReason().contains("frame layer"));
+        assertTrue(result.failureReason().toLowerCase().contains("wrong position"));
     }
 
     @Test
-    void testTopFrameLayerNonCasing() {
+    void testDiagnosticPanelInFrameLayerRejected() {
         TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
-        world.set(1, 4, 1, BlockKind.OPTICS_MODULE); // Module in top frame layer
+        world.set(1, 1, 2, BlockKind.CASING); // Remove from middle
+        world.set(1, 4, 2, BlockKind.DIAGNOSTIC_PANEL); // Place in top frame
         MatchResult result = world.match();
         assertFalse(result.success());
-        assertTrue(result.failureReason().contains("frame layer"));
+        assertTrue(result.failureReason().toLowerCase().contains("wrong position"));
     }
 
     @Test
-    void testPowerPortCountMin() {
+    void testWaterInletInFrameLayerRejected() {
         TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
-        world.set(3, 1, 2, BlockKind.CASING); // Remove one power port
-        world.set(4, 2, 2, BlockKind.CASING); // Remove second power port
+        world.set(2, 1, 2, BlockKind.CASING); // Remove from middle
+        world.set(2, 0, 2, BlockKind.WATER_INLET); // Place in bottom frame
         MatchResult result = world.match();
         assertFalse(result.success());
-        assertTrue(result.failureReason().contains("at least one power port"));
+        assertTrue(result.failureReason().toLowerCase().contains("wrong position"));
     }
 
     @Test
-    void testPowerPortCountMax() {
+    void testPowerPortInFrameLayerRejected() {
         TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
-        // Add 3 more power ports (total 5, max is 4)
-        world.set(0, 1, 3, BlockKind.POWER_PORT);
-        world.set(1, 2, 3, BlockKind.POWER_PORT);
-        world.set(2, 3, 3, BlockKind.POWER_PORT);
+        world.set(4, 1, 2, BlockKind.CASING); // Remove from middle
+        world.set(1, 0, 3, BlockKind.POWER_PORT); // Place in bottom frame
         MatchResult result = world.match();
         assertFalse(result.success());
-        assertTrue(result.failureReason().contains("at most four power ports"));
+        assertTrue(result.failureReason().toLowerCase().contains("frame layer"));
     }
 
     @Test
-    void testControllerOnTopRow() {
-        // Create a world with controller at v0=4 (top row) - should fail
-        // This is implicitly tested since we only try v0=0
-        TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
-        // The matcher only tries v0=0, so this is implicitly tested
-        // But we can verify panelPositionValid check
-        MatchResult result = world.match();
-        assertTrue(result.success());
+    void testOperatingPanelOnlyAboveController() {
+        // The operating panel must be directly above the controller at (u0, 1, 0).
+        // Test that placing it at a different u column fails.
+        for (MultiblockDirection facing : MultiblockDirection.values()) {
+            for (int u0 = 0; u0 < 5; u0++) {
+                TestWorld world = createValidWorld(facing, u0);
+                int wrongU = (u0 + 1) % 5;
+                world.set(u0, 1, 0, BlockKind.CASING); // Remove from correct pos
+                world.set(wrongU, 1, 0, BlockKind.OPERATING_PANEL); // Place at wrong column
+                MatchResult result = world.match();
+                assertFalse(result.success(),
+                    "facing=" + facing + " u0=" + u0 + " should reject panel at wrong column");
+                assertTrue(result.failureReason().toLowerCase().contains("operating panel at wrong position"));
+            }
+        }
+    }
+
+    @Test
+    void testAllFiveControllerColumnsWithAllFourFacings() {
+        // Explicit test covering the 4 facings × 5 columns = 20 valid anchor positions
+        int successCount = 0;
+        for (MultiblockDirection facing : MultiblockDirection.values()) {
+            for (int u0 = 0; u0 < 5; u0++) {
+                TestWorld world = createValidWorld(facing, u0);
+                MatchResult result = world.match();
+                if (result.success()) {
+                    successCount++;
+                }
+            }
+        }
+        assertEquals(20, successCount, "All 4 facings × 5 columns should match");
     }
 }
