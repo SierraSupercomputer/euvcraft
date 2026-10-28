@@ -28,5 +28,8 @@ public enum PackagingRefusalReason {
     NO_CHIP_FOR_DIE,
 
     /** The installed generation does not meet the support matrix gate for the line. */
-    GENERATION_UNMET
+    GENERATION_UNMET,
+
+    /** T7 targets, including high binning, require an enclosed cleanroom. */
+    CLEANROOM_REQUIRED
 }

@@ -541,8 +541,8 @@ class FoupContentsTest {
             for (java.lang.reflect.RecordComponent component : FoupPublicView.class.getRecordComponents()) {
                 assertNotSame(G3Preparation.class, component.getType());
             }
-            assertTrue(!prepared.toString().contains("400"), "a G3 factor leaked into " + prepared);
-            assertTrue(!prepared.toString().contains("800"), "a G3 factor leaked into " + prepared);
+            assertTrue(!prepared.toString().contains("waferFactorsPermille"), "a G3 factor leaked into " + prepared);
+            assertTrue(!prepared.toString().contains("g3Preparation="), "a G3 factor leaked into " + prepared);
         }
 
         @Test

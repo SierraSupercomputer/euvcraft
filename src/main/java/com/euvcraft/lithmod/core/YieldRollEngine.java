@@ -255,7 +255,8 @@ public final class YieldRollEngine {
 
         boolean[] outcomes = new boolean[lot.size()];
         for (int waferIndex = 0; waferIndex < lot.size(); waferIndex++) {
-            outcomes[waferIndex] = YieldMath.passes(lot.wafers().get(waferIndex).cumulativeRoll(), spec.effectiveYield());
+            outcomes[waferIndex] = lot.wafers().get(waferIndex).cumulativeRoll()
+                > PreparedYieldRules.threshold(spec, PreparedYieldRules.multiplier(lot, waferIndex));
         }
         return outcomes;
     }

@@ -197,22 +197,33 @@ public final class FoupContentsCodec {
     },e->new ExposureFields(e.samples(),e.permilleSum()));
 
     /** Persistent private state; roomExposure uses stable serialized keys ticks and sum for samples/permilleSum, independent of Java accessor names. */
-    private static final Codec<FoupContents> BASE_CODEC = RecordCodecBuilder.create(instance -> instance.group(
-        UUIDUtil.CODEC.fieldOf(KEY_LOT).forGetter(FoupContents::lotId),
-        Codec.INT.fieldOf(KEY_CAPACITY).forGetter(FoupContents::capacity),
-        INT_ARRAY.fieldOf(KEY_LAYERS).forGetter(contents -> WaferPacking.packLayers(contents.wafers())),
-        INT_ARRAY.fieldOf(KEY_ROLLS).forGetter(contents -> WaferPacking.packRollBits(contents.wafers())),
-        INT_ARRAY.fieldOf(KEY_FLAGS).forGetter(contents -> WaferPacking.packFlags(contents.wafers())),
-        RunSpecCodec.CODEC.optionalFieldOf(KEY_RUN_SPEC).forGetter(c -> java.util.Optional.ofNullable(c.run())),
-        GRADE_CODEC.optionalFieldOf(KEY_GRADE, WaferSubstrate.ORDINARY).forGetter(FoupContents::grade),
-        PREPARATION_CODEC.optionalFieldOf(KEY_PREPARATION, FoupContents.PREPARATION_LEGACY).forGetter(FoupContents::preparationGeneration),
-        EXPOSURE_CODEC.optionalFieldOf("roomExposure", com.euvcraft.lithmod.core.cleanroom.CleanroomExposure.empty()).forGetter(FoupContents::roomExposure),
-        Codec.intRange(0,1000).optionalFieldOf("roomYieldPermille",0).forGetter(FoupContents::roomYieldPermille),
-        G3_PREPARATION_CODEC.optionalFieldOf(KEY_G3_PREPARATION, G3Preparation.none()).forGetter(FoupContents::g3Preparation)
-    ).apply(instance, (lotId, capacity, layers, rollBits, flags, runSpec, grade, preparationGeneration, exposure, roomYield, g3Preparation) ->
-        new FoupContents(lotId, capacity,
-            WaferPacking.unpack(layers, WaferPacking.unpackRollBits(rollBits), flags),
-            runSpec.orElse(null), grade, preparationGeneration, exposure, roomYield, g3Preparation)));
+    private record LotFields(UUID lot, int capacity, int[] layers, int[] rolls, int[] flags,
+            java.util.Optional<RunSpec> run, WaferSubstrate grade, int generation,
+            com.euvcraft.lithmod.core.cleanroom.CleanroomExposure exposure, int roomYield, G3Preparation preparation) {}
+
+    private static final Codec<FoupContents> BASE_CODEC = RecordCodecBuilder.<LotFields>create(instance -> instance.group(
+        UUIDUtil.CODEC.fieldOf(KEY_LOT).forGetter(LotFields::lot),
+        Codec.INT.fieldOf(KEY_CAPACITY).forGetter(LotFields::capacity),
+        INT_ARRAY.fieldOf(KEY_LAYERS).forGetter(LotFields::layers),
+        INT_ARRAY.fieldOf(KEY_ROLLS).forGetter(LotFields::rolls),
+        INT_ARRAY.fieldOf(KEY_FLAGS).forGetter(LotFields::flags),
+        RunSpecCodec.CODEC.optionalFieldOf(KEY_RUN_SPEC).forGetter(LotFields::run),
+        GRADE_CODEC.optionalFieldOf(KEY_GRADE, WaferSubstrate.ORDINARY).forGetter(LotFields::grade),
+        PREPARATION_CODEC.optionalFieldOf(KEY_PREPARATION, FoupContents.PREPARATION_LEGACY).forGetter(LotFields::generation),
+        EXPOSURE_CODEC.optionalFieldOf("roomExposure", com.euvcraft.lithmod.core.cleanroom.CleanroomExposure.empty()).forGetter(LotFields::exposure),
+        Codec.intRange(0,1000).optionalFieldOf("roomYieldPermille",0).forGetter(LotFields::roomYield),
+        G3_PREPARATION_CODEC.optionalFieldOf(KEY_G3_PREPARATION, G3Preparation.none()).forGetter(LotFields::preparation)
+    ).apply(instance, LotFields::new)).comapFlatMap(fields -> {
+        try {
+            return DataResult.success(new FoupContents(fields.lot(), fields.capacity(),
+                WaferPacking.unpack(fields.layers(), WaferPacking.unpackRollBits(fields.rolls()), fields.flags()),
+                fields.run().orElse(null), fields.grade(), fields.generation(), fields.exposure(), fields.roomYield(), fields.preparation()));
+        } catch (IllegalArgumentException | IllegalStateException invalid) {
+            return DataResult.error(() -> "Invalid FOUP state: " + invalid.getMessage());
+        }
+    }, contents -> new LotFields(contents.lotId(), contents.capacity(),
+        WaferPacking.packLayers(contents.wafers()), WaferPacking.packRollBits(contents.wafers()), WaferPacking.packFlags(contents.wafers()),
+        java.util.Optional.ofNullable(contents.run()), contents.grade(), contents.preparationGeneration(), contents.roomExposure(), contents.roomYieldPermille(), contents.g3Preparation()));
 
     /**
      * Persistent private state. A missing G3 field is the old-save fallback and
@@ -221,9 +232,9 @@ public final class FoupContentsCodec {
      * value cannot be stored because that would manufacture a prepared result
      * without its factors.
      */
-    public static final Codec<FoupContents> CODEC = BASE_CODEC.flatComapMap(
+    public static final Codec<FoupContents> CODEC = BASE_CODEC.flatXmap(
         FoupContentsCodec::persistable,
-        contents -> DataResult.success(contents));
+        FoupContentsCodec::persistable);
 
     /**
      * Network form: the public view only including the wafer substrate grade and preparation generation.

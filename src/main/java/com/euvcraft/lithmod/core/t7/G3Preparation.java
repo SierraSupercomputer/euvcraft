@@ -30,7 +30,7 @@ import java.util.Objects;
  *
  * <p>This class has no Minecraft or NeoForge dependencies.</p>
  */
-public record G3Preparation(int cleanroomMeanPermille, List<Integer> waferFactorsPermille, boolean redacted) {
+public record G3Preparation(int cleanroomMeanPermille, List<Integer> waferFactorsPermille, boolean redactedValue) {
 
     /** Largest number of wafers a single lot may carry (mirrors the configured FOUP bound). */
     public static final int MAX_WAFERS = 64;
@@ -67,7 +67,7 @@ public record G3Preparation(int cleanroomMeanPermille, List<Integer> waferFactor
                     "a G3 wafer factor must be in [" + MIN_PERMILLE + ", " + MAX_PERMILLE + "], got " + factor);
             }
         }
-        if (redacted) {
+        if (redactedValue) {
             if (!waferFactorsPermille.isEmpty() || cleanroomMeanPermille != 0) {
                 throw new IllegalArgumentException("a redacted G3 preparation cannot carry factors or a mean");
             }
@@ -174,18 +174,20 @@ public record G3Preparation(int cleanroomMeanPermille, List<Integer> waferFactor
      * @param redacted              whether this is a display-only value
      * @return the validated value
      */
-    public static G3Preparation fromStored(int cleanroomMeanPermille, List<Integer> factorsPermille, boolean redacted) {
-        return new G3Preparation(cleanroomMeanPermille, factorsPermille, redacted);
+    public static G3Preparation fromStored(int cleanroomMeanPermille, List<Integer> factorsPermille, boolean redactedValue) {
+        return new G3Preparation(cleanroomMeanPermille, factorsPermille, redactedValue);
     }
+
+    public boolean isRedacted() { return redactedValue; }
 
     /** Returns whether this value represents a G3 preparation result (exact or redacted). */
     public boolean isPrepared() {
-        return this.redacted || !this.waferFactorsPermille.isEmpty();
+        return this.redactedValue || !this.waferFactorsPermille.isEmpty();
     }
 
     /** Returns whether this value carries the hidden per-wafer factor values. */
     public boolean hasFactors() {
-        return !this.redacted && !this.waferFactorsPermille.isEmpty();
+        return !this.redactedValue && !this.waferFactorsPermille.isEmpty();
     }
 
     /** Returns the number of stored factors; zero for none and redacted values. */
@@ -202,7 +204,7 @@ public record G3Preparation(int cleanroomMeanPermille, List<Integer> waferFactor
      * @throws IndexOutOfBoundsException if the slot is not present
      */
     public int factorPermilleAt(int index) {
-        if (this.redacted) {
+        if (this.redactedValue) {
             throw new IllegalStateException("a redacted G3 preparation carries no factors");
         }
         return this.waferFactorsPermille.get(index);
@@ -216,7 +218,7 @@ public record G3Preparation(int cleanroomMeanPermille, List<Integer> waferFactor
      * @return the remaining exact evidence, or {@link #none()} when none remains
      */
     public G3Preparation withoutFactorAt(int index) {
-        if (this.redacted) {
+        if (this.redactedValue) {
             return this;
         }
         if (this.waferFactorsPermille.isEmpty()) {
@@ -246,7 +248,7 @@ public record G3Preparation(int cleanroomMeanPermille, List<Integer> waferFactor
      */
     @Override
     public String toString() {
-        if (this.redacted) {
+        if (this.redactedValue) {
             return "G3Preparation[redacted]";
         }
         if (this.waferFactorsPermille.isEmpty()) {

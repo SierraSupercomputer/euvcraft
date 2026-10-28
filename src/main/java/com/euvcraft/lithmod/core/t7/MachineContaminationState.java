@@ -151,9 +151,6 @@ public record MachineContaminationState(Phase phase, long lastBreachTick) {
         if (this.phase != Phase.CLEAN) {
             return new BreachResult(this, BreachNotification.ALREADY_CONTAMINATED);
         }
-        if (!conditions.powered()) {
-            return new BreachResult(this, BreachNotification.IGNORED_UNPOWERED);
-        }
         if (!conditions.loaded()) {
             return new BreachResult(this, BreachNotification.IGNORED_EMPTY);
         }

@@ -382,5 +382,6 @@
   "item.lithmod.nand_chip_t7": "T7 NAND Chip",
   "item.lithmod.cpu_t7": "T7 CPU",
   "item.lithmod.dimm_t7": "T7 DIMM",
-  "item.lithmod.resist_t7": "EUV Photoresist (T7)"
+  "item.lithmod.resist_t7": "EUV Photoresist (T7)",
+  "state.lithmod.test_package.cleanroom_required": "Enclosed cleanroom required"
 }

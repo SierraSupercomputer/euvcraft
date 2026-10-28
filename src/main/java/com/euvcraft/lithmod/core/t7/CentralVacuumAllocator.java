@@ -18,8 +18,8 @@ import java.util.Objects;
  * <p><strong>Fairness.</strong> When capacity is scarce, each chamber first gets
  * the floor of its proportional share. The remaining whole units go to the largest
  * fractional remainders, with ties broken by the lower array index. This is the
- * largest-remainder method, so no chamber is starved by index order while another
- * gets a windfall.</p>
+ * largest-remainder method. For repeated tick allocation use the cursor overload:
+ * fixed-index rounding alone can starve a small request indefinitely.</p>
  *
  * <p><strong>Conservation.</strong> The allocation always satisfies
  * {@code 0 <= allocated[i] <= demand[i]} and
@@ -31,6 +31,30 @@ import java.util.Objects;
 public final class CentralVacuumAllocator {
 
     private CentralVacuumAllocator() {
+    }
+
+    /**
+     * Tick allocation with a rotating first-service cursor. The caller persists
+     * and advances the cursor once per allocation, not once per consumer query.
+     * Give each requesting chamber one unit before proportional bulk allocation;
+     * even requests below one rounded proportional unit eventually receive service.
+     */
+    public static Allocation allocate(int capacity, int[] demand, int cursor) {
+        Objects.requireNonNull(demand, "demand");
+        if (capacity < 0) throw new IllegalArgumentException("negative capacity");
+        int[] remaining = demand.clone(), first = new int[demand.length];
+        for (int value : demand) if (value < 0) throw new IllegalArgumentException("negative demand");
+        int available = capacity;
+        if (demand.length > 0) {
+            int start = Math.floorMod(cursor, demand.length);
+            for (int offset = 0; offset < demand.length && available > 0; offset++) {
+                int index = (int) (((long) start + offset) % demand.length);
+                if (remaining[index] > 0) { first[index]++; remaining[index]--; available--; }
+            }
+        }
+        int[] bulk = allocate(available, remaining).allocatedMicroTorrPerTick();
+        for (int index = 0; index < first.length; index++) first[index] += bulk[index];
+        return new Allocation(first);
     }
 
     /**

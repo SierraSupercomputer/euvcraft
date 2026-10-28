@@ -40,18 +40,18 @@ class MachineContaminationTest {
         }
 
         @Test
-        @DisplayName("empty, unpowered and idle machines are distinguished and stay clean")
+        @DisplayName("empty and idle stay clean; a power-paused admitted lot remains exposed")
         void inactiveBreachesAreDistinct() {
             MachineContaminationState clean = MachineContaminationState.clean();
 
-            assertEquals(BreachNotification.IGNORED_UNPOWERED,
+            assertEquals(BreachNotification.NEWLY_CONTAMINATED,
                 clean.notifyStructuralBreach(new BreachConditions(false, true, true), 1).notification());
             assertEquals(BreachNotification.IGNORED_EMPTY,
                 clean.notifyStructuralBreach(new BreachConditions(true, false, true), 1).notification());
             assertEquals(BreachNotification.IGNORED_NOT_PROCESSING,
                 clean.notifyStructuralBreach(new BreachConditions(true, true, false), 1).notification());
 
-            assertSame(clean, clean.notifyStructuralBreach(new BreachConditions(false, true, true), 1).state());
+            assertTrue(clean.notifyStructuralBreach(new BreachConditions(false, true, true), 1).state().requiresRepair());
             assertEquals(MachineContaminationState.Phase.CLEAN,
                 clean.notifyStructuralBreach(new BreachConditions(true, false, true), 1).state().phase());
         }

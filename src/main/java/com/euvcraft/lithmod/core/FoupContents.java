@@ -66,6 +66,13 @@ public record FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec
                            com.euvcraft.lithmod.core.cleanroom.CleanroomExposure roomExposure,
                            int roomYieldPermille, G3Preparation g3Preparation) {
 
+    /** Source compatibility for the original grade/preparation constructor. */
+    public FoupContents(UUID lotId, int capacity, List<Wafer> wafers, RunSpec run,
+                        WaferSubstrate grade, int preparationGeneration) {
+        this(lotId, capacity, wafers, run, grade, preparationGeneration,
+            com.euvcraft.lithmod.core.cleanroom.CleanroomExposure.empty(), 0, G3Preparation.none());
+    }
+
     /**
      * Backward-compatible eight-argument constructor for pre-G3 call sites.
      * The lot carries no G3 evidence.
