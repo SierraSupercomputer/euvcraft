@@ -68,6 +68,7 @@ public final class EuvScannerWaterHandler implements ResourceHandler<FluidResour
         if (t == null || !r.equals(fluid)) return 0;
         int amount = t.fill(n, true);
         if (amount > 0) {
+            owner.upwJournal.updateSnapshots(tx);
             t.fill(amount, false);
         }
         return amount;

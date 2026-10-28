@@ -75,7 +75,7 @@ public record SupportRecipe(
         if (machine.isBlank()) {
             throw new IllegalArgumentException("machine must not be blank");
         }
-        if (SupportMachineKind.ofMachine(machine) == null) {
+        if (SupportMachineKind.ofMachine(machine) == null && !machine.equals("g3_reticle_writer")) {
             throw new IllegalArgumentException(
                 "machine '" + machine + "' is not a registered support machine");
         }

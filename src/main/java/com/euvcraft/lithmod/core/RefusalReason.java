@@ -21,7 +21,10 @@ public record RefusalReason(Code code, List<String> unmetLines) implements Proce
         CALIBRATION_REQUIRED,
         ULTRAPURE_WATER_REQUIRED,
         ROOM_UNAVAILABLE,
-        CONTAMINATED_FOUP
+        CONTAMINATED_FOUP,
+        VACUUM_REQUIRED,
+        EUV_SOURCE_REQUIRED,
+        MACHINE_REPAIR_REQUIRED
     }
 
     public RefusalReason {

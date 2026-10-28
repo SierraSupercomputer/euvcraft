@@ -17,7 +17,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.UUID;
 
 /** EUV Light Source member block entity - owns neither items nor FE. Links rebuilt after reload, never persisted. */
-public class EuvLightSourceMemberBlockEntity extends BlockEntity implements MenuProvider {
+public class EuvLightSourceMemberBlockEntity extends BlockEntity implements MenuProvider,com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumAccess {
 
     private @Nullable EuvFormationOwner owner;
     private boolean formed;
@@ -119,4 +119,5 @@ public class EuvLightSourceMemberBlockEntity extends BlockEntity implements Menu
         super.saveAdditional(output);
         if (installation != null) output.putString("installation", installation.toString());
     }
+    @Override public com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumConsumer vacuumConsumer(){var owner=lightSource();return formed&&structureKind()==BlockKind.VACUUM_MODULE&&owner!=null&&owner.isFormed()?owner:null;}
 }

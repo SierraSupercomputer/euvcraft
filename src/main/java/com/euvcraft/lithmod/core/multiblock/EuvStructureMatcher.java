@@ -24,7 +24,7 @@ import java.util.function.Function;
  * There must be exactly one {@link BlockKind#WATER_INLET} in the middle layers.
  * All other cells must be {@link BlockKind#CASING}.</p>
  *
- * <p>No extra operating panel is allowed. Calibration panels, multipatterning
+ * <p>No extra operating panel is allowed. Extra calibration panels, multipatterning
  * modules and other block kinds cause match failure.</p>
  *
  * <p>The match searches the five valid anchor columns deterministically: (u0=0, v0=0) through
@@ -105,6 +105,7 @@ public final class EuvStructureMatcher {
         int operatingPanelCount = 0;
         int powerPortCount = 0;
         int diagnosticPanelCount = 0;
+        int calibrationPanelCount = 0;
         int waterInletCount = 0;
         int[] moduleCounts = new int[MODULE_KINDS.length]; // one per module kind
 
@@ -142,6 +143,9 @@ public final class EuvStructureMatcher {
                         } else {
                             return MatchResult.failure("operating panel at wrong position " + worldPos);
                         }
+                    } else if (kind == BlockKind.CALIBRATION_PANEL) {
+                        if(!isMiddleLayer||isPanelPos)return MatchResult.failure("calibration panel must occupy a flexible middle-layer cell");
+                        calibrationPanelCount++;
                     } else if (kind == BlockKind.DIAGNOSTIC_PANEL) {
                         if (isMiddleLayer) {
                             diagnosticPanelCount++;
@@ -195,6 +199,7 @@ public final class EuvStructureMatcher {
         if (operatingPanelCount != 1) {
             return MatchResult.failure("expected exactly one operating panel above controller, found " + operatingPanelCount);
         }
+        if(calibrationPanelCount!=1)return MatchResult.failure("expected exactly one calibration panel, found "+calibrationPanelCount);
         if (diagnosticPanelCount != 1) {
             return MatchResult.failure("expected exactly one diagnostic panel in middle layers, found " + diagnosticPanelCount);
         }

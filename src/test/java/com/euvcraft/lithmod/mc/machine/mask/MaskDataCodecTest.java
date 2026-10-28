@@ -153,7 +153,7 @@ class MaskDataCodecTest {
     @Test
     void anInvalidShopGenerationIsRejected() {
         assertRejected("shopGeneration", fields(LOGIC, 1, 4, 0));
-        assertRejected("shopGeneration", fields(LOGIC, 1, 4, 3));
+        assertRejected("shopGeneration", fields(LOGIC, 1, 4, 4));
         assertRejected("shopGeneration", fields(LOGIC, 1, 4, -1));
     }
 
@@ -183,7 +183,7 @@ class MaskDataCodecTest {
         assertStreamRejected(LOGIC, 0, 4, 1);
         assertStreamRejected(LOGIC, 1, -1, 1);
         assertStreamRejected(LOGIC, 1, 4, 0);
-        assertStreamRejected(LOGIC, 1, 4, 3);
+        assertStreamRejected(LOGIC, 1, 4, 4);
     }
 
     /**

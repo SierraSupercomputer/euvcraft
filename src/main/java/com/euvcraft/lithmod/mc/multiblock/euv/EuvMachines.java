@@ -149,7 +149,7 @@ public final class EuvMachines {
         // Scanner power port energy capability
         event.registerBlockEntity(Capabilities.Energy.BLOCK, SCANNER_MEMBER_BE.get(),
                 (be, side) -> be.structureKind() == BlockKind.POWER_PORT && be.scanner() != null
-                        ? be.scanner().energyHandler()
+                        ? com.euvcraft.lithmod.mc.multiblock.T7EnergyPort.view(be,be.scanner(),()->{var owner=be.scanner();if(owner==null)return false;owner.revalidate();return be.controller()==owner&&owner.isFormed()&&owner.members().contains(be.getBlockPos())&&be.structureKind()==BlockKind.POWER_PORT;})
                         : null);
 
         // Scanner water inlet fluid capability
@@ -161,11 +161,11 @@ public final class EuvMachines {
         // Light source power port energy capability
         event.registerBlockEntity(Capabilities.Energy.BLOCK, LIGHT_SOURCE_MEMBER_BE.get(),
                 (be, side) -> be.structureKind() == BlockKind.POWER_PORT && be.lightSource() != null
-                        ? be.lightSource().energyHandler()
+                        ? com.euvcraft.lithmod.mc.multiblock.T7EnergyPort.view(be,be.lightSource(),()->{var owner=be.lightSource();if(owner==null)return false;owner.revalidate();return be.controller()==owner&&owner.isFormed()&&owner.members().contains(be.getBlockPos())&&be.structureKind()==BlockKind.POWER_PORT;})
                         : null);
 
         // Light source tin inlet fluid capability (for tin)
-        event.registerBlockEntity(Capabilities.Fluid.BLOCK, LIGHT_SOURCE_MEMBER_BE.get(),
+        event.registerBlockEntity(Capabilities.Item.BLOCK, LIGHT_SOURCE_MEMBER_BE.get(),
                 (be, side) -> be.structureKind() == BlockKind.FLUID_OUTLET && be.lightSource() != null
                         ? new EuvLightSourceTinHandler(be, be.lightSource())
                         : null);
