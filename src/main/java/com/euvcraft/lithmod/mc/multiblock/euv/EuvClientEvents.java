@@ -10,7 +10,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 
 /** Registers all EUV machine screens on the client. */
-@EventBusSubscriber(modid = EUVCRAFTMod.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = "lithmod", value = Dist.CLIENT)
 public final class EuvClientEvents {
 
     @SubscribeEvent

@@ -24,9 +24,9 @@ public final class EuvScannerEquipmentScreen extends AbstractContainerScreen<Euv
     protected void init() {
         super.init();
         repairBtn = addRenderableWidget(Button.builder(Component.translatable("button.lithmod.euv.repair"), b -> send(0))
-                .bounds(leftPos + 8, topPos + 10, 75, 20).build());
+                .bounds(leftPos + 8, topPos + 18, 75, 14).build());
         isolateBtn = addRenderableWidget(Button.builder(Component.translatable("button.lithmod.euv.vacuum_isolation"), b -> send(1))
-                .bounds(leftPos + 93, topPos + 10, 75, 20).build());
+                .bounds(leftPos + 93, topPos + 18, 75, 14).build());
     }
 
     @Override
@@ -55,17 +55,14 @@ public final class EuvScannerEquipmentScreen extends AbstractContainerScreen<Euv
     @Override
     protected void extractLabels(GuiGraphicsExtractor g, int mx, int my) {
         text(g, Component.translatable("block.lithmod.euv_scanner_equipment_cabinet").getString(), 8, 7, 160);
-        text(g, "Filter", 18, 35, 60);
-        text(g, "Redstone", 98, 35, 60);
-
-        // Status lines inside panel
-        text(g, "Formed: " + (menu.value(6) != 0 ? "Yes" : "No"), 8, 60, 160);
-        text(g, "Equipment slots:", 8, 76, 160);
-        String[] names = {"Exposure", "Optics", "Stage", "Filtration", "Metrology", "Vacuum"};
-        for (int i = 0; i < 6; i++) {
-            text(g, names[i] + ": " + (menu.value(i) != 0 ? "Installed" : "Empty"), 12, 92 + i * 14, 150);
-        }
-        text(g, "Contamination: " + menu.value(7) + "  UPW: " + menu.value(8) + "  FE: " + menu.value(9) + "/" + menu.value(10), 8, 180, 160);
-        text(g, "Vacuum isolation: (API gap: no getter on controller)", 8, 194, 160);
+        text(g,"Filter",18,54,60);text(g,"Redstone",98,54,60);
+        text(g,playerInventoryTitle.getString(),8,72,160);
+        int installed=0;for(int i=0;i<6;i++)installed+=menu.value(i)!=0?1:0;
+        text(g,(menu.value(6)!=0?"Formed":"Unformed")+"; modules "+installed+"/6",8,170,160);
+        String[] condition={"Clean","Repair required","Beam + Diagnostic required"};
+        text(g,condition[Math.clamp(menu.value(7),0,2)],8,182,160);
+        text(g,menu.value(9)+" / "+menu.value(10)+" FE",8,194,160);
+        text(g,"UPW: "+menu.value(8)+" mB",8,206,160);
+        text(g,menu.value(11)==1?"Vacuum isolated":"Central vacuum enabled",8,218,160);
     }
 }

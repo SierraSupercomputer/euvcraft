@@ -15,6 +15,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.transfer.item.ItemResource;
 import org.jspecify.annotations.Nullable;
 
@@ -24,12 +25,14 @@ public final class EuvLightSourceOperatingMenu extends FabMachineMenu {
     private static final TagKey<Item> TIN = TagKey.create(Registries.ITEM, Identifier.parse("c:ingots/tin"));
     private final @Nullable EuvLightSourceControllerBlockEntity lightSource;
     private final BlockPos panelPos;
+    private final @Nullable EuvLightSourceMemberBlockEntity panel;
     private final ContainerData values;
 
     public EuvLightSourceOperatingMenu(int containerId, Inventory playerInventory, @Nullable EuvLightSourceControllerBlockEntity lightSource, BlockPos pos) {
         super(EuvMachines.LIGHT_SOURCE_OPERATING_MENU.get(), containerId, playerInventory, lightSource, 1, 1);
         this.lightSource = lightSource;
         this.panelPos = pos.immutable();
+        panel=lightSource!=null&&lightSource.getLevel()!=null&&lightSource.getLevel().getBlockEntity(pos) instanceof EuvLightSourceMemberBlockEntity p?p:null;
         this.values = lightSource == null ? new SimpleContainerData(8) : new ContainerData() {
             public int get(int i) {
                 return switch (i) {
@@ -60,7 +63,7 @@ public final class EuvLightSourceOperatingMenu extends FabMachineMenu {
         addCustomSlot(new Slot(machineSlots(), 0, 80, 35) {
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return lightSource != null && lightSource.acceptsTin(ItemResource.of(stack));
+                return lightSource == null ? stack.is(TIN) : lightSource.acceptsTin(ItemResource.of(stack));
             }
         });
     }
@@ -69,7 +72,7 @@ public final class EuvLightSourceOperatingMenu extends FabMachineMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return lightSource != null && lightSource.getLevel() == player.level()
+        return lightSource != null && panel!=null && lightSource.isFormed() && panelPos.equals(lightSource.getBlockPos().above()) && player.level().getBlockEntity(panelPos)==panel && panel.lightSource()==lightSource && lightSource.getLevel() == player.level()
                 && !lightSource.isRemoved() && lightSource.getLevel().getBlockEntity(lightSource.getBlockPos()) == lightSource
                 && player.distanceToSqr(panelPos.getX() + .5, panelPos.getY() + .5, panelPos.getZ() + .5) <= 64;
     }

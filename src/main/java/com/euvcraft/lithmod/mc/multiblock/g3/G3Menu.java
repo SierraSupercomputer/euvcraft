@@ -29,7 +29,7 @@ abstract class G3Menu extends FabMachineMenu {
         return !operation||panel!=null&&formed()&&player.level().getBlockEntity(core.above())==panel&&panel.isOperatingPanel()&&panel.controller()==controller&&player.distanceToSqr(core.getX()+.5,core.getY()+1.5,core.getZ()+.5)<=64;
     }
     @Override public boolean clickMenuButton(Player player,int id){
-        if(controller==null||!stillValid(player)||!controller.isFormed())return false;
+        if(!(player instanceof net.minecraft.server.level.ServerPlayer server)||server.containerMenu!=this||controller==null||!stillValid(player)||!controller.isFormed())return false;
         if(operation&&writer()){if(id>=0&&id<=2)return controller.selectDesign(id);if(id==3){int selected=controller.selectedDesign();return selected>=0&&controller.startWriterJob("lithmod:g3_"+java.util.List.of("compute","memory","nand").get(selected)+"_t7",controller.corePreference());}if(id==4)return controller.cycleCores();}
         if(!writer()){if(operation&&id==3)return controller.startPrepJob();if(!operation&&id==5)return controller.repair();if(!operation&&id==6)return controller.toggleIsolation();}
         return false;

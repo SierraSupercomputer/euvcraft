@@ -17,7 +17,8 @@ public final class CleanroomTopology {
    for(var direction:Direction.values()){
     var n=p.relative(direction);if(visited.contains(n))continue;
     if(!level.hasChunkAt(n)){unknown=true;continue;}
-    if(CleanroomBlocks.isShell(level.getBlockState(n).getBlock())){visited.add(n);queue.add(n.immutable());}
+    // Sealed penetrations validate at the shell but do not extend room bounds along pipes/beamlines.
+    if(CleanroomBlocks.isShell(level.getBlockState(n).getBlock())&&!level.getBlockState(n).is(CleanroomBlocks.SHELL_EXTENSIONS)){visited.add(n);queue.add(n.immutable());}
    }
   }
   RoomBounds bounds;

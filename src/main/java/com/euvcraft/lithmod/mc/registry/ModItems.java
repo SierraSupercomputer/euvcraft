@@ -45,6 +45,9 @@ public final class ModItems {
     /** Registry of EUVCRAFT items. */
     public static final Items ITEMS = DeferredRegister.createItems(EUVCRAFTMod.MODID);
 
+    /** Provisional craftable tin supply; its JSON recipe can be replaced by ore refining later. */
+    public static final DeferredItem<Item> TIN_FEEDSTOCK = ITEMS.registerSimpleItem("tin_feedstock");
+
     public static final DeferredItem<BlockItem> SCANNER_CONTROLLER = ITEMS.registerSimpleBlockItem("scanner_controller", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.CONTROLLER.get());
     public static final DeferredItem<BlockItem> SCANNER_OPERATING_PANEL = ITEMS.registerSimpleBlockItem("scanner_operating_panel", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.OPERATING_PANEL.get());
     public static final DeferredItem<BlockItem> SCANNER_CALIBRATION_PANEL = ITEMS.registerSimpleBlockItem("scanner_calibration_panel", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.CALIBRATION_PANEL.get());

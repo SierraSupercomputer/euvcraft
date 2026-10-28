@@ -1,6 +1,6 @@
 package com.euvcraft.lithmod.mc.multiblock.hydrogen;
 
-import com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedCasingBlock;
+import com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedControllerBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
@@ -22,7 +22,7 @@ import org.jspecify.annotations.Nullable;
  * The hydrogen purifier controller block.
  * Extends AdvancedCasingBlock to share visual properties and formation logic.
  */
-public final class HydrogenControllerBlock extends AdvancedCasingBlock {
+public final class HydrogenControllerBlock extends AdvancedControllerBlock {
 
     public HydrogenControllerBlock(net.minecraft.world.level.block.state.BlockBehaviour.Properties properties) {
         super(properties);

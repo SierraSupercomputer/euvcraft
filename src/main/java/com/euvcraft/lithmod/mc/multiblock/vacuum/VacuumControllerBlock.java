@@ -1,6 +1,6 @@
 package com.euvcraft.lithmod.mc.multiblock.vacuum;
 
-import com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedCasingBlock;
+import com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedControllerBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
@@ -22,7 +22,7 @@ import org.jspecify.annotations.Nullable;
  * The central vacuum plant controller block.
  * Extends AdvancedCasingBlock to share visual properties and formation logic.
  */
-public final class VacuumControllerBlock extends AdvancedCasingBlock {
+public final class VacuumControllerBlock extends AdvancedControllerBlock {
 
     public VacuumControllerBlock(net.minecraft.world.level.block.state.BlockBehaviour.Properties properties) {
         super(properties);

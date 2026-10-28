@@ -101,6 +101,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
     private long centralTick=Long.MIN_VALUE,usedCentralTick=Long.MIN_VALUE;
     private int centralGrant;
     public UUID installationId(){return installationId;}
+    public boolean vacuumIsolated(){return vacuumIsolated;}
     private EuvLightSourceControllerBlockEntity source(){return EuvBeamlineConnection.source(this);}
     public boolean hasReservedLightSource(){var source=source();return source!=null&&source.canExpose(this);}
     private int p(String key,int fallback){return definition().map(d->d.paramOrDefault(key,fallback)).orElse(fallback);}
@@ -619,18 +620,21 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
                     input.getIntOr("euvTargetX", 0), input.getIntOr("euvTargetY", 0), input.getIntOr("euvTargetFocus", 0));
         } catch (IllegalArgumentException e) {
             alignment = BeamAlignment.create(0);
+            acceptedHardware="";calibratedHardware="";acceptedQuality=-1;acceptedMultiplier=0;
         }
+        boolean malformedDiagnostic=false;
         try {
             diagnostic = new DiagnosticFit(
                     input.getIntOr("euvDiagA", 0), input.getIntOr("euvDiagB", 0), input.getIntOr("euvDiagC", 0),
                     input.getIntOr("euvDiagTargetA", 0), input.getIntOr("euvDiagTargetB", 0), input.getIntOr("euvDiagTargetC", 0));
         } catch (IllegalArgumentException e) {
-            diagnostic = DiagnosticFit.create(0);
+            diagnostic = DiagnosticFit.create(0);malformedDiagnostic=true;
         }
         diagnosticPlotted = input.getBooleanOr("euvDiagPlotted", false);
         diagnosticHardware = input.getString("euvDiagHardware").orElse("");
         diagnosticQuality = input.getIntOr("euvDiagQuality", -1);
         diagnosticMultiplier = input.getDoubleOr("euvDiagMultiplier", 0);
+        if(malformedDiagnostic){diagnosticPlotted=false;diagnosticHardware="";diagnosticQuality=-1;diagnosticMultiplier=0;}
 
         vacuumState = new VacuumChamberState(
                 Math.clamp(input.getIntOr("euvVacuumPressure", 0),0,VacuumChamberState.MAX_PRESSURE_MICROTORR),
@@ -708,7 +712,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
 
     private CleanroomRooms.Sample roomSample() {
         return level instanceof ServerLevel server
-                ? CleanroomRooms.sample(server, hasActiveRun()&&!activeFootprint.isEmpty()?activeFootprint:members())
+                ? CleanroomRooms.sample(server, inputsLocked()&&!activeFootprint.isEmpty()?activeFootprint:members())
                 : new CleanroomRooms.Sample(false, 500, null);
     }
 

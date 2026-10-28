@@ -1,6 +1,7 @@
 package com.euvcraft.lithmod.mc.multiblock.euv;
 
 import com.euvcraft.lithmod.core.RefusalReason;
+import java.util.Locale;
 import com.euvcraft.lithmod.core.ProcessState;
 import com.euvcraft.lithmod.mc.machine.process.ProcessCellMenu;
 import com.euvcraft.lithmod.mc.machine.screen.AdvancedMachineScreen;
@@ -48,33 +49,20 @@ public final class EuvScannerOperatingScreen extends AdvancedMachineScreen<EuvSc
         line(g, Component.literal("FOUP     Mask    Resist"), 24, 22, 142);
         line(g, Component.literal(menu.energy() + " / " + menu.energyCapacity() + " FE"), 26, 56, 142);
 
-        // UPW
-        line(g, Component.literal("UPW: " + menu.water() + " / " + menu.upwPerTick() + " mb/t"), 26, 70, 142);
-        // Vacuum
-        line(g, Component.literal("Vacuum: " + (menu.vacuumOk() ? "OK" : "LOW")), 26, 82, 142);
-        // Light source
-        line(g, Component.literal("Source: " + (menu.hasLightSource() ? "Reserved" : "None")), 26, 94, 142);
-
-        line(g, playerInventoryTitle, 8, 72 + 60, 160);
-        line(g, Component.translatable(formed() ? "state.lithmod.process_cell.formed" : "state.lithmod.process_cell.unformed"), 8, 168 + 60, 160);
-
-        if (!menu.calibrated() && !menu.inputsLocked()) {
-            line(g, Component.literal(menu.contaminated() ? "Retune Beam + Diagnostic" : "Use Beam + Diagnostic Panels"), 8, 180 + 60, 160);
-        } else {
-            line(g, Component.literal(menu.inputsLocked() ? "Calibration fixed for this lot" : "Calibration yield: " + menu.multiplierPermille() / 10.0 + "%"), 8, 180 + 60, 160);
-        }
-        line(g, statusText(), 8, 192 + 60, 160);
-        line(g, Component.literal("Layer " + menu.currentLayer() + "/" + menu.totalLayers() + "  UPW " + menu.water()), 8, 204 + 60, 160);
-        int ticks = menu.ticks(), progress = menu.progress();
-        line(g, Component.literal("Exposure: " + progress + "/" + ticks + " t" + (ticks > 0 ? " (" + (int)(100L * progress / ticks) + "%)" : "")), 8, 216 + 60, 160);
+        line(g,playerInventoryTitle,8,72,160);
+        line(g,Component.literal(formed()?"Formed; calibration "+menu.multiplierPermille()/10.0+"%":"Unformed: check structure"),8,168,160);
+        line(g,statusText(),8,180,160);
+        line(g,Component.literal("UPW "+menu.water()+"; vacuum "+(menu.vacuumOk()?"ready":"pumping")),8,192,160);
+        line(g,Component.literal(menu.hasLightSource()?"Source: ready":"Source: check source panel"),8,204,160);
+        line(g,Component.literal("Layer "+menu.currentLayer()+"/"+menu.totalLayers()+"  "+menu.progress()+"/"+menu.ticks()+" t"),8,216,160);
     }
 
     @Override
     public void extractBackground(GuiGraphicsExtractor g, int mx, int my, float partial) {
         super.extractBackground(g, mx, my, partial);
-        g.fill(leftPos + 8, topPos + 227 + 60, leftPos + 168, topPos + 230 + 60, 0xFF555555);
+        g.fill(leftPos + 8, topPos + 227, leftPos + 168, topPos + 230, 0xFF555555);
         int fill = menu.ticks() > 0 ? (int) Math.clamp(160L * menu.progress() / menu.ticks(), 0, 160) : 0;
-        if (fill > 0) g.fill(leftPos + 8, topPos + 227 + 60, leftPos + 8 + fill, topPos + 230 + 60, 0xFF55BB99);
+        if (fill > 0) g.fill(leftPos + 8, topPos + 227, leftPos + 8 + fill, topPos + 230, 0xFF55BB99);
     }
 
     private Component refusalText(int issue) {

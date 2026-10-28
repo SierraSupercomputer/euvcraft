@@ -146,6 +146,7 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
 
     /** Raw mB one batch draws, from settings; 0 with no definition. */
     public int batchRawMb() {
+        if (hasJob()) return rawCost;
         return definition().map(d -> d.paramOrDefault("raw_hydrogen_per_batch", 8000)).orElse(0);
     }
 
@@ -157,6 +158,7 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
 
     /** Filters charged per batch, from settings; 0 with no definition. */
     public int batchFilters() {
+        if (hasJob()) return filterCost;
         return definition().map(d -> d.paramOrDefault("filter_per_batch", 1)).orElse(0);
     }
 

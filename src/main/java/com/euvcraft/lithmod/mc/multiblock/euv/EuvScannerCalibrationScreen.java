@@ -26,7 +26,7 @@ public final class EuvScannerCalibrationScreen extends AbstractContainerScreen<E
     protected void init() {
         super.init();
         controls.clear();
-        if (!menu.value(0) != 0) return; // not formed
+        if (menu.value(0) == 0) return;
 
         String[] labels = {"X −", "X +", "Y −", "Y +", "Focus −", "Focus +"};
         for (int i = 0; i < 6; i++) {
