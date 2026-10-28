@@ -519,5 +519,8 @@
   "item.lithmod.cleanroom_vacuum_port": "Cleanroom Vacuum Port",
   "item.lithmod.vacuum_service_outlet": "Vacuum Service Outlet",
   "block.lithmod.euv_scanner": "EUV Scanner",
-  "block.lithmod.euv_light_source": "EUV Light Source"
+  "block.lithmod.euv_light_source": "EUV Light Source",
+  "state.lithmod.process_cell.vacuum_required": "Waiting for chamber vacuum",
+  "state.lithmod.process_cell.euv_source_required": "Check beamline and source FE, H2, tin and vacuum",
+  "state.lithmod.process_cell.machine_repair_required": "Contaminated equipment: repair at the equipment cabinet"
 }

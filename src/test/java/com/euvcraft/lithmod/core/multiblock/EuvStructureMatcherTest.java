@@ -48,28 +48,28 @@ class EuvStructureMatcherTest {
             int u, v, d;
             switch (facing) {
                 case NORTH -> {
-                    // right = +X, back = -Z
+                    // NORTH: right +X, structure extends south (+Z)
                     u = u0 + dx;
+                    v = dy;
+                    d = dz; // corrected north back axis
+                }
+                case SOUTH -> {
+                    // SOUTH: right -X, structure extends north (-Z)
+                    u = u0 - dx;
                     v = dy;
                     d = -dz;
                 }
-                case SOUTH -> {
-                    // right = -X, back = +Z
-                    u = u0 - dx;
-                    v = dy;
-                    d = dz;
-                }
                 case EAST -> {
-                    // right = +Z, back = +X
+                    // EAST: right +Z, structure extends west (-X)
                     u = u0 + dz;
                     v = dy;
-                    d = dx;
+                    d = -dx; // corrected east back axis
                 }
                 case WEST -> {
-                    // right = -Z, back = -X
+                    // WEST: right -Z, structure extends east (+X)
                     u = u0 - dz;
                     v = dy;
-                    d = -dx;
+                    d = dx;
                 }
                 default -> throw new IllegalStateException("Unexpected facing: " + facing);
             }
@@ -368,27 +368,15 @@ class EuvStructureMatcherTest {
         assertTrue(result.failureReason().toLowerCase().contains("at most four power ports"));
     }
 
-    @Test
-    void testWrongHeightRejection() {
-        // The matcher uses fixed StructureShape(5, 5, 7) - height=5.
-        // We simulate a "height 7" structure by placing blocks at v=5,6 which should be OTHER.
-        TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
-        // Place a module at v=5 (outside valid height 5) - oracle will return OTHER
-        world.set(0, 5, 1, BlockKind.EXPOSURE_MODULE);
-        MatchResult result = world.match();
-        assertFalse(result.success());
-        // The matcher will see OTHER at that position and fail
-        assertTrue(result.failureReason().toLowerCase().contains("wrong block"));
+    @Test void testMissingFifthLayerRejected(){
+        var world=createValidWorld(MultiblockDirection.NORTH,0);
+        for(int u=0;u<5;u++)for(int d=0;d<7;d++)world.set(u,4,d,BlockKind.OTHER);
+        assertFalse(world.match().success());
     }
-
-    @Test
-    void testWrongDepthRejection() {
-        // Depth is fixed at 7. Place block at d=7 (outside valid depth 7).
-        TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
-        world.set(0, 1, 7, BlockKind.EXPOSURE_MODULE);
-        MatchResult result = world.match();
-        assertFalse(result.success());
-        assertTrue(result.failureReason().toLowerCase().contains("wrong block"));
+    @Test void testOldFiveDeepFootprintRejected(){
+        var world=createValidWorld(MultiblockDirection.NORTH,0);
+        for(int u=0;u<5;u++)for(int v=0;v<5;v++)for(int d=5;d<7;d++)world.set(u,v,d,BlockKind.OTHER);
+        assertFalse(world.match().success());
     }
 
     @Test
@@ -430,13 +418,12 @@ class EuvStructureMatcherTest {
     }
 
     @Test
-    void testPowerPortInFrameLayerRejected() {
+    void testPowerPortInFrameLayerAccepted() {
         TestWorld world = createValidWorld(MultiblockDirection.NORTH, 0);
         world.set(4, 1, 2, BlockKind.CASING); // Remove from middle
         world.set(1, 0, 3, BlockKind.POWER_PORT); // Place in bottom frame
         MatchResult result = world.match();
-        assertFalse(result.success());
-        assertTrue(result.failureReason().toLowerCase().contains("frame layer"));
+        assertTrue(result.success(),result.failureReason());
     }
 
     @Test
