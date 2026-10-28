@@ -1,6 +1,9 @@
 package com.euvcraft.lithmod.mc.multiblock.g3;
 
 import com.euvcraft.lithmod.core.WaterTank;
+import com.euvcraft.lithmod.core.FoupContents;
+import com.euvcraft.lithmod.core.FoupDisposal;
+import com.euvcraft.lithmod.core.MachineDefinition;
 import com.euvcraft.lithmod.core.multiblock.BlockKind;
 import com.euvcraft.lithmod.core.multiblock.MatchResult;
 import com.euvcraft.lithmod.core.multiblock.MultiblockDirection;
@@ -9,12 +12,16 @@ import com.euvcraft.lithmod.core.multiblock.StructureShape;
 import com.euvcraft.lithmod.core.t7.VacuumChamberState;
 import com.euvcraft.lithmod.core.t7.VacuumMode;
 import com.euvcraft.lithmod.core.t7.VacuumPumpSpec;
+import com.euvcraft.lithmod.core.t7.VacuumTickResult;
 import com.euvcraft.lithmod.core.t7.CentralVacuumAllocator;
 import com.euvcraft.lithmod.core.t7.MachineContaminationState;
+import com.euvcraft.lithmod.core.t7.BreachConditions;
+import com.euvcraft.lithmod.core.t7.BreachNotification;
+import com.euvcraft.lithmod.core.t7.ContaminationRepairCost;
 import com.euvcraft.lithmod.core.t7.G3Preparation;
-import com.euvcraft.lithmod.core.FoupContents;
-import com.euvcraft.lithmod.core.FoupDisposal;
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
+import com.euvcraft.lithmod.mc.FoupItems;
+import com.euvcraft.lithmod.mc.FoupContentsCodec;
 import com.euvcraft.lithmod.mc.data.SupportRecipeLoader;
 import com.euvcraft.lithmod.mc.recipe.SupportRecipe;
 import com.euvcraft.lithmod.mc.multiblock.EnergyBufferProvider;
@@ -181,8 +188,8 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         syncWaterCapacity();
         syncVacuumSpec();
 
-        if (this.formation.needsValidation || ++this.formation.ticksSinceValidation >= REVALIDATE_INTERVAL) {
-            this.formation.needsValidation = false;
+        if (this.formation.needsValidation() || ++this.formation.ticksSinceValidation() >= REVALIDATE_INTERVAL) {
+            this.formation.setNeedsValidation(false);
             this.formation.validate();
         }
 
@@ -208,10 +215,15 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
 
     private void syncVacuumSpec() {
         if (this.vacuumState == null) return;
-        Optional<VacuumPumpSpec> spec = VacuumPumpSpec.fromDefinition(definition());
-        if (spec.isPresent()) {
-            this.vacuumSpec = spec.get();
-        }
+        definition().ifPresent(def -> {
+            int pumpRate = def.paramOrDefault("vacuum_pump_rate", 5000);
+            int idleLeak = def.paramOrDefault("vacuum_idle_leak", 100);
+            int processLoad = def.paramOrDefault("vacuum_process_load", 2000);
+            int operatingPressure = def.paramOrDefault("vacuum_operating_pressure", 10000);
+            int reserveCapacity = def.paramOrDefault("vacuum_reserve_capacity", 50000);
+            int reserveRecharge = def.paramOrDefault("vacuum_reserve_recharge", 1000);
+            this.vacuumSpec = new VacuumPumpSpec(pumpRate, idleLeak, processLoad, operatingPressure, reserveCapacity, reserveRecharge);
+        });
     }
 
     private void publishData() {
@@ -220,7 +232,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         data.set(FabMachineBlockEntity.DATA_PROGRESS, this.jobRunning ? this.jobProgress : 0);
         data.set(FabMachineBlockEntity.DATA_TICKS, this.jobRunning ? this.jobDuration : 0);
         // Additional data slots for G3-specific UI
-        data.set(4, this.formed ? 1 : 0);
+        data.set(4, this.formation.formed() ? 1 : 0);
         data.set(5, this.jobPaused ? 1 : 0);
         if (this.waterTank != null) {
             data.set(6, this.waterTank.amount());
@@ -242,7 +254,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
     private void tickWriterJob() {
         if (this.jobRunning) {
             advanceWriterJob();
-        } else if (this.formed) {
+        } else if (this.formation.formed()) {
             maybeStartWriterJob();
         }
     }
@@ -263,7 +275,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         if (!(this.level instanceof net.minecraft.server.level.ServerLevel) || this.isRemoved()
                 || this.level.getBlockEntity(this.worldPosition) != this
                 || this.kind != G3MachineKind.RETICLE_WRITER
-                || this.jobRunning || !this.formed) return false;
+                || this.jobRunning || !this.formation.formed()) return false;
 
         SupportRecipeLoader.Registry registry = SupportRecipeLoader.getRegistry();
         if (registry == null) return false;
@@ -309,7 +321,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
     }
 
     private void advanceWriterJob() {
-        if (!this.formed) {
+        if (!this.formation.formed()) {
             this.jobPaused = true;
             return;
         }
@@ -342,7 +354,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
     }
 
     private void completeWriterJob() {
-        if (!this.formed || writerInputTampered()
+        if (!this.formation.formed() || writerInputTampered()
                 || !canAcceptInto(2, this.pendingOutput.getItem(), this.pendingOutputCount)) {
             resetJob();
             return;
@@ -406,7 +418,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
 
         switch (this.prepPhase) {
             case IDLE -> {
-                if (this.formed) maybeStartPrepJob();
+                if (this.formation.formed()) maybeStartPrepJob();
             }
             case VACUUM_DEP_ETCH -> advanceVacuumDepEtchPhase();
             case UPW_RINSE -> advanceRinsePhase();
@@ -428,14 +440,13 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         if (!(this.level instanceof net.minecraft.server.level.ServerLevel) || this.isRemoved()
                 || this.level.getBlockEntity(this.worldPosition) != this
                 || this.kind != G3MachineKind.DEPOSITION_ETCHER
-                || this.prepPhase != PrepPhase.IDLE || !this.formed) return false;
+                || this.prepPhase != PrepPhase.IDLE || !this.formation.formed()) return false;
 
         ItemStack foupStack = this.slot(0);
         if (foupStack.isEmpty() || foupStack.getCount() != 1) return false;
 
         // Validate FOUP contents: fresh, unstarted, electronic-grade
-        com.euvcraft.lithmod.core.FoupItems.FoupContentsResult result =
-                com.euvcraft.lithmod.core.FoupItems.trustedContentsOrError(foupStack);
+        FoupContents lot = FoupItems.trustedContentsOf(foupStack);
         if (result == null || result.contents().isEmpty()) return false;
         FoupContents lot = result.contents();
         if (lot.isStarted() || lot.grade().generation() < com.euvcraft.lithmod.core.WaferSubstrate.ELECTRONIC_GRADE.generation()
@@ -490,14 +501,20 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         }
 
         // Allocate central vacuum (cursor advances each tick)
+        // Central capacity comes from machine definition, not settings
+        int centralCapacity = 0;
+        var def = definition();
+        if (def.isPresent()) {
+            centralCapacity = def.get().paramOrDefault("central_vacuum_capacity", 0);
+        }
         int[] demands = new int[]{centralDemand};
         CentralVacuumAllocator.Allocation alloc = CentralVacuumAllocator.allocate(
-                EUVCRAFTMod.settings().centralVacuumCapacity(), demands, this.vacuumCursor);
+                centralCapacity, demands, this.vacuumCursor);
         this.vacuumCursor = (this.vacuumCursor + 1) % Math.max(1, demands.length);
         int centralGrant = alloc.at(0);
 
         // Tick the chamber
-        VacuumChamberState.VacuumTickResult result = this.vacuumState.tick(
+        VacuumTickResult result = this.vacuumState.tick(
                 this.vacuumSpec, currentVacuumMode(), centralGrant, this.phaseLocalPumpPowered);
         this.vacuumState = result.state();
     }
@@ -511,7 +528,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
     }
 
     private void advanceVacuumDepEtchPhase() {
-        if (!this.formed || this.vacuumState == null || this.vacuumSpec == null) {
+        if (!this.formation.formed() || this.vacuumState == null || this.vacuumSpec == null) {
             this.prepPhase = PrepPhase.IDLE;
             return;
         }
@@ -528,15 +545,15 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
             this.prepPhase = PrepPhase.UPW_RINSE;
             this.phaseProgress = 0;
             var def = definition().orElseThrow();
-            this.phaseDuration = def.param("rinse_duration").orElse(200);
-            this.phaseEnergyPerTick = def.param("rinse_energy_per_tick").orElse(50);
-            this.phaseWaterMb = def.param("rinse_water_mb").orElse(1000);
+            this.phaseDuration = def.paramOrDefault("rinse_duration", 200);
+            this.phaseEnergyPerTick = def.paramOrDefault("rinse_energy_per_tick", 50);
+            this.phaseWaterMb = def.paramOrDefault("rinse_water_mb", 1000);
             setChanged();
         }
     }
 
     private void advanceRinsePhase() {
-        if (!this.formed) {
+        if (!this.formation.formed()) {
             this.prepPhase = PrepPhase.IDLE;
             return;
         }
@@ -556,14 +573,14 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
             this.prepPhase = PrepPhase.POWERED_DRY;
             this.phaseProgress = 0;
             var def = definition().orElseThrow();
-            this.phaseDuration = def.param("dry_duration").orElse(200);
-            this.phaseEnergyPerTick = def.param("dry_energy_per_tick").orElse(200);
+            this.phaseDuration = def.paramOrDefault("dry_duration", 200);
+            this.phaseEnergyPerTick = def.paramOrDefault("dry_energy_per_tick", 200);
             setChanged();
         }
     }
 
     private void advanceDryPhase() {
-        if (!this.formed) {
+        if (!this.formation.formed()) {
             this.prepPhase = PrepPhase.IDLE;
             return;
         }
@@ -590,7 +607,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         // Placeholder: for now, return the FOUP to output slot unmodified to avoid silent downgrade
         if (this.admittedLot != null && this.admittedLotId != null) {
             // Reconstruct the FOUP item with the admitted lot
-            ItemStack outputFoup = com.euvcraft.lithmod.core.FoupItems.createFoup(this.admittedLot);
+            ItemStack outputFoup = FoupItems.with(ModItems.FOUP_MK1.get(), this.admittedLot);
             if (this.canAcceptInto(1, outputFoup.getItem(), 1)) {
                 this.setSlot(1, outputFoup);
             } else {
@@ -650,15 +667,15 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         if (this.kind != G3MachineKind.DEPOSITION_ETCHER) return false;
         if (this.admittedLot == null) return false; // no active lot to contaminate
 
-        var breachConditions = new MachineContaminationState.BreachConditions(
+        var breachConditions = new BreachConditions(
+                true, // powered
                 true, // loaded (has admitted lot)
-                true, // active T7 processing (in prep phase)
-                false // not empty/unpowered
+                true // active T7 processing (in prep phase)
         );
         var breachResult = this.contaminationState.notifyStructuralBreach(breachConditions, tick);
         this.contaminationState = breachResult.state();
 
-        if (breachResult.notification() == MachineContaminationState.BreachNotification.NEWLY_CONTAMINATED) {
+        if (breachResult.notification() == BreachNotification.NEWLY_CONTAMINATED) {
             // Scrap the pending wafers via FoupDisposal
             // The admitted lot is lost; create empty carrier
             if (this.admittedLot != null) {
@@ -686,7 +703,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         if (this.contaminationState.requiresRepair()) {
             // Validate we have the resources (caller should check before calling)
             var result = this.contaminationState.repair(
-                    new MachineContaminationState.ContaminationRepairCost(materialCost, upwMb, feCost));
+                    new ContaminationRepairCost(materialCost, upwMb, (int) feCost));
             this.contaminationState = result.state();
             setChanged();
             return result.charged();
@@ -713,7 +730,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
-        output.putInt("g3_formed", this.formed ? 1 : 0);
+        output.putInt("g3_formed", this.formation.formed() ? 1 : 0);
         output.putString("g3_failure", this.formation.failureReason());
         output.putInt("g3_kind", this.kind.ordinal());
 
@@ -762,17 +779,17 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         output.putInt("g3_prep_vacuum_demand", this.phaseVacuumDemand);
         output.putBoolean("g3_prep_local_pump", this.phaseLocalPumpPowered);
         if (this.admittedLot != null) {
-            output.store("g3_prep_lot", FoupContents.CODEC, this.admittedLot);
+            output.store("g3_prep_lot", FoupContentsCodec.CODEC, this.admittedLot);
         }
     }
 
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
-        this.formed = input.getInt("g3_formed").orElse(0) != 0;
-        this.formation.failureReason = input.getString("g3_failure").orElse("");
-        this.kind = G3MachineKind.values()[input.getInt("g3_kind").orElse(0)];
-        this.formation.needsValidation = true;
+        this.formation.setFormed(input.getInt("g3_formed").orElse(0) != 0);
+        this.formation.setFailureReason(input.getString("g3_failure").orElse(""));
+        // this.kind is final, set in constructor
+        this.formation.setNeedsValidation(true);
 
         // Water tank
         if (this.waterTank != null) {
@@ -821,7 +838,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         this.phaseWaterMb = input.getInt("g3_prep_water").orElse(0);
         this.phaseVacuumDemand = input.getInt("g3_prep_vacuum_demand").orElse(0);
         this.phaseLocalPumpPowered = input.getBooleanOr("g3_prep_local_pump", true);
-        this.admittedLot = input.read("g3_prep_lot", FoupContents.CODEC).orElse(null);
+        this.admittedLot = input.read("g3_prep_lot", FoupContentsCodec.CODEC).orElse(null);
         if (this.admittedLot != null) this.admittedLotId = this.admittedLot.lotId();
 
         publishData();
@@ -842,7 +859,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         }
         // Drop admitted prep lot if any
         if (this.admittedLot != null && level != null) {
-            ItemStack foup = com.euvcraft.lithmod.core.FoupItems.createFoup(this.admittedLot);
+            ItemStack foup = FoupItems.with(ModItems.FOUP_MK1.get(), this.admittedLot);
             dropContainer(level, pos, new net.minecraft.world.SimpleContainer(foup));
         }
     }
