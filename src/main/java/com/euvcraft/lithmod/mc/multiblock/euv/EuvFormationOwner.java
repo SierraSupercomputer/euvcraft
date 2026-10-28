@@ -9,7 +9,7 @@ import net.minecraft.core.BlockPos;
 /** Shared ownership contract for EUV multiblocks; inventories and energy remain on the actual controller. */
 public interface EuvFormationOwner {
     FabMachineBlockEntity machine();
-    EuvFormation formation();
+    Formation formation();
     default MatchResult matchStructure(MultiblockPos anchor, MultiblockDirection facing,
             Function<MultiblockPos, BlockKind> lookup) {
         return EuvStructureMatcher.match(anchor, facing, lookup);
