@@ -145,15 +145,13 @@ public final class VacuumControllerBlockEntity extends FabMachineBlockEntity imp
         // Resize energy buffer from definition
         if (definition().isPresent()) {
             MachineDefinition def = definition().get();
-            int capacity = def.paramOrDefault("vacuum_energy_capacity", 100000);
-            int maxReceive = def.paramOrDefault("vacuum_max_receive", 10000);
-            buffer().reconfigure(capacity, maxReceive);
+            applyDefinition(def);
             this.maxNetworkNodes = def.paramOrDefault("vacuum_max_nodes", 512);
             this.standingFePerTick = def.paramOrDefault("vacuum_standing_fe_per_tick", 100);
             this.fePerServiceMicroTorr = def.paramOrDefault("vacuum_fe_per_service_microtorr", 1);
             data().set(DATA_CAPACITY, buffer().getCapacityAsInt());
         } else {
-            buffer().reconfigure(0, 0);
+            // withoutDefinition is called by refreshDefinition which calls applyDefinition with 0,0
             data().set(DATA_CAPACITY, 0);
         }
 
@@ -198,7 +196,7 @@ public final class VacuumControllerBlockEntity extends FabMachineBlockEntity imp
         for (BlockPos pos : formation.members()) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof VacuumMemberBlockEntity member) {
-                if (member.kind == BlockKind.VACUUM_CONDUIT || member.kind == BlockKind.VACUUM_PORT) {
+                if (member.kind() == BlockKind.VACUUM_CONDUIT || member.kind() == BlockKind.VACUUM_PORT) {
                     queue.add(pos);
                     visited.add(pos);
                 }
@@ -233,7 +231,7 @@ public final class VacuumControllerBlockEntity extends FabMachineBlockEntity imp
 
                     BlockEntity neighborBe = level.getBlockEntity(neighbor);
                     if (neighborBe instanceof VacuumMemberBlockEntity neighborMember) {
-                        if (neighborMember.kind == BlockKind.VACUUM_CONDUIT || neighborMember.kind == BlockKind.VACUUM_PORT) {
+                        if (neighborMember.kind() == BlockKind.VACUUM_CONDUIT || neighborMember.kind() == BlockKind.VACUUM_PORT) {
                             // Verify it belongs to the same network (same plant or connected)
                             if (isSameNetwork(neighborMember)) {
                                 queue.add(neighbor);
@@ -266,7 +264,7 @@ public final class VacuumControllerBlockEntity extends FabMachineBlockEntity imp
         for (BlockPos pos : formation.members()) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof VacuumMemberBlockEntity member) {
-                if (member.kind == BlockKind.VACUUM_CONDUIT || member.kind == BlockKind.VACUUM_PORT) {
+                if (member.kind() == BlockKind.VACUUM_CONDUIT || member.kind() == BlockKind.VACUUM_PORT) {
                     // Check face-adjacent for another controller
                     for (Direction dir : Direction.values()) {
                         BlockPos neighbor = pos.relative(dir);

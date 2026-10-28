@@ -2,9 +2,10 @@ package com.euvcraft.lithmod.mc.multiblock.vacuum;
 
 import com.euvcraft.lithmod.core.multiblock.BlockKind;
 import com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedCasingBlock;
-import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 
 import org.jspecify.annotations.Nullable;
 
@@ -27,7 +28,7 @@ public final class VacuumMemberBlock extends AdvancedCasingBlock {
     }
 
     @Override
-    public @Nullable BlockEntityType<?> getBlockEntityType() {
-        return VacuumMachines.MEMBER_BE.get();
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new VacuumMemberBlockEntity(pos, state);
     }
 }

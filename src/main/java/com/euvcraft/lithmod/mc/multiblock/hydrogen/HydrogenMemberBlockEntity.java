@@ -41,7 +41,10 @@ public final class HydrogenMemberBlockEntity extends AdvancedMemberBlockEntity {
         return BlockKind.OTHER;
     }
 
-    @Override
+    public BlockKind kind() {
+        return kind;
+    }
+
     public boolean supportsOwner(Object owner) {
         return owner instanceof HydrogenControllerBlockEntity;
     }
@@ -59,22 +62,48 @@ public final class HydrogenMemberBlockEntity extends AdvancedMemberBlockEntity {
     @Override
     public @Nullable EnergyHandler energy() {
         var expected = controller();
-        if (expected == null || !valid(expected)) return null;
+        if (expected == null) return null;
         if (kind != BlockKind.POWER_PORT) return null;
+        var level = getLevel();
+        if (level == null || level.isClientSide() || isRemoved()) return null;
+        if (!energyPort() || !supportsOwner(expected)) return null;
+        var expectedMachine = expected.machine();
+        if (expectedMachine.isRemoved() || level.getBlockEntity(expectedMachine.getBlockPos()) != expectedMachine) return null;
+        expected.revalidate();
+        // Use controller() instead of private owner field from parent
+        if (controller() != expected || !formed || !expected.isFormed() || !expected.members().contains(getBlockPos())) return null;
         return new EnergyHandler() {
             @Override
             public long getAmountAsLong() {
-                return valid(expected) ? expected.machine().energy().getAmountAsLong() : 0;
+                var level = getLevel();
+                if (level == null || level.isClientSide() || isRemoved()) return 0;
+                var expected = controller();
+                if (expected == null) return 0;
+                var expectedMachine = expected.machine();
+                if (expectedMachine.isRemoved() || level.getBlockEntity(expectedMachine.getBlockPos()) != expectedMachine) return 0;
+                return expectedMachine.energy().getAmountAsLong();
             }
 
             @Override
             public long getCapacityAsLong() {
-                return valid(expected) ? expected.machine().energy().getCapacityAsLong() : 0;
+                var level = getLevel();
+                if (level == null || level.isClientSide() || isRemoved()) return 0;
+                var expected = controller();
+                if (expected == null) return 0;
+                var expectedMachine = expected.machine();
+                if (expectedMachine.isRemoved() || level.getBlockEntity(expectedMachine.getBlockPos()) != expectedMachine) return 0;
+                return expectedMachine.energy().getCapacityAsLong();
             }
 
             @Override
             public int insert(int amount, TransactionContext transaction) {
-                return valid(expected) ? expected.machine().energy().insert(amount, transaction) : 0;
+                var level = getLevel();
+                if (level == null || level.isClientSide() || isRemoved()) return 0;
+                var expected = controller();
+                if (expected == null) return 0;
+                var expectedMachine = expected.machine();
+                if (expectedMachine.isRemoved() || level.getBlockEntity(expectedMachine.getBlockPos()) != expectedMachine) return 0;
+                return expectedMachine.energy().insert(amount, transaction);
             }
 
             @Override

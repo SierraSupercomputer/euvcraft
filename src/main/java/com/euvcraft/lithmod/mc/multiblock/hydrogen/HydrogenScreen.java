@@ -20,7 +20,6 @@ public final class HydrogenScreen extends AdvancedMachineScreen<HydrogenMenu> {
     @Override protected void extractLabels(GuiGraphicsExtractor g, int mx, int my) {
         line(g, title, 8, 6, 160);
         line(g, Component.literal("Filter"), 30, 23, 42);
-        line(g, Component.literal("Output"), 121, 23, 47);
         line(g, Component.literal(menu.energy() + " / " + menu.energyCapacity() + " FE"), 30, 57, 140);
         line(g, playerInventoryTitle, 8, 72, 160);
         line(g, Component.literal(formed() ? "Formed" : "Unformed: check structure"), 8, 170, 160);

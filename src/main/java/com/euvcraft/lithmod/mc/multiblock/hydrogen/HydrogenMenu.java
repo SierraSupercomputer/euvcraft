@@ -11,6 +11,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The hydrogen purifier controller GUI: filter slot, batch progress, tank status.
+ * Filter inventory input1 output0. Menu totalInventorySize1.
  */
 public final class HydrogenMenu extends FabMachineMenu {
 
@@ -31,7 +32,7 @@ public final class HydrogenMenu extends FabMachineMenu {
     public static final int TANK_WIRE_COUNT = 11;
 
     public HydrogenMenu(int id, Inventory inv, @Nullable HydrogenControllerBlockEntity machine) {
-        super(HydrogenMachines.MENU.get(), id, inv, machine, 1, 1);
+        super(HydrogenMachines.MENU.get(), id, inv, machine, 1, 0);
         tanks = machine == null ? new SimpleContainerData(TANK_WIRE_COUNT) : new ContainerData() {
             @Override public int get(int i) {
                 return switch (i) {
@@ -60,14 +61,12 @@ public final class HydrogenMenu extends FabMachineMenu {
     }
 
     @Override protected void addMachineSlots() {
-        // Slot 0: filter (utility_filter)
+        // Slot 0: filter (utility_filter) - only input slot, no output slot for fluid-only output
         addCustomSlot(new Slot(machineSlots(), 0, 35, 35) {
             @Override public boolean mayPlace(net.minecraft.world.item.ItemStack stack) {
                 return stack.is(ModItems.UTILITY_FILTER.get());
             }
         });
-        // Slot 1: output (fab_hydrogen is fluid-only, so this slot stays empty for items)
-        addMachineSlot(1, 125, 35, false);
     }
 
     public boolean formed() { return tanks.get(TANK_WIRE_FORMED) == 1; }

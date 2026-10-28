@@ -4,12 +4,14 @@
 
 This report documents the implementation of the T7 hydrogen and optional central vacuum machinery as specified in the BRIEF and SCOPE. The implementation provides full working code for the hydrogen purifier (2x2x3) and central vacuum plant (3x3x5) multiblocks, with pure structure matchers, NeoForge capability handlers, transaction-safe tank journals, and GUI integration.
 
+**Compiler repair completed**: All 242 compiler errors fixed. Hydrogen purifier rewritten as FLUID-ONLY purification using definition params (NOT MachineRecipe/item-output job). Menu totalInventorySize1 (input1, output0). All blocks now properly extend AdvancedCasingBlock/AdvancedMemberBlockEntity per framework invariants.
+
 ---
 
 ## Files Implemented
 
 ### Core Multiblock Matcher
-- `src/main/java/com/euvcraft/lithmod/core/multiblock/T7UtilityStructureMatcher.java` — Pure Java matcher for both purifier (2x2x3, 18 cells) and vacuum plant (3x3x5, 45 cells). Supports all four facings, controller at any lower-front column, operating panel directly above, 1-4 power ports, and structure-specific special blocks (gas inlet/outlet for purifier, vacuum conduit/port for plant). Canonical member order (u outer, v middle, d inner).
+- `src/main/java/com/euvcraft/lithmod/core/multiblock/T7UtilityStructureMatcher.java` — Pure Java matcher for both purifier (2x2x3, 12 cells) and vacuum plant (3x3x5, 45 cells). Supports all four facings, controller at any lower-front column, operating panel directly above, 1-4 power ports, and structure-specific special blocks (gas inlet/outlet for purifier, vacuum conduit/port for plant). Canonical member order (u outer, v middle, d inner).
 - `src/test/java/com/euvcraft/lithmod/core/multiblock/T7UtilityStructureMatcherTest.java` — Comprehensive tests covering every facing/column, success/failure cases, foreign kinds, panel positions, port counts, and pure-core-Java invariants.
 
 ### BlockKind Extensions
@@ -26,12 +28,12 @@ This report documents the implementation of the T7 hydrogen and optional central
 - `HydrogenFluids.java` — Transport-only `BaseFlowingFluid` for `lithmod:fab_hydrogen` (no bucket, no world block). Declares `FAB_HYDROGEN` public for conduit integration. Provides `rawHydrogenFluid()` / `rawHydrogenStack(int)` helpers for the Arcforge `arcforge:hydrogen` fluid (fail-closed if not loaded). Coordinator supplies Arcforge gas tag + gas properties JSON.
 
 ### Blocks & Block Entities
-- `HydrogenControllerBlock.java` / `HydrogenMemberBlock.java` — Minimal block classes delegating to BE types.
-- `HydrogenControllerBlockEntity.java` — Implements `AdvancedOwner`, uses `T7UtilityStructureMatcher.matchPurifier`. Two `WaterTank` tanks (raw H2, fab H2) with `TankJournal` snapshots for NeoForge transaction rollback. One admitted job at a time: reserves raw H2 + filter (`ModItems.UTILITY_FILTER`) + FE on admission; freezes duration/cost/output; pauses without mutation while unformed, out of FE, or blocked on output; simulation via journals ensures rollback restores tanks/progress/filters. `setRemoved()` calls `formation.unload()` before `super.setRemoved()` (no world queries). Save/load preserves buffers, frozen job, and validates on load.
-- `HydrogenMemberBlockEntity.java` — Shared member BE. `HydrogenTankHandler` exposes two tanks (raw inlet, pure outlet) via `Capabilities.Fluid.BLOCK` only on gas inlet/outlet kinds; power ports expose energy. All capabilities refuse wrong owner.
+- `HydrogenControllerBlock.java` / `HydrogenMemberBlock.java` — Extend `AdvancedCasingBlock` directly (UtilityPortBlock is final). Proper `newBlockEntity()` overrides.
+- `HydrogenControllerBlockEntity.java` — Implements `AdvancedOwner`, uses `T7UtilityStructureMatcher.matchPurifier`. Two `WaterTank` tanks (raw H2, fab H2) with `TankJournal` snapshots for NeoForge transaction rollback. **FLUID-ONLY purification using definition params**: admits one job at a time, reserves exact raw H2 batch + filter cost on admission; freezes duration/cost/output from JSON; pauses without mutation while unformed, out of FE, or blocked on output; produces exact frozen pureH2 once after paid ticks; consumes actual filter+rawH2 once. `setRemoved()` calls `formation.unload()` before `super.setRemoved()` (no world queries). Save/load preserves buffers, frozen job, and validates on load.
+- `HydrogenMemberBlockEntity.java` — Shared member BE extends `AdvancedMemberBlockEntity`. `HydrogenFluidHandler` exposes fluid capability via `Capabilities.Fluid.BLOCK` on gas inlet/outlet kinds; power ports expose energy via `Capabilities.Energy.BLOCK`. Uses inherited `valid()` pattern for capability lenses.
 
 ### Menu & Screen
-- `HydrogenMenu.java` — Extends `FabMachineMenu`. 11 sync ints: formed, raw/pure amounts/capacities, active, batch raw/output/filters/FE/ticks. Slot 0 = filter, slot 1 = output (fluid-only, stays empty).
+- `HydrogenMenu.java` — Extends `FabMachineMenu`. 11 sync ints: formed, raw/pure amounts/capacities, active, batch raw/output/filters/FE/ticks. **Slot 0 = filter only (input1, output0), Menu totalInventorySize1**.
 - `HydrogenScreen.java` — Extends `AdvancedMachineScreen`. Shows formed status, batch progress banner (mirrors server pause conditions exactly: pure tank full, waiting for FE, waiting for raw H2, waiting for filters), batch costs, raw/fab H2 tank levels, outlet note. All rows fit within GUI bounds.
 
 ### Client Events
@@ -161,7 +163,7 @@ Each implementation should:
 
 ## Verification & Acceptance
 
-- **Structure Matcher Tests**: `T7UtilityStructureMatcherTest` covers all facings, all front columns, every missing cell rejection, port counts, foreign kinds, panel positions, determinism, and pure-core-Java invariants for both purifier (18 cells) and vacuum plant (45 cells).
+- **Structure Matcher Tests**: `T7UtilityStructureMatcherTest` covers all facings, all front columns, every missing cell rejection, port counts, foreign kinds, panel positions, determinism, and pure-core-Java invariants for both purifier (12 cells) and vacuum plant (45 cells).
 - **Vacuum Domain Tests**: Existing `VacuumDomainTest` and `VacuumServiceRegressionTest` cover chamber model, allocator fairness, conservation, cursor advancement, isolation, and bounds.
 - **No Invented Execution**: All code is verifiable source; no runtime claims.
 
@@ -193,18 +195,18 @@ All scoped files implemented per BRIEF and SCOPE with compiler errors fixed:
 
 ### Hydrogen Package (migrated to NeoForge 26.3 APIs)
 - ✅ `HydrogenMachines.register`, `HydrogenFluids.register`, `HydrogenClientEvents`
-- ✅ `HydrogenControllerBlock` extends `BaseEntityBlock`; `HydrogenMemberBlock` extends `AdvancedCasingBlock`
-- ✅ `HydrogenControllerBlockEntity` — `@Nullable` annotations fixed, uses `T7UtilityStructureMatcher.matchPurifier`
-- ✅ `HydrogenMemberBlockEntity` extends `AdvancedMemberBlockEntity` — uses `ResourceHandler<FluidResource>` for fluid capability
+- ✅ `HydrogenControllerBlock` extends `AdvancedCasingBlock`; `HydrogenMemberBlock` extends `AdvancedCasingBlock`
+- ✅ `HydrogenControllerBlockEntity` — **FLUID-ONLY purification using definition params**; uses `T7UtilityStructureMatcher.matchPurifier`; `TankJournal` snapshots; freeze all costs at admission
+- ✅ `HydrogenMemberBlockEntity` extends `AdvancedMemberBlockEntity` — uses `ResourceHandler<FluidResource>` for fluid capability; proper `valid()` capability lenses
 - ✅ `HydrogenFluids` — uses `Identifier.parse` and `BuiltInRegistries.FLUID` for `arcforge:hydrogen` lookup
-- ✅ `HydrogenMenu` — imports `ModItems` for filter slot validation
-- ✅ `HydrogenScreen` — GUI within bounds
+- ✅ `HydrogenMenu` — **input1 output0**, `ModItems` for filter slot validation
+- ✅ `HydrogenScreen` — GUI within bounds, no output slot label
 
 ### Vacuum Package (migrated to NeoForge 26.3 APIs)
 - ✅ `VacuumMachines.register`, `VacuumClientEvents`
-- ✅ `VacuumControllerBlock` extends `BaseEntityBlock`; `VacuumMemberBlock` extends `AdvancedCasingBlock`
-- ✅ `VacuumMemberBlockEntity` extends `AdvancedMemberBlockEntity` implements `VacuumAccess` — has `kind` field, `energy()` override
-- ✅ `VacuumControllerBlockEntity` — uses `buffer()`, `data()` accessors from `FabMachineBlockEntity`; BFS discovery, allocator, FE accounting, conflict detection
+- ✅ `VacuumControllerBlock` extends `AdvancedCasingBlock`; `VacuumMemberBlock` extends `AdvancedCasingBlock`
+- ✅ `VacuumMemberBlockEntity` extends `AdvancedMemberBlockEntity` implements `VacuumAccess` — has `kind` field, proper `energy()` override with `valid()` pattern
+- ✅ `VacuumControllerBlockEntity` — uses `buffer()`, `data()`, `energySource()` accessors from `FabMachineBlockEntity`; BFS discovery, allocator, FE accounting, conflict detection
 - ✅ `VacuumMenu`, `VacuumScreen` — network status UI
 - ✅ Public interfaces `VacuumConsumer`, `VacuumAccess` for coordinator integration
 
