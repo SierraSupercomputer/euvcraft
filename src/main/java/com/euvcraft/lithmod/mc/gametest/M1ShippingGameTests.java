@@ -70,7 +70,7 @@ public final class M1ShippingGameTests {
     /** Machine definitions loaded when fixtures are off (test_machine excluded). */
     private static final List<String> PRODUCTION_DEFINITIONS = List.of(
         "crystal_puller", "wafer_slicer", "pattern_generator", "test_package", "process_cell",
-        "boule_purifier", "ebeam_mask_writer", "deposition_etcher", "advanced_test_package", "lithography_scanner", "utility_plant", "pick_and_place", "cleanroom_controller", "cleanroom_filter", "foup_cleaner", "cleanroom_power_port", "cleanroom_item_port", "cleanroom_fluid_port", "zone_refiner", "reflow_oven");
+        "boule_purifier", "ebeam_mask_writer", "deposition_etcher", "advanced_test_package", "lithography_scanner", "utility_plant", "pick_and_place", "cleanroom_controller", "cleanroom_filter", "foup_cleaner", "cleanroom_power_port", "cleanroom_item_port", "cleanroom_fluid_port", "zone_refiner", "reflow_oven", "g3_reticle_writer", "g3_deposition_etcher", "euv_scanner", "euv_light_source", "hydrogen_purifier", "central_vacuum_plant");
     /** Machine recipe machines loaded when fixtures are off (test_machine excluded). */
     private static final List<String> PRODUCTION_RECIPE_MACHINES = List.of(
         "crystal_puller", "pattern_generator", "pick_and_place", "zone_refiner", "reflow_oven");
@@ -125,7 +125,7 @@ public final class M1ShippingGameTests {
         if (definitions != null) {
             helper.assertTrue(definitions.byId("test_machine").isEmpty(),
                 "test_machine definition must be absent when fixtures are off");
-            helper.assertValueEqual(20, definitions.size(),
+            helper.assertValueEqual(26, definitions.size(),
                 "production machine definition inventory when fixtures are off");
             for (String machineId : PRODUCTION_DEFINITIONS) {
                 helper.assertTrue(definitions.byId(machineId).isPresent(),
@@ -145,16 +145,16 @@ public final class M1ShippingGameTests {
                     "production recipes for '" + machineId + "' must be loaded");
             }
             // 4 production recipe JSONs remain once the two test_machine fixtures are filtered.
-            helper.assertValueEqual(19, recipes.size(),
+            helper.assertValueEqual(21, recipes.size(),
                 "production machine recipe inventory when fixtures are off");
         }
 
         SupportRecipeLoader.Registry support = SupportRecipeLoader.getRegistry();
-        helper.assertValueEqual(19, support.size(), "shipping support recipe inventory");
+        helper.assertValueEqual(22, support.size(), "shipping support recipe inventory");
         helper.assertValueEqual(1, support.forMachine("boule_purifier").size(), "shipping purifier recipe");
         helper.assertValueEqual(18, support.forMachine("ebeam_mask_writer").size(), "shipping mask designs");
         var binning=com.euvcraft.lithmod.mc.data.HighBinningDataLoader.getRegistry().orElseThrow();
-        helper.assertValueEqual(5,binning.size(),"Shipping high bin transition inventory");
+        helper.assertValueEqual(6,binning.size(),"Shipping high bin transition inventory");
         helper.assertTrue(binning.forSource("logic",3).isPresent()&&binning.forSource("compute",3).isPresent(),"Shipping T3 to T4 transitions resolve");
         helper.assertTrue(binning.forSource("logic",4).isPresent()&&binning.forSource("compute",4).isPresent(),"Shipping T4 to T5 transitions resolve");
         for(String id:java.util.List.of("utility_plant","utility_water_inlet","utility_pure_outlet","pick_and_place","scanner_diagnostic_panel","scanner_water_inlet","scanner_immersion_module","assembly_casing","assembly_power_port"))helper.assertTrue(BuiltInRegistries.BLOCK.containsKey(Identifier.fromNamespaceAndPath("lithmod",id)),"Shipping T5 block "+id);
@@ -164,6 +164,12 @@ public final class M1ShippingGameTests {
         helper.assertTrue(BuiltInRegistries.BLOCK.containsKey(Identifier.parse("lithmod:foup_cleaner"))&&BuiltInRegistries.ITEM.containsKey(Identifier.parse("lithmod:wafer_scrap")),"Shipping cleaner and wafer scrap");
         for(String id:java.util.List.of("zone_refiner","zone_casing","zone_power_port","zone_operating_panel","zone_water_inlet","reflow_oven","reflow_casing","reflow_power_port","reflow_operating_panel","reflow_calibration_panel","scanner_multipatterning_module"))helper.assertTrue(BuiltInRegistries.BLOCK.containsKey(Identifier.parse("lithmod:"+id)),"Shipping T6 block "+id);
         helper.assertTrue(binning.forSource("compute",5).isPresent(),"Shipping T5 to T6 compute transition");
+        for(String id:java.util.List.of("g3_reticle_writer","g3_deposition_etcher","g3_casing","g3_power_port","g3_operating_panel","g3_water_inlet","g3_writing_module","g3_metrology_module","g3_deposition_module","g3_rinse_module","g3_vacuum_module","euv_scanner_controller","euv_scanner_operating_panel","euv_scanner_calibration_panel","euv_scanner_exposure_module","euv_scanner_optics_module","euv_scanner_stage_module","euv_scanner_filtration_module","euv_scanner_metrology_module","euv_scanner_vacuum_module","euv_scanner_diagnostic_panel","euv_scanner_water_inlet","euv_scanner_power_port","euv_scanner_casing","euv_light_source_controller","euv_light_source_operating_panel","euv_light_source_tin_inlet","euv_light_source_hydrogen_inlet","euv_light_source_vacuum_module","euv_light_source_power_port","euv_light_source_casing","euv_beam_line","hydrogen_purifier","hydrogen_casing","hydrogen_power_port","hydrogen_gas_inlet","hydrogen_gas_outlet","hydrogen_operating_panel","central_vacuum_plant","vacuum_casing","vacuum_power_port","vacuum_operating_panel","vacuum_service_conduit","cleanroom_vacuum_port","vacuum_service_outlet"))helper.assertTrue(BuiltInRegistries.BLOCK.containsKey(Identifier.parse("lithmod:"+id)),"Shipping T7 block "+id);
+        for(String id:java.util.List.of("tin_feedstock","compute_chip_t7","memory_chip_t7","nand_chip_t7","cpu_t7","dimm_t7","resist_t7","euv_light_source","euv_optics","euv_stage","euv_filtration","euv_metrology"))helper.assertTrue(BuiltInRegistries.ITEM.containsKey(Identifier.parse("lithmod:"+id)),"Shipping T7 item "+id);
+        helper.assertTrue(BuiltInRegistries.FLUID.containsKey(Identifier.parse("lithmod:fab_hydrogen")),"Shipping Fab Hydrogen");
+        helper.assertValueEqual(3,support.forMachine("g3_reticle_writer").size(),"Shipping three reflective reticle families");
+        helper.assertValueEqual(4,recipes.forMachine("reflow_oven").size(),"Shipping T6/T7 CPU and DIMM recipes");
+        helper.assertTrue(binning.forSource("compute",6).isPresent(),"Shipping T6 to T7 compute transition");
         assertCreativeAbsence(helper);
     }
 
