@@ -9,7 +9,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.transfer.energy.EnergyHandler;
-import net.neoforged.neoforge.transfer.energy.SimpleEnergyHandler;
+
 import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 import org.jspecify.annotations.Nullable;
 
@@ -24,8 +24,15 @@ public final class VacuumMemberBlockEntity extends AdvancedMemberBlockEntity imp
     private VacuumConsumer consumer; // set by the controller during network discovery
 
     public VacuumMemberBlockEntity(BlockPos pos, BlockState state) {
-        super(pos, state);
+        super(VacuumMachines.MEMBER_BE.get(), pos, state);
         this.kind = computeKind();
+    }
+
+
+    @Override public net.minecraft.world.inventory.AbstractContainerMenu createMenu(int id, net.minecraft.world.entity.player.Inventory inventory, net.minecraft.world.entity.player.Player player) {
+        if (structureKind() != BlockKind.OPERATING_PANEL) return null;
+        var below = belowOwner();
+        return below instanceof VacuumControllerBlockEntity owner ? new VacuumMenu(id, inventory, owner) : null;
     }
 
     private BlockKind computeKind() {
@@ -40,7 +47,7 @@ public final class VacuumMemberBlockEntity extends AdvancedMemberBlockEntity imp
         return kind;
     }
 
-    public boolean supportsOwner(Object owner) {
+    @Override public boolean supportsOwner(AdvancedOwner owner) {
         return owner instanceof VacuumControllerBlockEntity;
     }
 
@@ -52,60 +59,6 @@ public final class VacuumMemberBlockEntity extends AdvancedMemberBlockEntity imp
     @Override
     public com.euvcraft.lithmod.core.multiblock.BlockKind structureKind() {
         return kind;
-    }
-
-    @Override
-    public @Nullable EnergyHandler energy() {
-        var expected = controller();
-        if (expected == null) return null;
-        if (kind != BlockKind.POWER_PORT) return null;
-        var level = getLevel();
-        if (level == null || level.isClientSide() || isRemoved()) return null;
-        if (!energyPort() || !supportsOwner(expected)) return null;
-        var expectedMachine = expected.machine();
-        if (expectedMachine.isRemoved() || level.getBlockEntity(expectedMachine.getBlockPos()) != expectedMachine) return null;
-        expected.revalidate();
-        // Use controller() instead of private owner field from parent
-        if (controller() != expected || !formed || !expected.isFormed() || !expected.members().contains(getBlockPos())) return null;
-        return new EnergyHandler() {
-            @Override
-            public long getAmountAsLong() {
-                var level = getLevel();
-                if (level == null || level.isClientSide() || isRemoved()) return 0;
-                var expected = controller();
-                if (expected == null) return 0;
-                var expectedMachine = expected.machine();
-                if (expectedMachine.isRemoved() || level.getBlockEntity(expectedMachine.getBlockPos()) != expectedMachine) return 0;
-                return expectedMachine.energy().getAmountAsLong();
-            }
-
-            @Override
-            public long getCapacityAsLong() {
-                var level = getLevel();
-                if (level == null || level.isClientSide() || isRemoved()) return 0;
-                var expected = controller();
-                if (expected == null) return 0;
-                var expectedMachine = expected.machine();
-                if (expectedMachine.isRemoved() || level.getBlockEntity(expectedMachine.getBlockPos()) != expectedMachine) return 0;
-                return expectedMachine.energy().getCapacityAsLong();
-            }
-
-            @Override
-            public int insert(int amount, TransactionContext transaction) {
-                var level = getLevel();
-                if (level == null || level.isClientSide() || isRemoved()) return 0;
-                var expected = controller();
-                if (expected == null) return 0;
-                var expectedMachine = expected.machine();
-                if (expectedMachine.isRemoved() || level.getBlockEntity(expectedMachine.getBlockPos()) != expectedMachine) return 0;
-                return expectedMachine.energy().insert(amount, transaction);
-            }
-
-            @Override
-            public int extract(int amount, TransactionContext transaction) {
-                return 0; // vacuum plant does not allow extraction through member ports
-            }
-        };
     }
 
     @Override

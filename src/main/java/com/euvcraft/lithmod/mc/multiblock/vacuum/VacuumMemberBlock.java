@@ -31,4 +31,10 @@ public final class VacuumMemberBlock extends AdvancedCasingBlock {
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new VacuumMemberBlockEntity(pos, state);
     }
+
+    @Override protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack stack, BlockState state, net.minecraft.world.level.Level level, BlockPos pos, net.minecraft.world.entity.player.Player player, net.minecraft.world.InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
+        if (kind != BlockKind.OPERATING_PANEL) return net.minecraft.world.InteractionResult.PASS;
+        if (!level.isClientSide() && level.getBlockEntity(pos) instanceof VacuumMemberBlockEntity panel && panel.belowOwner() != null) player.openMenu(panel, buffer -> buffer.writeBlockPos(pos));
+        return net.minecraft.world.InteractionResult.SUCCESS;
+    }
 }

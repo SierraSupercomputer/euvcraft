@@ -25,12 +25,17 @@ import java.util.Objects;
 public final class HydrogenMemberBlockEntity extends AdvancedMemberBlockEntity {
 
     private final BlockKind kind;
-    private final HydrogenFluidHandler fluidHandler;
 
     public HydrogenMemberBlockEntity(BlockPos pos, BlockState state) {
-        super(pos, state);
+        super(HydrogenMachines.MEMBER_BE.get(), pos, state);
         this.kind = computeKind();
-        this.fluidHandler = new HydrogenFluidHandler(this);
+    }
+
+
+    @Override public net.minecraft.world.inventory.AbstractContainerMenu createMenu(int id, net.minecraft.world.entity.player.Inventory inventory, net.minecraft.world.entity.player.Player player) {
+        if (structureKind() != BlockKind.OPERATING_PANEL) return null;
+        var below = belowOwner();
+        return below instanceof HydrogenControllerBlockEntity owner ? new HydrogenMenu(id, inventory, owner) : null;
     }
 
     private BlockKind computeKind() {
@@ -45,7 +50,7 @@ public final class HydrogenMemberBlockEntity extends AdvancedMemberBlockEntity {
         return kind;
     }
 
-    public boolean supportsOwner(Object owner) {
+    @Override public boolean supportsOwner(AdvancedOwner owner) {
         return owner instanceof HydrogenControllerBlockEntity;
     }
 
@@ -59,60 +64,6 @@ public final class HydrogenMemberBlockEntity extends AdvancedMemberBlockEntity {
         return kind;
     }
 
-    @Override
-    public @Nullable EnergyHandler energy() {
-        var expected = controller();
-        if (expected == null) return null;
-        if (kind != BlockKind.POWER_PORT) return null;
-        var level = getLevel();
-        if (level == null || level.isClientSide() || isRemoved()) return null;
-        if (!energyPort() || !supportsOwner(expected)) return null;
-        var expectedMachine = expected.machine();
-        if (expectedMachine.isRemoved() || level.getBlockEntity(expectedMachine.getBlockPos()) != expectedMachine) return null;
-        expected.revalidate();
-        // Use controller() instead of private owner field from parent
-        if (controller() != expected || !formed || !expected.isFormed() || !expected.members().contains(getBlockPos())) return null;
-        return new EnergyHandler() {
-            @Override
-            public long getAmountAsLong() {
-                var level = getLevel();
-                if (level == null || level.isClientSide() || isRemoved()) return 0;
-                var expected = controller();
-                if (expected == null) return 0;
-                var expectedMachine = expected.machine();
-                if (expectedMachine.isRemoved() || level.getBlockEntity(expectedMachine.getBlockPos()) != expectedMachine) return 0;
-                return expectedMachine.energy().getAmountAsLong();
-            }
-
-            @Override
-            public long getCapacityAsLong() {
-                var level = getLevel();
-                if (level == null || level.isClientSide() || isRemoved()) return 0;
-                var expected = controller();
-                if (expected == null) return 0;
-                var expectedMachine = expected.machine();
-                if (expectedMachine.isRemoved() || level.getBlockEntity(expectedMachine.getBlockPos()) != expectedMachine) return 0;
-                return expectedMachine.energy().getCapacityAsLong();
-            }
-
-            @Override
-            public int insert(int amount, TransactionContext transaction) {
-                var level = getLevel();
-                if (level == null || level.isClientSide() || isRemoved()) return 0;
-                var expected = controller();
-                if (expected == null) return 0;
-                var expectedMachine = expected.machine();
-                if (expectedMachine.isRemoved() || level.getBlockEntity(expectedMachine.getBlockPos()) != expectedMachine) return 0;
-                return expectedMachine.energy().insert(amount, transaction);
-            }
-
-            @Override
-            public int extract(int amount, TransactionContext transaction) {
-                return 0; // hydrogen purifier does not allow extraction through member ports
-            }
-        };
-    }
-
     /** Returns the fluid handler capability for gas inlet/outlet, or null for other kinds. */
     public @Nullable ResourceHandler<FluidResource> handler() {
         if (kind != BlockKind.GAS_INLET && kind != BlockKind.GAS_OUTLET) {
@@ -120,7 +71,7 @@ public final class HydrogenMemberBlockEntity extends AdvancedMemberBlockEntity {
         }
         var owner = controller();
         if (owner instanceof HydrogenControllerBlockEntity controller) {
-            return fluidHandler;
+            return new HydrogenFluidHandler(this, controller);
         }
         return null;
     }
@@ -132,10 +83,12 @@ public final class HydrogenMemberBlockEntity extends AdvancedMemberBlockEntity {
     public static final class HydrogenFluidHandler implements ResourceHandler<FluidResource> {
 
         private final HydrogenMemberBlockEntity member;
+        private final HydrogenControllerBlockEntity expected;
         private final FluidResource fabFluid;
         private @Nullable FluidResource rawFluid;
 
-        HydrogenFluidHandler(HydrogenMemberBlockEntity member) {
+        HydrogenFluidHandler(HydrogenMemberBlockEntity member, HydrogenControllerBlockEntity expected) {
+            this.expected = expected;
             this.member = member;
             // Fabricated hydrogen from this mod
             this.fabFluid = FluidResource.of(HydrogenFluids.FAB_HYDROGEN.get());
@@ -150,15 +103,10 @@ public final class HydrogenMemberBlockEntity extends AdvancedMemberBlockEntity {
 
         private @Nullable HydrogenControllerBlockEntity liveController() {
             var level = member.getLevel();
-            if (level == null || level.isClientSide()) return null;
-            var ctrlPos = member.getBlockPos();
-            BlockEntity ctrlEntity = level.getBlockEntity(ctrlPos);
-            if (!(ctrlEntity instanceof HydrogenControllerBlockEntity controller)) return null;
-            // Validate the link
-            if (controller.isRemoved() || member.isRemoved() || member.controller() != controller) return null;
-            if (!controller.isFormed() || !controller.members().contains(member.getBlockPos())) return null;
-            controller.revalidate();
-            return controller;
+            if (level == null || level.isClientSide() || member.isRemoved() || level.getBlockEntity(member.getBlockPos()) != member) return null;
+            if (!(member.controller() instanceof HydrogenControllerBlockEntity owner) || owner != expected || owner.isRemoved() || !level.hasChunkAt(owner.getBlockPos()) || level.getBlockEntity(owner.getBlockPos()) != owner) return null;
+            owner.revalidate();
+            return member.controller() == owner && member.isMemberOfFormedCell() && owner.isFormed() && owner.members().contains(member.getBlockPos()) ? owner : null;
         }
 
         @Override

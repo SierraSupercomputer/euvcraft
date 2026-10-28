@@ -32,7 +32,7 @@ public final class HydrogenMenu extends FabMachineMenu {
     public static final int TANK_WIRE_COUNT = 11;
 
     public HydrogenMenu(int id, Inventory inv, @Nullable HydrogenControllerBlockEntity machine) {
-        super(HydrogenMachines.MENU.get(), id, inv, machine, 1, 0);
+        super(HydrogenMachines.MENU.get(), id, inv, machine, 1, 1);
         tanks = machine == null ? new SimpleContainerData(TANK_WIRE_COUNT) : new ContainerData() {
             @Override public int get(int i) {
                 return switch (i) {
@@ -53,7 +53,7 @@ public final class HydrogenMenu extends FabMachineMenu {
             @Override public void set(int i, int v) {}
             @Override public int getCount() { return TANK_WIRE_COUNT; }
         };
-        addDataSlots(tanks);
+        addDataSlots(new com.euvcraft.lithmod.mc.cleanroom.WideContainerData(tanks));
     }
 
     public HydrogenMenu(int id, Inventory inv, RegistryFriendlyByteBuf buf) {

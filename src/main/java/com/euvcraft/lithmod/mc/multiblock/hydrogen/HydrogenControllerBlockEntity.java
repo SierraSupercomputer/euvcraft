@@ -56,6 +56,7 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
 
     /** The batch's reserved raw H2, frozen at admission (mB). */
     private int rawCost;
+    private int outputCost;
 
     /** The batch's reserved filters, frozen at admission. */
     private int filterCost;
@@ -145,18 +146,18 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
 
     /** Raw mB one batch draws, from settings; 0 with no definition. */
     public int batchRawMb() {
-        return definition().map(d -> d.paramOrDefault("raw_per_batch_mb", 8000)).orElse(0);
+        return definition().map(d -> d.paramOrDefault("raw_hydrogen_per_batch", 8000)).orElse(0);
     }
 
     /** mB the batch produces: the admitted amount while running, else the configured amount. */
     public int batchOutputMb() {
-        if (hasJob()) return rawCost; // 1:1 for hydrogen purification
-        return definition().map(d -> d.paramOrDefault("pure_per_batch_mb", 8000)).orElse(0);
+        if (hasJob()) return outputCost;
+        return definition().map(d -> d.paramOrDefault("fab_hydrogen_per_batch", 8000)).orElse(0);
     }
 
     /** Filters charged per batch, from settings; 0 with no definition. */
     public int batchFilters() {
-        return definition().map(d -> d.paramOrDefault("filters_per_batch", 1)).orElse(0);
+        return definition().map(d -> d.paramOrDefault("filter_per_batch", 1)).orElse(0);
     }
 
     /** FE per tick: the admitted cost while running, else the configured cost; 0 with no definition. */
@@ -166,7 +167,7 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
 
     /** Ticks of the current or next batch, admitted duration or settings. */
     public int batchTicks() {
-        return hasJob() ? durationTicks : definition().map(d -> d.paramOrDefault("duration", 200)).orElse(0);
+        return hasJob() ? durationTicks : definition().map(d -> d.paramOrDefault("ticks_per_batch", 200)).orElse(0);
     }
 
     // ------------------------------------------------------------------
@@ -215,10 +216,10 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
      */
     private void tryAdmit() {
         MachineDefinition definition = definition().orElseThrow();
-        int rawPerBatch = definition.paramOrDefault("raw_per_batch_mb", 8000);
-        int purePerBatch = definition.paramOrDefault("pure_per_batch_mb", 8000);
-        int filtersPerBatch = definition.paramOrDefault("filters_per_batch", 1);
-        int ticks = definition.paramOrDefault("duration", 200);
+        int rawPerBatch = definition.paramOrDefault("raw_hydrogen_per_batch", 8000);
+        int purePerBatch = definition.paramOrDefault("fab_hydrogen_per_batch", 8000);
+        int filtersPerBatch = definition.paramOrDefault("filter_per_batch", 1);
+        int ticks = definition.paramOrDefault("ticks_per_batch", 200);
         int fe = definition.energyPerTick(null, com.euvcraft.lithmod.mc.EUVCRAFTMod.settings());
 
         // Validate definition params
@@ -261,6 +262,7 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
         }
         rawHydrogen.drainExact(rawPerBatch, false);
         rawCost = rawPerBatch;
+        outputCost = purePerBatch;
         filterCost = filtersPerBatch;
         durationTicks = ticks;
         fePerTick = fe;
@@ -274,7 +276,7 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
      */
     private void advanceJob() {
         // Check output tank has room
-        if (pureHydrogen.capacity() - pureHydrogen.amount() < rawCost) {
+        if (pureHydrogen.capacity() - pureHydrogen.amount() < outputCost) {
             return;
         }
         if (energySource().draw(fePerTick) != fePerTick) {
@@ -283,9 +285,10 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
         progress++;
         if (progress >= durationTicks) {
             // Completion: produce exact frozen pureH2 once, consume the pending input.
-            pureHydrogen.fillExact(rawCost, false);
+            pureHydrogen.fillExact(outputCost, false);
             pendingFilter = ItemStack.EMPTY;
             rawCost = 0;
+            outputCost = 0;
             filterCost = 0;
             durationTicks = 0;
             fePerTick = 0;
@@ -321,6 +324,7 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
             var returned = pendingFilter;
             pendingFilter = ItemStack.EMPTY;
             rawCost = 0;
+            outputCost = 0;
             filterCost = 0;
             durationTicks = 0;
             fePerTick = 0;
@@ -341,6 +345,7 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
         if (!pendingFilter.isEmpty()) {
             output.store("hydrogenPendingFilter", ItemStack.OPTIONAL_CODEC, pendingFilter);
             output.putInt("hydrogenRawCost", rawCost);
+            output.putInt("hydrogenOutputCost", outputCost);
             output.putInt("hydrogenFilterCost", filterCost);
             output.putInt("hydrogenDuration", durationTicks);
             output.putInt("hydrogenFePerTick", fePerTick);
@@ -355,6 +360,7 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
         pureHydrogen.restoreAmount(Math.clamp(input.getIntOr("hydrogenPureMb", 0), 0, WaterTank.MAX_CAPACITY));
         ItemStack savedFilter = input.read("hydrogenPendingFilter", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
         int savedRaw = input.getIntOr("hydrogenRawCost", 0);
+        int savedOutput = input.getIntOr("hydrogenOutputCost", 0);
         int savedFilters = input.getIntOr("hydrogenFilterCost", 0);
         int savedDuration = input.getIntOr("hydrogenDuration", 0);
         int savedFe = input.getIntOr("hydrogenFePerTick", -1);
@@ -365,13 +371,16 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
             // dropped rather than paid out or carried into a new job.
             pendingFilter = ItemStack.EMPTY;
             rawCost = 0;
+            outputCost = 0;
             filterCost = 0;
             durationTicks = 0;
             fePerTick = 0;
             progress = 0;
             recovery = false;
         } else {
-            boolean malformed = savedRaw < 1 || savedRaw > WaterTank.MAX_CAPACITY
+            boolean malformed = savedOutput < 1 || savedOutput > WaterTank.MAX_CAPACITY
+                    || savedFilter.getCount() != savedFilters || !savedFilter.is(ModItems.UTILITY_FILTER.get())
+                    || savedRaw < 1 || savedRaw > WaterTank.MAX_CAPACITY
                     || savedFilters < 1 || savedFilters > 64
                     || savedDuration < 1 || savedDuration > 72000
                     || savedFe < 0
@@ -381,12 +390,14 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
             if (malformed) {
                 // The original input is kept for recovery; the frozen numbers are discarded.
                 rawCost = 0;
+            outputCost = 0;
                 filterCost = 0;
                 durationTicks = 0;
                 fePerTick = 0;
                 progress = 0;
             } else {
                 rawCost = savedRaw;
+                outputCost = savedOutput;
                 filterCost = savedFilters;
                 durationTicks = savedDuration;
                 fePerTick = savedFe;
