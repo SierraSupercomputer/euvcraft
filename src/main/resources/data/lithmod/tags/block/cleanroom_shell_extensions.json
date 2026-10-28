@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "lithmod:euv_beam_line",
+    "lithmod:cleanroom_vacuum_port"
+  ]
+}

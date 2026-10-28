@@ -10,6 +10,7 @@ import net.neoforged.neoforge.capabilities.*;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 public final class CleanroomBlocks {
+ public static final net.minecraft.tags.TagKey<Block> SHELL_EXTENSIONS=net.minecraft.tags.TagKey.create(Registries.BLOCK,net.minecraft.resources.Identifier.fromNamespaceAndPath(EUVCRAFTMod.MODID,"cleanroom_shell_extensions"));
  public static final DeferredRegister.Blocks BLOCKS=DeferredRegister.createBlocks(EUVCRAFTMod.MODID);
  public static final DeferredRegister<BlockEntityType<?>> BES=DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE,EUVCRAFTMod.MODID);
  public static final DeferredRegister<MenuType<?>> MENUS=DeferredRegister.create(Registries.MENU,EUVCRAFTMod.MODID);
@@ -26,7 +27,7 @@ public final class CleanroomBlocks {
  public static final DeferredHolder<BlockEntityType<?>,BlockEntityType<CleanroomFilterBlockEntity>> FILTER_BE=BES.register("cleanroom_filter",()->new BlockEntityType<>(CleanroomFilterBlockEntity::new,FILTER.get()));
  public static final DeferredHolder<BlockEntityType<?>,BlockEntityType<CleanroomPortBlockEntity>> PORT_BE=BES.register("cleanroom_port",()->new BlockEntityType<>(CleanroomPortBlockEntity::new,POWER_PORT.get(),FLUID_PORT.get(),ITEM_PORT.get()));
  public static final DeferredHolder<MenuType<?>,MenuType<CleanroomMenu>> MENU=MENUS.register("cleanroom",()->IMenuTypeExtension.create(CleanroomMenu::new));
- public static boolean isShell(Block b){return b==FLOOR.get()||b==WALL.get()||b==WINDOW.get()||b==DOOR.get()||b==CONTROLLER.get()||b==FILTER.get()||b==POWER_PORT.get()||b==FLUID_PORT.get()||b==ITEM_PORT.get();}
+ public static boolean isShell(Block b){return b==FLOOR.get()||b==WALL.get()||b==WINDOW.get()||b==DOOR.get()||b==CONTROLLER.get()||b==FILTER.get()||b==POWER_PORT.get()||b==FLUID_PORT.get()||b==ITEM_PORT.get()||b.defaultBlockState().is(SHELL_EXTENSIONS);}
  public static void register(IEventBus bus){BLOCKS.register(bus);BES.register(bus);MENUS.register(bus);CleanroomItems.ITEMS.register(bus);bus.addListener(CleanroomBlocks::capabilities);}
  private static void capabilities(RegisterCapabilitiesEvent e){
   e.registerBlockEntity(Capabilities.Item.BLOCK,FILTER_BE.get(),(be,side)->be.items);
