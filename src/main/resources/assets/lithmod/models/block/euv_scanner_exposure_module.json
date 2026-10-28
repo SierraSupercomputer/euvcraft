@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "lithmod:block/euv_scanner_exposure_module",
+    "north": "lithmod:block/euv_scanner_exposure_module",
+    "south": "lithmod:block/euv_scanner_exposure_module",
+    "east": "lithmod:block/euv_scanner_exposure_module",
+    "west": "lithmod:block/euv_scanner_exposure_module",
+    "up": "lithmod:block/t4_unformed_casing",
+    "down": "lithmod:block/t4_unformed_casing"
+  }
+}

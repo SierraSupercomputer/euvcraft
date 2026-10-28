@@ -591,7 +591,7 @@ public final class PackagingGameTests {
         if (machine == null) {
             return;
         }
-        Tier tier = tier(helper, 7);
+        Tier tier = tier(helper, 8);
         if (tier == null) {
             return;
         }

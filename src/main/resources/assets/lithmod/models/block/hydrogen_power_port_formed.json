@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "lithmod:block/hydrogen_power_port_formed",
+    "north": "lithmod:block/hydrogen_power_port_formed",
+    "south": "lithmod:block/hydrogen_power_port_formed",
+    "east": "lithmod:block/hydrogen_power_port_formed",
+    "west": "lithmod:block/hydrogen_power_port_formed",
+    "up": "lithmod:block/t4_unformed_casing",
+    "down": "lithmod:block/t4_unformed_casing"
+  }
+}

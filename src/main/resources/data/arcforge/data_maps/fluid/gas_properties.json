@@ -1,0 +1,10 @@
+{
+  "values": {
+    "lithmod:fab_hydrogen": {
+      "color": "#CADBFF"
+    },
+    "lithmod:flowing_fab_hydrogen": {
+      "color": "#CADBFF"
+    }
+  }
+}

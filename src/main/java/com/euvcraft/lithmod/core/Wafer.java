@@ -30,6 +30,8 @@ public record Wafer(int layerIndex, float cumulativeRoll, int flags) {
 
     /** Reserved flags value; no flag is defined yet. */
     public static final int NO_FLAGS = 0;
+    /** Scrapped by contamination; only the aggregate lot status is public. */
+    public static final int CONTAMINATED = 1 << 30;
 
     /**
      * Cumulative roll of a wafer no roll has been applied to yet: the product of an

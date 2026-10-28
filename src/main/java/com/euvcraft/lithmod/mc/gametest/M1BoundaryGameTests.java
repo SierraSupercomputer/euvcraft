@@ -595,6 +595,8 @@ public final class M1BoundaryGameTests {
         Set<String> cleanroom = Set.of("cleanroom_floor","cleanroom_wall","cleanroom_window","cleanroom_door","cleanroom_controller","cleanroom_filter","cleanroom_power_port","cleanroom_fluid_port","cleanroom_item_port","foup_cleaner");
         expected.addAll(cleanroom);
         expected.addAll(Set.of("zone_refiner","zone_casing","zone_power_port","zone_operating_panel","zone_water_inlet","reflow_oven","reflow_casing","reflow_power_port","reflow_operating_panel","reflow_calibration_panel","scanner_multipatterning_module"));
+        Set<String> t7=Set.of("g3_reticle_writer","g3_deposition_etcher","g3_casing","g3_power_port","g3_operating_panel","g3_water_inlet","g3_writing_module","g3_metrology_module","g3_deposition_module","g3_rinse_module","g3_vacuum_module","euv_scanner_controller","euv_scanner_operating_panel","euv_scanner_calibration_panel","euv_scanner_exposure_module","euv_scanner_optics_module","euv_scanner_stage_module","euv_scanner_filtration_module","euv_scanner_metrology_module","euv_scanner_vacuum_module","euv_scanner_diagnostic_panel","euv_scanner_water_inlet","euv_scanner_power_port","euv_scanner_casing","euv_light_source_controller","euv_light_source_operating_panel","euv_light_source_tin_inlet","euv_light_source_hydrogen_inlet","euv_light_source_vacuum_module","euv_light_source_power_port","euv_light_source_casing","euv_beam_line","hydrogen_purifier","hydrogen_casing","hydrogen_power_port","hydrogen_gas_inlet","hydrogen_gas_outlet","hydrogen_operating_panel","central_vacuum_plant","vacuum_casing","vacuum_power_port","vacuum_operating_panel","vacuum_service_conduit","cleanroom_vacuum_port","vacuum_service_outlet");
+        expected.addAll(t7);
         var registry = net.minecraft.core.registries.BuiltInRegistries.BLOCK;
         Identifier fixture = Identifier.parse("lithmod:test_machine");
         if (registry.containsKey(fixture)) expected.add("test_machine");
@@ -608,6 +610,12 @@ public final class M1BoundaryGameTests {
             helper.setBlock(pos, Blocks.AIR);
             helper.setBlock(pos, block);
             BlockEntity be = level.getBlockEntity(helper.absolutePos(pos));
+            if(t7.contains(id.getPath())){
+                helper.assertTrue(be!=null,"Explicit T7 registered BE role: "+id);
+                var absolute=helper.absolutePos(pos);var sides=new java.util.ArrayList<Direction>(java.util.List.of(Direction.values()));sides.add(null);
+                for(var side:sides){helper.assertTrue(level.getCapability(Capabilities.Item.BLOCK,absolute,side)==null,"Unformed T7 cannot automate items: "+id+side);helper.assertTrue(level.getCapability(Capabilities.Fluid.BLOCK,absolute,side)==null,"Unformed T7 cannot automate fluids: "+id+side);helper.assertTrue(level.getCapability(Capabilities.Energy.BLOCK,absolute,side)==null,"Unowned T7 port has no energy target: "+id+side);}
+                checked.add(id.getPath());continue;
+            }
             if(cleanroom.contains(id.getPath())){
                 boolean passive=Set.of("cleanroom_floor","cleanroom_wall","cleanroom_window","cleanroom_door").contains(id.getPath());
                 helper.assertTrue(passive?be==null:be!=null,"Explicit cleanroom block-entity inventory: "+id);

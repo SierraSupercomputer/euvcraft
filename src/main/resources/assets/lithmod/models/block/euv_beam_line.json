@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "lithmod:block/euv_beam_line",
+    "north": "lithmod:block/euv_beam_line",
+    "south": "lithmod:block/euv_beam_line",
+    "east": "lithmod:block/euv_beam_line",
+    "west": "lithmod:block/euv_beam_line",
+    "up": "lithmod:block/t4_unformed_casing",
+    "down": "lithmod:block/t4_unformed_casing"
+  }
+}

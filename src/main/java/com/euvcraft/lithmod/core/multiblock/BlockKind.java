@@ -42,5 +42,14 @@ public enum BlockKind {
     /** Metrology module block - exactly one required in scanner middle layer. */
     METROLOGY_MODULE,
     /** T6 upgrade; appended to preserve old ordinals. */
-    MULTIPATTERNING_MODULE
+    MULTIPATTERNING_MODULE,
+    /** T7 roles appended to retain existing saved ordinals. */
+    DEPOSITION_MODULE,
+    GAS_INLET,
+    GAS_OUTLET,
+    RINSE_MODULE,
+    VACUUM_CONDUIT,
+    VACUUM_MODULE,
+    VACUUM_PORT,
+    WRITING_MODULE
 }

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CGC",
+    "RPR",
+    "CGC"
+  ],
+  "key": {
+    "C": "lithmod:euv_scanner_casing",
+    "G": "minecraft:glass",
+    "R": "minecraft:redstone",
+    "P": "lithmod:compute_chip_t6"
+  },
+  "result": {
+    "id": "lithmod:euv_scanner_operating_panel",
+    "count": 1
+  }
+}

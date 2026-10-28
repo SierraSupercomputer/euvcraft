@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "lithmod:block/vacuum_service_outlet_formed",
+    "north": "lithmod:block/vacuum_service_outlet_formed",
+    "south": "lithmod:block/vacuum_service_outlet_formed",
+    "east": "lithmod:block/vacuum_service_outlet_formed",
+    "west": "lithmod:block/vacuum_service_outlet_formed",
+    "up": "lithmod:block/t4_unformed_casing",
+    "down": "lithmod:block/t4_unformed_casing"
+  }
+}

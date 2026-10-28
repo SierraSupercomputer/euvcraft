@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CCD",
+    "DGG",
+    "MGG"
+  ],
+  "key": {
+    "G": "minecraft:gold_ingot",
+    "D": "minecraft:diamond",
+    "C": "lithmod:compute_chip_t6",
+    "M": "lithmod:memory_chip_t6"
+  },
+  "result": {
+    "id": "lithmod:euv_filtration",
+    "count": 1
+  }
+}

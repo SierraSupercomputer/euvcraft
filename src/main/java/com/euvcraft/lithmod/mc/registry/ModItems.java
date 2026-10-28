@@ -45,6 +45,9 @@ public final class ModItems {
     /** Registry of EUVCRAFT items. */
     public static final Items ITEMS = DeferredRegister.createItems(EUVCRAFTMod.MODID);
 
+    /** Provisional craftable tin supply; its JSON recipe can be replaced by ore refining later. */
+    public static final DeferredItem<Item> TIN_FEEDSTOCK = ITEMS.registerSimpleItem("tin_feedstock");
+
     public static final DeferredItem<BlockItem> SCANNER_CONTROLLER = ITEMS.registerSimpleBlockItem("scanner_controller", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.CONTROLLER.get());
     public static final DeferredItem<BlockItem> SCANNER_OPERATING_PANEL = ITEMS.registerSimpleBlockItem("scanner_operating_panel", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.OPERATING_PANEL.get());
     public static final DeferredItem<BlockItem> SCANNER_CALIBRATION_PANEL = ITEMS.registerSimpleBlockItem("scanner_calibration_panel", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.CALIBRATION_PANEL.get());
@@ -423,6 +426,19 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> REFLOW_OPERATING_PANEL = ITEMS.registerSimpleBlockItem("reflow_operating_panel", () -> com.euvcraft.lithmod.mc.multiblock.reflow.ReflowMachines.OPERATING_PANEL.get());
     public static final DeferredItem<BlockItem> REFLOW_CALIBRATION_PANEL = ITEMS.registerSimpleBlockItem("reflow_calibration_panel", () -> com.euvcraft.lithmod.mc.multiblock.reflow.ReflowMachines.CALIBRATION_PANEL.get());
     public static final DeferredItem<BlockItem> SCANNER_MULTIPATTERNING_MODULE = ITEMS.registerSimpleBlockItem("scanner_multipatterning_module", () -> com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.MULTIPATTERNING_MODULE.get());
+
+    public static final DeferredItem<Item> COMPUTE_CHIP_T7 = ITEMS.registerSimpleItem("compute_chip_t7");
+    public static final DeferredItem<Item> MEMORY_CHIP_T7 = ITEMS.registerSimpleItem("memory_chip_t7");
+    public static final DeferredItem<Item> NAND_CHIP_T7 = ITEMS.registerSimpleItem("nand_chip_t7");
+    public static final DeferredItem<Item> CPU_T7 = ITEMS.registerSimpleItem("cpu_t7");
+    public static final DeferredItem<Item> DIMM_T7 = ITEMS.registerSimpleItem("dimm_t7");
+    public static final DeferredItem<Item> RESIST_T7 = ITEMS.registerSimpleItem("resist_t7", p -> p.component(ModDataComponents.RESIST_TIER, 7));
+
+    public static final DeferredItem<LineComponentItem> EUV_LIGHT_SOURCE = ITEMS.registerItem("euv_light_source", p -> new LineComponentItem(p,"light_source",7), p -> p.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> EUV_OPTICS = ITEMS.registerItem("euv_optics", p -> new LineComponentItem(p,"optics",7), p -> p.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> EUV_STAGE = ITEMS.registerItem("euv_stage", p -> new LineComponentItem(p,"stage",7), p -> p.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> EUV_FILTRATION = ITEMS.registerItem("euv_filtration", p -> new LineComponentItem(p,"cleanroom",7), p -> p.stacksTo(1));
+    public static final DeferredItem<LineComponentItem> EUV_METROLOGY = ITEMS.registerItem("euv_metrology", p -> new LineComponentItem(p,"metrology",7), p -> p.stacksTo(1));
 
     private ModItems() {
     }

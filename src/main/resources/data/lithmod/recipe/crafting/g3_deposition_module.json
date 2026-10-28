@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CCC",
+    "CGG",
+    "PMP"
+  ],
+  "key": {
+    "C": "lithmod:g3_casing",
+    "G": "minecraft:gold_ingot",
+    "P": "lithmod:compute_chip_t6",
+    "M": "lithmod:memory_chip_t6"
+  },
+  "result": {
+    "id": "lithmod:g3_deposition_module",
+    "count": 1
+  }
+}

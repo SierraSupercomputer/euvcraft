@@ -304,7 +304,9 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
             return;
         }
         refreshDefinition();
-        if (!processingAllowed()) { this.paused=isQueueActive(); publish(); return; }
+        if (!processingAllowed() || isQueueActive() && designTierIndex >= 7 && !enclosedForT7()) {
+            this.paused=isQueueActive(); publish(); return;
+        }
 
         boolean changed;
         if (isQueueActive()) {
@@ -444,14 +446,28 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
         boolean chipItemAvailable = ChipCatalog.chipFor(spec.dieType(), spec.tierIndex()).isPresent();
         PackagingRefusalReason refusal=PackagingRules.validate(lot, tier, chipItemAvailable, matrix, installedGeneration());
         if(refusal!=null)return refusal;
+        int targetTier = spec.tierIndex();
         if(highBinningEnabled()){
             var recipe=com.euvcraft.lithmod.mc.data.HighBinningDataLoader.getRegistry()
                 .flatMap(registry->registry.forSource(spec.dieType(),spec.tierIndex()));
             if(installedGeneration()<2||recipe.isEmpty()
                 ||ChipCatalog.chipFor(spec.dieType(),recipe.get().transition().targetTier()).isEmpty())
                 return PackagingRefusalReason.NO_CHIP_FOR_DIE;
+            targetTier = recipe.orElseThrow().transition().targetTier();
         }
+        if (targetTier >= 7 && !enclosedForT7()) return PackagingRefusalReason.CLEANROOM_REQUIRED;
         return null;
+    }
+
+    /** Uses the complete installed machine footprint, never an empty membership. */
+    private boolean enclosedForT7() {
+        if (!(level instanceof ServerLevel server)) return false;
+        var members = this instanceof com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOwner owner
+            ? owner.members() : List.of(getBlockPos());
+        if (members.isEmpty()) return false;
+        var sample = com.euvcraft.lithmod.mc.cleanroom.CleanroomRooms.sample(server, members);
+        return sample.available() && sample.room() != null
+            && sample.room().state() == com.euvcraft.lithmod.mc.cleanroom.CleanroomControllerBlockEntity.ENCLOSED;
     }
 
     /**

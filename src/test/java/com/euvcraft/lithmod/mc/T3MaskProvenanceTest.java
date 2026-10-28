@@ -123,12 +123,12 @@ class T3MaskProvenanceTest {
             assertThrows(RuntimeException.class, () -> MaskDataCodec.STREAM_CODEC.decode(buf0));
         } finally { buf0.release(); }
 
-        // GEN3
+        // Unknown GEN4
         ByteBuf buf3 = Unpooled.buffer();
         ByteBufCodecs.STRING_UTF8.encode(buf3, LOGIC);
         ByteBufCodecs.VAR_INT.encode(buf3, 1);
         ByteBufCodecs.VAR_INT.encode(buf3, 4);
-        ByteBufCodecs.VAR_INT.encode(buf3, 3);
+        ByteBufCodecs.VAR_INT.encode(buf3, 4);
         try {
             assertThrows(RuntimeException.class, () -> MaskDataCodec.STREAM_CODEC.decode(buf3));
         } finally { buf3.release(); }
@@ -200,9 +200,9 @@ class T3MaskProvenanceTest {
         String reason = result.error().orElseThrow().message();
         assertTrue(reason.contains("shopGeneration") || reason.contains("generation"));
 
-        json.addProperty("shop_generation", 3);
+        json.addProperty("shop_generation", 4);
         result = MaskDataCodec.CODEC.parse(JsonOps.INSTANCE, json);
-        assertTrue(result.result().isEmpty(), "shop_generation=3 should be rejected");
+        assertTrue(result.result().isEmpty(), "shop_generation=4 should be rejected");
 
         json.addProperty("shop_generation", -1);
         result = MaskDataCodec.CODEC.parse(JsonOps.INSTANCE, json);

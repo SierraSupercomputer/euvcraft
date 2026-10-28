@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CGC",
+    "G G",
+    "CGC"
+  ],
+  "key": {
+    "C": "lithmod:euv_light_source_casing",
+    "G": "minecraft:glass"
+  },
+  "result": {
+    "id": "lithmod:euv_beam_line",
+    "count": 8
+  }
+}

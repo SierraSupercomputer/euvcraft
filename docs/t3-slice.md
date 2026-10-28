@@ -25,6 +25,9 @@ T3: KrF DUV; 24 layers; 100 ticks per layer.
 | ebeam_nand_t4 | 1 x lithmod:blank_mask | 48 x minecraft:redstone | 0 | 1 x lithmod:mask | 1600 | 2500 | 4000000 |
 | ebeam_nand_t5 | 1 x lithmod:blank_mask | 64 x minecraft:redstone | 0 | 1 x lithmod:mask | 2000 | 3000 | 6000000 |
 | ebeam_nand_t6 | 1 x lithmod:blank_mask | 64 x minecraft:redstone | 0 | 1 x lithmod:mask | 2400 | 4000 | 9600000 |
+| g3_compute_t7 | 1 x lithmod:blank_mask | 64 x minecraft:redstone | 0 | 1 x lithmod:mask | 3600 | 8000 | 28800000 |
+| g3_memory_t7 | 1 x lithmod:blank_mask | 64 x minecraft:redstone | 0 | 1 x lithmod:mask | 3600 | 8000 | 28800000 |
+| g3_nand_t7 | 1 x lithmod:blank_mask | 64 x minecraft:redstone | 0 | 1 x lithmod:mask | 3600 | 8000 | 28800000 |
 
 Both support machines are 2 wide x 2 high x 3 deep. Place one controller in either lower front column, one or two support power ports, and support casings in the other positions. Power enters through a formed owned port.
 

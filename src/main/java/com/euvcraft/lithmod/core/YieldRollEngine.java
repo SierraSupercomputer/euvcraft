@@ -140,6 +140,7 @@ public final class YieldRollEngine {
     public static FoupContents applyLayerStep(FoupContents lot, Tier tier, String dieType, Integer cores, int layerNumber,
             double defectFactor, FabSettings settings, double frozenYieldFactor, RollSource rolls) {
         Objects.requireNonNull(lot, "lot must not be null");
+        if (lot.isContaminated()) throw new IllegalArgumentException("Contaminated wafers require the FOUP cleaner");
         Objects.requireNonNull(tier, "tier must not be null");
         Objects.requireNonNull(dieType, "dieType must not be null");
         Objects.requireNonNull(settings, "settings must not be null");
@@ -214,7 +215,7 @@ public final class YieldRollEngine {
             processed.add(new Wafer(layerNumber, stored(cumulative), wafer.flags()));
         }
 
-        FoupContents next = new FoupContents(lot.lotId(), lot.capacity(), processed, lot.run(), lot.grade(), lot.preparationGeneration(), lot.roomExposure(), lot.roomYieldPermille());
+        FoupContents next = new FoupContents(lot.lotId(), lot.capacity(), processed, lot.run(), lot.grade(), lot.preparationGeneration(), lot.roomExposure(), lot.roomYieldPermille(), lot.g3Preparation());
         if (firstLayer) {
             next = next.withRun(spec);
         }
@@ -239,6 +240,7 @@ public final class YieldRollEngine {
      */
     public static boolean[] evaluate(FoupContents lot, Tier tier, String dieType, Integer cores) {
         Objects.requireNonNull(lot, "lot must not be null");
+        if (lot.isContaminated()) throw new IllegalArgumentException("Contaminated wafers require the FOUP cleaner");
         Objects.requireNonNull(tier, "tier must not be null");
         Objects.requireNonNull(dieType, "dieType must not be null");
 
@@ -255,7 +257,8 @@ public final class YieldRollEngine {
 
         boolean[] outcomes = new boolean[lot.size()];
         for (int waferIndex = 0; waferIndex < lot.size(); waferIndex++) {
-            outcomes[waferIndex] = YieldMath.passes(lot.wafers().get(waferIndex).cumulativeRoll(), spec.effectiveYield());
+            outcomes[waferIndex] = lot.wafers().get(waferIndex).cumulativeRoll()
+                > PreparedYieldRules.threshold(spec, PreparedYieldRules.multiplier(lot, waferIndex));
         }
         return outcomes;
     }
@@ -291,6 +294,7 @@ public final class YieldRollEngine {
      */
     public static void requireCompleteLot(FoupContents lot, Tier tier) {
         Objects.requireNonNull(lot, "lot must not be null");
+        if (lot.isContaminated()) throw new IllegalArgumentException("Contaminated wafers require the FOUP cleaner");
         Objects.requireNonNull(tier, "tier must not be null");
 
         for (int waferIndex = 0; waferIndex < lot.size(); waferIndex++) {

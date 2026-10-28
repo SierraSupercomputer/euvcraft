@@ -132,8 +132,8 @@ public final class ProcessCellRunPersistence {
             Objects.requireNonNull(grade, "grade must not be null");
 
             // Validate tier index (M1 playable: 1, 2, or 3)
-            if (tier.index() < 1 || tier.index() > 6) {
-                throw new IllegalArgumentException("tier index must be 1 through 6, got " + tier.index());
+            if (tier.index() < 1 || tier.index() > 7) {
+                throw new IllegalArgumentException("tier index must be 1 through 7, got " + tier.index());
             }
 
             // Validate die type
@@ -284,9 +284,9 @@ public final class ProcessCellRunPersistence {
                 SupportLines.SUBSTRATE, grade.generation(),
                 SupportLines.MASK_SHOP, maskData.shopGeneration(),
                 SupportLines.DEPOSITION_ETCH, preparationGeneration,
-                SupportLines.UTILITIES, components.stream().allMatch(component -> ComponentCatalog.tierOf(component) >= 5) ? 2 : 1,
+                SupportLines.UTILITIES, components.stream().allMatch(component -> ComponentCatalog.tierOf(component) >= 7) ? 3 : components.stream().allMatch(component -> ComponentCatalog.tierOf(component) >= 5) ? 2 : 1,
                 SupportLines.TEST_PACKAGING, 1);
-            if (preparationGeneration<1||preparationGeneration>2) throw new IllegalArgumentException("Invalid preparation generation");
+            if (preparationGeneration<1||preparationGeneration>3) throw new IllegalArgumentException("Invalid preparation generation");
             if (matrix.unmetLines(installed, tier).stream().anyMatch(line->!SupportLines.TEST_PACKAGING.equals(line.lineId()))) {
                 throw new IllegalArgumentException("Frozen installed generations do not satisfy the accepted tier");
             }
@@ -364,7 +364,7 @@ public final class ProcessCellRunPersistence {
                 SupportLines.SUBSTRATE, this.grade.generation(),
                 SupportLines.MASK_SHOP, maskData.shopGeneration(),
                 SupportLines.DEPOSITION_ETCH, preparationGeneration,
-                SupportLines.UTILITIES, components.stream().allMatch(component -> ComponentCatalog.tierOf(component) >= 5) ? 2 : 1,
+                SupportLines.UTILITIES, components.stream().allMatch(component -> ComponentCatalog.tierOf(component) >= 7) ? 3 : components.stream().allMatch(component -> ComponentCatalog.tierOf(component) >= 5) ? 2 : 1,
                 SupportLines.TEST_PACKAGING, 1);
 
             // Compute cores: T3 compute uses core count 1, others null

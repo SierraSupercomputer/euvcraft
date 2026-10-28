@@ -6,7 +6,7 @@ public final class CleanroomYield {
     public static FoupContents finish(FoupContents lot, Tier tier) {
         if(lot.roomYieldPermille()!=0)return lot;
         YieldRollEngine.requireCompleteLot(lot,tier);
-        if((tier.index()!=5&&tier.index()!=6)||lot.run()==null)return lot;
+        if((tier.index()!=5&&tier.index()!=6&&tier.index()!=7)||lot.run()==null)return lot;
         int factor=lot.roomExposure().meanPermille();
         RunSpec old=lot.run();double nextYield=old.effectiveYield()*factor/1000.0;
         // Every layer uses the same frozen calibration and defect factor; the latter
@@ -15,6 +15,6 @@ public final class CleanroomYield {
         var wafers=lot.wafers().stream().map(w->new Wafer(w.layerIndex(),
             Math.max(Float.MIN_VALUE,(float)StrictMath.pow(w.cumulativeRoll(),ratio)),w.flags())).toList();
         var spec=new RunSpec(old.dieType(),old.tierIndex(),old.cores(),nextYield,old.rollCount());
-        return new FoupContents(lot.lotId(),lot.capacity(),wafers,spec,lot.grade(),lot.preparationGeneration(),lot.roomExposure(),factor);
+        return new FoupContents(lot.lotId(),lot.capacity(),wafers,spec,lot.grade(),lot.preparationGeneration(),lot.roomExposure(),factor,lot.g3Preparation());
     }
 }

@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "lithmod:fab_hydrogen",
+    "lithmod:flowing_fab_hydrogen"
+  ]
+}

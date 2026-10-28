@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CDC",
+    "PMP",
+    "CDC"
+  ],
+  "key": {
+    "C": "lithmod:euv_scanner_casing",
+    "D": "minecraft:diamond",
+    "P": "lithmod:cpu_t6",
+    "M": "lithmod:memory_chip_t6"
+  },
+  "result": {
+    "id": "lithmod:euv_scanner_controller",
+    "count": 1
+  }
+}

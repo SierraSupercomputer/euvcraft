@@ -14,6 +14,7 @@ import com.euvcraft.lithmod.core.RunSpec;
 import com.euvcraft.lithmod.core.Wafer;
 import com.euvcraft.lithmod.core.WaferPacking;
 import com.euvcraft.lithmod.core.WaferSubstrate;
+import com.euvcraft.lithmod.core.t7.G3Preparation;
 import com.euvcraft.lithmod.mc.network.FoupNetworkContext;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
@@ -90,6 +91,9 @@ public final class FoupContentsCodec {
     /** Field holding the preparation generation (optional, new in T4 preparation). */
     public static final String KEY_PREPARATION = "preparation";
 
+    /** Field holding the hidden G3 preparation evidence (optional, new in T7 G3 preparation). */
+    public static final String KEY_G3_PREPARATION = "g3Preparation";
+
     /**
      * Lot id used by {@link #fromPublicView(int, int, int)} and
      * {@link #fromPublicView(int, int, int, String)}.
@@ -126,11 +130,49 @@ public final class FoupContentsCodec {
 
     /** Preparation generation codec: optional, defaults to 1 ONLY when absent; unknown/malformed/out-of-range fail closed. */
     private static final Codec<Integer> PREPARATION_CODEC = Codec.INT.validate(i -> {
-        if (i < FoupContents.PREPARATION_LEGACY || i > FoupContents.PREPARATION_G2) {
-            return DataResult.error(() -> "Invalid preparation generation: " + i + " (must be 1 or 2)");
+        if (i < FoupContents.PREPARATION_LEGACY || i > FoupContents.PREPARATION_G3) {
+            return DataResult.error(() -> "Invalid preparation generation: " + i + " (must be 1, 2 or 3)");
         }
         return DataResult.success(i);
     });
+
+    private record G3Fields(int meanPermille, boolean redacted, int[] factors) {
+    }
+
+    /**
+     * Hidden G3 evidence codec. The factor array is packed as one NBT int array and
+     * bounded by {@link G3Preparation#MAX_WAFERS}; every value is revalidated by
+     * {@link G3Preparation#fromStored(int, java.util.List, boolean)}. A redacted
+     * value decoded from persistent data is rejected later by
+     * {@link #persistable(FoupContents)} so a save cannot manufacture a valid
+     * prepared result without its factors.
+     */
+    private static final Codec<G3Preparation> G3_PREPARATION_CODEC = RecordCodecBuilder.<G3Fields>create(instance -> instance.group(
+        Codec.intRange(0, G3Preparation.MAX_PERMILLE).fieldOf("meanPermille").forGetter(G3Fields::meanPermille),
+        Codec.BOOL.optionalFieldOf("redacted", false).forGetter(G3Fields::redacted),
+        INT_ARRAY.optionalFieldOf("factors", new int[0]).forGetter(G3Fields::factors)
+    ).apply(instance, G3Fields::new)).comapFlatMap(fields -> {
+        try {
+            return DataResult.success(G3Preparation.fromStored(fields.meanPermille(), boxed(fields.factors()), fields.redacted()));
+        } catch (IllegalArgumentException invalid) {
+            return DataResult.error(() -> "Invalid G3 preparation evidence: " + invalid.getMessage());
+        }
+    }, preparation -> new G3Fields(preparation.cleanroomMeanPermille(), preparation.isRedacted(), preparation.factorArray()));
+
+    private static List<Integer> boxed(int[] values) {
+        List<Integer> boxed = new ArrayList<>(values.length);
+        for (int value : values) {
+            boxed.add(value);
+        }
+        return boxed;
+    }
+
+    private static DataResult<FoupContents> persistable(FoupContents contents) {
+        if (contents.g3Preparation().isRedacted()) {
+            return DataResult.error(() -> "A redacted G3 preparation cannot be stored");
+        }
+        return DataResult.success(contents);
+    }
 
     /**
      * The largest full private payload this stream codec will write or read, sized so a
@@ -155,21 +197,44 @@ public final class FoupContentsCodec {
     },e->new ExposureFields(e.samples(),e.permilleSum()));
 
     /** Persistent private state; roomExposure uses stable serialized keys ticks and sum for samples/permilleSum, independent of Java accessor names. */
-    public static final Codec<FoupContents> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-        UUIDUtil.CODEC.fieldOf(KEY_LOT).forGetter(FoupContents::lotId),
-        Codec.INT.fieldOf(KEY_CAPACITY).forGetter(FoupContents::capacity),
-        INT_ARRAY.fieldOf(KEY_LAYERS).forGetter(contents -> WaferPacking.packLayers(contents.wafers())),
-        INT_ARRAY.fieldOf(KEY_ROLLS).forGetter(contents -> WaferPacking.packRollBits(contents.wafers())),
-        INT_ARRAY.fieldOf(KEY_FLAGS).forGetter(contents -> WaferPacking.packFlags(contents.wafers())),
-        RunSpecCodec.CODEC.optionalFieldOf(KEY_RUN_SPEC).forGetter(c -> java.util.Optional.ofNullable(c.run())),
-        GRADE_CODEC.optionalFieldOf(KEY_GRADE, WaferSubstrate.ORDINARY).forGetter(FoupContents::grade),
-        PREPARATION_CODEC.optionalFieldOf(KEY_PREPARATION, FoupContents.PREPARATION_LEGACY).forGetter(FoupContents::preparationGeneration),
-        EXPOSURE_CODEC.optionalFieldOf("roomExposure", com.euvcraft.lithmod.core.cleanroom.CleanroomExposure.empty()).forGetter(FoupContents::roomExposure),
-        Codec.intRange(0,1000).optionalFieldOf("roomYieldPermille",0).forGetter(FoupContents::roomYieldPermille)
-    ).apply(instance, (lotId, capacity, layers, rollBits, flags, runSpec, grade, preparationGeneration, exposure, roomYield) ->
-        new FoupContents(lotId, capacity,
-            WaferPacking.unpack(layers, WaferPacking.unpackRollBits(rollBits), flags),
-            runSpec.orElse(null), grade, preparationGeneration, exposure, roomYield)));
+    private record LotFields(UUID lot, int capacity, int[] layers, int[] rolls, int[] flags,
+            java.util.Optional<RunSpec> run, WaferSubstrate grade, int generation,
+            com.euvcraft.lithmod.core.cleanroom.CleanroomExposure exposure, int roomYield, G3Preparation preparation) {}
+
+    private static final Codec<FoupContents> BASE_CODEC = RecordCodecBuilder.<LotFields>create(instance -> instance.group(
+        UUIDUtil.CODEC.fieldOf(KEY_LOT).forGetter(LotFields::lot),
+        Codec.INT.fieldOf(KEY_CAPACITY).forGetter(LotFields::capacity),
+        INT_ARRAY.fieldOf(KEY_LAYERS).forGetter(LotFields::layers),
+        INT_ARRAY.fieldOf(KEY_ROLLS).forGetter(LotFields::rolls),
+        INT_ARRAY.fieldOf(KEY_FLAGS).forGetter(LotFields::flags),
+        RunSpecCodec.CODEC.optionalFieldOf(KEY_RUN_SPEC).forGetter(LotFields::run),
+        GRADE_CODEC.optionalFieldOf(KEY_GRADE, WaferSubstrate.ORDINARY).forGetter(LotFields::grade),
+        PREPARATION_CODEC.optionalFieldOf(KEY_PREPARATION, FoupContents.PREPARATION_LEGACY).forGetter(LotFields::generation),
+        EXPOSURE_CODEC.optionalFieldOf("roomExposure", com.euvcraft.lithmod.core.cleanroom.CleanroomExposure.empty()).forGetter(LotFields::exposure),
+        Codec.intRange(0,1000).optionalFieldOf("roomYieldPermille",0).forGetter(LotFields::roomYield),
+        G3_PREPARATION_CODEC.optionalFieldOf(KEY_G3_PREPARATION, G3Preparation.none()).forGetter(LotFields::preparation)
+    ).apply(instance, LotFields::new)).comapFlatMap(fields -> {
+        try {
+            return DataResult.success(new FoupContents(fields.lot(), fields.capacity(),
+                WaferPacking.unpack(fields.layers(), WaferPacking.unpackRollBits(fields.rolls()), fields.flags()),
+                fields.run().orElse(null), fields.grade(), fields.generation(), fields.exposure(), fields.roomYield(), fields.preparation()));
+        } catch (IllegalArgumentException | IllegalStateException invalid) {
+            return DataResult.error(() -> "Invalid FOUP state: " + invalid.getMessage());
+        }
+    }, contents -> new LotFields(contents.lotId(), contents.capacity(),
+        WaferPacking.packLayers(contents.wafers()), WaferPacking.packRollBits(contents.wafers()), WaferPacking.packFlags(contents.wafers()),
+        java.util.Optional.ofNullable(contents.run()), contents.grade(), contents.preparationGeneration(), contents.roomExposure(), contents.roomYieldPermille(), contents.g3Preparation()));
+
+    /**
+     * Persistent private state. A missing G3 field is the old-save fallback and
+     * means "no evidence"; a present generation 3 without valid evidence fails
+     * closed in the {@link FoupContents} constructor. A redacted (public-only)
+     * value cannot be stored because that would manufacture a prepared result
+     * without its factors.
+     */
+    public static final Codec<FoupContents> CODEC = BASE_CODEC.flatXmap(
+        FoupContentsCodec::persistable,
+        FoupContentsCodec::persistable);
 
     /**
      * Network form: the public view only including the wafer substrate grade and preparation generation.
@@ -204,10 +269,12 @@ public final class FoupContentsCodec {
             int waferCount = ByteBufCodecs.VAR_INT.decode(buffer);
             int lotLayer = ByteBufCodecs.VAR_INT.decode(buffer);
             String gradeId = ByteBufCodecs.STRING_UTF8.decode(buffer);
-            int preparation = ByteBufCodecs.VAR_INT.decode(buffer);
+            int wirePreparation = ByteBufCodecs.VAR_INT.decode(buffer);
+            boolean contaminated = (wirePreparation & 256) != 0;
+            int preparation = wirePreparation & ~256;
             int flag = buffer.readUnsignedByte();
             if (flag == FLAG_NONE) {
-                return fromPublicView(capacity, waferCount, lotLayer, gradeId, preparation);
+                return fromPublicView(capacity, waferCount, lotLayer, gradeId, preparation, contaminated);
             }
             if (flag != FLAG_FULL) {
                 throw new DecoderException("Unknown FOUP full-payload flag: " + flag);
@@ -221,7 +288,7 @@ public final class FoupContentsCodec {
                 // Not authorized for the real contents: consume so the frame stays framed,
                 // never allocate for or trust private bytes, and fall back to the public view.
                 buffer.skipBytes(length);
-                return fromPublicView(capacity, waferCount, lotLayer, gradeId, preparation);
+                return fromPublicView(capacity, waferCount, lotLayer, gradeId, preparation, contaminated);
             }
             try {
                 FoupContents full = readFullPayload(buffer.readSlice(length));
@@ -239,7 +306,8 @@ public final class FoupContentsCodec {
             ByteBufCodecs.VAR_INT.encode(buffer, contents.size());
             ByteBufCodecs.VAR_INT.encode(buffer, contents.lotLayer());
             ByteBufCodecs.STRING_UTF8.encode(buffer, contents.grade().id());
-            ByteBufCodecs.VAR_INT.encode(buffer, contents.preparationGeneration());
+            // The aggregate contamination bit is public; original per-wafer flags remain hidden.
+            ByteBufCodecs.VAR_INT.encode(buffer, contents.preparationGeneration() | (contents.isContaminated() ? 256 : 0));
             boolean fullAuthorized = FoupNetworkContext.current() == FoupNetworkContext.Payload.FULL
                 && !isClientView(contents);
             if (!fullAuthorized) {
@@ -300,18 +368,27 @@ public final class FoupContentsCodec {
 
     /**
      * The display clamp of {@link #fromPublicView(int, int, int, String, int)}: a
-     * preparation generation of {@link FoupContents#PREPARATION_G2} survives a
-     * network round trip only for a non-empty pure-or-better grade, which is the
-     * same rule the {@link FoupContents} record itself enforces. Repairing this
-     * with any other value would build a lot the record refuses.
+     * preparation generation survives a network round trip only when it is
+     * compatible with the transmitted grade and count. G2 needs a non-empty
+     * pure-or-better lot; G3 needs a non-empty electronic-grade-or-better lot and is
+     * represented on the client by {@link G3Preparation#redacted()}, which carries
+     * no factors. Repairing this with any other value would build a lot the record
+     * refuses.
      */
     private static int clampedPreparation(int preparationGeneration, int waferCount, WaferSubstrate grade) {
-        if (waferCount == 0 || grade.generation() < WaferSubstrate.PURE.generation()) {
+        if (waferCount == 0) {
             return FoupContents.PREPARATION_LEGACY;
         }
-        return (preparationGeneration >= FoupContents.PREPARATION_LEGACY
-            && preparationGeneration <= FoupContents.PREPARATION_G2)
-            ? preparationGeneration : FoupContents.PREPARATION_LEGACY;
+        if (preparationGeneration == FoupContents.PREPARATION_G3
+            && grade.generation() >= WaferSubstrate.ELECTRONIC_GRADE.generation()) {
+            return FoupContents.PREPARATION_G3;
+        }
+        if (preparationGeneration >= FoupContents.PREPARATION_LEGACY
+            && preparationGeneration <= FoupContents.PREPARATION_G2
+            && grade.generation() >= WaferSubstrate.PURE.generation()) {
+            return preparationGeneration;
+        }
+        return FoupContents.PREPARATION_LEGACY;
     }
 
     /**
@@ -337,17 +414,24 @@ public final class FoupContentsCodec {
      * @return the placeholder lot
      */
     static FoupContents fromPublicView(int capacity, int waferCount, int lotLayer, String gradeId, int preparationGeneration) {
+        return fromPublicView(capacity,waferCount,lotLayer,gradeId,preparationGeneration,false);
+    }
+
+    private static FoupContents fromPublicView(int capacity, int waferCount, int lotLayer, String gradeId, int preparationGeneration, boolean contaminated) {
         int safeCapacity = Math.max(1, capacity);
         int safeCount = Math.min(Math.max(0, waferCount), safeCapacity);
         int safeLayer = Math.max(Wafer.UNPROCESSED_LAYER, lotLayer);
         WaferSubstrate safeGrade = WaferSubstrate.fromIdOrDefault(gradeId);
         int safePreparation = clampedPreparation(preparationGeneration, safeCount, safeGrade);
+        G3Preparation safeEvidence = safePreparation == FoupContents.PREPARATION_G3
+            ? G3Preparation.redacted() : G3Preparation.none();
 
         List<Wafer> placeholders = new ArrayList<>(safeCount);
         for (int i = 0; i < safeCount; i++) {
-            placeholders.add(new Wafer(safeLayer, CLIENT_VIEW_ROLL, Wafer.NO_FLAGS));
+            placeholders.add(new Wafer(safeLayer, CLIENT_VIEW_ROLL, contaminated ? Wafer.CONTAMINATED : Wafer.NO_FLAGS));
         }
-        return new FoupContents(CLIENT_VIEW_LOT_ID, safeCapacity, placeholders, null, safeGrade, safePreparation);
+        return new FoupContents(CLIENT_VIEW_LOT_ID, safeCapacity, placeholders, null, safeGrade,
+            safePreparation, com.euvcraft.lithmod.core.cleanroom.CleanroomExposure.empty(), 0, safeEvidence);
     }
 
     /**
@@ -385,7 +469,12 @@ public final class FoupContentsCodec {
      */
     static FoupContents unstartedServerLot(FoupContents clientView) {
         if (!isClientView(clientView) || clientView.run() != null || clientView.isEmpty()
-            || clientView.size() > clientView.capacity()) {
+            || clientView.size() > clientView.capacity()
+            || clientView.preparationGeneration() == FoupContents.PREPARATION_G3
+            || clientView.g3Preparation().isPrepared() || clientView.isContaminated()) {
+            // A G3 public projection is redacted: its per-wafer factors are not
+            // recoverable, so rebuilding a server lot here would fabricate a valid
+            // prepared result. FULL Creative transport is the only lossless path.
             return null;
         }
         List<Wafer> rebuilt = new ArrayList<>(clientView.size());

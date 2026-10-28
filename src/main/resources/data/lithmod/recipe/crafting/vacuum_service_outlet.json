@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CCC",
+    "CPR",
+    "RRR"
+  ],
+  "key": {
+    "C": "lithmod:vacuum_casing",
+    "R": "minecraft:redstone",
+    "P": "minecraft:bucket"
+  },
+  "result": {
+    "id": "lithmod:vacuum_service_outlet",
+    "count": 1
+  }
+}

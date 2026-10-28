@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "lithmod:block/euv_light_source_vacuum_module",
+    "north": "lithmod:block/euv_light_source_vacuum_module",
+    "south": "lithmod:block/euv_light_source_vacuum_module",
+    "east": "lithmod:block/euv_light_source_vacuum_module",
+    "west": "lithmod:block/euv_light_source_vacuum_module",
+    "up": "lithmod:block/t4_unformed_casing",
+    "down": "lithmod:block/t4_unformed_casing"
+  }
+}

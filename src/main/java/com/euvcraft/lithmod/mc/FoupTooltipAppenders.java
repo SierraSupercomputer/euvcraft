@@ -28,6 +28,6 @@ public final class FoupTooltipAppenders {
     public static void register(RegisterTooltipAppendersEvent event) {
         event.registerComponentAppenderBeforeAll(ModDataComponents.FOUP_CONTENTS,
             TooltipAppender.createComponentAppender(ModDataComponents.FOUP_CONTENTS.get(),
-                contents -> new FoupTooltip(contents.publicView())));
+                contents -> new FoupTooltip(contents.publicView(),contents.isContaminated())));
     }
 }

@@ -5,15 +5,16 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
 
 ## Package Layout (parsed from actual package declarations)
 
-  - com.euvcraft.lithmod.core (60 files)
+  - com.euvcraft.lithmod.core (61 files)
   - com.euvcraft.lithmod.core.cleanroom (3 files)
-  - com.euvcraft.lithmod.core.multiblock (13 files)
-  - com.euvcraft.lithmod.mc (22 files)
+  - com.euvcraft.lithmod.core.multiblock (15 files)
+  - com.euvcraft.lithmod.core.t7 (10 files)
+  - com.euvcraft.lithmod.mc (23 files)
   - com.euvcraft.lithmod.mc.cleanroom (20 files)
   - com.euvcraft.lithmod.mc.compat (1 files)
   - com.euvcraft.lithmod.mc.compat.mixin (4 files)
   - com.euvcraft.lithmod.mc.data (14 files)
-  - com.euvcraft.lithmod.mc.gametest (37 files)
+  - com.euvcraft.lithmod.mc.gametest (40 files)
   - com.euvcraft.lithmod.mc.machine (4 files)
   - com.euvcraft.lithmod.mc.machine.cleaner (7 files)
   - com.euvcraft.lithmod.mc.machine.client (1 files)
@@ -25,13 +26,17 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
   - com.euvcraft.lithmod.mc.machine.silicon.client (1 files)
   - com.euvcraft.lithmod.mc.machine.silicon.screen (2 files)
   - com.euvcraft.lithmod.mc.machine.test (4 files)
-  - com.euvcraft.lithmod.mc.multiblock (12 files)
+  - com.euvcraft.lithmod.mc.multiblock (13 files)
   - com.euvcraft.lithmod.mc.multiblock.advanced (16 files)
   - com.euvcraft.lithmod.mc.multiblock.assembly (8 files)
+  - com.euvcraft.lithmod.mc.multiblock.euv (35 files)
+  - com.euvcraft.lithmod.mc.multiblock.g3 (32 files)
+  - com.euvcraft.lithmod.mc.multiblock.hydrogen (9 files)
   - com.euvcraft.lithmod.mc.multiblock.reflow (13 files)
   - com.euvcraft.lithmod.mc.multiblock.scanner (13 files)
   - com.euvcraft.lithmod.mc.multiblock.support (12 files)
   - com.euvcraft.lithmod.mc.multiblock.utilities (10 files)
+  - com.euvcraft.lithmod.mc.multiblock.vacuum (10 files)
   - com.euvcraft.lithmod.mc.multiblock.zone (11 files)
   - com.euvcraft.lithmod.mc.network (1 files)
   - com.euvcraft.lithmod.mc.recipe (4 files)
@@ -255,23 +260,30 @@ public static void setLogger(org.slf4j.Logger);
 ### com.euvcraft.lithmod.core.FoupContents
 ```java
 public com.euvcraft.lithmod.core.FoupContents(java.util.UUID, int, java.util.List<com.euvcraft.lithmod.core.Wafer>, com.euvcraft.lithmod.core.RunSpec, com.euvcraft.lithmod.core.WaferSubstrate, int);
+public com.euvcraft.lithmod.core.FoupContents(java.util.UUID, int, java.util.List<com.euvcraft.lithmod.core.Wafer>, com.euvcraft.lithmod.core.RunSpec, com.euvcraft.lithmod.core.WaferSubstrate, int, com.euvcraft.lithmod.core.cleanroom.CleanroomExposure, int);
 public com.euvcraft.lithmod.core.FoupContents(java.util.UUID, int, java.util.List<com.euvcraft.lithmod.core.Wafer>, com.euvcraft.lithmod.core.RunSpec, com.euvcraft.lithmod.core.WaferSubstrate);
 public com.euvcraft.lithmod.core.FoupContents(java.util.UUID, int, java.util.List<com.euvcraft.lithmod.core.Wafer>);
 public com.euvcraft.lithmod.core.FoupContents(java.util.UUID, int, java.util.List<com.euvcraft.lithmod.core.Wafer>, com.euvcraft.lithmod.core.RunSpec);
-public com.euvcraft.lithmod.core.FoupContents(java.util.UUID, int, java.util.List<com.euvcraft.lithmod.core.Wafer>, com.euvcraft.lithmod.core.RunSpec, com.euvcraft.lithmod.core.WaferSubstrate, int, com.euvcraft.lithmod.core.cleanroom.CleanroomExposure, int);
+public com.euvcraft.lithmod.core.FoupContents(java.util.UUID, int, java.util.List<com.euvcraft.lithmod.core.Wafer>, com.euvcraft.lithmod.core.RunSpec, com.euvcraft.lithmod.core.WaferSubstrate, int, com.euvcraft.lithmod.core.cleanroom.CleanroomExposure, int, com.euvcraft.lithmod.core.t7.G3Preparation);
 public com.euvcraft.lithmod.core.FoupContents withRoomExposure(com.euvcraft.lithmod.core.cleanroom.CleanroomExposure, int);
+public boolean isContaminated();
+public com.euvcraft.lithmod.core.FoupContents contaminated();
 public static com.euvcraft.lithmod.core.FoupContents of(java.util.UUID, int, java.util.List<com.euvcraft.lithmod.core.Wafer>, com.euvcraft.lithmod.core.WaferSubstrate);
 public static com.euvcraft.lithmod.core.FoupContents empty(java.util.UUID, int);
 public static com.euvcraft.lithmod.core.FoupContents empty(java.util.UUID, int, com.euvcraft.lithmod.core.WaferSubstrate);
 public int size();
 public boolean isEmpty();
 public boolean isFull();
+public boolean isPrepared();
+public boolean isG3Prepared();
 public com.euvcraft.lithmod.core.FoupContents withWafer(com.euvcraft.lithmod.core.Wafer);
 public com.euvcraft.lithmod.core.FoupContents withWafers(java.util.List<com.euvcraft.lithmod.core.Wafer>);
 public com.euvcraft.lithmod.core.FoupContents withoutWaferAt(int);
 public boolean isStarted();
 public com.euvcraft.lithmod.core.FoupContents withRun(com.euvcraft.lithmod.core.RunSpec);
+public com.euvcraft.lithmod.core.FoupContents withProcessedWafers(java.util.List<com.euvcraft.lithmod.core.Wafer>);
 public com.euvcraft.lithmod.core.FoupContents withPreparationGeneration(int);
+public com.euvcraft.lithmod.core.FoupContents preparedG3(int, int[]);
 public int lotLayer();
 public com.euvcraft.lithmod.core.FoupPublicView publicView();
 public java.lang.String toString();
@@ -285,10 +297,12 @@ public com.euvcraft.lithmod.core.WaferSubstrate grade();
 public int preparationGeneration();
 public com.euvcraft.lithmod.core.cleanroom.CleanroomExposure roomExposure();
 public int roomYieldPermille();
+public com.euvcraft.lithmod.core.t7.G3Preparation g3Preparation();
 ```
 
 ### com.euvcraft.lithmod.core.FoupDisposal
 ```java
+public static com.euvcraft.lithmod.core.FoupContents contaminate(com.euvcraft.lithmod.core.FoupContents);
 public static com.euvcraft.lithmod.core.FoupContents emptyCarrier(com.euvcraft.lithmod.core.FoupContents, java.util.UUID);
 public static int scrapCount(com.euvcraft.lithmod.core.FoupContents, int);
 ```
@@ -303,6 +317,8 @@ public static com.euvcraft.lithmod.core.FoupPublicView empty(int, com.euvcraft.l
 public static com.euvcraft.lithmod.core.FoupPublicView empty(int, com.euvcraft.lithmod.core.WaferSubstrate, int);
 public boolean isEmpty();
 public boolean isFull();
+public boolean isG2Prepared();
+public boolean isG3Prepared();
 public final java.lang.String toString();
 public final int hashCode();
 public final boolean equals(java.lang.Object);
@@ -588,6 +604,12 @@ public int energyPerTick();
 public boolean isFinished();
 public com.euvcraft.lithmod.core.PackagingRun$Snapshot save();
 public java.lang.String toString();
+```
+
+### com.euvcraft.lithmod.core.PreparedYieldRules
+```java
+public static double multiplier(com.euvcraft.lithmod.core.FoupContents, int);
+public static double threshold(com.euvcraft.lithmod.core.RunSpec, double);
 ```
 
 ### com.euvcraft.lithmod.core.ProcessEnvironment
@@ -1116,6 +1138,11 @@ public static com.euvcraft.lithmod.core.multiblock.BlockKind[] values();
 public static com.euvcraft.lithmod.core.multiblock.BlockKind valueOf(java.lang.String);
 ```
 
+### com.euvcraft.lithmod.core.multiblock.EuvStructureMatcher
+```java
+public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+```
+
 ### com.euvcraft.lithmod.core.multiblock.MatchResult
 ```java
 public com.euvcraft.lithmod.core.multiblock.MatchResult(boolean, java.util.List<com.euvcraft.lithmod.core.multiblock.MultiblockPos>, java.lang.String);
@@ -1191,6 +1218,12 @@ public int length();
 public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
 ```
 
+### com.euvcraft.lithmod.core.multiblock.T7UtilityStructureMatcher
+```java
+public static com.euvcraft.lithmod.core.multiblock.MatchResult matchPurifier(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+public static com.euvcraft.lithmod.core.multiblock.MatchResult matchVacuumPlant(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+```
+
 ### com.euvcraft.lithmod.core.multiblock.UtilityStructureMatcher
 ```java
 public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
@@ -1199,6 +1232,184 @@ public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraf
 ### com.euvcraft.lithmod.core.multiblock.ZoneStructureMatcher
 ```java
 public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+```
+
+### com.euvcraft.lithmod.core.t7.BreachConditions
+```java
+public com.euvcraft.lithmod.core.t7.BreachConditions(boolean, boolean, boolean);
+public boolean warrantsContamination();
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public boolean powered();
+public boolean loaded();
+public boolean activeT7Processing();
+```
+
+### com.euvcraft.lithmod.core.t7.BreachNotification
+```java
+public static com.euvcraft.lithmod.core.t7.BreachNotification[] values();
+public static com.euvcraft.lithmod.core.t7.BreachNotification valueOf(java.lang.String);
+```
+
+### com.euvcraft.lithmod.core.t7.CentralVacuumAllocator$Allocation
+```java
+public com.euvcraft.lithmod.core.t7.CentralVacuumAllocator$Allocation(int[]);
+public int[] allocatedMicroTorrPerTick();
+public int size();
+public int totalAllocatedMicroTorrPerTick();
+public int at(int);
+public boolean equals(java.lang.Object);
+public int hashCode();
+public java.lang.String toString();
+```
+
+### com.euvcraft.lithmod.core.t7.CentralVacuumAllocator
+```java
+public static com.euvcraft.lithmod.core.t7.CentralVacuumAllocator$Allocation allocate(int, int[], int);
+public static com.euvcraft.lithmod.core.t7.CentralVacuumAllocator$Allocation allocate(int, int[]);
+```
+
+### com.euvcraft.lithmod.core.t7.ContaminationRepairCost
+```java
+public com.euvcraft.lithmod.core.t7.ContaminationRepairCost(int, int, int);
+public static com.euvcraft.lithmod.core.t7.ContaminationRepairCost require(com.euvcraft.lithmod.core.t7.ContaminationRepairCost);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public int materialUnits();
+public int upwMilliBuckets();
+public int energyFe();
+```
+
+### com.euvcraft.lithmod.core.t7.G3Preparation
+```java
+public com.euvcraft.lithmod.core.t7.G3Preparation(int, java.util.List<java.lang.Integer>, boolean);
+public static com.euvcraft.lithmod.core.t7.G3Preparation none();
+public static com.euvcraft.lithmod.core.t7.G3Preparation redacted();
+public static com.euvcraft.lithmod.core.t7.G3Preparation of(int, java.util.List<java.lang.Integer>);
+public static com.euvcraft.lithmod.core.t7.G3Preparation commit(int, int[]);
+public static com.euvcraft.lithmod.core.t7.G3Preparation fromStored(int, java.util.List<java.lang.Integer>, boolean);
+public boolean isRedacted();
+public boolean isPrepared();
+public boolean hasFactors();
+public int factorCount();
+public int factorPermilleAt(int);
+public com.euvcraft.lithmod.core.t7.G3Preparation withoutFactorAt(int);
+public int[] factorArray();
+public java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public int cleanroomMeanPermille();
+public java.util.List<java.lang.Integer> waferFactorsPermille();
+public boolean redactedValue();
+```
+
+### com.euvcraft.lithmod.core.t7.MachineContaminationState$BreachResult
+```java
+public com.euvcraft.lithmod.core.t7.MachineContaminationState$BreachResult(com.euvcraft.lithmod.core.t7.MachineContaminationState, com.euvcraft.lithmod.core.t7.BreachNotification);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public com.euvcraft.lithmod.core.t7.MachineContaminationState state();
+public com.euvcraft.lithmod.core.t7.BreachNotification notification();
+```
+
+### com.euvcraft.lithmod.core.t7.MachineContaminationState$Phase
+```java
+public static com.euvcraft.lithmod.core.t7.MachineContaminationState$Phase[] values();
+public static com.euvcraft.lithmod.core.t7.MachineContaminationState$Phase valueOf(java.lang.String);
+```
+
+### com.euvcraft.lithmod.core.t7.MachineContaminationState$RecalibrationResult
+```java
+public com.euvcraft.lithmod.core.t7.MachineContaminationState$RecalibrationResult(com.euvcraft.lithmod.core.t7.MachineContaminationState, boolean);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public com.euvcraft.lithmod.core.t7.MachineContaminationState state();
+public boolean recalibrated();
+```
+
+### com.euvcraft.lithmod.core.t7.MachineContaminationState$RepairResult
+```java
+public com.euvcraft.lithmod.core.t7.MachineContaminationState$RepairResult(com.euvcraft.lithmod.core.t7.MachineContaminationState, boolean);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public com.euvcraft.lithmod.core.t7.MachineContaminationState state();
+public boolean charged();
+```
+
+### com.euvcraft.lithmod.core.t7.MachineContaminationState
+```java
+public com.euvcraft.lithmod.core.t7.MachineContaminationState(com.euvcraft.lithmod.core.t7.MachineContaminationState$Phase, long);
+public static com.euvcraft.lithmod.core.t7.MachineContaminationState clean();
+public static com.euvcraft.lithmod.core.t7.MachineContaminationState contaminated(long);
+public boolean isOperational();
+public boolean requiresRepair();
+public boolean requiresRecalibration();
+public com.euvcraft.lithmod.core.t7.MachineContaminationState$BreachResult notifyStructuralBreach(com.euvcraft.lithmod.core.t7.BreachConditions, long);
+public com.euvcraft.lithmod.core.t7.MachineContaminationState$RepairResult repair(com.euvcraft.lithmod.core.t7.ContaminationRepairCost);
+public com.euvcraft.lithmod.core.t7.MachineContaminationState$RecalibrationResult recalibrate();
+public java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public com.euvcraft.lithmod.core.t7.MachineContaminationState$Phase phase();
+public long lastBreachTick();
+```
+
+### com.euvcraft.lithmod.core.t7.VacuumChamberState
+```java
+public com.euvcraft.lithmod.core.t7.VacuumChamberState(int, int);
+public static com.euvcraft.lithmod.core.t7.VacuumChamberState evacuated();
+public static com.euvcraft.lithmod.core.t7.VacuumChamberState evacuated(int);
+public static com.euvcraft.lithmod.core.t7.VacuumChamberState at(int, int);
+public boolean canProcess(com.euvcraft.lithmod.core.t7.VacuumPumpSpec);
+public boolean isAboveOperatingPressure(com.euvcraft.lithmod.core.t7.VacuumPumpSpec);
+public int centralDemandMicroTorrPerTick(com.euvcraft.lithmod.core.t7.VacuumPumpSpec, com.euvcraft.lithmod.core.t7.VacuumMode);
+public int requiredServiceMicroTorrPerTick(com.euvcraft.lithmod.core.t7.VacuumPumpSpec, com.euvcraft.lithmod.core.t7.VacuumMode);
+public com.euvcraft.lithmod.core.t7.VacuumTickResult tick(com.euvcraft.lithmod.core.t7.VacuumPumpSpec, com.euvcraft.lithmod.core.t7.VacuumMode, int);
+public com.euvcraft.lithmod.core.t7.VacuumTickResult tick(com.euvcraft.lithmod.core.t7.VacuumPumpSpec, com.euvcraft.lithmod.core.t7.VacuumMode, int, boolean);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public int pressureMicroTorr();
+public int reserveMicroTorr();
+```
+
+### com.euvcraft.lithmod.core.t7.VacuumMode
+```java
+public static com.euvcraft.lithmod.core.t7.VacuumMode[] values();
+public static com.euvcraft.lithmod.core.t7.VacuumMode valueOf(java.lang.String);
+```
+
+### com.euvcraft.lithmod.core.t7.VacuumPumpSpec
+```java
+public com.euvcraft.lithmod.core.t7.VacuumPumpSpec(int, int, int, int, int, int);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public int pumpRateMicroTorrPerTick();
+public int idleLeakMicroTorrPerTick();
+public int processLoadMicroTorrPerTick();
+public int operatingPressureMicroTorr();
+public int reserveCapacityMicroTorr();
+public int reserveRechargeMicroTorrPerTick();
+```
+
+### com.euvcraft.lithmod.core.t7.VacuumTickResult
+```java
+public com.euvcraft.lithmod.core.t7.VacuumTickResult(com.euvcraft.lithmod.core.t7.VacuumChamberState, int, int, boolean, boolean);
+public int shortfallMicroTorrPerTick();
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public com.euvcraft.lithmod.core.t7.VacuumChamberState state();
+public int demandMicroTorrPerTick();
+public int suppliedMicroTorrPerTick();
+public boolean processingAllowed();
+public boolean paused();
 ```
 
 ### com.euvcraft.lithmod.mc.ChipCatalog$Design
@@ -1316,6 +1527,34 @@ public long ticks();
 public long sum();
 ```
 
+### com.euvcraft.lithmod.mc.FoupContentsCodec$G3Fields
+```java
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public int meanPermille();
+public boolean redacted();
+public int[] factors();
+```
+
+### com.euvcraft.lithmod.mc.FoupContentsCodec$LotFields
+```java
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public java.util.UUID lot();
+public int capacity();
+public int[] layers();
+public int[] rolls();
+public int[] flags();
+public java.util.Optional<com.euvcraft.lithmod.core.RunSpec> run();
+public com.euvcraft.lithmod.core.WaferSubstrate grade();
+public int generation();
+public com.euvcraft.lithmod.core.cleanroom.CleanroomExposure exposure();
+public int roomYield();
+public com.euvcraft.lithmod.core.t7.G3Preparation preparation();
+```
+
 ### com.euvcraft.lithmod.mc.FoupContentsCodec
 ```java
 public static com.euvcraft.lithmod.core.FoupContents fromPublicView(int, int, int);
@@ -1357,11 +1596,13 @@ public static com.euvcraft.lithmod.core.FoupContents contentsOf(net.minecraft.wo
 ### com.euvcraft.lithmod.mc.FoupTooltip
 ```java
 com.euvcraft.lithmod.mc.FoupTooltip(com.euvcraft.lithmod.core.FoupPublicView);
+com.euvcraft.lithmod.mc.FoupTooltip(com.euvcraft.lithmod.core.FoupPublicView, boolean);
 public void addToTooltip(net.minecraft.world.item.Item$TooltipContext, java.util.function.Consumer<net.minecraft.network.chat.Component>, net.minecraft.world.item.TooltipFlag, net.minecraft.core.component.DataComponentGetter);
 public final java.lang.String toString();
 public final int hashCode();
 public final boolean equals(java.lang.Object);
 public com.euvcraft.lithmod.core.FoupPublicView view();
+public boolean contaminated();
 ```
 
 ### com.euvcraft.lithmod.mc.FoupTooltipAppenders
@@ -1413,6 +1654,12 @@ public static int tierOf(net.minecraft.world.item.ItemStack);
 
 ### com.euvcraft.lithmod.mc.RunSpecCodec
 ```java
+```
+
+### com.euvcraft.lithmod.mc.T7Content
+```java
+public static void register(net.neoforged.bus.api.IEventBus);
+public static java.util.List<net.minecraft.world.item.Item> blockItems();
 ```
 
 ### com.euvcraft.lithmod.mc.cleanroom.CleanroomBlocks
@@ -2738,12 +2985,18 @@ public net.neoforged.neoforge.transfer.energy.EnergyHandler energy();
 ```java
 ```
 
+### com.euvcraft.lithmod.mc.multiblock.T7EnergyPort
+```java
+public static net.neoforged.neoforge.transfer.energy.EnergyHandler view(net.minecraft.world.level.block.entity.BlockEntity, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity, java.util.function.BooleanSupplier);
+```
+
 ### com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedCasingBlock
 ```java
 public com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedCasingBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
 protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition$Builder<net.minecraft.world.level.block.Block, net.minecraft.world.level.block.state.BlockState>);
 public net.minecraft.world.level.block.state.BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext);
 protected net.minecraft.world.level.block.state.BlockState rotate(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.Rotation);
+protected net.minecraft.world.level.block.state.BlockState mirror(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.Mirror);
 public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
 public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
 protected void neighborChanged(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.level.block.Block, net.minecraft.world.level.redstone.Orientation, boolean);
@@ -2964,6 +3217,986 @@ public boolean formed();
 ### com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyScreen
 ```java
 public com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyScreen(com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+protected boolean formed();
+protected boolean cabinet();
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvBeamlineBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvBeamlineBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
+public net.minecraft.world.level.block.RenderShape getRenderShape(net.minecraft.world.level.block.state.BlockState);
+public net.minecraft.world.phys.shapes.VoxelShape getShape(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.BlockGetter, net.minecraft.core.BlockPos, net.minecraft.world.phys.shapes.CollisionContext);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvBeamlineBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvBeamlineBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected com.euvcraft.lithmod.mc.multiblock.euv.EuvBeamlineBlockEntity(net.minecraft.world.level.block.entity.BlockEntityType<?>, net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public void serverTick();
+protected void loadAdditional(net.minecraft.world.level.storage.ValueInput);
+protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvBeamlineConnection
+```java
+static com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceControllerBlockEntity source(com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerControllerBlockEntity);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvClientEvents
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvClientEvents();
+public static void registerScreens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvFormation
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvFormation(com.euvcraft.lithmod.mc.multiblock.euv.EuvFormationOwner);
+public boolean formed();
+public java.lang.String failureReason();
+public java.util.List<net.minecraft.core.BlockPos> members();
+public net.minecraft.world.inventory.ContainerData data();
+public void validate();
+public void unload();
+public void detach();
+public com.euvcraft.lithmod.core.multiblock.MatchResult matchStructure(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvFormationOwner
+```java
+public abstract com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity machine();
+public abstract com.euvcraft.lithmod.mc.multiblock.euv.Formation formation();
+public default com.euvcraft.lithmod.core.multiblock.MatchResult matchStructure(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+public default boolean isFormed();
+public default void revalidate();
+public default java.util.List<net.minecraft.core.BlockPos> members();
+public abstract void onFormed();
+public abstract void onUnformed();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceControllerBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceControllerBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition$Builder<net.minecraft.world.level.block.Block, net.minecraft.world.level.block.state.BlockState>);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
+public net.minecraft.world.level.block.RenderShape getRenderShape(net.minecraft.world.level.block.state.BlockState);
+public net.minecraft.world.phys.shapes.VoxelShape getShape(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.BlockGetter, net.minecraft.core.BlockPos, net.minecraft.world.phys.shapes.CollisionContext);
+protected net.minecraft.world.level.block.state.BlockState rotate(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.Rotation);
+protected net.minecraft.world.level.block.state.BlockState mirror(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.Mirror);
+public net.minecraft.world.level.block.state.BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext);
+protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.entity.player.Player, net.minecraft.world.InteractionHand, net.minecraft.world.phys.BlockHitResult);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceControllerBlockEntity$SourceSnapshot
+```java
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public net.minecraft.world.item.ItemStack tin();
+public int credit();
+public net.minecraft.core.BlockPos scanner();
+public java.util.UUID installation();
+public long exposure();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceControllerBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceControllerBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected java.lang.String machineId();
+public net.minecraft.network.chat.Component getDisplayName();
+public com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity machine();
+public com.euvcraft.lithmod.mc.multiblock.euv.Formation formation();
+public boolean isFormed();
+public java.util.List<net.minecraft.core.BlockPos> members();
+public com.euvcraft.lithmod.core.multiblock.MatchResult matchStructure(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+public java.lang.String failureReason();
+public void onFormed();
+public void onUnformed();
+public int exposureFe();
+public int hydrogenPerTick();
+public int tinStored();
+public int tinCreditTicks();
+public boolean acceptsTin(net.neoforged.neoforge.transfer.item.ItemResource);
+public int insertTin(net.neoforged.neoforge.transfer.item.ItemResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public boolean hasScannerReservation();
+public com.euvcraft.lithmod.core.t7.VacuumChamberState vacuumState();
+public com.euvcraft.lithmod.core.t7.VacuumPumpSpec vacuumSpec();
+public boolean toggleIsolation();
+public boolean canExpose(com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerControllerBlockEntity);
+public boolean payExposure(com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerControllerBlockEntity, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public net.minecraft.core.BlockPos vacuumOwnerPos();
+public int vacuumDemand();
+public int vacuumCentralDemand();
+public boolean acceptVacuumGrant(long, int);
+public void serverTick();
+public void setRemoved();
+protected net.minecraft.world.inventory.AbstractContainerMenu createMachineMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
+protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput);
+protected void loadAdditional(net.minecraft.world.level.storage.ValueInput);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceDashboardMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceDashboardMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceControllerBlockEntity, net.minecraft.core.BlockPos);
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceDashboardMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+public int value(int);
+public boolean stillValid(net.minecraft.world.entity.player.Player);
+public net.minecraft.world.item.ItemStack quickMoveStack(net.minecraft.world.entity.player.Player, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceDashboardScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceDashboardScreen(com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceDashboardMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+public void extractBackground(net.minecraft.client.gui.GuiGraphicsExtractor, int, int, float);
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceFormation
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceFormation(com.euvcraft.lithmod.mc.multiblock.euv.EuvFormationOwner);
+public boolean formed();
+public java.lang.String failureReason();
+public java.util.List<net.minecraft.core.BlockPos> members();
+public net.minecraft.world.inventory.ContainerData data();
+public void validate();
+public void unload();
+public void detach();
+public com.euvcraft.lithmod.core.multiblock.MatchResult matchStructure(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceHydrogenHandler
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceHydrogenHandler(com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceMemberBlockEntity, com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceControllerBlockEntity);
+public int size();
+public net.neoforged.neoforge.transfer.fluid.FluidResource getResource(int);
+public long getAmountAsLong(int);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.fluid.FluidResource);
+public boolean isValid(int, net.neoforged.neoforge.transfer.fluid.FluidResource);
+public int insert(int, net.neoforged.neoforge.transfer.fluid.FluidResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.fluid.FluidResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int insert(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public boolean isValid(int, net.neoforged.neoforge.transfer.resource.Resource);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.resource.Resource);
+public net.neoforged.neoforge.transfer.resource.Resource getResource(int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceMemberBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceMemberBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties, com.euvcraft.lithmod.core.multiblock.BlockKind);
+protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition$Builder<net.minecraft.world.level.block.Block, net.minecraft.world.level.block.state.BlockState>);
+public com.euvcraft.lithmod.core.multiblock.BlockKind kind();
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
+public net.minecraft.world.level.block.RenderShape getRenderShape(net.minecraft.world.level.block.state.BlockState);
+public net.minecraft.world.phys.shapes.VoxelShape getShape(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.BlockGetter, net.minecraft.core.BlockPos, net.minecraft.world.phys.shapes.CollisionContext);
+protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.entity.player.Player, net.minecraft.world.InteractionHand, net.minecraft.world.phys.BlockHitResult);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceMemberBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceMemberBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceMemberBlockEntity(net.minecraft.world.level.block.entity.BlockEntityType<?>, net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public com.euvcraft.lithmod.core.multiblock.BlockKind structureKind();
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvFormationOwner controller();
+public boolean isMemberOfFormedCell();
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceControllerBlockEntity lightSource();
+public void attach(com.euvcraft.lithmod.mc.multiblock.euv.EuvFormationOwner, boolean);
+public java.util.UUID installation();
+public boolean supportsOwner(com.euvcraft.lithmod.mc.multiblock.euv.EuvFormationOwner);
+public void serverTick();
+public net.minecraft.network.chat.Component getDisplayName();
+public net.minecraft.world.inventory.AbstractContainerMenu createMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.world.entity.player.Player);
+protected void loadAdditional(net.minecraft.world.level.storage.ValueInput);
+protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput);
+public com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumConsumer vacuumConsumer();
+public net.neoforged.neoforge.transfer.energy.EnergyHandler power();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceOperatingMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceOperatingMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceControllerBlockEntity, net.minecraft.core.BlockPos);
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceOperatingMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+protected void addMachineSlots();
+public int value(int);
+public boolean stillValid(net.minecraft.world.entity.player.Player);
+public net.minecraft.world.item.ItemStack quickMoveStack(net.minecraft.world.entity.player.Player, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceOperatingScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceOperatingScreen(com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceOperatingMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+protected boolean formed();
+protected boolean cabinet();
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceTinHandler
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceTinHandler(com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceMemberBlockEntity, com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceControllerBlockEntity);
+public int size();
+public net.neoforged.neoforge.transfer.item.ItemResource getResource(int);
+public long getAmountAsLong(int);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.item.ItemResource);
+public boolean isValid(int, net.neoforged.neoforge.transfer.item.ItemResource);
+public int insert(int, net.neoforged.neoforge.transfer.item.ItemResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.item.ItemResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int insert(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public boolean isValid(int, net.neoforged.neoforge.transfer.resource.Resource);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.resource.Resource);
+public net.neoforged.neoforge.transfer.resource.Resource getResource(int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvMachines
+```java
+public static void register(net.neoforged.bus.api.IEventBus);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerCalibrationMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerCalibrationMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerControllerBlockEntity, net.minecraft.core.BlockPos);
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerCalibrationMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+public int value(int);
+public boolean calibration();
+public boolean stillValid(net.minecraft.world.entity.player.Player);
+public boolean clickMenuButton(net.minecraft.world.entity.player.Player, int);
+public net.minecraft.world.item.ItemStack quickMoveStack(net.minecraft.world.entity.player.Player, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerCalibrationScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerCalibrationScreen(com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerCalibrationMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+protected void init();
+protected void containerTick();
+public void extractBackground(net.minecraft.client.gui.GuiGraphicsExtractor, int, int, float);
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerControllerBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerControllerBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition$Builder<net.minecraft.world.level.block.Block, net.minecraft.world.level.block.state.BlockState>);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
+public net.minecraft.world.level.block.RenderShape getRenderShape(net.minecraft.world.level.block.state.BlockState);
+public net.minecraft.world.phys.shapes.VoxelShape getShape(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.BlockGetter, net.minecraft.core.BlockPos, net.minecraft.world.phys.shapes.CollisionContext);
+protected net.minecraft.world.level.block.state.BlockState rotate(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.Rotation);
+protected net.minecraft.world.level.block.state.BlockState mirror(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.Mirror);
+public net.minecraft.world.level.block.state.BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext);
+protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.entity.player.Player, net.minecraft.world.InteractionHand, net.minecraft.world.phys.BlockHitResult);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerControllerBlockEntity
+```java
+public java.util.UUID installationId();
+public boolean vacuumIsolated();
+public boolean hasReservedLightSource();
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerControllerBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected java.lang.String machineId();
+public net.minecraft.network.chat.Component getDisplayName();
+public com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity machine();
+public com.euvcraft.lithmod.mc.multiblock.euv.Formation formation();
+public boolean isFormed();
+public java.util.List<net.minecraft.core.BlockPos> members();
+public java.lang.String failureReason();
+public com.euvcraft.lithmod.core.multiblock.MatchResult matchStructure(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+public void revalidate();
+public void setRemoved();
+public int extractEnergy(int, boolean);
+public int upwPerTick();
+protected int utilityGeneration();
+protected int admissionPasses(com.euvcraft.lithmod.core.Tier);
+protected boolean supportsTier(com.euvcraft.lithmod.core.Tier);
+protected com.euvcraft.lithmod.core.RefusalReason admissionBlocker(com.euvcraft.lithmod.core.Tier);
+protected boolean readyForAdmission();
+protected double admissionYieldMultiplier();
+public com.euvcraft.lithmod.core.FoupContents applyLayer(com.euvcraft.lithmod.core.FoupContents, int, double);
+public com.euvcraft.lithmod.core.FoupContents processingTick(com.euvcraft.lithmod.core.FoupContents);
+public int operatingIssue();
+public boolean structureFormed();
+protected boolean inputsTemporarilyUnavailable();
+protected net.minecraft.world.item.ItemStack equipment(int);
+public boolean calibrated();
+public boolean diagnosed();
+public boolean operatingCalibrated();
+public int calibrationQuality();
+public double calibratedMultiplier();
+public com.euvcraft.lithmod.core.BeamAlignment alignment();
+public int minimumQuality();
+public double previewMultiplier();
+public boolean calibrationControl(int);
+public com.euvcraft.lithmod.core.DiagnosticFit diagnostic();
+public boolean diagnosticPlotted();
+public int diagnosticQuality();
+public int diagnosticMinimum();
+public double diagnosticPreview();
+public boolean plotDiagnostic(int, int, int);
+public boolean acceptDiagnostic();
+public com.euvcraft.lithmod.core.t7.VacuumChamberState vacuumState();
+public com.euvcraft.lithmod.core.t7.VacuumPumpSpec vacuumSpec();
+public com.euvcraft.lithmod.core.t7.VacuumTickResult tickVacuum(int, boolean);
+public int vacuumCentralDemand();
+public com.euvcraft.lithmod.core.t7.MachineContaminationState contaminationState();
+public void notifyStructuralBreach(com.euvcraft.lithmod.core.t7.BreachConditions, long);
+public boolean repair();
+public net.minecraft.core.BlockPos vacuumOwnerPos();
+public int vacuumDemand();
+public boolean acceptVacuumGrant(long, int);
+public boolean toggleVacuumIsolation();
+protected void loadAdditional(net.minecraft.world.level.storage.ValueInput);
+protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput);
+public void serverTick();
+protected void collectImplicitComponents(net.minecraft.core.component.DataComponentMap$Builder);
+protected void applyImplicitComponents(net.minecraft.core.component.DataComponentGetter);
+protected void dropExtraContents(net.minecraft.world.level.Level, net.minecraft.core.BlockPos);
+protected net.minecraft.world.inventory.AbstractContainerMenu createMachineMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
+public void onFormed();
+public void onUnformed();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerDashboardMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerDashboardMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerControllerBlockEntity, net.minecraft.core.BlockPos, boolean);
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerDashboardMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+public boolean calibration();
+public int value(int);
+public boolean stillValid(net.minecraft.world.entity.player.Player);
+public boolean clickMenuButton(net.minecraft.world.entity.player.Player, int);
+public net.minecraft.world.item.ItemStack quickMoveStack(net.minecraft.world.entity.player.Player, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerDashboardScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerDashboardScreen(com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerDashboardMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+protected void init();
+protected void containerTick();
+public void extractBackground(net.minecraft.client.gui.GuiGraphicsExtractor, int, int, float);
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerDiagnosticMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerDiagnosticMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerControllerBlockEntity, net.minecraft.core.BlockPos);
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerDiagnosticMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+public int value(int);
+public boolean stillValid(net.minecraft.world.entity.player.Player);
+public boolean clickMenuButton(net.minecraft.world.entity.player.Player, int);
+public net.minecraft.world.item.ItemStack quickMoveStack(net.minecraft.world.entity.player.Player, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerDiagnosticScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerDiagnosticScreen(com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerDiagnosticMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+protected void init();
+protected void containerTick();
+public void extractBackground(net.minecraft.client.gui.GuiGraphicsExtractor, int, int, float);
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerEquipmentMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerEquipmentMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerControllerBlockEntity, net.minecraft.core.BlockPos);
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerEquipmentMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+public int value(int);
+public boolean stillValid(net.minecraft.world.entity.player.Player);
+public boolean clickMenuButton(net.minecraft.world.entity.player.Player, int);
+public net.minecraft.world.item.ItemStack quickMoveStack(net.minecraft.world.entity.player.Player, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerEquipmentScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerEquipmentScreen(com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerEquipmentMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+protected void init();
+protected void containerTick();
+public void extractBackground(net.minecraft.client.gui.GuiGraphicsExtractor, int, int, float);
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerMemberBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerMemberBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties, com.euvcraft.lithmod.core.multiblock.BlockKind);
+protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition$Builder<net.minecraft.world.level.block.Block, net.minecraft.world.level.block.state.BlockState>);
+public com.euvcraft.lithmod.core.multiblock.BlockKind kind();
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
+public net.minecraft.world.level.block.RenderShape getRenderShape(net.minecraft.world.level.block.state.BlockState);
+public net.minecraft.world.phys.shapes.VoxelShape getShape(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.BlockGetter, net.minecraft.core.BlockPos, net.minecraft.world.phys.shapes.CollisionContext);
+protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.entity.player.Player, net.minecraft.world.InteractionHand, net.minecraft.world.phys.BlockHitResult);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerMemberBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerMemberBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerMemberBlockEntity(net.minecraft.world.level.block.entity.BlockEntityType<?>, net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public com.euvcraft.lithmod.core.multiblock.BlockKind structureKind();
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvFormationOwner controller();
+public boolean isMemberOfFormedCell();
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerControllerBlockEntity scanner();
+public void attach(com.euvcraft.lithmod.mc.multiblock.euv.EuvFormationOwner, boolean);
+public java.util.UUID installation();
+public boolean supportsOwner(com.euvcraft.lithmod.mc.multiblock.euv.EuvFormationOwner);
+public void serverTick();
+public net.minecraft.network.chat.Component getDisplayName();
+public net.minecraft.world.inventory.AbstractContainerMenu createMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.world.entity.player.Player);
+protected void loadAdditional(net.minecraft.world.level.storage.ValueInput);
+protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput);
+public com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumConsumer vacuumConsumer();
+public net.neoforged.neoforge.transfer.energy.EnergyHandler power();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerOperatingMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerOperatingMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerControllerBlockEntity, net.minecraft.core.BlockPos);
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerOperatingMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+public boolean isOperatingPanel();
+public boolean stillValid(net.minecraft.world.entity.player.Player);
+public int operatingIssue();
+public boolean hasLightSource();
+public boolean contaminated();
+public int waterCost();
+public int water();
+public boolean diagnosed();
+public boolean vacuumOk();
+public boolean calibrated();
+public int quality();
+public int multiplierPermille();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerOperatingScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerOperatingScreen(com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerOperatingMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+protected boolean formed();
+protected boolean cabinet();
+protected void init();
+protected void containerTick();
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+public void extractBackground(net.minecraft.client.gui.GuiGraphicsExtractor, int, int, float);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerWaterHandler
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerWaterHandler(com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerMemberBlockEntity, com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerControllerBlockEntity);
+public int size();
+public net.neoforged.neoforge.transfer.fluid.FluidResource getResource(int);
+public long getAmountAsLong(int);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.fluid.FluidResource);
+public boolean isValid(int, net.neoforged.neoforge.transfer.fluid.FluidResource);
+public int insert(int, net.neoforged.neoforge.transfer.fluid.FluidResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.fluid.FluidResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int insert(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public boolean isValid(int, net.neoforged.neoforge.transfer.resource.Resource);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.resource.Resource);
+public net.neoforged.neoforge.transfer.resource.Resource getResource(int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.Formation
+```java
+public abstract boolean formed();
+public abstract java.lang.String failureReason();
+public abstract java.util.List<net.minecraft.core.BlockPos> members();
+public abstract net.minecraft.world.inventory.ContainerData data();
+public abstract void validate();
+public abstract void unload();
+public abstract void detach();
+public abstract com.euvcraft.lithmod.core.multiblock.MatchResult matchStructure(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.LightSourceStructureMatcher
+```java
+public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3CasingBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3CasingBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3ClientEvents
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3ClientEvents();
+public static void screens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlock
+```java
+protected com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition$Builder<net.minecraft.world.level.block.Block, net.minecraft.world.level.block.state.BlockState>);
+public net.minecraft.world.phys.shapes.VoxelShape getShape(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.BlockGetter, net.minecraft.core.BlockPos, net.minecraft.world.phys.shapes.CollisionContext);
+public net.minecraft.world.level.block.RenderShape getRenderShape(net.minecraft.world.level.block.state.BlockState);
+public int getLightEmission(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.BlockGetter, net.minecraft.core.BlockPos);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected abstract net.minecraft.world.level.block.entity.BlockEntity createBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
+protected net.minecraft.world.level.block.state.BlockState rotate(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.Rotation);
+protected net.minecraft.world.level.block.state.BlockState mirror(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.Mirror);
+public net.minecraft.world.level.block.state.BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext);
+protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.entity.player.Player, net.minecraft.world.InteractionHand, net.minecraft.world.phys.BlockHitResult);
+protected void neighborChanged(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.level.block.Block, net.minecraft.world.level.redstone.Orientation, boolean);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity$PrepPhase
+```java
+public static com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity$PrepPhase[] values();
+public static com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity$PrepPhase valueOf(java.lang.String);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity$Status
+```java
+public static com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity$Status[] values();
+public static com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity$Status valueOf(java.lang.String);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity
+```java
+protected com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity(net.minecraft.world.level.block.entity.BlockEntityType<?>, net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState, com.euvcraft.lithmod.mc.multiblock.g3.G3MachineKind, int, int);
+public final com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity machine();
+public final com.euvcraft.lithmod.mc.multiblock.g3.G3Formation formation();
+public final com.euvcraft.lithmod.mc.multiblock.g3.G3MachineKind getKind();
+public final boolean large();
+public final com.euvcraft.lithmod.core.WaterTank waterTank();
+public com.euvcraft.lithmod.core.t7.VacuumChamberState vacuumState();
+public com.euvcraft.lithmod.core.t7.VacuumPumpSpec vacuumSpec();
+public com.euvcraft.lithmod.core.t7.MachineContaminationState contaminationState();
+public boolean hasJob();
+public int corePreference();
+public int selectedDesign();
+public boolean coresSelectable();
+public boolean cycleCores();
+public boolean selectDesign(int);
+public boolean toggleIsolation();
+public void serverTick();
+public int publicData(int);
+public boolean startWriterJob(java.lang.String, int);
+public boolean startPrepJob();
+public boolean notifyStructuralBreach(long);
+public boolean repair();
+public net.minecraft.core.BlockPos vacuumOwnerPos();
+public int vacuumDemand();
+public boolean acceptVacuumGrant(long, int);
+public void setRemoved();
+protected void collectImplicitComponents(net.minecraft.core.component.DataComponentMap$Builder);
+protected void applyImplicitComponents(net.minecraft.core.component.DataComponentGetter);
+protected void dropExtraContents(net.minecraft.world.level.Level, net.minecraft.core.BlockPos);
+protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput);
+protected void loadAdditional(net.minecraft.world.level.storage.ValueInput);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerOwner
+```java
+public abstract com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity machine();
+public abstract com.euvcraft.lithmod.mc.multiblock.g3.G3Formation formation();
+public abstract boolean large();
+public abstract com.euvcraft.lithmod.mc.multiblock.g3.G3MachineKind getKind();
+public default com.euvcraft.lithmod.core.multiblock.MatchResult matchStructure(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+public default boolean isFormed();
+public default void revalidate();
+public default java.util.List<net.minecraft.core.BlockPos> members();
+public default net.minecraft.world.inventory.ContainerData data();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3DepositionEtcherControllerBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3DepositionEtcherControllerBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+protected net.minecraft.world.level.block.entity.BlockEntity createBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3DepositionEtcherControllerBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3DepositionEtcherControllerBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected java.lang.String machineId();
+protected net.minecraft.world.inventory.AbstractContainerMenu createMachineMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3DepositionEtcherMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3DepositionEtcherMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity);
+public com.euvcraft.lithmod.mc.multiblock.g3.G3DepositionEtcherMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+protected void addMachineSlots();
+public boolean clickMenuButton(net.minecraft.world.entity.player.Player, int);
+public boolean stillValid(net.minecraft.world.entity.player.Player);
+public boolean writer();
+public boolean formed();
+public int value(int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3DepositionEtcherScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3DepositionEtcherScreen(com.euvcraft.lithmod.mc.multiblock.g3.G3DepositionEtcherMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3DepositionModuleBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3DepositionModuleBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3Formation
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3Formation(com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerOwner);
+public boolean formed();
+public java.lang.String failureReason();
+public java.util.List<net.minecraft.core.BlockPos> members();
+public boolean needsValidation();
+public int ticksSinceValidation();
+public void setNeedsValidation(boolean);
+public void setTicksSinceValidation(int);
+public void setValidating(boolean);
+public void setFailureReason(java.lang.String);
+public void setFormed(boolean);
+public void setMembers(java.util.List<net.minecraft.core.BlockPos>);
+public void validate();
+public void unload();
+public void detach();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3MachineKind
+```java
+public static com.euvcraft.lithmod.mc.multiblock.g3.G3MachineKind[] values();
+public static com.euvcraft.lithmod.mc.multiblock.g3.G3MachineKind valueOf(java.lang.String);
+public java.lang.String id();
+public static com.euvcraft.lithmod.mc.multiblock.g3.G3MachineKind ofMachine(java.lang.String);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3Machines
+```java
+public static void register(net.neoforged.bus.api.IEventBus);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3MemberBlock
+```java
+protected com.euvcraft.lithmod.mc.multiblock.g3.G3MemberBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition$Builder<net.minecraft.world.level.block.Block, net.minecraft.world.level.block.state.BlockState>);
+public net.minecraft.world.phys.shapes.VoxelShape getShape(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.BlockGetter, net.minecraft.core.BlockPos, net.minecraft.world.phys.shapes.CollisionContext);
+public net.minecraft.world.phys.shapes.VoxelShape getOcclusionShape(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.BlockGetter, net.minecraft.core.BlockPos);
+public net.minecraft.world.level.block.RenderShape getRenderShape(net.minecraft.world.level.block.state.BlockState);
+public int getLightEmission(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.BlockGetter, net.minecraft.core.BlockPos);
+public float getShadeBrightness(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.BlockGetter, net.minecraft.core.BlockPos);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3MemberBlockEntity
+```java
+protected com.euvcraft.lithmod.mc.multiblock.g3.G3MemberBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public final boolean isPowerPort();
+public final boolean isWaterInlet();
+public final boolean isOperatingPanel();
+public com.euvcraft.lithmod.core.multiblock.BlockKind structureKind();
+public com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity controller();
+public boolean supportsOwner(com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity);
+public boolean isMemberOfFormedMachine();
+public int part();
+public net.minecraft.core.Direction facing();
+public net.neoforged.neoforge.transfer.energy.EnergyHandler energy();
+public net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.fluid.FluidResource> waterInput();
+public void attach(com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity, boolean, int, net.minecraft.core.Direction);
+public void serverTick();
+public com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumConsumer vacuumConsumer();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3Menu
+```java
+com.euvcraft.lithmod.mc.multiblock.g3.G3Menu(net.minecraft.world.inventory.MenuType<?>, int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity, net.minecraft.core.BlockPos, boolean, com.euvcraft.lithmod.mc.multiblock.g3.G3MachineKind);
+public int value(int);
+public boolean formed();
+public boolean writer();
+public boolean stillValid(net.minecraft.world.entity.player.Player);
+public boolean clickMenuButton(net.minecraft.world.entity.player.Player, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3MetrologyModuleBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3MetrologyModuleBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3OperatingPanelBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3OperatingPanelBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
+protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.entity.player.Player, net.minecraft.world.InteractionHand, net.minecraft.world.phys.BlockHitResult);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3OperatingPanelMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3OperatingPanelMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity, net.minecraft.core.BlockPos);
+public com.euvcraft.lithmod.mc.multiblock.g3.G3OperatingPanelMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+protected void addMachineSlots();
+public boolean clickMenuButton(net.minecraft.world.entity.player.Player, int);
+public boolean stillValid(net.minecraft.world.entity.player.Player);
+public boolean writer();
+public boolean formed();
+public int value(int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3OperatingPanelScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3OperatingPanelScreen(com.euvcraft.lithmod.mc.multiblock.g3.G3OperatingPanelMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3PowerPortBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3PowerPortBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3ReticleWriterControllerBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3ReticleWriterControllerBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+protected net.minecraft.world.level.block.entity.BlockEntity createBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3ReticleWriterControllerBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3ReticleWriterControllerBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected java.lang.String machineId();
+protected net.minecraft.world.inventory.AbstractContainerMenu createMachineMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3ReticleWriterMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3ReticleWriterMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity);
+public com.euvcraft.lithmod.mc.multiblock.g3.G3ReticleWriterMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+protected void addMachineSlots();
+public boolean clickMenuButton(net.minecraft.world.entity.player.Player, int);
+public boolean stillValid(net.minecraft.world.entity.player.Player);
+public boolean writer();
+public boolean formed();
+public int value(int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3ReticleWriterScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3ReticleWriterScreen(com.euvcraft.lithmod.mc.multiblock.g3.G3ReticleWriterMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3RinseModuleBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3RinseModuleBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3Screen
+```java
+com.euvcraft.lithmod.mc.multiblock.g3.G3Screen(M, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+protected boolean formed();
+protected boolean cabinet();
+protected void init();
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3StructureMatcher$DepositionEtcherRequirements
+```java
+public com.euvcraft.lithmod.core.multiblock.BlockKind[] requiredModuleKinds();
+public boolean isMiddleLayer(int);
+public boolean hasFrames();
+public boolean allowModuleOnFrame(int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3StructureMatcher$G3Requirements
+```java
+public abstract com.euvcraft.lithmod.core.multiblock.BlockKind[] requiredModuleKinds();
+public abstract boolean isMiddleLayer(int);
+public abstract boolean hasFrames();
+public abstract boolean allowModuleOnFrame(int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3StructureMatcher$WriterRequirements
+```java
+public com.euvcraft.lithmod.core.multiblock.BlockKind[] requiredModuleKinds();
+public boolean isMiddleLayer(int);
+public boolean hasFrames();
+public boolean allowModuleOnFrame(int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3StructureMatcher
+```java
+public static com.euvcraft.lithmod.core.multiblock.MatchResult matchWriter(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+public static com.euvcraft.lithmod.core.multiblock.MatchResult matchDepositionEtcher(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3VacuumModuleBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3VacuumModuleBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3WaterInletBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3WaterInletBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3WaterInletHandler$TankJournal
+```java
+com.euvcraft.lithmod.mc.multiblock.g3.G3WaterInletHandler$TankJournal(com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity);
+protected java.lang.Integer createSnapshot();
+protected void revertToSnapshot(java.lang.Integer);
+protected void onRootCommit(java.lang.Integer);
+protected void onRootCommit(java.lang.Object);
+protected void revertToSnapshot(java.lang.Object);
+protected java.lang.Object createSnapshot();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3WaterInletHandler
+```java
+com.euvcraft.lithmod.mc.multiblock.g3.G3WaterInletHandler(com.euvcraft.lithmod.mc.multiblock.g3.G3MemberBlockEntity, com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity);
+public int size();
+public net.neoforged.neoforge.transfer.fluid.FluidResource getResource(int);
+public long getAmountAsLong(int);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.fluid.FluidResource);
+public boolean isValid(int, net.neoforged.neoforge.transfer.fluid.FluidResource);
+public int insert(int, net.neoforged.neoforge.transfer.fluid.FluidResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.fluid.FluidResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int insert(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public boolean isValid(int, net.neoforged.neoforge.transfer.resource.Resource);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.resource.Resource);
+public net.neoforged.neoforge.transfer.resource.Resource getResource(int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.g3.G3WritingModuleBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.g3.G3WritingModuleBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenClientEvents
+```java
+public static void screens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent);
+public static void fluids(net.neoforged.neoforge.client.event.RegisterFluidModelsEvent);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenControllerBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenControllerBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
+protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.entity.player.Player, net.minecraft.world.InteractionHand, net.minecraft.world.phys.BlockHitResult);
+protected void neighborChanged(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.level.block.Block, net.minecraft.world.level.redstone.Orientation, boolean);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenControllerBlockEntity$TankJournal
+```java
+com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenControllerBlockEntity$TankJournal(com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenControllerBlockEntity, com.euvcraft.lithmod.core.WaterTank);
+protected java.lang.Integer createSnapshot();
+protected void revertToSnapshot(java.lang.Integer);
+protected void onRootCommit(java.lang.Integer);
+protected void onRootCommit(java.lang.Object);
+protected void revertToSnapshot(java.lang.Object);
+protected java.lang.Object createSnapshot();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenControllerBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenControllerBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected java.lang.String machineId();
+public net.minecraft.network.chat.Component getDisplayName();
+public com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity machine();
+public com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedFormation formation();
+public boolean large();
+public com.euvcraft.lithmod.core.multiblock.MatchResult matchStructure(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+public int rawHydrogenAmount();
+public int rawHydrogenCapacity();
+public int pureHydrogenAmount();
+public int pureHydrogenCapacity();
+public int progress();
+public int duration();
+public boolean hasJob();
+public int batchRawMb();
+public int batchOutputMb();
+public int batchFilters();
+public int batchFePerTick();
+public int batchTicks();
+public void serverTick();
+public void setRemoved();
+protected void dropExtraContents(net.minecraft.world.level.Level, net.minecraft.core.BlockPos);
+protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput);
+protected void loadAdditional(net.minecraft.world.level.storage.ValueInput);
+protected net.minecraft.world.inventory.AbstractContainerMenu createMachineMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenFluids
+```java
+public static java.util.Optional<net.minecraft.world.level.material.Fluid> rawHydrogenFluid();
+public static java.util.Optional<net.neoforged.neoforge.fluids.FluidStack> rawHydrogenStack(int);
+public static void register(net.neoforged.bus.api.IEventBus);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenMachines
+```java
+public static void register(net.neoforged.bus.api.IEventBus);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenMemberBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenMemberBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties, com.euvcraft.lithmod.core.multiblock.BlockKind);
+public com.euvcraft.lithmod.core.multiblock.BlockKind kind();
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.entity.player.Player, net.minecraft.world.InteractionHand, net.minecraft.world.phys.BlockHitResult);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenMemberBlockEntity$HydrogenFluidHandler
+```java
+com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenMemberBlockEntity$HydrogenFluidHandler(com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenMemberBlockEntity, com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenControllerBlockEntity);
+public int size();
+public net.neoforged.neoforge.transfer.fluid.FluidResource getResource(int);
+public long getAmountAsLong(int);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.fluid.FluidResource);
+public boolean isValid(int, net.neoforged.neoforge.transfer.fluid.FluidResource);
+public int insert(int, net.neoforged.neoforge.transfer.fluid.FluidResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.fluid.FluidResource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int extract(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public int insert(int, net.neoforged.neoforge.transfer.resource.Resource, int, net.neoforged.neoforge.transfer.transaction.TransactionContext);
+public boolean isValid(int, net.neoforged.neoforge.transfer.resource.Resource);
+public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.resource.Resource);
+public net.neoforged.neoforge.transfer.resource.Resource getResource(int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenMemberBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenMemberBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public net.minecraft.world.inventory.AbstractContainerMenu createMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.world.entity.player.Player);
+public com.euvcraft.lithmod.core.multiblock.BlockKind kind();
+public boolean supportsOwner(com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOwner);
+protected boolean energyPort();
+public com.euvcraft.lithmod.core.multiblock.BlockKind structureKind();
+public net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.fluid.FluidResource> handler();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenControllerBlockEntity);
+public com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+protected void addMachineSlots();
+public boolean formed();
+public int rawHydrogen();
+public int rawHydrogenCapacity();
+public int pureHydrogen();
+public int pureHydrogenCapacity();
+public boolean active();
+public int batchRawMb();
+public int batchOutputMb();
+public int batchFilters();
+public int batchFePerTick();
+public int batchTicks();
+public int filterCount();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenScreen(com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
 protected boolean formed();
 protected boolean cabinet();
 protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
@@ -3723,6 +4956,106 @@ protected boolean cabinet();
 protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
 ```
 
+### com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumAccess
+```java
+public abstract com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumConsumer vacuumConsumer();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumClientEvents
+```java
+public static void screens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumConsumer
+```java
+public abstract net.minecraft.core.BlockPos vacuumOwnerPos();
+public abstract int vacuumDemand();
+public abstract boolean acceptVacuumGrant(long, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumControllerBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumControllerBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
+protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.entity.player.Player, net.minecraft.world.InteractionHand, net.minecraft.world.phys.BlockHitResult);
+protected void neighborChanged(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.level.block.Block, net.minecraft.world.level.redstone.Orientation, boolean);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumControllerBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumControllerBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected java.lang.String machineId();
+public net.minecraft.network.chat.Component getDisplayName();
+public com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity machine();
+public com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedFormation formation();
+public boolean large();
+public com.euvcraft.lithmod.core.multiblock.MatchResult matchStructure(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+public int networkCapacity();
+public int networkDemand();
+public int networkFePaused();
+public boolean networkConflict();
+public int networkClientCount();
+public boolean enabled();
+public void setEnabled(boolean);
+public long plantTick();
+public long discoveryEpoch();
+public void serverTick();
+public void setRemoved();
+protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput);
+protected void loadAdditional(net.minecraft.world.level.storage.ValueInput);
+protected net.minecraft.world.inventory.AbstractContainerMenu createMachineMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumMachines
+```java
+public static void register(net.neoforged.bus.api.IEventBus);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumMemberBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumMemberBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties, com.euvcraft.lithmod.core.multiblock.BlockKind);
+public com.euvcraft.lithmod.core.multiblock.BlockKind kind();
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.Level, net.minecraft.core.BlockPos, net.minecraft.world.entity.player.Player, net.minecraft.world.InteractionHand, net.minecraft.world.phys.BlockHitResult);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumMemberBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumMemberBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public net.minecraft.world.inventory.AbstractContainerMenu createMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.world.entity.player.Player);
+public com.euvcraft.lithmod.core.multiblock.BlockKind kind();
+public boolean supportsOwner(com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOwner);
+protected boolean energyPort();
+public com.euvcraft.lithmod.core.multiblock.BlockKind structureKind();
+public com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumConsumer vacuumConsumer();
+public void bindConsumer(com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumConsumer);
+public void clearConsumer();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumControllerBlockEntity);
+public com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+protected void addMachineSlots();
+public boolean formed();
+public int networkCapacity();
+public int networkDemand();
+public int networkFePaused();
+public boolean networkConflict();
+public int networkClientCount();
+public boolean enabled();
+public long plantTick();
+```
+
+### com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumScreen(com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+protected boolean formed();
+protected boolean cabinet();
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
 ### com.euvcraft.lithmod.mc.multiblock.zone.ZoneClientEvents
 ```java
 public static void screens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent);
@@ -3987,6 +5320,7 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 |------------|----|-----------------|-------------|-----------------|--------------|
 | src/main/resources/data/lithmod/machines/advanced_test_package.json | advanced_test_package | 1000000 | 20000 | 100 | production |
 | src/main/resources/data/lithmod/machines/boule_purifier.json | boule_purifier | 100000 | 10000 | 80 | production |
+| src/main/resources/data/lithmod/machines/central_vacuum_plant.json | central_vacuum_plant | 4000000 | 80000 | 350 | production |
 | src/main/resources/data/lithmod/machines/cleanroom_controller.json | cleanroom_controller | 200000 | 10000 | 0 | production |
 | src/main/resources/data/lithmod/machines/cleanroom_filter.json | cleanroom_filter | 200000 | 10000 | 0 | production |
 | src/main/resources/data/lithmod/machines/cleanroom_fluid_port.json | cleanroom_fluid_port | 1 | 1 | 0 | production |
@@ -3995,7 +5329,12 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/machines/crystal_puller.json | crystal_puller | 20000 | 2000 | 20 | production |
 | src/main/resources/data/lithmod/machines/deposition_etcher.json | deposition_etcher | 1000000 | 20000 | 1000 | production |
 | src/main/resources/data/lithmod/machines/ebeam_mask_writer.json | ebeam_mask_writer | 4000000 | 32000 | 2000 | production |
+| src/main/resources/data/lithmod/machines/euv_light_source.json | euv_light_source | 4000000 | 80000 | 1200 | production |
+| src/main/resources/data/lithmod/machines/euv_scanner.json | euv_scanner | 4000000 | 80000 | 960 | production |
 | src/main/resources/data/lithmod/machines/foup_cleaner.json | foup_cleaner | 40000 | 2000 | 20 | production |
+| src/main/resources/data/lithmod/machines/g3_deposition_etcher.json | g3_deposition_etcher | 4000000 | 80000 | 960 | production |
+| src/main/resources/data/lithmod/machines/g3_reticle_writer.json | g3_reticle_writer | 4000000 | 80000 | 8000 | production |
+| src/main/resources/data/lithmod/machines/hydrogen_purifier.json | hydrogen_purifier | 4000000 | 80000 | 600 | production |
 | src/main/resources/data/lithmod/machines/lithography_scanner.json | lithography_scanner | 1000000 | 20000 | 160 | production |
 | src/main/resources/data/lithmod/machines/pattern_generator.json | pattern_generator | 20000 | 2000 | 20 | production |
 | src/main/resources/data/lithmod/machines/pick_and_place.json | pick_and_place | 100000 | 5000 | 20 | production |
@@ -4036,6 +5375,24 @@ test_machine definitions/recipes are dropped before validation outside fixture m
   "per_tier_energy_per_tick": {},
   "params": {
     "water_capacity": 16000
+  }
+}
+```
+
+### src/main/resources/data/lithmod/machines/central_vacuum_plant.json
+
+```json
+{
+  "id": "central_vacuum_plant",
+  "energy_capacity": 4000000,
+  "max_receive": 80000,
+  "energy_per_tick": 350,
+  "params": {
+    "vacuum_max_nodes": 512,
+    "vacuum_standing_fe_per_tick": 120,
+    "vacuum_active_fe_per_tick": 350,
+    "vacuum_service_per_fe": 100,
+    "vacuum_capacity_microtorr_per_tick": 20000
   }
 }
 ```
@@ -4150,6 +5507,71 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 }
 ```
 
+### src/main/resources/data/lithmod/machines/euv_light_source.json
+
+```json
+{
+  "id": "euv_light_source",
+  "energy_capacity": 4000000,
+  "max_receive": 80000,
+  "energy_per_tick": 1200,
+  "params": {
+    "vacuum_pump_rate": 5000,
+    "vacuum_idle_leak": 100,
+    "vacuum_process_load": 2000,
+    "vacuum_operating_pressure": 10000,
+    "vacuum_reserve_capacity": 50000,
+    "vacuum_reserve_recharge": 1000,
+    "local_pump_fe_per_tick": 200,
+    "repair_upw_mb": 8000,
+    "repair_fe": 200000,
+    "repair_redstone": 16,
+    "repair_filter_medium": 2,
+    "contamination_ppm": 2500,
+    "contamination_ticks": 1200,
+    "hydrogen_capacity_mb": 32000,
+    "hydrogen_per_tick_mb": 10,
+    "tin_exposure_ticks": 1000,
+    "beamline_max_length": 16
+  }
+}
+```
+
+### src/main/resources/data/lithmod/machines/euv_scanner.json
+
+```json
+{
+  "id": "euv_scanner",
+  "energy_capacity": 4000000,
+  "max_receive": 80000,
+  "energy_per_tick": 960,
+  "params": {
+    "vacuum_pump_rate": 5000,
+    "vacuum_idle_leak": 100,
+    "vacuum_process_load": 2000,
+    "vacuum_operating_pressure": 10000,
+    "vacuum_reserve_capacity": 50000,
+    "vacuum_reserve_recharge": 1000,
+    "local_pump_fe_per_tick": 200,
+    "repair_upw_mb": 8000,
+    "repair_fe": 200000,
+    "repair_redstone": 16,
+    "repair_filter_medium": 2,
+    "contamination_ppm": 2500,
+    "contamination_ticks": 1200,
+    "calibration_min_quality": 50,
+    "calibration_min_multiplier_permille": 500,
+    "calibration_max_multiplier_permille": 1000,
+    "diagnostic_min_quality": 50,
+    "diagnostic_min_multiplier_permille": 500,
+    "diagnostic_max_multiplier_permille": 1000,
+    "upw_capacity_mb": 32000,
+    "upw_per_tick_mb": 5,
+    "beamline_max_length": 16
+  }
+}
+```
+
 ### src/main/resources/data/lithmod/machines/foup_cleaner.json
 
 ```json
@@ -4163,6 +5585,78 @@ test_machine definitions/recipes are dropped before validation outside fixture m
     "water_mb": 1000,
     "water_capacity_mb": 16000,
     "scrap_per_wafer": 1
+  }
+}
+```
+
+### src/main/resources/data/lithmod/machines/g3_deposition_etcher.json
+
+```json
+{
+  "id": "g3_deposition_etcher",
+  "energy_capacity": 4000000,
+  "max_receive": 80000,
+  "energy_per_tick": 960,
+  "params": {
+    "vacuum_pump_rate": 5000,
+    "vacuum_idle_leak": 100,
+    "vacuum_process_load": 2000,
+    "vacuum_operating_pressure": 10000,
+    "vacuum_reserve_capacity": 50000,
+    "vacuum_reserve_recharge": 1000,
+    "local_pump_fe_per_tick": 200,
+    "repair_upw_mb": 8000,
+    "repair_fe": 200000,
+    "repair_redstone": 16,
+    "repair_filter_medium": 2,
+    "contamination_ppm": 2500,
+    "contamination_ticks": 1200,
+    "water_capacity": 32000,
+    "vacuum_duration": 400,
+    "vacuum_energy_per_tick": 960,
+    "vacuum_demand_microtorr_per_tick": 2100,
+    "rinse_duration": 200,
+    "rinse_energy_per_tick": 480,
+    "rinse_water_mb": 4000,
+    "dry_duration": 200,
+    "dry_energy_per_tick": 960,
+    "preparation_min_draw_permille": 900
+  }
+}
+```
+
+### src/main/resources/data/lithmod/machines/g3_reticle_writer.json
+
+```json
+{
+  "id": "g3_reticle_writer",
+  "energy_capacity": 4000000,
+  "max_receive": 80000,
+  "energy_per_tick": 8000,
+  "params": {
+    "water_capacity": 16000,
+    "mask_min_uses_permille": 250,
+    "mask_max_uses_permille": 1000
+  }
+}
+```
+
+### src/main/resources/data/lithmod/machines/hydrogen_purifier.json
+
+```json
+{
+  "id": "hydrogen_purifier",
+  "energy_capacity": 4000000,
+  "max_receive": 80000,
+  "energy_per_tick": 600,
+  "params": {
+    "raw_capacity_mb": 32000,
+    "pure_capacity_mb": 32000,
+    "raw_hydrogen_per_batch": 8000,
+    "fab_hydrogen_per_batch": 6000,
+    "filter_per_batch": 1,
+    "ticks_per_batch": 400,
+    "fe_per_tick": 600
   }
 }
 ```
@@ -4358,9 +5852,9 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 }
 ```
 
-## Recipe Summary (129 actual resources: 127 production + 2 fixture-gated)
+## Recipe Summary (183 actual resources: 181 production + 2 fixture-gated)
 
-### Vanilla recipe datapack files (108 production)
+### Vanilla recipe datapack files (160 production)
 
 | Path | Type | Result | Count |
 |------|------|--------|-------|
@@ -4376,6 +5870,7 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/recipe/crafting/blank_mask.json | minecraft:crafting_shaped | lithmod:blank_mask | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/boule_purifier.json | minecraft:crafting_shaped | lithmod:boule_purifier | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/burn_paper.json | minecraft:crafting_shapeless | lithmod:burn_paper | 8 |
+| src/main/resources/data/lithmod/recipe/crafting/central_vacuum_plant.json | minecraft:crafting_shaped | lithmod:central_vacuum_plant | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/chip_package.json | minecraft:crafting_shaped | lithmod:chip_package | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/cleanroom_boots.json | minecraft:crafting_shaped | lithmod:cleanroom_boots | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/cleanroom_controller.json | minecraft:crafting_shaped | lithmod:cleanroom_controller | 1 |
@@ -4389,6 +5884,7 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/recipe/crafting/cleanroom_power_port.json | minecraft:crafting_shaped | lithmod:cleanroom_power_port | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/cleanroom_suit.json | minecraft:crafting_shaped | lithmod:cleanroom_suit | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/cleanroom_trousers.json | minecraft:crafting_shaped | lithmod:cleanroom_trousers | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/cleanroom_vacuum_port.json | minecraft:crafting_shaped | lithmod:cleanroom_vacuum_port | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/cleanroom_wall.json | minecraft:crafting_shaped | lithmod:cleanroom_wall | 4 |
 | src/main/resources/data/lithmod/recipe/crafting/cleanroom_window.json | minecraft:crafting_shaped | lithmod:cleanroom_window | 4 |
 | src/main/resources/data/lithmod/recipe/crafting/contact_plate.json | minecraft:crafting_shaped | lithmod:contact_plate | 1 |
@@ -4398,10 +5894,53 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/recipe/crafting/dimm_blank.json | minecraft:crafting_shaped | lithmod:dimm_blank | 2 |
 | src/main/resources/data/lithmod/recipe/crafting/duv_projection_lens.json | minecraft:crafting_shaped | lithmod:duv_projection_lens | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/ebeam_mask_writer.json | minecraft:crafting_shaped | lithmod:ebeam_mask_writer | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_beam_line.json | minecraft:crafting_shaped | lithmod:euv_beam_line | 8 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_filtration.json | minecraft:crafting_shaped | lithmod:euv_filtration | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_light_source.json | minecraft:crafting_shaped | lithmod:euv_light_source | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_light_source_casing.json | minecraft:crafting_shaped | lithmod:euv_light_source_casing | 8 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_light_source_controller.json | minecraft:crafting_shaped | lithmod:euv_light_source_controller | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_light_source_hydrogen_inlet.json | minecraft:crafting_shaped | lithmod:euv_light_source_hydrogen_inlet | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_light_source_operating_panel.json | minecraft:crafting_shaped | lithmod:euv_light_source_operating_panel | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_light_source_power_port.json | minecraft:crafting_shaped | lithmod:euv_light_source_power_port | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_light_source_tin_inlet.json | minecraft:crafting_shaped | lithmod:euv_light_source_tin_inlet | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_light_source_vacuum_module.json | minecraft:crafting_shaped | lithmod:euv_light_source_vacuum_module | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_metrology.json | minecraft:crafting_shaped | lithmod:euv_metrology | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_optics.json | minecraft:crafting_shaped | lithmod:euv_optics | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_scanner_calibration_panel.json | minecraft:crafting_shaped | lithmod:euv_scanner_calibration_panel | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_scanner_casing.json | minecraft:crafting_shaped | lithmod:euv_scanner_casing | 8 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_scanner_controller.json | minecraft:crafting_shaped | lithmod:euv_scanner_controller | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_scanner_diagnostic_panel.json | minecraft:crafting_shaped | lithmod:euv_scanner_diagnostic_panel | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_scanner_exposure_module.json | minecraft:crafting_shaped | lithmod:euv_scanner_exposure_module | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_scanner_filtration_module.json | minecraft:crafting_shaped | lithmod:euv_scanner_filtration_module | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_scanner_metrology_module.json | minecraft:crafting_shaped | lithmod:euv_scanner_metrology_module | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_scanner_operating_panel.json | minecraft:crafting_shaped | lithmod:euv_scanner_operating_panel | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_scanner_optics_module.json | minecraft:crafting_shaped | lithmod:euv_scanner_optics_module | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_scanner_power_port.json | minecraft:crafting_shaped | lithmod:euv_scanner_power_port | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_scanner_stage_module.json | minecraft:crafting_shaped | lithmod:euv_scanner_stage_module | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_scanner_vacuum_module.json | minecraft:crafting_shaped | lithmod:euv_scanner_vacuum_module | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_scanner_water_inlet.json | minecraft:crafting_shaped | lithmod:euv_scanner_water_inlet | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_stage.json | minecraft:crafting_shaped | lithmod:euv_stage | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/fine_air_filter.json | minecraft:crafting_shaped | lithmod:fine_air_filter | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/foup_cleaner.json | minecraft:crafting_shaped | lithmod:foup_cleaner | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/foup_mk1.json | minecraft:crafting_shaped | lithmod:foup_mk1 | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/g3_casing.json | minecraft:crafting_shaped | lithmod:g3_casing | 8 |
+| src/main/resources/data/lithmod/recipe/crafting/g3_deposition_etcher.json | minecraft:crafting_shaped | lithmod:g3_deposition_etcher | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/g3_deposition_module.json | minecraft:crafting_shaped | lithmod:g3_deposition_module | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/g3_metrology_module.json | minecraft:crafting_shaped | lithmod:g3_metrology_module | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/g3_operating_panel.json | minecraft:crafting_shaped | lithmod:g3_operating_panel | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/g3_power_port.json | minecraft:crafting_shaped | lithmod:g3_power_port | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/g3_reticle_writer.json | minecraft:crafting_shaped | lithmod:g3_reticle_writer | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/g3_rinse_module.json | minecraft:crafting_shaped | lithmod:g3_rinse_module | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/g3_vacuum_module.json | minecraft:crafting_shaped | lithmod:g3_vacuum_module | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/g3_water_inlet.json | minecraft:crafting_shaped | lithmod:g3_water_inlet | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/g3_writing_module.json | minecraft:crafting_shaped | lithmod:g3_writing_module | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/hepa_filter.json | minecraft:crafting_shaped | lithmod:hepa_filter | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/hydrogen_casing.json | minecraft:crafting_shaped | lithmod:hydrogen_casing | 8 |
+| src/main/resources/data/lithmod/recipe/crafting/hydrogen_gas_inlet.json | minecraft:crafting_shaped | lithmod:hydrogen_gas_inlet | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/hydrogen_gas_outlet.json | minecraft:crafting_shaped | lithmod:hydrogen_gas_outlet | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/hydrogen_operating_panel.json | minecraft:crafting_shaped | lithmod:hydrogen_operating_panel | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/hydrogen_power_port.json | minecraft:crafting_shaped | lithmod:hydrogen_power_port | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/hydrogen_purifier.json | minecraft:crafting_shaped | lithmod:hydrogen_purifier | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/i_line_lamp.json | minecraft:crafting_shaped | lithmod:i_line_lamp | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/immersion_filtration.json | minecraft:crafting_shapeless | lithmod:immersion_filtration | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/immersion_light_source.json | minecraft:crafting_shapeless | lithmod:immersion_light_source | 1 |
@@ -4441,6 +5980,7 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/recipe/crafting/resist_t4.json | minecraft:crafting_shaped | lithmod:resist_t4 | 16 |
 | src/main/resources/data/lithmod/recipe/crafting/resist_t5.json | minecraft:crafting_shaped | lithmod:resist_t5 | 8 |
 | src/main/resources/data/lithmod/recipe/crafting/resist_t6.json | minecraft:crafting_shaped | lithmod:resist_t6 | 8 |
+| src/main/resources/data/lithmod/recipe/crafting/resist_t7.json | minecraft:crafting_shapeless | lithmod:resist_t7 | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_calibration_panel.json | minecraft:crafting_shaped | lithmod:scanner_calibration_panel | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_controller.json | minecraft:crafting_shaped | lithmod:scanner_controller | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_diagnostic_panel.json | minecraft:crafting_shaped | lithmod:scanner_diagnostic_panel | 1 |
@@ -4459,11 +5999,17 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/recipe/crafting/support_water_inlet.json | minecraft:crafting_shaped | lithmod:support_water_inlet | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/test_package.json | minecraft:crafting_shaped | lithmod:test_package | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/thermal_test_coupon.json | minecraft:crafting_shaped | lithmod:thermal_test_coupon | 8 |
+| src/main/resources/data/lithmod/recipe/crafting/tin_feedstock.json | minecraft:crafting_shaped | lithmod:tin_feedstock | 4 |
 | src/main/resources/data/lithmod/recipe/crafting/ulpa_filter.json | minecraft:crafting_shaped | lithmod:ulpa_filter | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/utility_filter.json | minecraft:crafting_shaped | lithmod:utility_filter | 4 |
 | src/main/resources/data/lithmod/recipe/crafting/utility_plant.json | minecraft:crafting_shaped | lithmod:utility_plant | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/utility_pure_outlet.json | minecraft:crafting_shaped | lithmod:utility_pure_outlet | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/utility_water_inlet.json | minecraft:crafting_shaped | lithmod:utility_water_inlet | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/vacuum_casing.json | minecraft:crafting_shaped | lithmod:vacuum_casing | 8 |
+| src/main/resources/data/lithmod/recipe/crafting/vacuum_operating_panel.json | minecraft:crafting_shaped | lithmod:vacuum_operating_panel | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/vacuum_power_port.json | minecraft:crafting_shaped | lithmod:vacuum_power_port | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/vacuum_service_conduit.json | minecraft:crafting_shaped | lithmod:vacuum_service_conduit | 8 |
+| src/main/resources/data/lithmod/recipe/crafting/vacuum_service_outlet.json | minecraft:crafting_shaped | lithmod:vacuum_service_outlet | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/wafer_slicer.json | minecraft:crafting_shaped | lithmod:wafer_slicer | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/zone_casing.json | minecraft:crafting_shaped | lithmod:zone_casing | 8 |
 | src/main/resources/data/lithmod/recipe/crafting/zone_operating_panel.json | minecraft:crafting_shaped | lithmod:zone_operating_panel | 1 |
@@ -4483,12 +6029,14 @@ Loaded by MachineRecipeLoader (directory string "machine_recipes") on every serv
 | src/main/resources/data/lithmod/machine_recipes/cpu_t4.json | pick_and_place | lithmod:cpu_t4 | 1 | 160 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/cpu_t5.json | pick_and_place | lithmod:cpu_t5 | 1 | 180 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/cpu_t6.json | reflow_oven | lithmod:cpu_t6 | 1 | 240 | - | production |
+| src/main/resources/data/lithmod/machine_recipes/cpu_t7.json | reflow_oven | lithmod:cpu_t7 | 1 | 360 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/crystal_puller.json | crystal_puller | lithmod:silicon_boule | 1 | 400 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/dimm_t2.json | pick_and_place | lithmod:dimm_t2 | 1 | 120 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/dimm_t3.json | pick_and_place | lithmod:dimm_t3 | 1 | 140 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/dimm_t4.json | pick_and_place | lithmod:dimm_t4 | 1 | 160 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/dimm_t5.json | pick_and_place | lithmod:dimm_t5 | 1 | 180 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/dimm_t6.json | reflow_oven | lithmod:dimm_t6 | 1 | 240 | - | production |
+| src/main/resources/data/lithmod/machine_recipes/dimm_t7.json | reflow_oven | lithmod:dimm_t7 | 1 | 360 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/electronic_grade_boule.json | zone_refiner | lithmod:electronic_grade_boule | 1 | 600 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/microcontroller_t1.json | pick_and_place | lithmod:microcontroller_t1 | 1 | 100 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/microcontroller_t2.json | pick_and_place | lithmod:microcontroller_t2 | 1 | 120 | - | production |
@@ -4592,6 +6140,29 @@ The two test_machine entries are the payload-gated fixtures: MachineRecipeLoader
     "count": 1
   },
   "ticks": 240
+}
+```
+
+#### src/main/resources/data/lithmod/machine_recipes/cpu_t7.json (production)
+
+```json
+{
+  "machine": "reflow_oven",
+  "ingredients": [
+    {
+      "item": "lithmod:compute_chip_t7",
+      "count": 1
+    },
+    {
+      "item": "lithmod:cpu_blank",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:cpu_t7",
+    "count": 1
+  },
+  "ticks": 360
 }
 ```
 
@@ -4723,6 +6294,29 @@ The two test_machine entries are the payload-gated fixtures: MachineRecipeLoader
     "count": 1
   },
   "ticks": 240
+}
+```
+
+#### src/main/resources/data/lithmod/machine_recipes/dimm_t7.json (production)
+
+```json
+{
+  "machine": "reflow_oven",
+  "ingredients": [
+    {
+      "item": "lithmod:memory_chip_t7",
+      "count": 4
+    },
+    {
+      "item": "lithmod:dimm_blank",
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "lithmod:dimm_t7",
+    "count": 1
+  },
+  "ticks": 360
 }
 ```
 
@@ -5010,7 +6604,7 @@ Tier JSON fields per file (raw literals read from src/main/resources/data/lithmo
 | data/lithmod/tiers/t8.json | T8 | 8 | 90 | 100 | 80.0 | False |
 
 
-M0-owned data files stay as tracked: data/lithmod/die_rules/rules.json, data/lithmod/support_lines/matrix.json, and the 8 data/lithmod/tiers/t<index>.json files. Block loot tables: 57 files under data/lithmod/loot_table/blocks; block tag files: 1. Counts are read at generation time.
+M0-owned data files stay as tracked: data/lithmod/die_rules/rules.json, data/lithmod/support_lines/matrix.json, and the 8 data/lithmod/tiers/t<index>.json files. Block loot tables: 102 files under data/lithmod/loot_table/blocks; block tag files: 2. Counts are read at generation time.
 
 ### Machine data codecs (actual codec sources; core records stay game-independent)
 

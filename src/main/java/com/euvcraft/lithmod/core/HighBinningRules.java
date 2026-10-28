@@ -79,6 +79,7 @@ public final class HighBinningRules {
         if (lot == null || sourceTier == null || transition == null) {
             throw new IllegalArgumentException("lot, source tier and transition are required");
         }
+        if (lot.isContaminated()) throw new IllegalArgumentException("Contaminated wafers require the FOUP cleaner");
         if (lot.isEmpty()) {
             throw new IllegalArgumentException("lot must not be empty");
         }
@@ -196,7 +197,10 @@ public final class HighBinningRules {
         List<Boolean> passFlags = new ArrayList<>(lot.size());
         for (int i = 0; i < lot.size(); i++) {
             float cumulativeRoll = lot.wafers().get(i).cumulativeRoll();
-            boolean passes = cumulativeRoll > threshold;
+            double preparation = PreparedYieldRules.multiplier(lot, i);
+            double combinedThreshold = preparation == 1.0 ? threshold
+                : PreparedYieldRules.threshold(spec, yieldMultiplier * preparation);
+            boolean passes = cumulativeRoll > combinedThreshold;
             passFlags.add(passes);
         }
 

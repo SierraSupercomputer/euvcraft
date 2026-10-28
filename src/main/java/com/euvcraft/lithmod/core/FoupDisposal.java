@@ -13,6 +13,10 @@ public final class FoupDisposal {
     private FoupDisposal() {
     }
 
+    public static FoupContents contaminate(FoupContents source) {
+        return Objects.requireNonNull(source, "source").contaminated();
+    }
+
     /**
      * Creates an empty carrier from a source lot.
      * <p>
