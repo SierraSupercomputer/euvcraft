@@ -13,19 +13,21 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jspecify.annotations.Nullable;
 
-/** EUV Scanner controller block - owns the 5x7x5 multiblock. */
+/** EUV Scanner controller block - owns the 5x5x7 multiblock. */
 public class EuvScannerControllerBlock extends BaseEntityBlock {
 
     public static final BooleanProperty FORMED = BooleanProperty.create("formed");
     public static final IntegerProperty PART = IntegerProperty.create("part", 0, 174);
     public static final BooleanProperty POWERED = BooleanProperty.create("powered");
     public static final BooleanProperty CALIBRATED = BooleanProperty.create("calibrated");
+    public static final DirectionProperty FACING = DirectionProperty.create("facing", Direction.Plane.HORIZONTAL);
 
     private static final VoxelShape SHAPE = Shapes.block();
 
@@ -35,12 +37,13 @@ public class EuvScannerControllerBlock extends BaseEntityBlock {
                 .setValue(FORMED, false)
                 .setValue(PART, 0)
                 .setValue(POWERED, false)
-                .setValue(CALIBRATED, false));
+                .setValue(CALIBRATED, false)
+                .setValue(FACING, Direction.NORTH));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FORMED, PART, POWERED, CALIBRATED);
+        builder.add(FORMED, PART, POWERED, CALIBRATED, FACING);
     }
 
     @Override
@@ -52,7 +55,7 @@ public class EuvScannerControllerBlock extends BaseEntityBlock {
     public @Nullable <T extends BlockEntity> BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level level,
             BlockState state, BlockEntityType<T> type) {
         return level.isClientSide() ? null : createTickerHelper(type, EuvMachines.SCANNER_CONTROLLER_BE.get(),
-                EuvScannerControllerBlockEntity::serverTick);
+                (be) -> be.serverTick());
     }
 
     @Override

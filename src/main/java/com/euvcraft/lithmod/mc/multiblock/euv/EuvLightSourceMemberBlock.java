@@ -13,6 +13,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -24,6 +25,7 @@ public class EuvLightSourceMemberBlock extends BaseEntityBlock {
 
     public static final BooleanProperty FORMED = BooleanProperty.create("formed");
     public static final IntegerProperty PART = IntegerProperty.create("part", 0, 44);
+    public static final DirectionProperty FACING = DirectionProperty.create("facing", Direction.Plane.HORIZONTAL);
 
     private static final VoxelShape SHAPE = Shapes.block();
 
@@ -34,12 +36,13 @@ public class EuvLightSourceMemberBlock extends BaseEntityBlock {
         this.kind = kind;
         this.registerDefaultState(this.stateDefinition.any()
                 .setValue(FORMED, false)
-                .setValue(PART, 0));
+                .setValue(PART, 0)
+                .setValue(FACING, Direction.NORTH));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FORMED, PART);
+        builder.add(FORMED, PART, FACING);
     }
 
     public BlockKind kind() {
@@ -55,7 +58,7 @@ public class EuvLightSourceMemberBlock extends BaseEntityBlock {
     public @Nullable <T extends BlockEntity> BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level level,
             BlockState state, BlockEntityType<T> type) {
         return level.isClientSide() ? null : createTickerHelper(type, EuvMachines.LIGHT_SOURCE_MEMBER_BE.get(),
-                EuvLightSourceMemberBlockEntity::serverTick);
+                (be) -> be.serverTick());
     }
 
     @Override

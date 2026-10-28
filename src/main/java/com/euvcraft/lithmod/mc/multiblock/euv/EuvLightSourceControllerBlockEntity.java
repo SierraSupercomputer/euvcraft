@@ -6,14 +6,18 @@ import com.euvcraft.lithmod.core.t7.*;
 import com.euvcraft.lithmod.mc.*;
 import com.euvcraft.lithmod.mc.data.*;
 import com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity;
-import com.euvcraft.lithmod.mc.multiblock.ProcessCellControllerBlockEntity;
+import com.euvcraft.lithmod.mc.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -26,6 +30,7 @@ import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 import org.jspecify.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Function;
 
 /**
  * EUV Light Source controller block entity.
@@ -47,7 +52,7 @@ public class EuvLightSourceControllerBlockEntity extends FabMachineBlockEntity i
 
     // Resources
     public final WaterTank hydrogenTank = new WaterTank(8000); // H2 stored as "water" equivalent
-    private final VacuumChamberState vacuumState = VacuumChamberState.evacuated();
+    private VacuumChamberState vacuumState = VacuumChamberState.evacuated();
     private final VacuumPumpSpec vacuumSpec;
 
     // Tin storage (in mB equivalent, 1 tin item = 100 mB)
@@ -64,8 +69,11 @@ public class EuvLightSourceControllerBlockEntity extends FabMachineBlockEntity i
     private static final int MAX_EUV_OUTPUT = 10000;
     private static final int EUV_PER_EXPOSURE = 100;
 
+    // Tin tag for item detection
+    private static final TagKey<Item> TIN_TAG = TagKey.create(Registries.ITEM, ResourceLocation.parse("c:ingots/tin"));
+
     public EuvLightSourceControllerBlockEntity(BlockPos pos, BlockState state) {
-        super(EuvMachines.LIGHT_SOURCE_CONTROLLER_BE.get(), pos, state, SLOT_COUNT);
+        super(EuvMachines.LIGHT_SOURCE_CONTROLLER_BE.get(), pos, state, SLOT_COUNT, 0);
         this.vacuumSpec = createVacuumSpec();
     }
 
@@ -118,7 +126,6 @@ public class EuvLightSourceControllerBlockEntity extends FabMachineBlockEntity i
     @Override
     public MatchResult matchStructure(MultiblockPos anchor, MultiblockDirection facing,
             Function<MultiblockPos, BlockKind> lookup) {
-        // Light source uses a simpler 3x3x5 shape - we can reuse PanelStructureMatcher or create our own
         return LightSourceStructureMatcher.match(anchor, facing, lookup);
     }
 
@@ -148,17 +155,16 @@ public class EuvLightSourceControllerBlockEntity extends FabMachineBlockEntity i
     public boolean canReserveFor(UUID scannerId, int exposureTicks) {
         return reservedScannerId == null
                 && isFormed()
-                && hydrogenTank.amount() >= exposureTicks * 10 // 10 mB H2 per exposure tick
-                && tinStored >= exposureTicks * 5 // 5 mB tin per exposure tick
+                && hydrogenTank.amount() >= exposureTicks * 10
+                && tinStored >= exposureTicks * 5
                 && vacuumState.canProcess(vacuumSpec)
-                && euVOutputStored == 0; // No pending output
+                && euVOutputStored == 0;
     }
 
     public boolean reserveForScanner(UUID scannerId, int exposureTicks) {
         if (!canReserveFor(scannerId, exposureTicks)) return false;
         reservedScannerId = scannerId;
         reservedExposureTicks = exposureTicks;
-        // Pre-consume resources for this exposure
         hydrogenTank.drainExact(exposureTicks * 10, false);
         tinStored -= exposureTicks * 5;
         setChanged();
@@ -173,7 +179,6 @@ public class EuvLightSourceControllerBlockEntity extends FabMachineBlockEntity i
 
     public boolean consumeForExposure() {
         if (reservedScannerId == null || reservedExposureTicks <= 0) return false;
-        // Produce EUV output for the scanner to consume
         int produced = Math.min(EUV_PER_EXPOSURE, MAX_EUV_OUTPUT - euVOutputStored);
         euVOutputStored += produced;
         reservedExposureTicks--;
@@ -198,16 +203,16 @@ public class EuvLightSourceControllerBlockEntity extends FabMachineBlockEntity i
         return tinStored;
     }
 
-    public boolean insertTin(int amount, boolean simulate) {
-        if (amount <= 0) return false;
+    public int insertTin(int amount, boolean simulate) {
+        if (amount <= 0) return 0;
         int space = MAX_TIN - tinStored;
-        if (space <= 0) return false;
+        if (space <= 0) return 0;
         int accepted = Math.min(amount, space);
         if (!simulate) {
             tinStored += accepted;
             setChanged();
         }
-        return accepted > 0;
+        return accepted;
     }
 
     public VacuumChamberState vacuumState() {
@@ -219,7 +224,9 @@ public class EuvLightSourceControllerBlockEntity extends FabMachineBlockEntity i
     }
 
     public VacuumTickResult tickVacuum(int centralService, boolean localPumpPowered) {
-        return vacuumState.tick(vacuumSpec, VacuumMode.IDLE, centralService, localPumpPowered);
+        VacuumTickResult result = vacuumState.tick(vacuumSpec, VacuumMode.IDLE, centralService, localPumpPowered);
+        this.vacuumState = result.state();
+        return result;
     }
 
     public int vacuumCentralDemand() {
@@ -233,7 +240,7 @@ public class EuvLightSourceControllerBlockEntity extends FabMachineBlockEntity i
             @Override
             public long getCapacityAsLong() { return buffer().getCapacityAsLong(); }
             @Override
-            public int insert(int amount, TransactionContext transaction) { return buffer().receive(amount, transaction); }
+            public int insert(int amount, TransactionContext transaction) { return buffer().insert(amount, transaction); }
             @Override
             public int extract(int amount, TransactionContext transaction) { return buffer().extract(amount, transaction); }
         };
@@ -246,7 +253,7 @@ public class EuvLightSourceControllerBlockEntity extends FabMachineBlockEntity i
 
         // Process tin input from slot 0
         ItemStack tinStack = slot(SLOT_TIN_INPUT);
-        if (!tinStack.isEmpty() && tinStack.is(ModItems.TIN.get())) {
+        if (!tinStack.isEmpty() && tinStack.is(TIN_TAG)) {
             int inserted = insertTin(tinStack.getCount() * 100, true);
             if (inserted > 0) {
                 insertTin(inserted, false);
@@ -287,7 +294,7 @@ public class EuvLightSourceControllerBlockEntity extends FabMachineBlockEntity i
         formed = input.getIntOr("lsFormed", 0) != 0;
         hydrogenTank.restoreAmount(Math.clamp(input.getIntOr("lsHydrogen", 0), 0, hydrogenTank.capacity()));
         tinStored = Math.clamp(input.getIntOr("lsTin", 0), 0, MAX_TIN);
-        vacuumState = new VacuumChamberState(
+        this.vacuumState = new VacuumChamberState(
                 input.getIntOr("lsVacPressure", 0),
                 input.getIntOr("lsVacReserve", 0));
         reservedScannerId = input.getString("lsReservedScanner").orElse("").isEmpty()

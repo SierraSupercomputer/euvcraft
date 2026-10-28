@@ -7,28 +7,30 @@ import java.util.function.Function;
 /**
  * Matches an EUV scanner multiblock structure against the world.
  *
- * <p>The scanner structure is a fixed 5 wide x 7 tall x 5 deep box (175 blocks).
+ * <p>The scanner structure is a fixed 5 wide x 5 tall x 7 deep box (175 blocks).
  * The controller sits on the front face (d = 0) at the bottom row (v = 0), in any column
  * (u = 0, 1, 2, 3, or 4). There must be exactly one {@link BlockKind#OPERATING_PANEL}
  * directly above the controller at (u0, 1, 0).</p>
  *
- * <p>The top layer (v = 6) and bottom layer (v = 0) are frame layers: all positions
+ * <p>The top layer (v = 4) and bottom layer (v = 0) are frame layers: all positions
  * except the controller and operating panel must be {@link BlockKind#CASING}.
- * The middle layers (v = 1..5) are flexible: they must contain exactly one of each of
+ * The middle layers (v = 1..3) are flexible: they must contain exactly one of each of
  * the six module kinds ({@link BlockKind#EXPOSURE_MODULE}, {@link BlockKind#OPTICS_MODULE},
  * {@link BlockKind#STAGE_MODULE}, {@link BlockKind#FILTRATION_MODULE}, {@link BlockKind#METROLOGY_MODULE},
- * {@link BlockKind#VACUUM_MODULE}) in any positions across these five layers.
+ * {@link BlockKind#VACUUM_MODULE}) in any positions across these three layers.
  * There must be 1 to 4 {@link BlockKind#POWER_PORT} blocks anywhere in the remaining cells
  * (excluding controller/operating panel positions and the fixed module positions).
+ * There must be exactly one {@link BlockKind#DIAGNOSTIC_PANEL} in the middle layers.
+ * There must be exactly one {@link BlockKind#WATER_INLET} in the middle layers.
  * All other cells must be {@link BlockKind#CASING}.</p>
  *
- * <p>No extra operating panel is allowed. Water inlets, diagnostic panels, multipatterning
+ * <p>No extra operating panel is allowed. Calibration panels, multipatterning
  * modules and other block kinds cause match failure.</p>
  *
  * <p>The match searches the five valid anchor columns deterministically: (u0=0, v0=0) through
  * (u0=4, v0=0), in that order. The first full match wins.</p>
  *
- * <p>Member positions are returned in the canonical iteration order u*35 + v*5 + d
+ * <p>Member positions are returned in the canonical iteration order u*35 + v*7 + d
  * (u outer, v middle, d inner), matching the StructureShape volume order (175 members).</p>
  *
  * <p>All four horizontal facings are supported. No Minecraft types are involved.
@@ -37,16 +39,16 @@ import java.util.function.Function;
  */
 public final class EuvStructureMatcher {
 
-    /** Fixed scanner shape: 5 wide, 7 tall, 5 deep. */
-    public static final StructureShape EUV_SCANNER_SHAPE = new StructureShape(5, 7, 5);
+    /** Fixed scanner shape: 5 wide, 5 tall, 7 deep. */
+    public static final StructureShape EUV_SCANNER_SHAPE = new StructureShape(5, 5, 7);
 
     /** The bottom layer index (v = 0). */
     private static final int BOTTOM_LAYER = 0;
 
-    /** The top layer index (v = 6). */
-    private static final int TOP_LAYER = 6;
+    /** The top layer index (v = 4). */
+    private static final int TOP_LAYER = 4;
 
-    /** The six module kinds that must each appear exactly once in the middle layers (v=1..5). */
+    /** The six module kinds that must each appear exactly once in the middle layers (v=1..3). */
     private static final BlockKind[] MODULE_KINDS = {
         BlockKind.EXPOSURE_MODULE,
         BlockKind.OPTICS_MODULE,
@@ -102,14 +104,16 @@ public final class EuvStructureMatcher {
         int controllerCount = 0;
         int operatingPanelCount = 0;
         int powerPortCount = 0;
+        int diagnosticPanelCount = 0;
+        int waterInletCount = 0;
         int[] moduleCounts = new int[MODULE_KINDS.length]; // one per module kind
 
         // The operating panel must be at local (u0, v0+1, 0) - directly above the controller.
-        // For EUV scanner shape (height=7), v0=0, so panel is at v=1.
+        // For EUV scanner shape (height=5), v0=0, so panel is at v=1.
         int panelV = v0 + 1;
         boolean panelPositionValid = panelV < EUV_SCANNER_SHAPE.height();
 
-        // Iterate in canonical order: u outer, v middle, d inner -> index = u*(h*l) + v*l + d = u*35 + v*5 + d
+        // Iterate in canonical order: u outer, v middle, d inner -> index = u*(h*l) + v*l + d = u*35 + v*7 + d
         for (int u = 0; u < EUV_SCANNER_SHAPE.width(); u++) {
             for (int v = 0; v < EUV_SCANNER_SHAPE.height(); v++) {
                 for (int d = 0; d < EUV_SCANNER_SHAPE.length(); d++) {
@@ -124,7 +128,7 @@ public final class EuvStructureMatcher {
                     boolean isPanelPos = (u == u0 && v == panelV && d == 0 && panelPositionValid);
                     boolean isBottomLayer = (v == BOTTOM_LAYER);
                     boolean isTopLayer = (v == TOP_LAYER);
-                    boolean isMiddleLayer = (v > BOTTOM_LAYER && v < TOP_LAYER); // v=1..5
+                    boolean isMiddleLayer = (v > BOTTOM_LAYER && v < TOP_LAYER); // v=1..3
 
                     if (kind == BlockKind.CONTROLLER) {
                         if (isControllerPos) {
@@ -137,6 +141,18 @@ public final class EuvStructureMatcher {
                             operatingPanelCount++;
                         } else {
                             return MatchResult.failure("operating panel at wrong position " + worldPos);
+                        }
+                    } else if (kind == BlockKind.DIAGNOSTIC_PANEL) {
+                        if (isMiddleLayer) {
+                            diagnosticPanelCount++;
+                        } else {
+                            return MatchResult.failure("diagnostic panel at wrong position " + worldPos + " (must be in middle layers v=1..3)");
+                        }
+                    } else if (kind == BlockKind.WATER_INLET) {
+                        if (isMiddleLayer) {
+                            waterInletCount++;
+                        } else {
+                            return MatchResult.failure("water inlet at wrong position " + worldPos + " (must be in middle layers v=1..3)");
                         }
                     } else if (kind == BlockKind.POWER_PORT) {
                         powerPortCount++;
@@ -153,7 +169,7 @@ public final class EuvStructureMatcher {
                             if (isMiddleLayer && !isPanelPos) {
                                 moduleCounts[moduleIndex]++;
                             } else {
-                                return MatchResult.failure(kind + " at wrong position " + worldPos + " (modules must be in middle layers v=1..5, not at panel position)");
+                                return MatchResult.failure(kind + " at wrong position " + worldPos + " (modules must be in middle layers v=1..3, not at panel position)");
                             }
                         } else if (isBottomLayer || isTopLayer) {
                             // Frame layers: only casing allowed (besides controller/panel at their positions)
@@ -178,6 +194,12 @@ public final class EuvStructureMatcher {
         }
         if (operatingPanelCount != 1) {
             return MatchResult.failure("expected exactly one operating panel above controller, found " + operatingPanelCount);
+        }
+        if (diagnosticPanelCount != 1) {
+            return MatchResult.failure("expected exactly one diagnostic panel in middle layers, found " + diagnosticPanelCount);
+        }
+        if (waterInletCount != 1) {
+            return MatchResult.failure("expected exactly one water inlet in middle layers, found " + waterInletCount);
         }
         for (int i = 0; i < MODULE_KINDS.length; i++) {
             if (moduleCounts[i] != 1) {

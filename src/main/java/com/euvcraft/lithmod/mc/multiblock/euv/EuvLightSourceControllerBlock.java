@@ -13,6 +13,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -26,6 +27,7 @@ public class EuvLightSourceControllerBlock extends BaseEntityBlock {
     public static final IntegerProperty PART = IntegerProperty.create("part", 0, 44); // 3x3x5 = 45
     public static final BooleanProperty POWERED = BooleanProperty.create("powered");
     public static final BooleanProperty RESERVED = BooleanProperty.create("reserved");
+    public static final DirectionProperty FACING = DirectionProperty.create("facing", Direction.Plane.HORIZONTAL);
 
     private static final VoxelShape SHAPE = Shapes.block();
 
@@ -35,12 +37,13 @@ public class EuvLightSourceControllerBlock extends BaseEntityBlock {
                 .setValue(FORMED, false)
                 .setValue(PART, 0)
                 .setValue(POWERED, false)
-                .setValue(RESERVED, false));
+                .setValue(RESERVED, false)
+                .setValue(FACING, Direction.NORTH));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FORMED, PART, POWERED, RESERVED);
+        builder.add(FORMED, PART, POWERED, RESERVED, FACING);
     }
 
     @Override
@@ -52,7 +55,7 @@ public class EuvLightSourceControllerBlock extends BaseEntityBlock {
     public @Nullable <T extends BlockEntity> BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level level,
             BlockState state, BlockEntityType<T> type) {
         return level.isClientSide() ? null : createTickerHelper(type, EuvMachines.LIGHT_SOURCE_CONTROLLER_BE.get(),
-                EuvLightSourceControllerBlockEntity::serverTick);
+                (be) -> be.serverTick());
     }
 
     @Override
