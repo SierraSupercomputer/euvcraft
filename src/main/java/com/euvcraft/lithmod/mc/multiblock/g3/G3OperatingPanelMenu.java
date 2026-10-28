@@ -1,69 +1,13 @@
 package com.euvcraft.lithmod.mc.multiblock.g3;
 
-import com.euvcraft.lithmod.mc.machine.FabMachineMenu;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ContainerData;
-import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.Slot;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import org.jspecify.annotations.Nullable;
-
-/**
- * G3 Operating Panel menu.
- * Opens the controller's UI from the panel block (directly above controller).
- * Forwards to the controller's menu implementation.
- */
-public class G3OperatingPanelMenu extends FabMachineMenu {
-
-    private final G3ControllerBlockEntity controller;
-    private final BlockPos panelPos;
-
-    public G3OperatingPanelMenu(int id, Inventory inventory, G3ControllerBlockEntity controller, BlockPos panelPos) {
-        this(id, inventory, controller, panelPos, ContainerLevelAccess.create(controller.getLevel(), controller.getBlockPos()));
-    }
-
-    public G3OperatingPanelMenu(int id, Inventory inventory, G3ControllerBlockEntity controller, BlockPos panelPos, ContainerLevelAccess access) {
-        super(G3Machines.OPERATING_PANEL_MENU.get(), id, inventory, controller, 0, 0);
-        this.controller = controller;
-        this.panelPos = panelPos;
-    }
-
-    public G3OperatingPanelMenu(int id, Inventory inventory, FriendlyByteBuf buf) {
-        this(id, inventory, getController(inventory, buf), buf.readBlockPos());
-    }
-
-    private static G3ControllerBlockEntity getController(Inventory inventory, FriendlyByteBuf buf) {
-        BlockPos controllerPos = buf.readBlockPos();
-        BlockPos panelPos = buf.readBlockPos();
-        Level level = inventory.player.level();
-        BlockEntity be = level.getBlockEntity(controllerPos);
-        if (be instanceof G3ControllerBlockEntity controller) {
-            return controller;
-        }
-        throw new IllegalStateException("G3 controller not found at " + controllerPos);
-    }
-
-    @Override
-    protected void addMachineSlots() {
-        // Operating panel has no direct slots; it forwards to the controller's slots
-        // The actual slots are defined in the controller's specific menu
-        // This menu is just a pass-through for the panel block entity
-    }
-
-    @Override
-    protected int getMachineSlotCount() {
-        return 0;
-    }
-
-    @Override
-    public boolean stillValid(Player player) {
-        return this.controller != null && this.controller.isFormed()
-                && this.controller.getLevel().getBlockEntity(this.controller.getBlockPos()) == this.controller;
-    }
+public final class G3OperatingPanelMenu extends G3Menu {
+    public G3OperatingPanelMenu(int id,Inventory inventory,G3ControllerBlockEntity controller,BlockPos panel){super(G3Machines.OPERATING_PANEL_MENU.get(),id,inventory,controller,panel.below(),true,controller.getKind());}
+    private G3OperatingPanelMenu(int id,Inventory inventory,BlockPos panel,G3MachineKind kind){super(G3Machines.OPERATING_PANEL_MENU.get(),id,inventory,null,panel.below(),true,kind);}
+    public G3OperatingPanelMenu(int id,Inventory inventory,RegistryFriendlyByteBuf buffer){this(id,inventory,buffer.readBlockPos(),buffer.readEnum(G3MachineKind.class));}
+    @Override protected void addMachineSlots(){if(machineSlots().getContainerSize()==3){addMachineSlot(0,44,35);addMachineSlot(1,80,35);addOutputSlot(2,116,35);}else{addFoupSlot(0,62,35);addOutputSlot(3,98,35);}}
 }
+

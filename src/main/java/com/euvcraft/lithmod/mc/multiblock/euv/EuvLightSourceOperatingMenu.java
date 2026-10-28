@@ -1,6 +1,7 @@
 package com.euvcraft.lithmod.mc.multiblock.euv;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.entity.player.*;
 import net.minecraft.world.inventory.*;
@@ -25,7 +26,7 @@ public final class EuvLightSourceOperatingMenu extends AbstractContainerMenu {
                     case 2 -> lightSource.hydrogenTank.amount();
                     case 3 -> lightSource.tinStored();
                     case 4 -> lightSource.vacuumState().pressureMicroTorr() / 1000;
-                    case 5 -> lightSource.reservedScannerId != null ? 1 : 0;
+                    case 5 -> lightSource.hasScannerReservation() ? 1 : 0;
                     default -> 0;
                 };
             }

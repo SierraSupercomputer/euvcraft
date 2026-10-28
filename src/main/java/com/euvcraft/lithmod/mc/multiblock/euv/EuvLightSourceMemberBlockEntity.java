@@ -8,6 +8,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
@@ -71,7 +72,6 @@ public class EuvLightSourceMemberBlockEntity extends BlockEntity implements Menu
         return candidate instanceof EuvLightSourceControllerBlockEntity;
     }
 
-    @Override
     public void serverTick() {
         if (level == null || level.isClientSide()) return;
         if (owner != null && (owner.machine().isRemoved()

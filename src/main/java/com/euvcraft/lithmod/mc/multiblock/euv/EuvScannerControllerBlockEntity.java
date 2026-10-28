@@ -1,6 +1,7 @@
 package com.euvcraft.lithmod.mc.multiblock.euv;
 
 import com.euvcraft.lithmod.core.*;
+import java.util.function.Function;
 import com.euvcraft.lithmod.core.cleanroom.CleanroomExposure;
 import com.euvcraft.lithmod.mc.cleanroom.CleanroomRooms;
 import com.euvcraft.lithmod.mc.cleanroom.CleanroomControllerBlockEntity;
@@ -127,7 +128,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
 
     @Override
     public boolean isFormed() {
-        return formed;
+        return formation.formed();
     }
 
     @Override
@@ -178,7 +179,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
         return drawn;
     }
 
-    private int upwPerTick() {
+    public int upwPerTick() {
         return definition().map(d -> d.paramOrDefault("upw_per_tick_mb", 5)).orElse(5);
     }
 
@@ -235,18 +236,9 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
 
     @Override
     public FoupContents applyLayer(FoupContents lot, int layer, double defectFactor) {
-        // Add cleanroom exposure sample for this paid layer
-        CleanroomRooms.Sample room = roomSample();
-        if (room.available() && room.room() != null) {
-            lot = lot.withRoomExposure(lot.roomExposure().sample(room.yieldPermille()), frozenRoomYieldPermille);
-        }
-        FoupContents next = super.applyLayer(lot, layer, defectFactor);
-        // Check if this is the final layer using runner's tier info
-        var currentContract = runner().getContract();
-        if (currentContract != null && layer == currentContract.tier().layers()) {
-            // Final layer - finish with cleanroom yield
-            next = CleanroomYield.finish(next, currentContract.tier());
-        }
+        FoupContents next = super.applyLayer(lot,layer,defectFactor);
+        var tier = TierDataLoader.getRegistry().byIndex(7).orElseThrow();
+        if(layer==tier.layers())next=CleanroomYield.finish(next,tier);
         storeRoomLot(next);
         return next;
     }
@@ -265,8 +257,9 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
             throw new IllegalStateException("Cleanroom chunk unavailable during EUV processing");
         }
         // Sample calibration exposure for contamination tracking
-        sampleCalibrationExposure(room);
-        return lot;
+        var next=lot.withRoomExposure(lot.roomExposure().sample(room.yieldPermille()),0);
+        storeRoomLot(next);
+        return next;
     }
 
     /** Returns the public operating issue code for GUI display. */
@@ -794,10 +787,6 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
         data().set(DATA_PROGRESS, progressTicks());
         data().set(DATA_TICKS, runner().ticks());
         // Additional EUV data
-        data().set(100, vacuumState.pressureMicroTorr() / 1000); // mTorr for display
-        data().set(101, upwTank.amount());
-        data().set(102, contaminationState.phase().ordinal());
-        data().set(103, reservedSourceId != null ? 1 : 0);
     }
 
     private CleanroomRooms.Sample roomSample() {
@@ -808,7 +797,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
 
     @Override
     protected AbstractContainerMenu createMachineMenu(int containerId, Inventory playerInventory, FabMachineBlockEntity machine) {
-        return new EuvScannerOperatingMenu(containerId, playerInventory, this, worldPosition, false);
+        return new EuvScannerEquipmentMenu(containerId, playerInventory, this, worldPosition);
     }
 
     // Interface for formation owner

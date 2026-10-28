@@ -81,7 +81,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         if(large())tickPrep();else tickWriter();sync();
     }
     private void sync(){data().set(DATA_ENERGY,buffer().getAmountAsInt());data().set(DATA_CAPACITY,buffer().getCapacityAsInt());data().set(DATA_PROGRESS,large()?phaseProgress:jobProgress);data().set(DATA_TICKS,large()?phaseDuration:jobDuration);}
-    public int publicData(int i){return switch(i){case 0->isFormed()?1:0;case 1->prepPhase.ordinal();case 2->jobPaused?1:0;case 3->waterTank.amount();case 4->waterTank.capacity();case 5->vacuumState.pressureMicroTorr();case 6->vacuumSpec.operatingPressureMicroTorr();case 7->contaminationState.phase().ordinal();case 8->selection;case 9->cores;case 10->hasJob()?1:0;case 11->isolated?1:0;case 12->phaseProgress;case 13->phaseDuration;case 14->status.ordinal();default->0;};}
+    public int publicData(int i){return switch(i){case 0->isFormed()?1:0;case 1->prepPhase.ordinal();case 2->jobPaused?1:0;case 3->waterTank.amount();case 4->waterTank.capacity();case 5->vacuumState.pressureMicroTorr();case 6->vacuumSpec.operatingPressureMicroTorr();case 7->contaminationState.phase().ordinal();case 8->selection;case 9->cores;case 10->hasJob()?1:0;case 11->isolated?1:0;case 12->phaseProgress;case 13->phaseDuration;case 14->status.ordinal();case 15->buffer().getAmountAsInt();case 16->buffer().getCapacityAsInt();case 17->jobProgress;case 18->jobDuration;default->0;};}
     public boolean startWriterJob(String recipeId,int coreCount){
         if(kind!=G3MachineKind.RETICLE_WRITER||hasJob()||!isFormed()||definition().isEmpty()||!(level instanceof ServerLevel))return false;
         var families=List.of("compute","memory","nand");int index=-1;for(int i=0;i<3;i++)if(recipeId.equals("lithmod:g3_"+families.get(i)+"_t7"))index=i;if(index<0)return false;
@@ -123,7 +123,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         if(phaseProgress>=phaseDuration){
             if(prepPhase==PrepPhase.VACUUM_DEP_ETCH){prepPhase=PrepPhase.UPW_RINSE;phaseDuration=rinseDuration;phaseEnergyPerTick=rinseFe;phaseWaterMb=rinseWater;phaseProgress=0;}
             else if(prepPhase==PrepPhase.UPW_RINSE){prepPhase=PrepPhase.POWERED_DRY;phaseDuration=dryDuration;phaseEnergyPerTick=dryFe;phaseWaterMb=0;phaseProgress=0;}
-            else {var lot=FoupItems.trustedContentsOf(carrier);int[] draws=new int[lot.size()];for(int i=0;i<draws.length;i++)draws[i]=ThreadLocalRandom.current().nextInt(1,1001);carrier.set(ModDataComponents.FOUP_CONTENTS.get(),lot.preparedG3((int)(paidYieldSum/Math.max(1,paidSamples)),draws));prepPhase=PrepPhase.COMPLETE;jobRunning=false;finishCarrier();}
+            else {var lot=FoupItems.trustedContentsOf(carrier);int[] draws=new int[lot.size()];for(int i=0;i<draws.length;i++)draws[i]=ThreadLocalRandom.current().nextInt(1,1001);carrier.set(ModDataComponents.FOUP_CONTENTS.get(),lot.preparedG3((int)Math.clamp(paidYieldSum/Math.max(1,paidSamples),1,1000),draws));prepPhase=PrepPhase.COMPLETE;jobRunning=false;finishCarrier();}
         }
         setChanged();
     }

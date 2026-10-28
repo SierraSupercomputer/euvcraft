@@ -8,6 +8,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
@@ -74,7 +75,6 @@ public class EuvScannerMemberBlockEntity extends BlockEntity implements MenuProv
         return candidate instanceof EuvScannerControllerBlockEntity;
     }
 
-    @Override
     public void serverTick() {
         if (level == null || level.isClientSide()) return;
         if (owner != null && (owner.machine().isRemoved()
@@ -106,7 +106,7 @@ public class EuvScannerMemberBlockEntity extends BlockEntity implements MenuProv
         return switch (structureKind()) {
             case DIAGNOSTIC_PANEL -> new EuvScannerDiagnosticMenu(id, inventory, s, worldPosition);
             case CALIBRATION_PANEL -> new EuvScannerCalibrationMenu(id, inventory, s, worldPosition);
-            case OPERATING_PANEL -> new EuvScannerOperatingMenu(id, inventory, s, worldPosition, true);
+            case OPERATING_PANEL -> new EuvScannerOperatingMenu(id, inventory, s, worldPosition);
             default -> null; // Other members don't open menus directly
         };
     }

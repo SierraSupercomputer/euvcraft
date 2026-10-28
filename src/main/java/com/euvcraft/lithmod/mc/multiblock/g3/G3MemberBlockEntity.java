@@ -26,7 +26,7 @@ import java.util.Objects;
  * which is what keeps the FE capability on the port only — never on the casing,
  * the controller, or an unformed machine.</p>
  */
-public class G3MemberBlockEntity extends BlockEntity {
+public class G3MemberBlockEntity extends BlockEntity implements com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumAccess {
 
     private @Nullable G3ControllerBlockEntity controller;
     private boolean formed;
@@ -124,7 +124,7 @@ public class G3MemberBlockEntity extends BlockEntity {
                 || (this.level != null && this.level.getBlockEntity(owner.getBlockPos()) != owner)) {
             return null;
         }
-        return owner.energy();
+        return com.euvcraft.lithmod.mc.multiblock.T7EnergyPort.view(this,owner,()->{owner.revalidate();return controller==owner&&formed&&isPowerPort()&&owner.isFormed()&&owner.members().contains(worldPosition);});
     }
 
     /**
@@ -199,4 +199,5 @@ public class G3MemberBlockEntity extends BlockEntity {
         if (next.hasProperty(G3CasingBlock.PART)) next = next.setValue(G3CasingBlock.PART, 0);
         if (next != state) this.level.setBlock(this.worldPosition, next, 3);
     }
+    @Override public com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumConsumer vacuumConsumer(){return structureKind()==BlockKind.VACUUM_MODULE&&formed&&controller!=null&&controller.isFormed()?controller:null;}
 }

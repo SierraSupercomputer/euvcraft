@@ -319,7 +319,7 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
      * dropped, and the slots' own contents (normally empty mid-job) drop through the base
      * Container path.
      */
-    @Override protected void dropExtraContents(@Nullable net.minecraft.world.level.Level level, BlockPos pos) {
+    @Override protected void dropExtraContents(net.minecraft.world.level.@Nullable Level level, BlockPos pos) {
         if (!pendingFilter.isEmpty()) {
             var returned = pendingFilter;
             pendingFilter = ItemStack.EMPTY;

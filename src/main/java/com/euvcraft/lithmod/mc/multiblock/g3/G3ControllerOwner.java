@@ -17,7 +17,7 @@ import java.util.function.Function;
  */
 public interface G3ControllerOwner {
 
-    FabMachineBlockEntity machine();
+    G3ControllerBlockEntity machine();
     G3Formation formation();
     boolean large();
     G3MachineKind getKind();

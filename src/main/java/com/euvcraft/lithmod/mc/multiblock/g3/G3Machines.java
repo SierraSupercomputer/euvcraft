@@ -133,8 +133,9 @@ public final class G3Machines {
         modEventBus.addListener(G3Machines::registerCapabilities);
     }
 
-    /** Registers the power port's energy capability. */
+    /** Registers live utility lenses. */
     private static void registerCapabilities(RegisterCapabilitiesEvent event) {
+        event.registerBlockEntity(Capabilities.Fluid.BLOCK,MEMBER_BE.get(),(be,side)->be.waterInput());
         event.registerBlockEntity(Capabilities.Energy.BLOCK, MEMBER_BE.get(),
                 (blockEntity, side) -> blockEntity instanceof G3MemberBlockEntity member
                         ? member.energy()

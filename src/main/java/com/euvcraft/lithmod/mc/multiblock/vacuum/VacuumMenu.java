@@ -43,7 +43,7 @@ public final class VacuumMenu extends FabMachineMenu {
             @Override public void set(int i, int v) {}
             @Override public int getCount() { return NETWORK_WIRE_COUNT; }
         };
-        addDataSlots(network);
+        addDataSlots(new com.euvcraft.lithmod.mc.cleanroom.WideContainerData(network));
     }
 
     public VacuumMenu(int id, Inventory inv, RegistryFriendlyByteBuf buf) {

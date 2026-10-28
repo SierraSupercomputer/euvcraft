@@ -19,7 +19,6 @@ public class EuvBeamlineBlockEntity extends BlockEntity {
         super(type, pos, state);
     }
 
-    @Override
     public void serverTick() {
         // Beamline is passive - no logic needed
     }

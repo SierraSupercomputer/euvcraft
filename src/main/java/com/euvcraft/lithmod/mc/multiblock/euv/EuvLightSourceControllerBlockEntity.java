@@ -13,7 +13,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.core.Registry;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.player.Inventory;
@@ -73,7 +73,7 @@ public class EuvLightSourceControllerBlockEntity extends FabMachineBlockEntity i
     private static final int EUV_PER_EXPOSURE = 100;
 
     // Tin tag for item detection
-    private static final TagKey<Item> TIN_TAG = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("c", "ingots/tin"));
+    private static final TagKey<Item> TIN_TAG = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath("c", "ingots/tin"));
 
     public EuvLightSourceControllerBlockEntity(BlockPos pos, BlockState state) {
         super(EuvMachines.LIGHT_SOURCE_CONTROLLER_BE.get(), pos, state, SLOT_COUNT, 0);
@@ -117,7 +117,7 @@ public class EuvLightSourceControllerBlockEntity extends FabMachineBlockEntity i
 
     @Override
     public boolean isFormed() {
-        return formed;
+        return formation.formed();
     }
 
     @Override
@@ -125,7 +125,6 @@ public class EuvLightSourceControllerBlockEntity extends FabMachineBlockEntity i
         return formation.members();
     }
 
-    @Override
     public String failureReason() {
         return formation.failureReason();
     }
@@ -205,6 +204,8 @@ public class EuvLightSourceControllerBlockEntity extends FabMachineBlockEntity i
         }
         return extracted;
     }
+
+    public boolean hasScannerReservation(){return reservedScannerId!=null;}
 
     public int tinStored() {
         return tinStored;

@@ -154,4 +154,5 @@ public final class EuvFormation implements Formation {
         if (formed) next = next.setValue(EuvScannerControllerBlock.FACING, facing);
         if (next != state) level.setBlock(pos, next, 2);
     }
+    @Override public MatchResult matchStructure(MultiblockPos anchor,MultiblockDirection facing,java.util.function.Function<MultiblockPos,BlockKind> lookup){return owner.matchStructure(anchor,facing,lookup);}
 }

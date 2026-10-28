@@ -1,4 +1,5 @@
 package com.euvcraft.lithmod.core.multiblock;
+import java.util.function.Function;
 
 import java.util.*;
 import org.junit.jupiter.api.Test;

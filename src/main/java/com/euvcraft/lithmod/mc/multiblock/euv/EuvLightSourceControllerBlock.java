@@ -1,6 +1,7 @@
 package com.euvcraft.lithmod.mc.multiblock.euv;
 
 import com.euvcraft.lithmod.core.multiblock.BlockKind;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
@@ -54,7 +55,7 @@ public class EuvLightSourceControllerBlock extends BaseEntityBlock {
     public @Nullable <T extends BlockEntity> BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level level,
             BlockState state, BlockEntityType<T> type) {
         return level.isClientSide() ? null : createTickerHelper(type, EuvMachines.LIGHT_SOURCE_CONTROLLER_BE.get(),
-                (be) -> be.serverTick());
+                (l,p,s,be) -> be.serverTick());
     }
 
     @Override

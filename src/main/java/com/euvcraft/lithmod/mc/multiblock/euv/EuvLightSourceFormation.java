@@ -1,6 +1,7 @@
 package com.euvcraft.lithmod.mc.multiblock.euv;
 
 import com.euvcraft.lithmod.core.multiblock.*;
+import java.util.function.Function;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.inventory.ContainerData;

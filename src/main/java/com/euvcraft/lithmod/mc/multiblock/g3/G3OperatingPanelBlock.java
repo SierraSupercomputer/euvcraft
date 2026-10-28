@@ -43,4 +43,9 @@ public class G3OperatingPanelBlock extends G3MemberBlock implements EntityBlock 
             }
         };
     }
+
+    @Override protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack stack,BlockState state,net.minecraft.world.level.Level level,BlockPos pos,Player player,net.minecraft.world.InteractionHand hand,net.minecraft.world.phys.BlockHitResult hit){
+        if(!level.isClientSide()&&level.getBlockEntity(pos.below()) instanceof G3ControllerBlockEntity owner){owner.revalidate();player.openMenu(new net.minecraft.world.SimpleMenuProvider((id,inventory,p)->new G3OperatingPanelMenu(id,inventory,owner,pos),owner.getDisplayName()),buffer->{buffer.writeBlockPos(pos);buffer.writeEnum(owner.getKind());});}
+        return net.minecraft.world.InteractionResult.SUCCESS;
+    }
 }

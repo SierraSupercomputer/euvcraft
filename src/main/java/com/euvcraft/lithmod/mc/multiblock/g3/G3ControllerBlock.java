@@ -82,4 +82,8 @@ public abstract class G3ControllerBlock extends Block implements EntityBlock {
             }
         };
     }
+
+    @Override public BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext context){return defaultBlockState().setValue(FACING,context.getHorizontalDirection().getOpposite());}
+    @Override protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack stack,BlockState state,net.minecraft.world.level.Level level,BlockPos pos,net.minecraft.world.entity.player.Player player,net.minecraft.world.InteractionHand hand,net.minecraft.world.phys.BlockHitResult hit){if(!level.isClientSide()&&level.getBlockEntity(pos) instanceof G3ControllerBlockEntity owner)player.openMenu(owner,pos);return net.minecraft.world.InteractionResult.SUCCESS;}
+    @Override protected void neighborChanged(BlockState state,net.minecraft.world.level.Level level,BlockPos pos,Block block,net.minecraft.world.level.redstone.@Nullable Orientation orientation,boolean moved){if(!level.isClientSide()&&level.getBlockEntity(pos) instanceof G3ControllerBlockEntity owner)owner.revalidate();}
 }
