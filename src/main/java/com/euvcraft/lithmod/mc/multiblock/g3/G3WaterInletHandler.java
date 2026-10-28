@@ -2,6 +2,7 @@ package com.euvcraft.lithmod.mc.multiblock.g3;
 
 import com.euvcraft.lithmod.core.WaterTank;
 import com.euvcraft.lithmod.core.multiblock.BlockKind;
+import com.euvcraft.lithmod.mc.multiblock.utilities.UtilityFluids;
 import net.neoforged.neoforge.transfer.ResourceHandler;
 import net.neoforged.neoforge.transfer.fluid.FluidResource;
 import net.neoforged.neoforge.transfer.transaction.TransactionContext;

@@ -3,7 +3,6 @@ package com.euvcraft.lithmod.mc.multiblock.g3;
 import com.euvcraft.lithmod.core.multiblock.BlockKind;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
