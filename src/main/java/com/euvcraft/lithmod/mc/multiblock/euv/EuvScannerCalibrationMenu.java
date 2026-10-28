@@ -55,6 +55,8 @@ public final class EuvScannerCalibrationMenu extends AbstractContainerMenu {
 
     public int value(int i) { return values.get(i); }
 
+    public boolean calibration() { return true; }
+
     @Override
     public boolean stillValid(Player p) {
         return scanner != null && panel != null && scanner.getLevel() == p.level()
