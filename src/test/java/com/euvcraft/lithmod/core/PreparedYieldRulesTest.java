@@ -18,6 +18,19 @@ class PreparedYieldRulesTest {
             previous = next;
         }
     }
+    @Test void allEightyExposureLayersAndFinalRoomAdjustmentPreserveG3Evidence() {
+        var tier=ReferenceTiers.byId("T7");var id=UUID.randomUUID();
+        var lot=FoupContents.of(id,25,List.of(Wafer.unprocessed(),Wafer.unprocessed()),WaferSubstrate.ELECTRONIC_GRADE).preparedG3(800,new int[]{975,925});
+        var evidence=lot.g3Preparation();
+        lot=lot.withRoomExposure(com.euvcraft.lithmod.core.cleanroom.CleanroomExposure.empty().sample(750),0);
+        for(int layer=1;layer<=tier.layers();layer++){
+            lot=YieldRollEngine.applyLayerStep(lot,tier,DieTypes.COMPUTE,8,layer,1,FabSettings.defaults(),1,(wafer,step)->new ContextualRng(0x8821,id,wafer,step));
+            assertEquals(evidence,lot.g3Preparation());assertEquals(layer,lot.lotLayer());
+        }
+        double before=lot.run().effectiveYield();var result=CleanroomYield.finish(lot,tier);
+        assertEquals(before*.75,result.run().effectiveYield(),1e-14);assertEquals(evidence,result.g3Preparation());assertEquals(750,result.roomYieldPermille());assertSame(result,CleanroomYield.finish(result,tier));
+        assertEquals(8,result.run().cores());assertEquals(80,result.lotLayer());
+    }
     @Test void preparationEvidenceStaysSeparateFromExposureRolls() {
         var fresh = FoupContents.of(UUID.randomUUID(),25,List.of(Wafer.unprocessed(),Wafer.unprocessed()),WaferSubstrate.ELECTRONIC_GRADE);
         var prepared = fresh.preparedG3(800,new int[]{1000,500});

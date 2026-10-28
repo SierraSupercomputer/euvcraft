@@ -35,15 +35,19 @@ final class T7RuntimeFixtures {
     static final class Arena implements AutoCloseable {
         final ServerLevel level;
         final GameTestHelper h;
+        final Direction facing;
         final Set<BlockPos> written=new LinkedHashSet<>();
-        Arena(GameTestHelper h){this.h=h;this.level=h.getLevel();}
+        Arena(GameTestHelper h){this(h,Direction.NORTH);}
+        Arena(GameTestHelper h,Direction facing){this.h=h;this.level=h.getLevel();this.facing=facing;}
+        BlockPos cellPos(BlockPos origin,int u,int v,int d){return switch(facing){case NORTH->origin.offset(u,v,d);case SOUTH->origin.offset(-u,v,-d);case EAST->origin.offset(-d,v,u);case WEST->origin.offset(d,v,-u);default->throw new IllegalArgumentException();};}
+        void oriented(BlockPos pos,Block block){var state=block.defaultBlockState();if(state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING))state=state.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING,facing);put(pos,state);}
         BlockPos anchor(){return h.absolutePos(new BlockPos(4,4,4));}
         void put(BlockPos pos,Block block){put(pos,block.defaultBlockState());}
         void put(BlockPos pos,BlockState state){written.add(pos.immutable());level.setBlock(pos,state,3);}
         Cell box(BlockPos anchor,int width,int height,int depth,Block casing,Block controller,Block panel,Map<BlockPos,Block> local){
             var positions=new ArrayList<BlockPos>();
-            for(int u=0;u<width;u++)for(int v=0;v<height;v++)for(int d=0;d<depth;d++){var pos=anchor.offset(u,v,d);put(pos,casing);positions.add(pos);}
-            put(anchor,controller);put(anchor.above(),panel);for(var e:local.entrySet())put(anchor.offset(e.getKey()),e.getValue());
+            for(int u=0;u<width;u++)for(int v=0;v<height;v++)for(int d=0;d<depth;d++){var pos=cellPos(anchor,u,v,d);oriented(pos,casing);positions.add(pos);}
+            oriented(anchor,controller);oriented(anchor.above(),panel);for(var e:local.entrySet())oriented(cellPos(anchor,e.getKey().getX(),e.getKey().getY(),e.getKey().getZ()),e.getValue());
             var machine=(FabMachineBlockEntity)level.getBlockEntity(anchor);
             if(machine instanceof G3ControllerOwner owner)owner.revalidate();
             if(machine instanceof AdvancedOwner owner)owner.revalidate();
@@ -52,7 +56,8 @@ final class T7RuntimeFixtures {
             return new Cell(anchor,List.copyOf(positions),machine);
         }
         Cell writer(){return box(anchor(),3,3,5,G3Machines.CASING.get(),G3Machines.RETICLE_WRITER_CONTROLLER.get(),G3Machines.OPERATING_PANEL.get(),Map.of(new BlockPos(1,0,0),G3Machines.POWER_PORT.get(),new BlockPos(0,1,1),G3Machines.WRITING_MODULE.get(),new BlockPos(1,1,1),G3Machines.METROLOGY_MODULE.get()));}
-        Cell prep(){return box(anchor(),5,5,7,G3Machines.CASING.get(),G3Machines.DEPOSITION_ETCHER_CONTROLLER.get(),G3Machines.OPERATING_PANEL.get(),Map.of(new BlockPos(1,0,0),G3Machines.POWER_PORT.get(),new BlockPos(0,1,1),G3Machines.DEPOSITION_MODULE.get(),new BlockPos(1,1,1),G3Machines.RINSE_MODULE.get(),new BlockPos(2,1,1),G3Machines.VACUUM_MODULE.get(),new BlockPos(3,1,1),G3Machines.WATER_INLET.get()));}
+        Cell prep(){return prep(anchor());}
+        Cell prep(BlockPos anchor){return box(anchor,5,5,7,G3Machines.CASING.get(),G3Machines.DEPOSITION_ETCHER_CONTROLLER.get(),G3Machines.OPERATING_PANEL.get(),Map.of(new BlockPos(1,0,0),G3Machines.POWER_PORT.get(),new BlockPos(0,1,1),G3Machines.DEPOSITION_MODULE.get(),new BlockPos(1,1,1),G3Machines.RINSE_MODULE.get(),new BlockPos(2,1,1),G3Machines.VACUUM_MODULE.get(),new BlockPos(3,1,1),G3Machines.WATER_INLET.get()));}
         Cell hydrogen(){return box(anchor(),2,2,3,HydrogenMachines.CASING.get(),HydrogenMachines.CONTROLLER.get(),HydrogenMachines.OPERATING_PANEL.get(),Map.of(new BlockPos(1,0,0),HydrogenMachines.POWER_PORT.get(),new BlockPos(0,0,1),HydrogenMachines.GAS_INLET.get(),new BlockPos(1,0,1),HydrogenMachines.GAS_OUTLET.get()));}
         Cell plant(){return box(anchor(),3,3,5,VacuumMachines.CASING.get(),VacuumMachines.CONTROLLER.get(),VacuumMachines.OPERATING_PANEL.get(),Map.of(new BlockPos(1,0,0),VacuumMachines.POWER_PORT.get(),new BlockPos(0,1,1),VacuumMachines.CONDUIT.get(),new BlockPos(2,1,1),VacuumMachines.SERVICE_OUTLET.get()));}
         Cell scanner(){return box(anchor(),5,5,7,EuvMachines.SCANNER_CASING.get(),EuvMachines.SCANNER_CONTROLLER.get(),EuvMachines.SCANNER_OPERATING_PANEL.get(),Map.ofEntries(

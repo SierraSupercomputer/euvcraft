@@ -20,7 +20,7 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jspecify.annotations.Nullable;
 
-/** EUV Scanner controller block - owns the 5x7x5 multiblock. */
+/** EUV Scanner controller block - owns the 5x5x7 multiblock. */
 public class EuvScannerControllerBlock extends BaseEntityBlock {
 
     public static final BooleanProperty FORMED = BooleanProperty.create("formed");
@@ -64,6 +64,8 @@ public class EuvScannerControllerBlock extends BaseEntityBlock {
         return SHAPE;
     }
 
+    @Override protected BlockState rotate(BlockState state,net.minecraft.world.level.block.Rotation rotation){return state.setValue(FACING,rotation.rotate(state.getValue(FACING)));}
+    @Override protected BlockState mirror(BlockState state,net.minecraft.world.level.block.Mirror mirror){return state.rotate(mirror.getRotation(state.getValue(FACING)));}
     @Override public BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext context){return defaultBlockState().setValue(FACING,context.getHorizontalDirection().getOpposite());}
     @Override protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack stack,BlockState state,net.minecraft.world.level.Level level,BlockPos pos,net.minecraft.world.entity.player.Player player,net.minecraft.world.InteractionHand hand,net.minecraft.world.phys.BlockHitResult hit){if(!level.isClientSide()&&level.getBlockEntity(pos) instanceof com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity owner)player.openMenu(owner,pos);return net.minecraft.world.InteractionResult.SUCCESS;}
 }

@@ -144,11 +144,20 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
     @Override public boolean acceptVacuumGrant(long tick,int amount){if(level==null||isolated||amount<0||tick>level.getGameTime()||tick<level.getGameTime()-1||tick<=consumedGrantTick||tick<grantTick)return false;grantTick=tick;grant=amount;return true;}
     private void tickVacuum(){
         int service=0;if(level!=null&&grantTick>consumedGrantTick&&grantTick>=level.getGameTime()-1&&grantTick<=level.getGameTime()&&!isolated){service=grant;consumedGrantTick=grantTick;}grant=0;
-        boolean local=isFormed()&&definition().isPresent()&&service<vacuumDemand()&&energySource().draw(pumpFe)==pumpFe;
+        boolean local=isFormed()&&definition().isPresent()&&(isolated||service<vacuumDemand())&&energySource().draw(pumpFe)==pumpFe;
         vacuumState=vacuumState.tick(vacuumSpec,mode(),service,local).state();
     }
     private void recoverInputs(){if(!input0.isEmpty()&&slot(0).isEmpty()){setSlot(0,input0);input0=ItemStack.EMPTY;}if(!input1.isEmpty()&&slot(1).isEmpty()){setSlot(1,input1);input1=ItemStack.EMPTY;}recovery=!input0.isEmpty()||!input1.isEmpty();}
     @Override public void setRemoved(){formation.unload();super.setRemoved();}
+
+    @Override protected void collectImplicitComponents(net.minecraft.core.component.DataComponentMap.Builder builder){
+        super.collectImplicitComponents(builder);
+        if(large()&&contaminationState.requiresRepair())builder.set(ModDataComponents.CONTAMINATED_EQUIPMENT.get(),true);
+    }
+    @Override protected void applyImplicitComponents(net.minecraft.core.component.DataComponentGetter components){
+        super.applyImplicitComponents(components);
+        if(large()&&Boolean.TRUE.equals(components.get(ModDataComponents.CONTAMINATED_EQUIPMENT.get())))contaminationState=MachineContaminationState.contaminated(0);
+    }
     @Override protected void dropExtraContents(@Nullable Level world,BlockPos pos){dropContainer(world,pos,new SimpleContainer(carrier,input0,input1));carrier=input0=input1=product=ItemStack.EMPTY;jobRunning=false;}
     @Override protected void saveAdditional(ValueOutput out){
         super.saveAdditional(out);out.putInt("g3MaskMin",maskMin);out.putInt("g3MaskMax",maskMax);out.putInt("g3Water",waterTank.amount());out.putInt("g3Pressure",vacuumState.pressureMicroTorr());out.putInt("g3Reserve",vacuumState.reserveMicroTorr());out.putInt("g3Contamination",contaminationState.phase().ordinal());out.putLong("g3Breach",contaminationState.lastBreachTick());out.putInt("g3DrawFloor",drawFloor);out.putInt("g3Selection",selection);out.putInt("g3Cores",cores);out.putBoolean("g3Isolated",isolated);

@@ -88,6 +88,10 @@ public final class ModDataComponents {
             .persistent(Codec.intRange(1, 256))
             .networkSynchronized(ByteBufCodecs.VAR_INT));
 
+    /** Narrow pickup marker: no inventory, energy or job data is copied to block loot. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Boolean>> CONTAMINATED_EQUIPMENT =
+        DATA_COMPONENTS.registerComponentType("contaminated_equipment", builder -> builder.persistent(Codec.BOOL).networkSynchronized(ByteBufCodecs.BOOL));
+
     private ModDataComponents() {
     }
 }

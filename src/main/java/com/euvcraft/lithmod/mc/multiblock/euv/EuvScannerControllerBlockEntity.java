@@ -602,7 +602,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
     @Override public int vacuumDemand(){return vacuumIsolated||!isFormed()?0:vacuumState.requiredServiceMicroTorrPerTick(vacuumSpec,vacuumMode());}
     @Override public boolean acceptVacuumGrant(long tick,int grant){if(level==null||vacuumIsolated||grant<0||tick>level.getGameTime()||tick<level.getGameTime()-1||tick<=usedCentralTick||tick<centralTick)return false;centralTick=tick;centralGrant=grant;return true;}
     public boolean toggleVacuumIsolation(){vacuumIsolated=!vacuumIsolated;centralGrant=0;setChanged();return true;}
-    private void pumpVacuum(){int service=0;if(level!=null&&centralTick>usedCentralTick&&centralTick>=level.getGameTime()-1&&centralTick<=level.getGameTime()&&!vacuumIsolated){service=centralGrant;usedCentralTick=centralTick;}centralGrant=0;int fe=scaledFe(p("local_pump_fe_per_tick",200));boolean local=isFormed()&&definition().isPresent()&&service<vacuumDemand()&&energySource().draw(fe)==fe;vacuumState=vacuumState.tick(vacuumSpec,vacuumMode(),service,local).state();}
+    private void pumpVacuum(){int service=0;if(level!=null&&centralTick>usedCentralTick&&centralTick>=level.getGameTime()-1&&centralTick<=level.getGameTime()&&!vacuumIsolated){service=centralGrant;usedCentralTick=centralTick;}centralGrant=0;int fe=scaledFe(p("local_pump_fe_per_tick",200));boolean local=isFormed()&&definition().isPresent()&&(vacuumIsolated||service<vacuumDemand())&&energySource().draw(fe)==fe;vacuumState=vacuumState.tick(vacuumSpec,vacuumMode(),service,local).state();}
 
     // Persistence
     @Override
@@ -707,6 +707,15 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
             var room=roomSample();if(room.available()&&(room.room()==null||room.room().state()!=CleanroomControllerBlockEntity.ENCLOSED))notifyStructuralBreach(new BreachConditions(buffer().getAmountAsLong()>0,true,true),level.getGameTime());
         }
         pumpVacuum();super.serverTick();
+    }
+
+    @Override protected void collectImplicitComponents(net.minecraft.core.component.DataComponentMap.Builder builder){
+        super.collectImplicitComponents(builder);
+        if(contaminationState.requiresRepair())builder.set(ModDataComponents.CONTAMINATED_EQUIPMENT.get(),true);
+    }
+    @Override protected void applyImplicitComponents(net.minecraft.core.component.DataComponentGetter components){
+        super.applyImplicitComponents(components);
+        if(Boolean.TRUE.equals(components.get(ModDataComponents.CONTAMINATED_EQUIPMENT.get())))contaminationState=MachineContaminationState.contaminated(0);
     }
     @Override protected void dropExtraContents(net.minecraft.world.level.Level level,BlockPos pos){super.dropExtraContents(level,pos);dropContainer(level,pos,diagnosticPaper);dropContainer(level,pos,repairItems);}
 

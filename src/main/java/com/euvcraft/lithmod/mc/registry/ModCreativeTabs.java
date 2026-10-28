@@ -201,6 +201,7 @@ public final class ModCreativeTabs {
                 com.euvcraft.lithmod.mc.T7Content.blockItems().forEach(output::accept);
                 output.accept(ModItems.DIMM_T7.get());
                 output.accept(ModItems.RESIST_T7.get());
+                output.accept(ModItems.TIN_FEEDSTOCK.get());
                 output.accept(ModItems.DIMM_T6.get());
                 output.accept(ModItems.RESIST_T6.get());
                 output.accept(ModItems.MULTIPATTERN_LIGHT_SOURCE.get());

@@ -298,6 +298,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
                     if (!before.equals(run.snapshot())) setChanged();
                 } catch (RuntimeException invalid) {
                     // No refund or retry after a rejected private contract/yield operation.
+                    EUVCRAFTMod.LOGGER.warn("Process transition rejected at {}: {}",worldPosition,invalid.toString());
                     stopInvalidRun();
                 }
             }
@@ -321,7 +322,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         }
         var registry = TierDataLoader.getRegistry();
         Tier tier = registry.byIndex(mask.tierIndex()).orElse(null);
-        if (tier == null || tier.index() > 6) { lastRefusal = RefusalReason.NO_MASK; return; }
+        if (tier == null || tier.index() > 7) { lastRefusal = RefusalReason.NO_MASK; return; }
 
         // Admission hooks: structural formation, tier support, readiness, refusal
         if (!supportsTier(tier)) { lastRefusal = RefusalReason.LINE_CANNOT_RUN_TIER; return; }
@@ -427,7 +428,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         if (contract == null) return null;
         Tier tier = contract.tier();
         if (!DieTypes.COMPUTE.equals(contract.dieType()) || tier.index() < 3) return null;
-        if (tier.index() > 6) return null;
+        if (tier.index() > 7) return null;
         if (tier.index() <= 5) return 1;
         return contract.mask().getOrDefault(ModDataComponents.CORE_COUNT.get(), 1);
     }

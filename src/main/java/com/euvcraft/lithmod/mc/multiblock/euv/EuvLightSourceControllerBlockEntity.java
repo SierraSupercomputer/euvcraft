@@ -103,7 +103,7 @@ public final class EuvLightSourceControllerBlockEntity extends FabMachineBlockEn
         hydrogenTank.resize(Math.clamp(p("hydrogen_capacity_mb",32000),1000,WaterTank.MAX_CAPACITY));
         spec=new VacuumPumpSpec(p("vacuum_pump_rate",5000),p("vacuum_idle_leak",100),p("vacuum_process_load",2000),p("vacuum_operating_pressure",10000),p("vacuum_reserve_capacity",50000),p("vacuum_reserve_recharge",1000));
         int service=0;if(grantTick>usedGrantTick&&grantTick>=level.getGameTime()-1&&grantTick<=level.getGameTime()&&!isolated){service=grant;usedGrantTick=grantTick;}grant=0;
-        int pumpFe=fe(p("local_pump_fe_per_tick",200));boolean local=isFormed()&&definition().isPresent()&&service<vacuumDemand()&&energySource().draw(pumpFe)==pumpFe;
+        int pumpFe=fe(p("local_pump_fe_per_tick",200));boolean local=isFormed()&&definition().isPresent()&&(isolated||service<vacuumDemand())&&energySource().draw(pumpFe)==pumpFe;
         vacuum=vacuum.tick(spec,mode(),service,local).state();data().set(DATA_ENERGY,buffer().getAmountAsInt());data().set(DATA_CAPACITY,buffer().getCapacityAsInt());data().set(DATA_PROGRESS,0);data().set(DATA_TICKS,0);
     }
     @Override public void setRemoved(){formation.unload();super.setRemoved();}
