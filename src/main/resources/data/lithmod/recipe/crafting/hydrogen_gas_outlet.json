@@ -2,9 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "CRC",
-    "RPR",
-    "CRC"
+    "CCC",
+    "CPR",
+    "RRR"
   ],
   "key": {
     "C": "lithmod:hydrogen_casing",

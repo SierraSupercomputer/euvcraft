@@ -15,7 +15,10 @@ function tile(block,formed){const p=Buffer.alloc(1024),rect=(x,y,w,h,c)=>{for(le
  else{rect(3,3,10,10,[30,42,51]);let hash=0;for(const c of block.id)hash=(hash*31+c.charCodeAt(0))>>>0;for(let i=0;i<12;i++)if(hash&(1<<i))rect(4+(i%4)*2,4+Math.floor(i/4)*3,1,2,accent);}
  rect(2,14,12,1,formed?[100,237,168]:[156,112,65]);return png(p);
 }
-export function outputs(manifest){const out=new Map(),A='src/main/resources/assets/lithmod/',D='src/main/resources/data/lithmod/';const put=(path,value)=>{if(out.has(path))throw Error('Duplicate '+path);out.set(path,Buffer.isBuffer(value)?value:Buffer.from(JSON.stringify(value,null,2)+'\n'));};
+// Crafting mirrors count as one recipe; preserve ingredient costs while assigning distinct arrangements.
+function recipeKey(recipe){let rows=recipe.pattern.map(row=>[...row].map(c=>c===' '?null:recipe.key[c]));while(rows.length&&rows[0].every(x=>!x))rows.shift();while(rows.length&&rows.at(-1).every(x=>!x))rows.pop();while(rows[0]?.length&&rows.every(row=>!row[0]))rows=rows.map(row=>row.slice(1));while(rows[0]?.length&&rows.every(row=>!row.at(-1)))rows=rows.map(row=>row.slice(0,-1));return [JSON.stringify(rows),JSON.stringify(rows.map(row=>[...row].reverse()))].sort()[0];}
+function uniqueRecipe(recipe,used){const copy=structuredClone(recipe);let chars=copy.pattern.map(row=>row.padEnd(3,' ')).join('').padEnd(9,' ').split('');const accept=()=>{copy.pattern=[chars.slice(0,3).join(''),chars.slice(3,6).join(''),chars.slice(6,9).join('')];const key=recipeKey(copy);if(used.has(key))return false;used.add(key);return true;};if(accept())return copy;chars.sort();do{if(accept())return copy;let i=chars.length-2;while(i>=0&&chars[i]>=chars[i+1])i--;if(i<0)break;let j=chars.length-1;while(chars[j]<=chars[i])j--;[chars[i],chars[j]]=[chars[j],chars[i]];chars=[...chars.slice(0,i+1),...chars.slice(i+1).reverse()];}while(true);throw Error('No distinct crafting pattern for '+recipe.result.id);}
+export function outputs(manifest){const usedRecipes=new Set();const out=new Map(),A='src/main/resources/assets/lithmod/',D='src/main/resources/data/lithmod/';const put=(path,value)=>{if(out.has(path))throw Error('Duplicate '+path);out.set(path,Buffer.isBuffer(value)?value:Buffer.from(JSON.stringify(value,null,2)+'\n'));};
  for(const block of manifest.blocks){if(!/^[a-z0-9_]+$/.test(block.id))throw Error('Invalid block ID');const id=block.id;
   for(const formed of block.formed?[false,true]:[false]){
    const suffix=formed?'_formed':'',face='lithmod:block/'+id+suffix;
@@ -32,8 +35,9 @@ export function outputs(manifest){const out=new Map(),A='src/main/resources/asse
   else if(block.role==='conduit'){pattern=['CGC','G G','CGC'];key={C:'lithmod:'+casing,G:'minecraft:glass'};count=8;}
   else if(block.role==='port'){pattern=['CRC','RPR','CRC'];key={C:'lithmod:'+casing,R:'minecraft:redstone',P:id.includes('power')?'minecraft:copper_ingot':'minecraft:bucket'};}
   else{pattern=['CGC','PMP','CGC'];key={C:'lithmod:'+casing,G:'minecraft:gold_ingot',P:'lithmod:compute_chip_t6',M:'lithmod:memory_chip_t6'};}
-  put(D+'recipe/crafting/'+id+'.json',block.recipe??{type:'minecraft:crafting_shaped',category:'misc',pattern,key,result:{id:'lithmod:'+id,count}});
+  put(D+'recipe/crafting/'+id+'.json',uniqueRecipe(block.recipe??{type:'minecraft:crafting_shaped',category:'misc',pattern,key,result:{id:'lithmod:'+id,count}},usedRecipes));
  }
+ for(const [id,recipe]of Object.entries(manifest.componentRecipes??{}))put(D+'recipe/crafting/'+id+'.json',uniqueRecipe(recipe,usedRecipes));
  return out;
 }
 export function main(args=process.argv.slice(2)){const manifest=JSON.parse(readFileSync(join(ROOT,'tools/t7-assets.json'))),check=args.includes('--check');let failures=0;for(const[path,value]of outputs(manifest)){const target=join(ROOT,path);if(check){if(!existsSync(target)||!readFileSync(target).equals(value)){console.error('Out of date: '+path);failures++;}}else{mkdirSync(dirname(target),{recursive:true});writeFileSync(target,value);}}if(failures)throw Error(failures+' T7 asset differences');console.log((check?'Checked ':'Generated ')+outputs(manifest).size+' T7 assets/recipes');}

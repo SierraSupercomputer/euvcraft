@@ -2,9 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "CDC",
-    "PMP",
-    "CDC"
+    "CCC",
+    "CDD",
+    "MPP"
   ],
   "key": {
     "C": "lithmod:g3_casing",

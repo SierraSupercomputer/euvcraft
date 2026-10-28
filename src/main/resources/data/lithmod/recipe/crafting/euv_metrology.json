@@ -2,9 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "GDG",
-    "CMC",
-    "GDG"
+    "CCD",
+    "DGM",
+    "GGG"
   ],
   "key": {
     "G": "minecraft:gold_ingot",

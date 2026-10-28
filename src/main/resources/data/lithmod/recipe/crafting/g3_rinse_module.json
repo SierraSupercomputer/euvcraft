@@ -2,9 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "CGC",
-    "PMP",
-    "CGC"
+    "CCC",
+    "CGG",
+    "PPM"
   ],
   "key": {
     "C": "lithmod:g3_casing",

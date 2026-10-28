@@ -166,15 +166,15 @@ public final class PresentationGameTests {
     }
     private static void recipeRegistry(GameTestHelper h) {
         var vanilla = resources(h, "recipe");
-        h.assertValueEqual(108, vanilla.size(), "M1 vanilla recipe inventory");
+        h.assertValueEqual(160, vanilla.size(), "M1 vanilla recipe inventory");
         for (var entry : vanilla.entrySet()) {
             JsonObject source = json(entry.getValue());
             expectedOutput(h, source, assemble(h, entry.getKey(), source), entry.getKey().toString());
         }
         var custom = resources(h, "machine_recipes");
         var resolved = MachineRecipeLoader.getRegistry().all();
-        h.assertValueEqual(21, custom.size(), "Custom source inventory");
-        h.assertValueEqual(21, resolved.size(), "Resolved custom inventory");
+        h.assertValueEqual(23, custom.size(), "Custom source inventory");
+        h.assertValueEqual(23, resolved.size(), "Resolved custom inventory");
         Set<com.euvcraft.lithmod.core.MachineRecipeSpec> expected = new HashSet<>();
         for (var entry : custom.entrySet()) {
             var spec = MachineRecipeSpecCodec.CODEC.parse(JsonOps.INSTANCE, json(entry.getValue())).getOrThrow();
@@ -211,7 +211,7 @@ public final class PresentationGameTests {
                 cooking++;
             }
         }
-        h.assertValueEqual(106, crafting, "Crafting lookup inventory");
+        h.assertValueEqual(158, crafting, "Crafting lookup inventory");
         h.assertValueEqual(2, cooking, "Cooking lookup inventory");
         var sand = manager.getRecipeFor(RecipeType.SMELTING, new SingleRecipeInput(new ItemStack(Items.SAND)), h.getLevel()).orElseThrow();
         h.assertTrue(sand.value().assemble(new SingleRecipeInput(new ItemStack(Items.SAND))).is(Items.GLASS), "Sand must still smelt to glass");
@@ -267,7 +267,7 @@ public final class PresentationGameTests {
                 missing.add(id.getPath());
         h.assertTrue(missing.equals(Set.of("foup_mk2", "logic_chip_t1", "logic_chip_t2", "memory_chip_t2", "chip_scrap", "wafer_scrap",
                 "logic_chip_t3", "memory_chip_t3", "compute_chip_t3", "nand_chip_t3",
-                "logic_chip_t4", "memory_chip_t4", "compute_chip_t4", "nand_chip_t4", "logic_chip_t5", "memory_chip_t5", "compute_chip_t5", "nand_chip_t5", "memory_chip_t6", "compute_chip_t6", "nand_chip_t6", "assembly_scrap")),
+                "logic_chip_t4", "memory_chip_t4", "compute_chip_t4", "nand_chip_t4", "logic_chip_t5", "memory_chip_t5", "compute_chip_t5", "nand_chip_t5", "memory_chip_t6", "compute_chip_t6", "nand_chip_t6", "assembly_scrap", "compute_chip_t7", "memory_chip_t7", "nand_chip_t7")),
             "Unexpected recipe-less production items: " + missing);
         h.succeed();
     }
@@ -499,8 +499,19 @@ public final class PresentationGameTests {
                 fullExpected.add(new ItemStack(ModItems.MASK.get()).getItem());
                 fullExpected.add(new ItemStack(ModItems.MASK.get()).getItem());
 
-          h.assertValueEqual(156, actualEntries.size(), "MAIN tab exact entry count");
-        for (int i = 0; i < 156; i++) {
+        fullExpected.add(ModItems.COMPUTE_CHIP_T7.get());
+        fullExpected.add(ModItems.MEMORY_CHIP_T7.get());
+        fullExpected.add(ModItems.NAND_CHIP_T7.get());
+        fullExpected.add(ModItems.CPU_T7.get());
+        fullExpected.add(ModItems.EUV_LIGHT_SOURCE.get());
+        fullExpected.add(ModItems.EUV_OPTICS.get());
+        fullExpected.add(ModItems.EUV_STAGE.get());
+        fullExpected.add(ModItems.EUV_FILTRATION.get());
+        fullExpected.add(ModItems.EUV_METROLOGY.get());
+        for(String id:List.of("g3_reticle_writer","g3_deposition_etcher","g3_casing","g3_power_port","g3_operating_panel","g3_water_inlet","g3_writing_module","g3_metrology_module","g3_deposition_module","g3_rinse_module","g3_vacuum_module","euv_scanner_controller","euv_scanner_operating_panel","euv_scanner_calibration_panel","euv_scanner_exposure_module","euv_scanner_optics_module","euv_scanner_stage_module","euv_scanner_filtration_module","euv_scanner_metrology_module","euv_scanner_vacuum_module","euv_scanner_diagnostic_panel","euv_scanner_water_inlet","euv_scanner_power_port","euv_scanner_casing","euv_light_source_controller","euv_light_source_operating_panel","euv_light_source_tin_inlet","euv_light_source_hydrogen_inlet","euv_light_source_vacuum_module","euv_light_source_power_port","euv_light_source_casing","euv_beam_line","hydrogen_purifier","hydrogen_casing","hydrogen_power_port","hydrogen_gas_inlet","hydrogen_gas_outlet","hydrogen_operating_panel","central_vacuum_plant","vacuum_casing","vacuum_power_port","vacuum_operating_panel","vacuum_service_conduit","cleanroom_vacuum_port","vacuum_service_outlet"))fullExpected.add(BuiltInRegistries.ITEM.getValue(Identifier.fromNamespaceAndPath("lithmod",id)));
+        fullExpected.add(ModItems.DIMM_T7.get());fullExpected.add(ModItems.RESIST_T7.get());fullExpected.add(ModItems.TIN_FEEDSTOCK.get());
+          h.assertValueEqual(213, actualEntries.size(), "MAIN tab exact entry count");
+        for (int i = 0; i < 213; i++) {
             Item expected = fullExpected.get(i);
             Item actual = actualEntries.get(i).getItem();
             h.assertTrue(actual == expected,

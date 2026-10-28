@@ -2,9 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "CGC",
-    "RPR",
-    "CGC"
+    "CCC",
+    "CGG",
+    "PRR"
   ],
   "key": {
     "C": "lithmod:euv_scanner_casing",

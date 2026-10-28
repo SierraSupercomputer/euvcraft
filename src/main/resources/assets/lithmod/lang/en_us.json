@@ -526,5 +526,6 @@
   "button.lithmod.euv.repair": "Repair",
   "button.lithmod.euv.vacuum_isolation": "Isolation",
   "block.lithmod.euv_scanner_equipment_cabinet": "EUV Scanner Equipment Cabinet",
-  "item.lithmod.tin_feedstock": "Tin Feedstock"
+  "item.lithmod.tin_feedstock": "Tin Feedstock",
+  "tier.lithmod.t7": "T7 EUV"
 }
