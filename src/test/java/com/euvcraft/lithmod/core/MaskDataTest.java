@@ -58,7 +58,7 @@ class MaskDataTest {
     @Test
     void rejectsInvalidShopGeneration() {
         assertThrows(IllegalArgumentException.class, () -> new MaskData("logic", 1, 1, 0));
-        assertThrows(IllegalArgumentException.class, () -> new MaskData("logic", 1, 1, 3));
+        assertThrows(IllegalArgumentException.class, () -> new MaskData("logic", 1, 1, 4));
         assertThrows(IllegalArgumentException.class, () -> new MaskData("logic", 1, 1, -1));
     }
 

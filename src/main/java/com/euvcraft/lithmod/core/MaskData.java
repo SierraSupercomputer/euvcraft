@@ -13,7 +13,7 @@ import java.util.Objects;
  * @param tierIndex       1-based tier index the mask targets (no upper cap here;
  *                        registry existence is enforced by {@link MaskRules})
  * @param usesRemaining   remaining uses, {@code >= 0}; zero means spent
- * @param shopGeneration  mask shop generation this mask was cut at (1 or 2)
+ * @param shopGeneration  mask shop generation this mask was cut at (1, 2 or 3)
  */
 public record MaskData(String dieType, int tierIndex, int usesRemaining, int shopGeneration) {
 
@@ -29,8 +29,8 @@ public record MaskData(String dieType, int tierIndex, int usesRemaining, int sho
         if (usesRemaining < 0) {
             throw new IllegalArgumentException("usesRemaining must be >= 0, got " + usesRemaining);
         }
-        if (shopGeneration != 1 && shopGeneration != 2) {
-            throw new IllegalArgumentException("shopGeneration must be 1 or 2, got " + shopGeneration);
+        if (shopGeneration < 1 || shopGeneration > 3) {
+            throw new IllegalArgumentException("shopGeneration must be 1, 2 or 3, got " + shopGeneration);
         }
     }
 

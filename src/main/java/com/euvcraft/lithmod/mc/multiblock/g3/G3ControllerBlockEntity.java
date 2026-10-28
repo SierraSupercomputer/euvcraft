@@ -1,858 +1,163 @@
 package com.euvcraft.lithmod.mc.multiblock.g3;
 
-import com.euvcraft.lithmod.core.WaterTank;
-import com.euvcraft.lithmod.core.FoupContents;
-import com.euvcraft.lithmod.core.FoupDisposal;
-import com.euvcraft.lithmod.core.MachineDefinition;
-import com.euvcraft.lithmod.core.multiblock.BlockKind;
-import com.euvcraft.lithmod.core.multiblock.MatchResult;
-import com.euvcraft.lithmod.core.multiblock.MultiblockDirection;
-import com.euvcraft.lithmod.core.multiblock.MultiblockPos;
-import com.euvcraft.lithmod.core.multiblock.StructureShape;
-import com.euvcraft.lithmod.core.t7.VacuumChamberState;
-import com.euvcraft.lithmod.core.t7.VacuumMode;
-import com.euvcraft.lithmod.core.t7.VacuumPumpSpec;
-import com.euvcraft.lithmod.core.t7.VacuumTickResult;
-import com.euvcraft.lithmod.core.t7.CentralVacuumAllocator;
-import com.euvcraft.lithmod.core.t7.MachineContaminationState;
-import com.euvcraft.lithmod.core.t7.BreachConditions;
-import com.euvcraft.lithmod.core.t7.BreachNotification;
-import com.euvcraft.lithmod.core.t7.ContaminationRepairCost;
-import com.euvcraft.lithmod.core.t7.G3Preparation;
-import com.euvcraft.lithmod.mc.EUVCRAFTMod;
-import com.euvcraft.lithmod.mc.FoupItems;
-import com.euvcraft.lithmod.mc.FoupContentsCodec;
-import com.euvcraft.lithmod.mc.registry.ModItems;
+import com.euvcraft.lithmod.core.*;
+import com.euvcraft.lithmod.core.t7.*;
+import com.euvcraft.lithmod.mc.*;
+import com.euvcraft.lithmod.mc.cleanroom.*;
 import com.euvcraft.lithmod.mc.data.SupportRecipeLoader;
-import com.euvcraft.lithmod.mc.recipe.SupportRecipe;
-import com.euvcraft.lithmod.mc.multiblock.EnergyBufferProvider;
 import com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity;
+import com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumConsumer;
+import com.euvcraft.lithmod.mc.registry.*;
+import com.mojang.serialization.Codec;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ContainerData;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.storage.ValueInput;
-import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.*;
 import org.jspecify.annotations.Nullable;
 
-import net.minecraft.resources.ResourceLocation;
-
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-
-/**
- * Base class for G3 controller block entities.
- * Handles formation lifecycle, visual state, energy buffer, and common job infrastructure.
- */
-public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity implements G3ControllerOwner, EnergyBufferProvider {
-
-    /** Revalidation interval in ticks. */
-    public static final int REVALIDATE_INTERVAL = 20;
-
-    /** Maximum part index for visual states (175 cells for 5x5x7). */
-    public static final int MAX_PART_INDEX = 174;
-
-    /** The current formation state. */
-    private final G3Formation formation = new G3Formation(this);
-
-    /** Current machine kind (writer or deposition etcher). */
+/** Frozen G3 jobs own real reserved stacks; no readiness check or simulation mutates inputs. */
+public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity implements G3ControllerOwner,VacuumConsumer {
+    public enum PrepPhase { IDLE,VACUUM_DEP_ETCH,UPW_RINSE,POWERED_DRY,COMPLETE }
+    public enum Status { IDLE,UNFORMED,NO_ROOM,NO_INPUT,OUTPUT_BLOCKED,NO_POWER,NO_UPW,VACUUM,REPAIR,WORKING,RECOVERY }
+    private final G3Formation formation=new G3Formation(this);
     private final G3MachineKind kind;
-
-    /** Water tank for deposition etcher (UPW for rinse phase). Null for writer. */
-    protected @Nullable WaterTank waterTank;
-
-    /** Water journal for transactional fluid handling. */
-    final G3WaterInletHandler.TankJournal waterJournal = new G3WaterInletHandler.TankJournal(this);
-
-    /** Vacuum chamber state for deposition etcher. Null for writer. */
-    protected @Nullable VacuumChamberState vacuumState;
-
-    /** Local vacuum pump spec (from definition). */
-    protected @Nullable VacuumPumpSpec vacuumSpec;
-
-    /** Machine contamination state for T7 processing. */
-    protected MachineContaminationState contaminationState = MachineContaminationState.clean();
-
-    /** Central vacuum allocation cursor (persisted, advanced each tick). */
-    protected int vacuumCursor = 0;
-
-    /** Pending job state — common fields. */
-    protected boolean jobRunning;
-    protected boolean jobPaused;
-    protected int jobProgress;
-    protected int jobDuration;
-    protected int jobEnergyPerTick;
-
-    /** Job input/output tracking for conservation. */
-    protected @Nullable ItemStack pendingInput0;
-    protected @Nullable ItemStack pendingInput1;
-    protected @Nullable ItemStack pendingOutput;
-    protected int pendingOutputCount;
-    protected int pendingInput0Count;
-    protected int pendingInput1Count;
-    protected int pendingWaterMb;
-
-    protected G3ControllerBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state,
-                                      G3MachineKind kind, int inputSlots, int outputSlots) {
-        super(type, pos, state, inputSlots, outputSlots);
-        this.kind = kind;
-        if (kind == G3MachineKind.DEPOSITION_ETCHER) {
-            this.waterTank = new WaterTank(16000); // default, resized from definition
-            this.vacuumState = VacuumChamberState.evacuated();
+    protected final WaterTank waterTank=new WaterTank(16000);
+    final G3WaterInletHandler.TankJournal waterJournal=new G3WaterInletHandler.TankJournal(this);
+    protected VacuumChamberState vacuumState=VacuumChamberState.evacuated();
+    protected VacuumPumpSpec vacuumSpec=new VacuumPumpSpec(5000,100,2000,10000,50000,1000);
+    protected MachineContaminationState contaminationState=MachineContaminationState.clean();
+    protected PrepPhase prepPhase=PrepPhase.IDLE;
+    protected int phaseProgress,phaseDuration,phaseEnergyPerTick,phaseWaterMb;
+    protected boolean jobRunning,jobPaused;
+    private int jobProgress,jobDuration,jobEnergyPerTick,selection=-1,cores=1,frozenUses=1;
+    private ItemStack carrier=ItemStack.EMPTY,input0=ItemStack.EMPTY,input1=ItemStack.EMPTY,product=ItemStack.EMPTY;
+    private List<BlockPos> footprint=List.of();
+    private long paidYieldSum,paidSamples;
+    private int rinseDuration,rinseFe,rinseWater,dryDuration,dryFe,pumpFe=200;
+    private boolean recovery,isolated;
+    private long grantTick=Long.MIN_VALUE,consumedGrantTick=Long.MIN_VALUE;
+    private int grant;
+    private Status status=Status.IDLE;
+    protected G3ControllerBlockEntity(BlockEntityType<?> type,BlockPos pos,BlockState state,G3MachineKind kind,int inputs,int outputs){super(type,pos,state,inputs,outputs);this.kind=kind;}
+    @Override public final G3ControllerBlockEntity machine(){return this;}
+    @Override public final G3Formation formation(){return formation;}
+    @Override public final G3MachineKind getKind(){return kind;}
+    @Override public final boolean large(){return kind==G3MachineKind.DEPOSITION_ETCHER;}
+    public final WaterTank waterTank(){return waterTank;}
+    public VacuumChamberState vacuumState(){return vacuumState;}
+    public VacuumPumpSpec vacuumSpec(){return vacuumSpec;}
+    public MachineContaminationState contaminationState(){return contaminationState;}
+    public boolean hasJob(){return jobRunning||!carrier.isEmpty()||!input0.isEmpty()||!input1.isEmpty();}
+    public int corePreference(){return cores;}
+    public int selectedDesign(){return selection;}
+    public boolean coresSelectable(){return !hasJob()&&selection==0&&isFormed();}
+    public boolean cycleCores(){if(!coresSelectable())return false;var options=EUVCRAFTMod.settings().coreCountOptions();if(options.isEmpty())return false;cores=options.get((options.indexOf(cores)+1)%options.size());setChanged();return true;}
+    public boolean selectDesign(int index){if(kind!=G3MachineKind.RETICLE_WRITER||hasJob()||index<0||index>2)return false;selection=index;if(index!=0)cores=1;setChanged();return true;}
+    public boolean toggleIsolation(){isolated=!isolated;grant=0;setChanged();return true;}
+    private int p(String key,int fallback){return definition().map(d->d.paramOrDefault(key,fallback)).orElse(fallback);}
+    private int fe(int raw){return (int)Math.clamp(Math.round(raw*EUVCRAFTMod.settings().fePowerMultiplier()),1,Integer.MAX_VALUE);}
+    private CleanroomRooms.Sample room(){return CleanroomRooms.sample((ServerLevel)level,footprint.isEmpty()?members():footprint);}
+    private boolean enclosed(CleanroomRooms.Sample sample){return sample.available()&&sample.room()!=null&&sample.room().state()==CleanroomControllerBlockEntity.ENCLOSED;}
+    @Override public void serverTick(){
+        if(!(level instanceof ServerLevel)||isRemoved()||level.getBlockEntity(worldPosition)!=this)return;
+        refreshDefinition();revalidate();waterTank.resize(Math.clamp(p("water_capacity",32000),1000,WaterTank.MAX_CAPACITY));
+        status=Status.IDLE;jobPaused=false;
+        if(large()&&!carrier.isEmpty()){
+            var sample=room();
+            if(!sample.available()){status=Status.NO_ROOM;sync();return;}
+            if(!enclosed(sample)&&!FoupItems.trustedContentsOf(carrier).isContaminated())notifyStructuralBreach(level.getGameTime());
         }
+        if(large())tickVacuum();
+        if(!isFormed()){status=Status.UNFORMED;jobPaused=hasJob();sync();return;}
+        if(definition().isEmpty()){sync();return;}
+        if(recovery&&!jobRunning&&carrier.isEmpty()){recoverInputs();status=Status.RECOVERY;sync();return;}
+        if(large())tickPrep();else tickWriter();sync();
     }
-
-    @Override
-    public final FabMachineBlockEntity machine() {
-        return this;
+    private void sync(){data().set(DATA_ENERGY,buffer().getAmountAsInt());data().set(DATA_CAPACITY,buffer().getCapacityAsInt());data().set(DATA_PROGRESS,large()?phaseProgress:jobProgress);data().set(DATA_TICKS,large()?phaseDuration:jobDuration);}
+    public int publicData(int i){return switch(i){case 0->isFormed()?1:0;case 1->prepPhase.ordinal();case 2->jobPaused?1:0;case 3->waterTank.amount();case 4->waterTank.capacity();case 5->vacuumState.pressureMicroTorr();case 6->vacuumSpec.operatingPressureMicroTorr();case 7->contaminationState.phase().ordinal();case 8->selection;case 9->cores;case 10->hasJob()?1:0;case 11->isolated?1:0;case 12->phaseProgress;case 13->phaseDuration;case 14->status.ordinal();default->0;};}
+    public boolean startWriterJob(String recipeId,int coreCount){
+        if(kind!=G3MachineKind.RETICLE_WRITER||hasJob()||!isFormed()||definition().isEmpty()||!(level instanceof ServerLevel))return false;
+        var families=List.of("compute","memory","nand");int index=-1;for(int i=0;i<3;i++)if(recipeId.equals("lithmod:g3_"+families.get(i)+"_t7"))index=i;if(index<0)return false;
+        var recipes=SupportRecipeLoader.getRegistry();if(recipes==null)return false;var resolved=recipes.byId(Identifier.parse(recipeId)).orElse(null);if(resolved==null||!resolved.recipe().machine().equals(machineId()))return false;
+        var recipe=resolved.recipe();int blank=recipe.input().count(),red=recipe.secondary()==null?0:recipe.secondary().count(),cost=fe(recipe.energyPerTick());
+        if(blank<1||red<1||slot(0).getCount()<blank||!slot(0).is(resolved.inputItem())||!slot(1).is(Items.REDSTONE)||slot(1).getCount()<red||!slot(2).isEmpty()||buffer().getAmountAsLong()<cost)return false;
+        int count=index==0?coreCount:1;if(count<1||!EUVCRAFTMod.settings().coreCountOptions().contains(count))return false;
+        input0=slot(0).split(blank);if(slot(0).isEmpty())clearSlot(0);input1=slot(1).split(red);if(slot(1).isEmpty())clearSlot(1);
+        product=new ItemStack(resolved.outputItem(),recipe.outputCount());product.set(ModDataComponents.MASK_DATA.get(),new MaskData(families.get(index),7,1,3));if(index==0)product.set(ModDataComponents.CORE_COUNT.get(),count);
+        selection=index;cores=count;frozenUses=Math.max(1,EUVCRAFTMod.settings().maskUses());jobDuration=recipe.duration();jobEnergyPerTick=cost;jobProgress=0;paidSamples=paidYieldSum=0;jobRunning=true;setChanged();return true;
     }
-
-    @Override
-    public final G3Formation formation() {
-        return formation;
+    private void tickWriter(){
+        if(!jobRunning)return;
+        if(!slot(2).isEmpty()){status=Status.OUTPUT_BLOCKED;jobPaused=true;return;}
+        var sample=room();if(!sample.available()){status=Status.NO_ROOM;jobPaused=true;return;}
+        if(jobProgress<jobDuration){if(energySource().draw(jobEnergyPerTick)!=jobEnergyPerTick){status=Status.NO_POWER;jobPaused=true;return;}jobProgress++;paidYieldSum+=sample.yieldPermille();paidSamples++;setChanged();}
+        if(jobProgress>=jobDuration){int quality=(int)(paidYieldSum/Math.max(1,paidSamples));quality=Math.clamp(quality,p("mask_min_uses_permille",250),p("mask_max_uses_permille",1000));var mask=product.get(ModDataComponents.MASK_DATA.get());product.set(ModDataComponents.MASK_DATA.get(),new MaskData(mask.dieType(),7,Math.max(1,(int)((long)frozenUses*quality/1000)),3));setSlot(2,product);product=input0=input1=ItemStack.EMPTY;jobRunning=false;setChanged();}else status=Status.WORKING;
     }
-
-    @Override
-    public final boolean large() {
-        return kind == G3MachineKind.DEPOSITION_ETCHER;
+    public boolean startPrepJob(){
+        if(!large()||hasJob()||!isFormed()||definition().isEmpty()||!contaminationState.isOperational()||!(level instanceof ServerLevel))return false;
+        var sample=room();if(!enclosed(sample)||!slot(3).isEmpty())return false;var stack=slot(0);var lot=FoupItems.trustedContentsOf(stack);
+        if(stack.getCount()!=1||lot==null||lot.isEmpty()||lot.isStarted()||lot.isContaminated()||lot.grade()!=WaferSubstrate.ELECTRONIC_GRADE||lot.preparationGeneration()!=1||lot.wafers().stream().anyMatch(w->w.layerIndex()!=0||w.cumulativeRoll()!=Wafer.NO_ROLLS||w.flags()!=0))return false;
+        int duration=p("vacuum_duration",400),cost=fe(p("vacuum_energy_per_tick",960)),water=p("rinse_water_mb",4000);
+        if(waterTank.amount()<water||buffer().getAmountAsLong()<cost||lot.size()>64)return false;
+        rinseDuration=p("rinse_duration",200);rinseFe=fe(p("rinse_energy_per_tick",480));rinseWater=water;dryDuration=p("dry_duration",200);dryFe=fe(p("dry_energy_per_tick",960));pumpFe=fe(p("local_pump_fe_per_tick",200));
+        vacuumSpec=new VacuumPumpSpec(p("vacuum_pump_rate",5000),p("vacuum_idle_leak",100),p("vacuum_process_load",2000),p("vacuum_operating_pressure",10000),p("vacuum_reserve_capacity",50000),p("vacuum_reserve_recharge",1000));
+        carrier=stack.copy();clearSlot(0);footprint=List.copyOf(members());paidSamples=paidYieldSum=0;prepPhase=PrepPhase.VACUUM_DEP_ETCH;phaseProgress=0;phaseDuration=duration;phaseEnergyPerTick=cost;phaseWaterMb=0;jobRunning=true;setChanged();return true;
     }
-
-    @Override
-    public final G3MachineKind getKind() {
-        return kind;
-    }
-
-    @Override
-    public final boolean isFormed() {
-        return formation.formed();
-    }
-
-    @Override
-    public final void revalidate() {
-        formation.validate();
-    }
-
-    @Override
-    public final List<BlockPos> members() {
-        return formation.members();
-    }
-
-    
-
-    /** Returns the water tank (deposition etcher only). */
-    public @Nullable WaterTank waterTank() {
-        return waterTank;
-    }
-
-    /** Returns the vacuum chamber state (deposition etcher only). */
-    public @Nullable VacuumChamberState vacuumState() {
-        return vacuumState;
-    }
-
-    /** Returns the machine contamination state. */
-    public MachineContaminationState contaminationState() {
-        return contaminationState;
-    }
-
-    /** Returns the vacuum pump spec (from definition). */
-    public @Nullable VacuumPumpSpec vacuumSpec() {
-        return vacuumSpec;
-    }
-
-    @Override
-    public void serverTick() {
-        if (!(this.level instanceof net.minecraft.server.level.ServerLevel) || this.isRemoved()
-                || this.level.getBlockEntity(this.worldPosition) != this) return;
-
-        refreshDefinition();
-        syncWaterCapacity();
-        syncVacuumSpec();
-
-        if (this.formation.needsValidation() || this.formation.ticksSinceValidation() + 1 >= REVALIDATE_INTERVAL) {
-            this.formation.setNeedsValidation(false);
-            this.formation.setTicksSinceValidation(0);
-            this.formation.validate();
-        } else {
-            this.formation.setTicksSinceValidation(this.formation.ticksSinceValidation() + 1);
-        }
-
-        if (this.kind == G3MachineKind.RETICLE_WRITER) {
-            tickWriterJob();
-        } else {
-            tickDepositionEtcherJob();
-        }
-
-        publishData();
-    }
-
-    private void syncWaterCapacity() {
-        if (this.waterTank == null) return;
-        Optional<Integer> param = definition().flatMap(def -> def.param("water_capacity"));
-        if (param.isPresent()) {
-            int requested = param.get();
-            if (requested >= 1 && requested <= WaterTank.MAX_CAPACITY) {
-                this.waterTank.resize(requested);
-            }
-        }
-    }
-
-    private void syncVacuumSpec() {
-        if (this.vacuumState == null) return;
-        definition().ifPresent(def -> {
-            int pumpRate = def.paramOrDefault("vacuum_pump_rate", 5000);
-            int idleLeak = def.paramOrDefault("vacuum_idle_leak", 100);
-            int processLoad = def.paramOrDefault("vacuum_process_load", 2000);
-            int operatingPressure = def.paramOrDefault("vacuum_operating_pressure", 10000);
-            int reserveCapacity = def.paramOrDefault("vacuum_reserve_capacity", 50000);
-            int reserveRecharge = def.paramOrDefault("vacuum_reserve_recharge", 1000);
-            this.vacuumSpec = new VacuumPumpSpec(pumpRate, idleLeak, processLoad, operatingPressure, reserveCapacity, reserveRecharge);
-        });
-    }
-
-    private void publishData() {
-        data().set(FabMachineBlockEntity.DATA_ENERGY, this.buffer().getAmountAsInt());
-        data().set(FabMachineBlockEntity.DATA_CAPACITY, this.buffer().getCapacityAsInt());
-        data().set(FabMachineBlockEntity.DATA_PROGRESS, this.jobRunning ? this.jobProgress : 0);
-        data().set(FabMachineBlockEntity.DATA_TICKS, this.jobRunning ? this.jobDuration : 0);
-        // Note: Base class data container only has 4 slots (0-3). Extra G3-specific UI data
-        // (formed, paused, water, vacuum, contamination) requires custom packet syncing
-        // which will be implemented in a follow-up. For now, only base energy/progress sync works.
-    }
-
-    // ==================== Writer job logic ====================
-
-    /** Writer: selectable tier7 compute/memory/NAND recipes from SupportRecipeLoader/MaskData APIs. */
-    private void tickWriterJob() {
-        if (this.jobRunning) {
-            advanceWriterJob();
-        } else if (this.formation.formed()) {
-            maybeStartWriterJob();
-        }
-    }
-
-    private void maybeStartWriterJob() {
-        // Job start is triggered by server-side menu button (clickMenuButton)
-        // This method is a placeholder for auto-start if needed later
-    }
-
-    /**
-     * Server-side handler for writer job start button.
-     * Validates selection and pins the job snapshot.
-     * @param recipeId the support recipe id to use
-     * @param coreCount core count for compute designs (1 for non-compute)
-     * @return true if the job was started
-     */
-    public boolean startWriterJob(String recipeId, int coreCount) {
-        if (!(this.level instanceof net.minecraft.server.level.ServerLevel) || this.isRemoved()
-                || this.level.getBlockEntity(this.worldPosition) != this
-                || this.kind != G3MachineKind.RETICLE_WRITER
-                || this.jobRunning || !this.formation.formed()) return false;
-
-        SupportRecipeLoader.Registry registry = SupportRecipeLoader.getRegistry();
-        if (registry == null) return false;
-
-        SupportRecipeLoader.Resolved resolved = registry.byId(
-                net.minecraft.resources.Identifier.tryParse(recipeId))
-                .filter(r -> r.recipe().machine().equals("g3_reticle_writer")).orElse(null);
-        if (resolved == null) return false;
-
-        SupportRecipe recipe = resolved.recipe();
-
-        // Validate inputs: blank mask + redstone
-        ItemStack blankIn = this.slot(0);
-        ItemStack redstoneIn = this.slot(1);
-        if (!blankIn.is(resolved.inputItem()) || blankIn.getCount() < recipe.input().count()
-                || !redstoneIn.is(Items.REDSTONE) || redstoneIn.getCount() < (recipe.secondary() != null ? recipe.secondary().count() : 0)
-                || !canAcceptInto(2, resolved.outputItem(), recipe.outputCount())) {
-            return false;
-        }
-
-        // Validate core count for compute designs
-        // The recipe's output item carries the die type via MaskData component
-        // For now, we trust the recipe configuration; core count is validated against settings
-        if (coreCount < 1 || coreCount > 256) return false;
-        if (!EUVCRAFTMod.settings().coreCountOptions().contains(coreCount)) return false;
-
-        // Pin the job snapshot
-        this.jobDuration = recipe.duration();
-        this.jobEnergyPerTick = recipe.energyPerTick();
-        this.jobProgress = 0;
-        this.pendingInput0 = blankIn.copy();
-        this.pendingInput0Count = recipe.input().count();
-        this.pendingInput1 = redstoneIn.copy();
-        this.pendingInput1Count = recipe.secondary() != null ? recipe.secondary().count() : 0;
-        this.pendingOutput = new ItemStack(resolved.outputItem());
-        this.pendingOutputCount = recipe.outputCount();
-        this.pendingWaterMb = 0; // writer uses no water
-
-        this.jobRunning = true;
-        this.jobPaused = false;
-        setChanged();
-        return true;
-    }
-
-    private void advanceWriterJob() {
-        if (!this.formation.formed()) {
-            this.jobPaused = true;
-            return;
-        }
-        if (writerInputTampered()) {
-            resetJob();
-            return;
-        }
-        if (!canAcceptInto(2, this.pendingOutput.getItem(), this.pendingOutputCount)) {
-            this.jobPaused = true;
-            return;
-        }
-        if (this.energySource().draw(this.jobEnergyPerTick) < this.jobEnergyPerTick) {
-            this.jobPaused = true;
-            return;
-        }
-
-        this.jobPaused = false;
-        this.jobProgress++;
-        if (this.jobProgress < this.jobDuration) {
-            return;
-        }
-        completeWriterJob();
-    }
-
-    private boolean writerInputTampered() {
-        ItemStack blankIn = this.slot(0);
-        ItemStack redstoneIn = this.slot(1);
-        return !blankIn.is(this.pendingInput0.getItem()) || blankIn.getCount() < this.pendingInput0Count
-                || !redstoneIn.is(this.pendingInput1.getItem()) || redstoneIn.getCount() < this.pendingInput1Count;
-    }
-
-    private void completeWriterJob() {
-        if (!this.formation.formed() || writerInputTampered()
-                || !canAcceptInto(2, this.pendingOutput.getItem(), this.pendingOutputCount)) {
-            resetJob();
-            return;
-        }
-
-        // Consume exact inputs
-        ItemStack blankIn = this.slot(0);
-        ItemStack redstoneIn = this.slot(1);
-        blankIn.shrink(this.pendingInput0Count);
-        if (blankIn.isEmpty()) this.clearSlot(0);
-        redstoneIn.shrink(this.pendingInput1Count);
-        if (redstoneIn.isEmpty()) this.clearSlot(1);
-
-        // Write core count to output mask if compute design
-        // The recipe's output item is the mask item; we set CORE_COUNT component
-        ItemStack product = this.pendingOutput.copy();
-        if (coreCount > 1) {
-            product.set(com.euvcraft.lithmod.mc.registry.ModDataComponents.CORE_COUNT.get(), coreCount);
-        }
-
-        ItemStack existing = this.slot(2);
-        if (existing.isEmpty()) {
-            this.setSlot(2, product);
-        } else {
-            existing.setCount(existing.getCount() + product.getCount());
+    private void tickPrep(){
+        if(prepPhase==PrepPhase.COMPLETE){finishCarrier();return;}
+        if(!contaminationState.isOperational()){status=Status.REPAIR;return;}
+        if(carrier.isEmpty()){if(!startPrepJob()){status=slot(0).isEmpty()?Status.NO_INPUT:Status.NO_ROOM;}return;}
+        var sample=room();if(!enclosed(sample)){status=Status.NO_ROOM;jobPaused=true;return;}
+        if(prepPhase==PrepPhase.VACUUM_DEP_ETCH&&!vacuumState.canProcess(vacuumSpec)){status=Status.VACUUM;jobPaused=true;return;}
+        if(prepPhase==PrepPhase.UPW_RINSE&&phaseProgress==0&&waterTank.amount()<rinseWater){status=Status.NO_UPW;jobPaused=true;return;}
+        if(energySource().draw(phaseEnergyPerTick)!=phaseEnergyPerTick){status=Status.NO_POWER;jobPaused=true;return;}
+        if(prepPhase==PrepPhase.UPW_RINSE&&phaseProgress==0)waterTank.drainExact(rinseWater,false);
+        phaseProgress++;paidSamples++;paidYieldSum+=sample.yieldPermille();status=Status.WORKING;
+        if(phaseProgress>=phaseDuration){
+            if(prepPhase==PrepPhase.VACUUM_DEP_ETCH){prepPhase=PrepPhase.UPW_RINSE;phaseDuration=rinseDuration;phaseEnergyPerTick=rinseFe;phaseWaterMb=rinseWater;phaseProgress=0;}
+            else if(prepPhase==PrepPhase.UPW_RINSE){prepPhase=PrepPhase.POWERED_DRY;phaseDuration=dryDuration;phaseEnergyPerTick=dryFe;phaseWaterMb=0;phaseProgress=0;}
+            else {var lot=FoupItems.trustedContentsOf(carrier);int[] draws=new int[lot.size()];for(int i=0;i<draws.length;i++)draws[i]=ThreadLocalRandom.current().nextInt(1,1001);carrier.set(ModDataComponents.FOUP_CONTENTS.get(),lot.preparedG3((int)(paidYieldSum/Math.max(1,paidSamples)),draws));prepPhase=PrepPhase.COMPLETE;jobRunning=false;finishCarrier();}
         }
         setChanged();
-        resetJob();
     }
-
-    // Core count for the active writer job (pinned at start)
-    private int coreCount = 1;
-
-    // ==================== Deposition Etcher job logic ====================
-
-    /** Deposition etcher job phases. */
-    protected enum PrepPhase {
-        IDLE,
-        VACUUM_DEP_ETCH,
-        UPW_RINSE,
-        POWERED_DRY,
-        COMPLETE
+    private void finishCarrier(){if(carrier.isEmpty()){prepPhase=PrepPhase.IDLE;return;}if(!slot(3).isEmpty()){status=Status.OUTPUT_BLOCKED;return;}setSlot(3,carrier);carrier=ItemStack.EMPTY;prepPhase=PrepPhase.IDLE;jobRunning=false;footprint=List.of();setChanged();}
+    public boolean notifyStructuralBreach(long tick){if(!large()||carrier.isEmpty())return false;var lot=FoupItems.trustedContentsOf(carrier);if(lot==null||lot.isContaminated())return false;contaminationState=MachineContaminationState.contaminated(tick);carrier.set(ModDataComponents.FOUP_CONTENTS.get(),lot.contaminated());prepPhase=PrepPhase.COMPLETE;jobRunning=false;setChanged();return true;}
+    public boolean repair(){
+        if(!large()||!isFormed()||!contaminationState.requiresRepair()||!enclosed(room()))return false;
+        int filters=p("repair_filter_medium",2),red=p("repair_redstone",16),water=p("repair_upw_mb",8000),cost=fe(p("repair_fe",200000));
+        if(!slot(1).is(ModItems.UTILITY_FILTER.get())||slot(1).getCount()<filters||!slot(2).is(Items.REDSTONE)||slot(2).getCount()<red||waterTank.amount()<water||buffer().getAmountAsLong()<cost)return false;
+        if(energySource().draw(cost)!=cost)return false;waterTank.drainExact(water,false);slot(1).shrink(filters);slot(2).shrink(red);contaminationState=contaminationState.repair(new ContaminationRepairCost(filters+red,water,cost)).state().recalibrate().state();setChanged();return true;
     }
-
-    protected PrepPhase prepPhase = PrepPhase.IDLE;
-    protected int phaseProgress;
-    protected int phaseDuration;
-    protected int phaseEnergyPerTick;
-    protected int phaseWaterMb;
-    protected int phaseVacuumDemand;
-    protected boolean phaseLocalPumpPowered;
-    protected @Nullable FoupContents admittedLot;
-    protected @Nullable UUID admittedLotId;
-    protected int admittedSlot = 0; // FOUP input slot
-
-    private void tickDepositionEtcherJob() {
-        // Handle vacuum tick if we have a spec
-        if (this.vacuumSpec != null && this.vacuumState != null) {
-            tickVacuum();
-        }
-
-        switch (this.prepPhase) {
-            case IDLE -> {
-                if (this.formation.formed()) maybeStartPrepJob();
-            }
-            case VACUUM_DEP_ETCH -> advanceVacuumDepEtchPhase();
-            case UPW_RINSE -> advanceRinsePhase();
-            case POWERED_DRY -> advanceDryPhase();
-            case COMPLETE -> completePrepJob();
-        }
+    private VacuumMode mode(){return prepPhase==PrepPhase.VACUUM_DEP_ETCH?VacuumMode.PROCESS:VacuumMode.IDLE;}
+    @Override public BlockPos vacuumOwnerPos(){return worldPosition;}
+    @Override public int vacuumDemand(){return isolated||!isFormed()||!large()?0:vacuumState.requiredServiceMicroTorrPerTick(vacuumSpec,mode());}
+    @Override public boolean acceptVacuumGrant(long tick,int amount){if(level==null||isolated||amount<0||tick>level.getGameTime()||tick<level.getGameTime()-1||tick<=consumedGrantTick||tick<grantTick)return false;grantTick=tick;grant=amount;return true;}
+    private void tickVacuum(){
+        int service=0;if(level!=null&&grantTick>consumedGrantTick&&grantTick>=level.getGameTime()-1&&grantTick<=level.getGameTime()&&!isolated){service=grant;consumedGrantTick=grantTick;}grant=0;
+        boolean local=isFormed()&&definition().isPresent()&&service<vacuumDemand()&&energySource().draw(pumpFe)==pumpFe;
+        vacuumState=vacuumState.tick(vacuumSpec,mode(),service,local).state();
     }
-
-    private void maybeStartPrepJob() {
-        // Job start triggered by server-side menu button with fresh electronic-grade FOUP
+    private void recoverInputs(){if(!input0.isEmpty()&&slot(0).isEmpty()){setSlot(0,input0);input0=ItemStack.EMPTY;}if(!input1.isEmpty()&&slot(1).isEmpty()){setSlot(1,input1);input1=ItemStack.EMPTY;}recovery=!input0.isEmpty()||!input1.isEmpty();}
+    @Override public void setRemoved(){formation.unload();super.setRemoved();}
+    @Override protected void dropExtraContents(@Nullable Level world,BlockPos pos){dropContainer(world,pos,new SimpleContainer(carrier,input0,input1));carrier=input0=input1=product=ItemStack.EMPTY;jobRunning=false;}
+    @Override protected void saveAdditional(ValueOutput out){
+        super.saveAdditional(out);out.putInt("g3Water",waterTank.amount());out.putInt("g3Pressure",vacuumState.pressureMicroTorr());out.putInt("g3Reserve",vacuumState.reserveMicroTorr());out.putInt("g3Contamination",contaminationState.phase().ordinal());out.putLong("g3Breach",contaminationState.lastBreachTick());out.putInt("g3Selection",selection);out.putInt("g3Cores",cores);out.putBoolean("g3Isolated",isolated);
+        out.store("g3Carrier",ItemStack.OPTIONAL_CODEC,carrier);out.store("g3Input0",ItemStack.OPTIONAL_CODEC,input0);out.store("g3Input1",ItemStack.OPTIONAL_CODEC,input1);out.store("g3Product",ItemStack.OPTIONAL_CODEC,product);out.store("g3Footprint",BlockPos.CODEC.listOf(),footprint);out.putBoolean("g3Running",jobRunning);out.putBoolean("g3Recovery",recovery);out.putLong("g3Samples",paidSamples);out.putLong("g3YieldSum",paidYieldSum);
+        out.store("g3Frozen",Codec.INT.listOf(),List.of(prepPhase.ordinal(),phaseProgress,phaseDuration,phaseEnergyPerTick,phaseWaterMb,rinseDuration,rinseFe,rinseWater,dryDuration,dryFe,pumpFe,jobProgress,jobDuration,jobEnergyPerTick,frozenUses,vacuumSpec.pumpRateMicroTorrPerTick(),vacuumSpec.idleLeakMicroTorrPerTick(),vacuumSpec.processLoadMicroTorrPerTick(),vacuumSpec.operatingPressureMicroTorr(),vacuumSpec.reserveCapacityMicroTorr(),vacuumSpec.reserveRechargeMicroTorrPerTick()));
     }
-
-    /**
-     * Server-side handler for prep job start button.
-     * Admits a fresh unstarted electronic-grade FOUP from the input slot.
-     * @return true if the job was started
-     */
-    public boolean startPrepJob() {
-        if (!(this.level instanceof net.minecraft.server.level.ServerLevel) || this.isRemoved()
-                || this.level.getBlockEntity(this.worldPosition) != this
-                || this.kind != G3MachineKind.DEPOSITION_ETCHER
-                || this.prepPhase != PrepPhase.IDLE || !this.formation.formed()) return false;
-
-        ItemStack foupStack = this.slot(0);
-        if (foupStack.isEmpty() || foupStack.getCount() != 1) return false;
-
-        // Validate FOUP contents: fresh, unstarted, electronic-grade
-        FoupContents lot = FoupItems.trustedContentsOf(foupStack);
-        if (lot == null || lot.isEmpty()) return false;
-        if (lot.isStarted() || lot.grade().generation() < com.euvcraft.lithmod.core.WaferSubstrate.ELECTRONIC_GRADE.generation()
-                || lot.preparationGeneration() != FoupContents.PREPARATION_LEGACY) return false;
-        for (com.euvcraft.lithmod.core.Wafer wafer : lot.wafers()) {
-            if (wafer.layerIndex() != com.euvcraft.lithmod.core.Wafer.UNPROCESSED_LAYER) return false;
-        }
-
-        // Admit the lot (remove from input slot, store reference)
-        this.admittedLot = lot;
-        this.admittedLotId = lot.lotId();
-        this.admittedSlot = 0;
-        this.clearSlot(0);
-
-        // Load definition params for phases
-        var def = definition().orElseThrow();
-        int vacuumDuration = def.param("vacuum_duration").orElse(200);
-        int vacuumEnergy = def.param("vacuum_energy_per_tick").orElse(100);
-        int vacuumDemand = def.param("vacuum_demand_microtorr_per_tick").orElse(5000);
-        int rinseDuration = def.param("rinse_duration").orElse(200);
-        int rinseEnergy = def.param("rinse_energy_per_tick").orElse(50);
-        int rinseWater = def.param("rinse_water_mb").orElse(1000);
-        int dryDuration = def.param("dry_duration").orElse(200);
-        int dryEnergy = def.param("dry_energy_per_tick").orElse(200);
-
-        if (vacuumDuration < 1 || vacuumEnergy < 1 || vacuumDemand < 0
-                || rinseDuration < 1 || rinseEnergy < 1 || rinseWater < 0
-                || dryDuration < 1 || dryEnergy < 1) return false;
-
-        // Check water availability for rinse phase
-        if (this.waterTank == null || this.waterTank.amount() < rinseWater) return false;
-
-        // Start vacuum dep/etch phase
-        this.prepPhase = PrepPhase.VACUUM_DEP_ETCH;
-        this.phaseProgress = 0;
-        this.phaseDuration = vacuumDuration;
-        this.phaseEnergyPerTick = vacuumEnergy;
-        this.phaseVacuumDemand = vacuumDemand;
-        this.phaseLocalPumpPowered = true;
-        this.phaseWaterMb = 0;
-        setChanged();
-        return true;
-    }
-
-    private void tickVacuum() {
-        if (this.vacuumSpec == null || this.vacuumState == null) return;
-
-        // Calculate central demand
-        int centralDemand = 0;
-        if (this.prepPhase == PrepPhase.VACUUM_DEP_ETCH) {
-            centralDemand = this.vacuumState.centralDemandMicroTorrPerTick(this.vacuumSpec, VacuumMode.PROCESS);
-        }
-
-        // Allocate central vacuum (cursor advances each tick)
-        // Central capacity comes from machine definition, not settings
-        int centralCapacity = 0;
-        var def = definition();
-        if (def.isPresent()) {
-            centralCapacity = def.get().paramOrDefault("central_vacuum_capacity", 0);
-        }
-        int[] demands = new int[]{centralDemand};
-        CentralVacuumAllocator.Allocation alloc = CentralVacuumAllocator.allocate(
-                centralCapacity, demands, this.vacuumCursor);
-        this.vacuumCursor = (this.vacuumCursor + 1) % Math.max(1, demands.length);
-        int centralGrant = alloc.at(0);
-
-        // Tick the chamber
-        VacuumTickResult result = this.vacuumState.tick(
-                this.vacuumSpec, currentVacuumMode(), centralGrant, this.phaseLocalPumpPowered);
-        this.vacuumState = result.state();
-    }
-
-    private VacuumMode currentVacuumMode() {
-        return switch (this.prepPhase) {
-            case VACUUM_DEP_ETCH -> VacuumMode.PROCESS;
-            case UPW_RINSE, POWERED_DRY -> VacuumMode.IDLE;
-            default -> VacuumMode.IDLE;
-        };
-    }
-
-    private void advanceVacuumDepEtchPhase() {
-        if (!this.formation.formed() || this.vacuumState == null || this.vacuumSpec == null) {
-            this.prepPhase = PrepPhase.IDLE;
-            return;
-        }
-        if (!this.vacuumState.canProcess(this.vacuumSpec)) {
-            // Vacuum not ready, pause but keep phase
-            return;
-        }
-        if (this.energySource().draw(this.phaseEnergyPerTick) < this.phaseEnergyPerTick) {
-            return; // paused
-        }
-        this.phaseProgress++;
-        if (this.phaseProgress >= this.phaseDuration) {
-            // Move to rinse phase
-            this.prepPhase = PrepPhase.UPW_RINSE;
-            this.phaseProgress = 0;
-            var def = definition().orElseThrow();
-            this.phaseDuration = def.paramOrDefault("rinse_duration", 200);
-            this.phaseEnergyPerTick = def.paramOrDefault("rinse_energy_per_tick", 50);
-            this.phaseWaterMb = def.paramOrDefault("rinse_water_mb", 1000);
-            setChanged();
-        }
-    }
-
-    private void advanceRinsePhase() {
-        if (!this.formation.formed()) {
-            this.prepPhase = PrepPhase.IDLE;
-            return;
-        }
-        if (this.energySource().draw(this.phaseEnergyPerTick) < this.phaseEnergyPerTick) {
-            return; // paused
-        }
-        // Consume water once at the start of rinse phase
-        if (this.phaseProgress == 0 && this.waterTank != null) {
-            if (!this.waterTank.drainExact(this.phaseWaterMb, false)) {
-                // Water shortage - pause phase
-                return;
-            }
-        }
-        this.phaseProgress++;
-        if (this.phaseProgress >= this.phaseDuration) {
-            // Move to dry phase
-            this.prepPhase = PrepPhase.POWERED_DRY;
-            this.phaseProgress = 0;
-            var def = definition().orElseThrow();
-            this.phaseDuration = def.paramOrDefault("dry_duration", 200);
-            this.phaseEnergyPerTick = def.paramOrDefault("dry_energy_per_tick", 200);
-            setChanged();
-        }
-    }
-
-    private void advanceDryPhase() {
-        if (!this.formation.formed()) {
-            this.prepPhase = PrepPhase.IDLE;
-            return;
-        }
-        if (this.energySource().draw(this.phaseEnergyPerTick) < this.phaseEnergyPerTick) {
-            return; // paused
-        }
-        this.phaseProgress++;
-        if (this.phaseProgress >= this.phaseDuration) {
-            this.prepPhase = PrepPhase.COMPLETE;
-            setChanged();
-        }
-    }
-
-    private void completePrepJob() {
-        // Finalization: apply G3 preparation to the admitted lot
-        // This requires FoupContents.preparedG3 API from domain worker
-        // For now, isolate the finalization method and explain the dependency
-
-        // TODO: Integration dependency - FoupContents.preparedG3 not yet available from domain worker
-        // The preparation factors should be computed from paid processing contamination average
-        // and committed once via preparedG3(cleanroomMeanPermille, drawsPermille).
-        // Cleanroom structural breach handling via FoupDisposal is also pending.
-
-        // Placeholder: for now, return the FOUP to output slot unmodified to avoid silent downgrade
-        if (this.admittedLot != null && this.admittedLotId != null) {
-            // Reconstruct the FOUP item with the admitted lot
-            ItemStack outputFoup = FoupItems.with(com.euvcraft.lithmod.mc.registry.ModItems.FOUP_MK1.get(), this.admittedLot);
-            if (this.canAcceptInto(1, outputFoup.getItem(), 1)) {
-                this.setSlot(1, outputFoup);
-            } else {
-                // Output blocked - should not happen if validated at start
-                // Drop as entity to avoid loss
-                if (this.level != null) {
-                    net.minecraft.world.item.ItemStack drop = outputFoup.copy();
-                    net.minecraft.world.entity.item.ItemEntity entity = new net.minecraft.world.entity.item.ItemEntity(
-                            this.level, this.worldPosition.getX() + 0.5, this.worldPosition.getY() + 1, this.worldPosition.getZ() + 0.5, drop);
-                    this.level.addFreshEntity(entity);
-                }
-            }
-        }
-
-        this.prepPhase = PrepPhase.IDLE;
-        this.admittedLot = null;
-        this.admittedLotId = null;
-        setChanged();
-    }
-
-    // ==================== Common job utilities ====================
-
-    private boolean canAcceptInto(int index, Item item, int count) {
-        ItemStack existing = this.slot(index);
-        if (count < 1 || count > Math.min(new ItemStack(item).getMaxStackSize(), this.getMaxStackSize())) return false;
-        if (existing.isEmpty()) return true;
-        return ItemStack.isSameItemSameComponents(existing, new ItemStack(item)) && existing.getCount() + count <= Math.min(
-                existing.getMaxStackSize(), this.getMaxStackSize());
-    }
-
-    private void resetJob() {
-        this.jobRunning = false;
-        this.jobPaused = false;
-        this.jobProgress = 0;
-        this.jobDuration = 0;
-        this.jobEnergyPerTick = 0;
-        this.pendingInput0 = null;
-        this.pendingInput1 = null;
-        this.pendingOutput = null;
-        this.pendingOutputCount = 0;
-        this.pendingInput0Count = 0;
-        this.pendingInput1Count = 0;
-        this.pendingWaterMb = 0;
-        this.coreCount = 1;
-        setChanged();
-    }
-
-    // ==================== Cleanroom breach handling ====================
-
-    /**
-     * Notifies the machine of a structural cleanroom breach.
-     * Called by the cleanroom system when the enclosure is breached.
-     * @param tick current game tick
-     * @return true if the machine was newly contaminated
-     */
-    public boolean notifyStructuralBreach(long tick) {
-        if (this.kind != G3MachineKind.DEPOSITION_ETCHER) return false;
-        if (this.admittedLot == null) return false; // no active lot to contaminate
-
-        var breachConditions = new BreachConditions(
-                true, // powered
-                true, // loaded (has admitted lot)
-                true // active T7 processing (in prep phase)
-        );
-        var breachResult = this.contaminationState.notifyStructuralBreach(breachConditions, tick);
-        this.contaminationState = breachResult.state();
-
-        if (breachResult.notification() == BreachNotification.NEWLY_CONTAMINATED) {
-            // Scrap the pending wafers via FoupDisposal
-            // The admitted lot is lost; create empty carrier
-            if (this.admittedLot != null) {
-                UUID freshId = UUID.randomUUID();
-                FoupContents emptyCarrier = FoupDisposal.emptyCarrier(this.admittedLot, freshId);
-                // TODO: Return empty carrier to player or output slot
-                this.admittedLot = null;
-                this.admittedLotId = null;
-            }
-            this.prepPhase = PrepPhase.IDLE;
-            setChanged();
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Applies a repair bill for contamination recovery.
-     * @param materialCost material items required
-     * @param upwMb UPW required in mB
-     * @param feCost FE required
-     * @return true if repair was applied (transitioned out of CONTAMINATED)
-     */
-    public boolean applyRepair(int materialCost, int upwMb, long feCost) {
-        if (this.contaminationState.requiresRepair()) {
-            // Validate we have the resources (caller should check before calling)
-            var result = this.contaminationState.repair(
-                    new ContaminationRepairCost(materialCost, upwMb, (int) feCost));
-            this.contaminationState = result.state();
-            setChanged();
-            return result.charged();
-        }
-        return false;
-    }
-
-    /**
-     * Completes recalibration after repair.
-     * @return true if recalibration completed (transitioned to CLEAN)
-     */
-    public boolean recalibrate() {
-        if (this.contaminationState.requiresRecalibration()) {
-            var result = this.contaminationState.recalibrate();
-            this.contaminationState = result.state();
-            setChanged();
-            return result.recalibrated();
-        }
-        return false;
-    }
-
-    // ==================== Persistence ====================
-
-    @Override
-    protected void saveAdditional(ValueOutput output) {
-        super.saveAdditional(output);
-        output.putInt("g3_formed", this.formation.formed() ? 1 : 0);
-        output.putString("g3_failure", this.formation.failureReason());
-        output.putInt("g3_kind", this.kind.ordinal());
-
-        // Save formation members (world-derived, but useful for debug)
-        // Not strictly needed as formation rebuilds on load
-
-        // Save water tank
-        if (this.waterTank != null) {
-            output.putInt("g3_water_amount", this.waterTank.amount());
-        }
-
-        // Save vacuum state
-        if (this.vacuumState != null) {
-            output.putInt("g3_vacuum_pressure", this.vacuumState.pressureMicroTorr());
-            output.putInt("g3_vacuum_reserve", this.vacuumState.reserveMicroTorr());
-        }
-        output.putInt("g3_vacuum_cursor", this.vacuumCursor);
-
-        // Save contamination state
-        output.putInt("g3_contamination_phase", this.contaminationState.phase().ordinal());
-        output.putLong("g3_contamination_breach_tick", this.contaminationState.lastBreachTick());
-
-        // Save writer job
-        if (this.jobRunning) {
-            output.putInt("g3_job_running", 1);
-            output.putInt("g3_job_duration", this.jobDuration);
-            output.putInt("g3_job_energy", this.jobEnergyPerTick);
-            output.putInt("g3_job_progress", this.jobProgress);
-            output.putInt("g3_job_core_count", this.coreCount);
-            if (this.pendingInput0 != null) output.store("g3_job_in0", ItemStack.OPTIONAL_CODEC, this.pendingInput0);
-            if (this.pendingInput1 != null) output.store("g3_job_in1", ItemStack.OPTIONAL_CODEC, this.pendingInput1);
-            if (this.pendingOutput != null) output.store("g3_job_out", ItemStack.OPTIONAL_CODEC, this.pendingOutput);
-            output.putInt("g3_job_in0_count", this.pendingInput0Count);
-            output.putInt("g3_job_in1_count", this.pendingInput1Count);
-            output.putInt("g3_job_out_count", this.pendingOutputCount);
-        } else {
-            output.putInt("g3_job_running", 0);
-        }
-
-        // Save prep job
-        output.putInt("g3_prep_phase", this.prepPhase.ordinal());
-        output.putInt("g3_prep_progress", this.phaseProgress);
-        output.putInt("g3_prep_duration", this.phaseDuration);
-        output.putInt("g3_prep_energy", this.phaseEnergyPerTick);
-        output.putInt("g3_prep_water", this.phaseWaterMb);
-        output.putInt("g3_prep_vacuum_demand", this.phaseVacuumDemand);
-        output.putBoolean("g3_prep_local_pump", this.phaseLocalPumpPowered);
-        if (this.admittedLot != null) {
-            output.store("g3_prep_lot", FoupContentsCodec.CODEC, this.admittedLot);
-        }
-    }
-
-    @Override
-    protected void loadAdditional(ValueInput input) {
-        super.loadAdditional(input);
-        this.formation.setFormed(input.getInt("g3_formed").orElse(0) != 0);
-        this.formation.setFailureReason(input.getString("g3_failure").orElse(""));
-        // this.kind is final, set in constructor
-        this.formation.setNeedsValidation(true);
-
-        // Water tank
-        if (this.waterTank != null) {
-            Integer amount = input.getInt("g3_water_amount").orElse(null);
-            if (amount != null && amount >= 0 && amount <= WaterTank.MAX_CAPACITY) {
-                this.waterTank = new WaterTank(this.waterTank.capacity(), amount);
-            }
-        }
-
-        // Vacuum state
-        if (this.vacuumState != null) {
-            Integer pressure = input.getInt("g3_vacuum_pressure").orElse(null);
-            Integer reserve = input.getInt("g3_vacuum_reserve").orElse(null);
-            if (pressure != null && reserve != null) {
-                this.vacuumState = VacuumChamberState.at(pressure, reserve);
-            }
-        }
-        this.vacuumCursor = input.getInt("g3_vacuum_cursor").orElse(0);
-
-        // Contamination state
-        int phaseOrd = input.getInt("g3_contamination_phase").orElse(0);
-        long breachTick = input.getLong("g3_contamination_breach_tick").orElse(-1L);
-        MachineContaminationState.Phase phase = MachineContaminationState.Phase.values()[phaseOrd];
-        this.contaminationState = new MachineContaminationState(phase, breachTick);
-
-        // Writer job
-        if (input.getInt("g3_job_running").orElse(0) != 0) {
-            this.jobRunning = true;
-            this.jobDuration = input.getInt("g3_job_duration").orElse(0);
-            this.jobEnergyPerTick = input.getInt("g3_job_energy").orElse(0);
-            this.jobProgress = input.getInt("g3_job_progress").orElse(0);
-            this.coreCount = input.getInt("g3_job_core_count").orElse(1);
-            this.pendingInput0 = input.read("g3_job_in0", ItemStack.OPTIONAL_CODEC).orElse(null);
-            this.pendingInput1 = input.read("g3_job_in1", ItemStack.OPTIONAL_CODEC).orElse(null);
-            this.pendingOutput = input.read("g3_job_out", ItemStack.OPTIONAL_CODEC).orElse(null);
-            this.pendingInput0Count = input.getInt("g3_job_in0_count").orElse(0);
-            this.pendingInput1Count = input.getInt("g3_job_in1_count").orElse(0);
-            this.pendingOutputCount = input.getInt("g3_job_out_count").orElse(0);
-        }
-
-        // Prep job
-        this.prepPhase = PrepPhase.values()[input.getInt("g3_prep_phase").orElse(0)];
-        this.phaseProgress = input.getInt("g3_prep_progress").orElse(0);
-        this.phaseDuration = input.getInt("g3_prep_duration").orElse(0);
-        this.phaseEnergyPerTick = input.getInt("g3_prep_energy").orElse(0);
-        this.phaseWaterMb = input.getInt("g3_prep_water").orElse(0);
-        this.phaseVacuumDemand = input.getInt("g3_prep_vacuum_demand").orElse(0);
-        this.phaseLocalPumpPowered = input.getBooleanOr("g3_prep_local_pump", true);
-        this.admittedLot = input.read("g3_prep_lot", FoupContentsCodec.CODEC).orElse(null);
-        if (this.admittedLot != null) this.admittedLotId = this.admittedLot.lotId();
-
-        publishData();
-    }
-
-    @Override
-    protected void dropExtraContents(@Nullable Level level, BlockPos pos) {
-        super.dropExtraContents(level, pos);
-        // Drop pending job inputs/outputs if any
-        if (this.pendingInput0 != null && !this.pendingInput0.isEmpty()) {
-            dropContainer(level, pos, new net.minecraft.world.SimpleContainer(this.pendingInput0));
-        }
-        if (this.pendingInput1 != null && !this.pendingInput1.isEmpty()) {
-            dropContainer(level, pos, new net.minecraft.world.SimpleContainer(this.pendingInput1));
-        }
-        if (this.pendingOutput != null && !this.pendingOutput.isEmpty()) {
-            dropContainer(level, pos, new net.minecraft.world.SimpleContainer(this.pendingOutput));
-        }
-        // Drop admitted prep lot if any
-        if (this.admittedLot != null && level != null) {
-            ItemStack foup = FoupItems.with(com.euvcraft.lithmod.mc.registry.ModItems.FOUP_MK1.get(), this.admittedLot);
-            dropContainer(level, pos, new net.minecraft.world.SimpleContainer(foup));
-        }
-    }
-
-    @Override
-    public void setRemoved() {
-        formation.unload();
-        super.setRemoved();
+    @Override protected void loadAdditional(ValueInput in){
+        super.loadAdditional(in);waterTank.restoreAmount(Math.clamp(in.getIntOr("g3Water",0),0,WaterTank.MAX_CAPACITY));vacuumState=VacuumChamberState.at(Math.clamp(in.getIntOr("g3Pressure",0),0,VacuumChamberState.MAX_PRESSURE_MICROTORR),Math.clamp(in.getIntOr("g3Reserve",0),0,1000000));int condition=Math.clamp(in.getIntOr("g3Contamination",0),0,2);contaminationState=new MachineContaminationState(MachineContaminationState.Phase.values()[condition],condition==0?-1:Math.max(0,in.getLongOr("g3Breach",0)));selection=Math.clamp(in.getIntOr("g3Selection",-1),-1,2);cores=Math.clamp(in.getIntOr("g3Cores",1),1,256);isolated=in.getBooleanOr("g3Isolated",false);
+        carrier=in.read("g3Carrier",ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);input0=in.read("g3Input0",ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);input1=in.read("g3Input1",ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);product=in.read("g3Product",ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);footprint=in.read("g3Footprint",BlockPos.CODEC.listOf()).orElse(List.of());jobRunning=in.getBooleanOr("g3Running",false);recovery=in.getBooleanOr("g3Recovery",false);paidSamples=Math.max(0,in.getLongOr("g3Samples",0));paidYieldSum=Math.clamp(in.getLongOr("g3YieldSum",0),0,1000L*paidSamples);
+        var f=in.read("g3Frozen",Codec.INT.listOf()).orElse(List.of());
+        try{if(f.size()!=21)throw new IllegalArgumentException();prepPhase=PrepPhase.values()[f.get(0)];phaseProgress=f.get(1);phaseDuration=f.get(2);phaseEnergyPerTick=f.get(3);phaseWaterMb=f.get(4);rinseDuration=f.get(5);rinseFe=f.get(6);rinseWater=f.get(7);dryDuration=f.get(8);dryFe=f.get(9);pumpFe=f.get(10);jobProgress=f.get(11);jobDuration=f.get(12);jobEnergyPerTick=f.get(13);frozenUses=f.get(14);vacuumSpec=new VacuumPumpSpec(f.get(15),f.get(16),f.get(17),f.get(18),f.get(19),f.get(20));if(jobRunning&&(large()?(carrier.isEmpty()||footprint.size()!=175||phaseDuration<1||phaseEnergyPerTick<1||rinseDuration<1||rinseFe<1||rinseWater<1||dryDuration<1||dryFe<1||phaseProgress<0||phaseProgress>=phaseDuration):(input0.isEmpty()||input1.isEmpty()||product.isEmpty()||jobDuration<1||jobEnergyPerTick<1||jobProgress<0||jobProgress>jobDuration)))throw new IllegalArgumentException();}
+        catch(RuntimeException invalid){jobRunning=false;product=ItemStack.EMPTY;recovery=true;prepPhase=carrier.isEmpty()?PrepPhase.IDLE:PrepPhase.COMPLETE;}
+        grant=0;grantTick=consumedGrantTick=Long.MIN_VALUE;sync();
     }
 }

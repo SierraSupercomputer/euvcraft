@@ -102,17 +102,15 @@ final class G3WaterInletHandler implements ResourceHandler<FluidResource> {
     }
 
     /** Journal for transactional tank snapshots (mirrors SupportWaterInletHandler). */
-    static final class TankJournal {
+    static final class TankJournal extends net.neoforged.neoforge.transfer.transaction.SnapshotJournal<Integer> {
         private final G3ControllerBlockEntity owner;
 
         TankJournal(G3ControllerBlockEntity owner) {
             this.owner = owner;
         }
 
-        void updateSnapshots(TransactionContext tx) {
-            // The controller's tank is the source of truth; no separate snapshot needed
-            // as WaterTank.fill/drain are already transactional.
-            // This exists for API consistency with SupportWaterInletHandler.
-        }
+        @Override protected Integer createSnapshot() { return owner.waterTank() == null ? 0 : owner.waterTank().amount(); }
+        @Override protected void revertToSnapshot(Integer amount) { if(owner.waterTank()!=null)owner.waterTank().restoreAmount(amount); }
+        @Override protected void onRootCommit(Integer previous) { owner.setChanged(); }
     }
 }
