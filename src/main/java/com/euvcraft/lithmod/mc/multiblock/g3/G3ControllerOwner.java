@@ -44,6 +44,6 @@ public interface G3ControllerOwner {
     }
 
     default ContainerData data() {
-        return machine().getData();
+        return machine().data();
     }
 }

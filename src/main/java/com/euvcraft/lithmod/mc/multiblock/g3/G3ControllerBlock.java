@@ -14,7 +14,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jspecify.annotations.Nullable;
@@ -26,14 +27,13 @@ import org.jspecify.annotations.Nullable;
 public abstract class G3ControllerBlock extends Block implements EntityBlock {
 
     /** Horizontal facing of the controller. */
-    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final Property<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     /** Whether the machine is formed. */
     public static final BooleanProperty FORMED = BooleanProperty.create("formed");
 
     /** Visual part index (always 0 for controller). */
-    public static final net.minecraft.world.level.block.state.properties.IntegerProperty PART =
-            net.minecraft.world.level.block.state.properties.IntegerProperty.create("part", 0, 174);
+    public static final IntegerProperty PART = IntegerProperty.create("part", 0, 174);
 
     private static final VoxelShape SHAPE = Block.box(0, 0, 0, 16, 16, 16);
 

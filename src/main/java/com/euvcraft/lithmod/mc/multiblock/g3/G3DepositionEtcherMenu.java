@@ -1,6 +1,7 @@
 package com.euvcraft.lithmod.mc.multiblock.g3;
 
 import com.euvcraft.lithmod.mc.machine.FabMachineMenu;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -21,8 +22,15 @@ import org.jspecify.annotations.Nullable;
  */
 public class G3DepositionEtcherMenu extends FabMachineMenu {
 
+    private final G3DepositionEtcherControllerBlockEntity controller;
+
     public G3DepositionEtcherMenu(int id, Inventory inventory, G3DepositionEtcherControllerBlockEntity controller) {
         this(id, inventory, controller, ContainerLevelAccess.create(controller.getLevel(), controller.getBlockPos()));
+    }
+
+    public G3DepositionEtcherMenu(int id, Inventory inventory, G3DepositionEtcherControllerBlockEntity controller, ContainerLevelAccess access) {
+        super(G3Machines.DEPOSITION_ETCHER_MENU.get(), id, inventory, controller, 1, 2);
+        this.controller = controller;
     }
 
     public G3DepositionEtcherMenu(int id, Inventory inventory, FriendlyByteBuf buf) {
@@ -40,26 +48,11 @@ public class G3DepositionEtcherMenu extends FabMachineMenu {
     }
 
     @Override
-    protected void addMachineSlots(G3DepositionEtcherControllerBlockEntity controller) {
+    protected void addMachineSlots() {
         // Slot 0: FOUP input (fresh electronic-grade lot)
-        this.addSlot(new Slot(controller, G3DepositionEtcherControllerBlockEntity.SLOT_FOUP_INPUT, 44, 35) {
-            @Override
-            public boolean mayPlace(ItemStack stack) {
-                // Only FOUPs allowed
-                return stack.is(net.minecraft.world.item.Items.NAME_TAG); // placeholder - actual FOUP item
-            }
-        });
+        addFoupSlot(G3DepositionEtcherControllerBlockEntity.SLOT_FOUP_INPUT, 44, 35);
         // Slot 1: FOUP output (prepared G3 lot)
-        this.addSlot(new Slot(controller, G3DepositionEtcherControllerBlockEntity.SLOT_FOUP_OUTPUT, 116, 35) {
-            @Override
-            public boolean mayPlace(ItemStack stack) {
-                return false; // output only
-            }
-            @Override
-            public boolean mayPickup(Player player) {
-                return super.mayPickup(player);
-            }
-        });
+        addOutputSlot(G3DepositionEtcherControllerBlockEntity.SLOT_FOUP_OUTPUT, 116, 35);
     }
 
     @Override
@@ -69,6 +62,7 @@ public class G3DepositionEtcherMenu extends FabMachineMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return super.stillValid(player) && this.controller.formed && this.controller.getLevel().getBlockEntity(this.controller.getBlockPos()) == this.controller;
+        return super.stillValid(player) && this.controller.isFormed()
+                && this.controller.getLevel().getBlockEntity(this.controller.getBlockPos()) == this.controller;
     }
 }

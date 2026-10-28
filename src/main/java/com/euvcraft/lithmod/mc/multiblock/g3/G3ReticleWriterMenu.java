@@ -1,7 +1,7 @@
 package com.euvcraft.lithmod.mc.multiblock.g3;
 
 import com.euvcraft.lithmod.mc.machine.FabMachineMenu;
-import com.euvcraft.lithmod.mc.multiblock.ProcessCellMenu;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -21,8 +21,15 @@ import org.jspecify.annotations.Nullable;
  */
 public class G3ReticleWriterMenu extends FabMachineMenu {
 
+    private final G3ReticleWriterControllerBlockEntity controller;
+
     public G3ReticleWriterMenu(int id, Inventory inventory, G3ReticleWriterControllerBlockEntity controller) {
         this(id, inventory, controller, ContainerLevelAccess.create(controller.getLevel(), controller.getBlockPos()));
+    }
+
+    public G3ReticleWriterMenu(int id, Inventory inventory, G3ReticleWriterControllerBlockEntity controller, ContainerLevelAccess access) {
+        super(G3Machines.RETICLE_WRITER_MENU.get(), id, inventory, controller, 2, 3);
+        this.controller = controller;
     }
 
     public G3ReticleWriterMenu(int id, Inventory inventory, FriendlyByteBuf buf) {
@@ -40,33 +47,13 @@ public class G3ReticleWriterMenu extends FabMachineMenu {
     }
 
     @Override
-    protected void addMachineSlots(G3ReticleWriterControllerBlockEntity controller) {
+    protected void addMachineSlots() {
         // Slot 0: Blank mask input
-        this.addSlot(new Slot(controller, G3ReticleWriterControllerBlockEntity.SLOT_BLANK_MASK, 44, 35) {
-            @Override
-            public boolean mayPlace(ItemStack stack) {
-                // Only blank masks allowed
-                return stack.is(net.minecraft.world.item.Items.NAME_TAG); // placeholder - actual blank mask item
-            }
-        });
+        addMachineSlot(G3ReticleWriterControllerBlockEntity.SLOT_BLANK_MASK, 44, 35);
         // Slot 1: Redstone input
-        this.addSlot(new Slot(controller, G3ReticleWriterControllerBlockEntity.SLOT_REDSTONE, 44, 53) {
-            @Override
-            public boolean mayPlace(ItemStack stack) {
-                return stack.is(net.minecraft.world.item.Items.REDSTONE);
-            }
-        });
+        addMachineSlot(G3ReticleWriterControllerBlockEntity.SLOT_REDSTONE, 44, 53);
         // Slot 2: Reticle output
-        this.addSlot(new Slot(controller, G3ReticleWriterControllerBlockEntity.SLOT_RETICLE_OUTPUT, 116, 35) {
-            @Override
-            public boolean mayPlace(ItemStack stack) {
-                return false; // output only
-            }
-            @Override
-            public boolean mayPickup(Player player) {
-                return super.mayPickup(player);
-            }
-        });
+        addOutputSlot(G3ReticleWriterControllerBlockEntity.SLOT_RETICLE_OUTPUT, 116, 35);
     }
 
     @Override
@@ -76,6 +63,7 @@ public class G3ReticleWriterMenu extends FabMachineMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return super.stillValid(player) && this.controller.formed && this.controller.getLevel().getBlockEntity(this.controller.getBlockPos()) == this.controller;
+        return super.stillValid(player) && this.controller.isFormed()
+                && this.controller.getLevel().getBlockEntity(this.controller.getBlockPos()) == this.controller;
     }
 }

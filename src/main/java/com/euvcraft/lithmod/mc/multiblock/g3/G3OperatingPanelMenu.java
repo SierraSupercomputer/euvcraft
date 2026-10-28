@@ -1,7 +1,7 @@
 package com.euvcraft.lithmod.mc.multiblock.g3;
 
 import com.euvcraft.lithmod.mc.machine.FabMachineMenu;
-import com.euvcraft.lithmod.mc.multiblock.ProcessCellMenu;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -12,7 +12,6 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.core.BlockPos;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -22,8 +21,17 @@ import org.jspecify.annotations.Nullable;
  */
 public class G3OperatingPanelMenu extends FabMachineMenu {
 
+    private final G3ControllerBlockEntity controller;
+    private final BlockPos panelPos;
+
     public G3OperatingPanelMenu(int id, Inventory inventory, G3ControllerBlockEntity controller, BlockPos panelPos) {
-        this(id, inventory, controller, ContainerLevelAccess.create(controller.getLevel(), controller.getBlockPos()));
+        this(id, inventory, controller, panelPos, ContainerLevelAccess.create(controller.getLevel(), controller.getBlockPos()));
+    }
+
+    public G3OperatingPanelMenu(int id, Inventory inventory, G3ControllerBlockEntity controller, BlockPos panelPos, ContainerLevelAccess access) {
+        super(G3Machines.OPERATING_PANEL_MENU.get(), id, inventory, controller, 0, 0);
+        this.controller = controller;
+        this.panelPos = panelPos;
     }
 
     public G3OperatingPanelMenu(int id, Inventory inventory, FriendlyByteBuf buf) {
@@ -42,7 +50,7 @@ public class G3OperatingPanelMenu extends FabMachineMenu {
     }
 
     @Override
-    protected void addMachineSlots(G3ControllerBlockEntity controller) {
+    protected void addMachineSlots() {
         // Operating panel has no direct slots; it forwards to the controller's slots
         // The actual slots are defined in the controller's specific menu
         // This menu is just a pass-through for the panel block entity

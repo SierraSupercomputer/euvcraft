@@ -8,6 +8,8 @@ import com.euvcraft.lithmod.mc.registry.ModDataComponents;
 import com.euvcraft.lithmod.core.MaskData;
 import com.euvcraft.lithmod.mc.EUVCRAFTMod;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.Nullable;
@@ -38,6 +40,11 @@ public class G3ReticleWriterControllerBlockEntity extends G3ControllerBlockEntit
         return "g3_reticle_writer";
     }
 
+    @Override
+    protected AbstractContainerMenu createMachineMenu(int containerId, Inventory playerInventory, FabMachineBlockEntity machine) {
+        return new G3ReticleWriterMenu(containerId, playerInventory, this);
+    }
+
     /** Current core count preference for compute designs (1..256, from settings). */
     private int corePreference = 1;
 
@@ -47,7 +54,7 @@ public class G3ReticleWriterControllerBlockEntity extends G3ControllerBlockEntit
      * @return true if the selection moved
      */
     public boolean cycleCores() {
-        if (!this.formed || this.jobRunning) return false;
+        if (!isFormed() || this.jobRunning) return false;
         var options = EUVCRAFTMod.settings().coreCountOptions();
         if (options.isEmpty()) return false;
         int index = options.indexOf(this.corePreference);
@@ -64,7 +71,7 @@ public class G3ReticleWriterControllerBlockEntity extends G3ControllerBlockEntit
 
     /** Whether core selection is currently allowed (formed, idle). */
     public boolean coresSelectable() {
-        return this.formed && !this.jobRunning;
+        return isFormed() && !this.jobRunning;
     }
 
     @Override

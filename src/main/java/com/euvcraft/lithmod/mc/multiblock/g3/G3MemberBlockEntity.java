@@ -72,6 +72,27 @@ public class G3MemberBlockEntity extends BlockEntity {
         return this.controller;
     }
 
+    /** Whether this member type can be owned by the given controller. */
+    public boolean supportsOwner(G3ControllerBlockEntity controller) {
+        var kind = controller.getKind();
+        var block = getBlockState().getBlock();
+        if (kind == G3MachineKind.RETICLE_WRITER) {
+            return block == G3Machines.CASING.get()
+                    || block == G3Machines.POWER_PORT.get()
+                    || block == G3Machines.OPERATING_PANEL.get()
+                    || block == G3Machines.WRITING_MODULE.get()
+                    || block == G3Machines.METROLOGY_MODULE.get();
+        } else {
+            return block == G3Machines.CASING.get()
+                    || block == G3Machines.POWER_PORT.get()
+                    || block == G3Machines.OPERATING_PANEL.get()
+                    || block == G3Machines.WATER_INLET.get()
+                    || block == G3Machines.DEPOSITION_MODULE.get()
+                    || block == G3Machines.RINSE_MODULE.get()
+                    || block == G3Machines.VACUUM_MODULE.get();
+        }
+    }
+
     /** Whether this member is part of a formed machine. */
     public boolean isMemberOfFormedMachine() {
         return this.formed;
