@@ -25,6 +25,7 @@
     "rinse_energy_per_tick": 480,
     "rinse_water_mb": 4000,
     "dry_duration": 200,
-    "dry_energy_per_tick": 960
+    "dry_energy_per_tick": 960,
+    "preparation_min_draw_permille": 900
   }
 }

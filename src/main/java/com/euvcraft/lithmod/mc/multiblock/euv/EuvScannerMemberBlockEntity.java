@@ -127,4 +127,9 @@ public class EuvScannerMemberBlockEntity extends BlockEntity implements MenuProv
         if (installation != null) output.putString("installation", installation.toString());
     }
     @Override public com.euvcraft.lithmod.mc.multiblock.vacuum.VacuumConsumer vacuumConsumer(){var owner=scanner();return formed&&structureKind()==BlockKind.VACUUM_MODULE&&owner!=null&&owner.isFormed()?owner:null;}
+
+    public net.neoforged.neoforge.transfer.energy.EnergyHandler power(){
+        var expected=scanner();if(expected==null||structureKind()!=BlockKind.POWER_PORT)return null;
+        return com.euvcraft.lithmod.mc.multiblock.T7EnergyPort.view(this,expected,()->{expected.revalidate();return controller()==expected&&formed&&expected.isFormed()&&expected.members().contains(worldPosition)&&structureKind()==BlockKind.POWER_PORT;});
+    }
 }

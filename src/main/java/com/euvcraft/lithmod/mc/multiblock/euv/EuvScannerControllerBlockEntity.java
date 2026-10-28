@@ -64,8 +64,8 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
     private boolean diagnosticPlotted;
 
     // Vacuum
-    private VacuumChamberState vacuumState = VacuumChamberState.evacuated();
-    private final VacuumPumpSpec vacuumSpec;
+    private VacuumChamberState vacuumState = VacuumChamberState.at(VacuumChamberState.MAX_PRESSURE_MICROTORR,0);
+    private VacuumPumpSpec vacuumSpec;
 
     // UPW
     public final WaterTank upwTank = new WaterTank(16000);
@@ -112,14 +112,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
     }
 
     private VacuumPumpSpec createVacuumSpec() {
-        return new VacuumPumpSpec(
-                5000,  // pumpRateMicroTorrPerTick
-                100,   // idleLeakMicroTorrPerTick
-                200,   // processLoadMicroTorrPerTick
-                1000,  // operatingPressureMicroTorr
-                50000, // reserveCapacityMicroTorr
-                1000   // reserveRechargeMicroTorrPerTick
-        );
+        return new VacuumPumpSpec(p("vacuum_pump_rate",5000),p("vacuum_idle_leak",100),p("vacuum_process_load",2000),p("vacuum_operating_pressure",10000),p("vacuum_reserve_capacity",50000),p("vacuum_reserve_recharge",1000));
     }
 
     @Override
@@ -539,7 +532,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
     }
 
     public VacuumTickResult tickVacuum(int centralService, boolean localPumpPowered) {
-        return vacuumState.tick(vacuumSpec, VacuumMode.PROCESS, centralService, localPumpPowered);
+        var result=vacuumState.tick(vacuumSpec, VacuumMode.PROCESS, centralService, localPumpPowered);vacuumState=result.state();return result;
     }
 
     public int vacuumCentralDemand() {
@@ -643,9 +636,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
                 Math.clamp(input.getIntOr("euvVacuumPressure", 0),0,VacuumChamberState.MAX_PRESSURE_MICROTORR),
                 Math.clamp(input.getIntOr("euvVacuumReserve", 0),0,1000000));
 
-        contaminationState = new MachineContaminationState(
-                MachineContaminationState.Phase.valueOf(input.getString("euvContamPhase").orElse("CLEAN")),
-                input.getLongOr("euvContamBreachTick", -1));
+        try{contaminationState=new MachineContaminationState(MachineContaminationState.Phase.valueOf(input.getString("euvContamPhase").orElse("CLEAN")),input.getLongOr("euvContamBreachTick",-1));}catch(IllegalArgumentException invalid){contaminationState=MachineContaminationState.contaminated(0);}
 
         try{installationId=UUID.fromString(input.getString("euvInstallation").orElse(""));}catch(IllegalArgumentException invalid){installationId=UUID.randomUUID();}
         activeFootprint=input.read("euvActiveFootprint",BlockPos.CODEC.listOf()).orElse(java.util.List.of());
@@ -707,7 +698,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
 
 
     @Override public void serverTick(){
-        if(!(level instanceof ServerLevel))return;refreshDefinition();revalidate();upwTank.resize(Math.clamp(p("upw_capacity_mb",32000),1000,1000000));
+        if(!(level instanceof ServerLevel))return;refreshDefinition();revalidate();vacuumSpec=createVacuumSpec();upwTank.resize(Math.clamp(p("upw_capacity_mb",32000),1000,1000000));
         if(inputsLocked()&&!slot(SLOT_FOUP).isEmpty()){
             var room=roomSample();if(room.available()&&(room.room()==null||room.room().state()!=CleanroomControllerBlockEntity.ENCLOSED))notifyStructuralBreach(new BreachConditions(buffer().getAmountAsLong()>0,true,true),level.getGameTime());
         }

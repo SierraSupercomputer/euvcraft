@@ -30,7 +30,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
     private final G3MachineKind kind;
     protected final WaterTank waterTank=new WaterTank(16000);
     final G3WaterInletHandler.TankJournal waterJournal=new G3WaterInletHandler.TankJournal(this);
-    protected VacuumChamberState vacuumState=VacuumChamberState.evacuated();
+    protected VacuumChamberState vacuumState=VacuumChamberState.at(VacuumChamberState.MAX_PRESSURE_MICROTORR,0);
     protected VacuumPumpSpec vacuumSpec=new VacuumPumpSpec(5000,100,2000,10000,50000,1000);
     protected MachineContaminationState contaminationState=MachineContaminationState.clean();
     protected PrepPhase prepPhase=PrepPhase.IDLE;
@@ -40,7 +40,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
     private ItemStack carrier=ItemStack.EMPTY,input0=ItemStack.EMPTY,input1=ItemStack.EMPTY,product=ItemStack.EMPTY;
     private List<BlockPos> footprint=List.of();
     private long paidYieldSum,paidSamples;
-    private int rinseDuration,rinseFe,rinseWater,dryDuration,dryFe,pumpFe=200;
+    private int rinseDuration,rinseFe,rinseWater,dryDuration,dryFe,pumpFe=200,drawFloor=900;
     private boolean recovery,isolated;
     private long grantTick=Long.MIN_VALUE,consumedGrantTick=Long.MIN_VALUE;
     private int grant;
@@ -106,6 +106,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         if(stack.getCount()!=1||lot==null||lot.isEmpty()||lot.isStarted()||lot.isContaminated()||lot.grade()!=WaferSubstrate.ELECTRONIC_GRADE||lot.preparationGeneration()!=1||lot.wafers().stream().anyMatch(w->w.layerIndex()!=0||w.cumulativeRoll()!=Wafer.NO_ROLLS||w.flags()!=0))return false;
         int duration=p("vacuum_duration",400),cost=fe(p("vacuum_energy_per_tick",960)),water=p("rinse_water_mb",4000);
         if(waterTank.amount()<water||buffer().getAmountAsLong()<cost||lot.size()>64)return false;
+        drawFloor=Math.clamp(p("preparation_min_draw_permille",900),1,1000);
         rinseDuration=p("rinse_duration",200);rinseFe=fe(p("rinse_energy_per_tick",480));rinseWater=water;dryDuration=p("dry_duration",200);dryFe=fe(p("dry_energy_per_tick",960));pumpFe=fe(p("local_pump_fe_per_tick",200));
         vacuumSpec=new VacuumPumpSpec(p("vacuum_pump_rate",5000),p("vacuum_idle_leak",100),p("vacuum_process_load",2000),p("vacuum_operating_pressure",10000),p("vacuum_reserve_capacity",50000),p("vacuum_reserve_recharge",1000));
         carrier=stack.copy();clearSlot(0);footprint=List.copyOf(members());paidSamples=paidYieldSum=0;prepPhase=PrepPhase.VACUUM_DEP_ETCH;phaseProgress=0;phaseDuration=duration;phaseEnergyPerTick=cost;phaseWaterMb=0;jobRunning=true;setChanged();return true;
@@ -123,7 +124,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         if(phaseProgress>=phaseDuration){
             if(prepPhase==PrepPhase.VACUUM_DEP_ETCH){prepPhase=PrepPhase.UPW_RINSE;phaseDuration=rinseDuration;phaseEnergyPerTick=rinseFe;phaseWaterMb=rinseWater;phaseProgress=0;}
             else if(prepPhase==PrepPhase.UPW_RINSE){prepPhase=PrepPhase.POWERED_DRY;phaseDuration=dryDuration;phaseEnergyPerTick=dryFe;phaseWaterMb=0;phaseProgress=0;}
-            else {var lot=FoupItems.trustedContentsOf(carrier);int[] draws=new int[lot.size()];for(int i=0;i<draws.length;i++)draws[i]=ThreadLocalRandom.current().nextInt(1,1001);carrier.set(ModDataComponents.FOUP_CONTENTS.get(),lot.preparedG3((int)Math.clamp(paidYieldSum/Math.max(1,paidSamples),1,1000),draws));prepPhase=PrepPhase.COMPLETE;jobRunning=false;finishCarrier();}
+            else {var lot=FoupItems.trustedContentsOf(carrier);int[] draws=new int[lot.size()];for(int i=0;i<draws.length;i++)draws[i]=ThreadLocalRandom.current().nextInt(drawFloor,1001);carrier.set(ModDataComponents.FOUP_CONTENTS.get(),lot.preparedG3((int)Math.clamp(paidYieldSum/Math.max(1,paidSamples),1,1000),draws));prepPhase=PrepPhase.COMPLETE;jobRunning=false;finishCarrier();}
         }
         setChanged();
     }
@@ -148,13 +149,13 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
     @Override public void setRemoved(){formation.unload();super.setRemoved();}
     @Override protected void dropExtraContents(@Nullable Level world,BlockPos pos){dropContainer(world,pos,new SimpleContainer(carrier,input0,input1));carrier=input0=input1=product=ItemStack.EMPTY;jobRunning=false;}
     @Override protected void saveAdditional(ValueOutput out){
-        super.saveAdditional(out);out.putInt("g3Water",waterTank.amount());out.putInt("g3Pressure",vacuumState.pressureMicroTorr());out.putInt("g3Reserve",vacuumState.reserveMicroTorr());out.putInt("g3Contamination",contaminationState.phase().ordinal());out.putLong("g3Breach",contaminationState.lastBreachTick());out.putInt("g3Selection",selection);out.putInt("g3Cores",cores);out.putBoolean("g3Isolated",isolated);
+        super.saveAdditional(out);out.putInt("g3Water",waterTank.amount());out.putInt("g3Pressure",vacuumState.pressureMicroTorr());out.putInt("g3Reserve",vacuumState.reserveMicroTorr());out.putInt("g3Contamination",contaminationState.phase().ordinal());out.putLong("g3Breach",contaminationState.lastBreachTick());out.putInt("g3DrawFloor",drawFloor);out.putInt("g3Selection",selection);out.putInt("g3Cores",cores);out.putBoolean("g3Isolated",isolated);
         out.store("g3Carrier",ItemStack.OPTIONAL_CODEC,carrier);out.store("g3Input0",ItemStack.OPTIONAL_CODEC,input0);out.store("g3Input1",ItemStack.OPTIONAL_CODEC,input1);out.store("g3Product",ItemStack.OPTIONAL_CODEC,product);out.store("g3Footprint",BlockPos.CODEC.listOf(),footprint);out.putBoolean("g3Running",jobRunning);out.putBoolean("g3Recovery",recovery);out.putLong("g3Samples",paidSamples);out.putLong("g3YieldSum",paidYieldSum);
         out.store("g3Frozen",Codec.INT.listOf(),List.of(prepPhase.ordinal(),phaseProgress,phaseDuration,phaseEnergyPerTick,phaseWaterMb,rinseDuration,rinseFe,rinseWater,dryDuration,dryFe,pumpFe,jobProgress,jobDuration,jobEnergyPerTick,frozenUses,vacuumSpec.pumpRateMicroTorrPerTick(),vacuumSpec.idleLeakMicroTorrPerTick(),vacuumSpec.processLoadMicroTorrPerTick(),vacuumSpec.operatingPressureMicroTorr(),vacuumSpec.reserveCapacityMicroTorr(),vacuumSpec.reserveRechargeMicroTorrPerTick()));
     }
     @Override protected void loadAdditional(ValueInput in){
-        super.loadAdditional(in);waterTank.restoreAmount(Math.clamp(in.getIntOr("g3Water",0),0,WaterTank.MAX_CAPACITY));vacuumState=VacuumChamberState.at(Math.clamp(in.getIntOr("g3Pressure",0),0,VacuumChamberState.MAX_PRESSURE_MICROTORR),Math.clamp(in.getIntOr("g3Reserve",0),0,1000000));int condition=Math.clamp(in.getIntOr("g3Contamination",0),0,2);contaminationState=new MachineContaminationState(MachineContaminationState.Phase.values()[condition],condition==0?-1:Math.max(0,in.getLongOr("g3Breach",0)));selection=Math.clamp(in.getIntOr("g3Selection",-1),-1,2);cores=Math.clamp(in.getIntOr("g3Cores",1),1,256);isolated=in.getBooleanOr("g3Isolated",false);
-        carrier=in.read("g3Carrier",ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);input0=in.read("g3Input0",ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);input1=in.read("g3Input1",ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);product=in.read("g3Product",ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);footprint=in.read("g3Footprint",BlockPos.CODEC.listOf()).orElse(List.of());jobRunning=in.getBooleanOr("g3Running",false);recovery=in.getBooleanOr("g3Recovery",false);paidSamples=Math.max(0,in.getLongOr("g3Samples",0));paidYieldSum=Math.clamp(in.getLongOr("g3YieldSum",0),0,1000L*paidSamples);
+        super.loadAdditional(in);waterTank.restoreAmount(Math.clamp(in.getIntOr("g3Water",0),0,WaterTank.MAX_CAPACITY));vacuumState=VacuumChamberState.at(Math.clamp(in.getIntOr("g3Pressure",0),0,VacuumChamberState.MAX_PRESSURE_MICROTORR),Math.clamp(in.getIntOr("g3Reserve",0),0,1000000));int condition=Math.clamp(in.getIntOr("g3Contamination",0),0,2);contaminationState=new MachineContaminationState(MachineContaminationState.Phase.values()[condition],condition==0?-1:Math.max(0,in.getLongOr("g3Breach",0)));drawFloor=Math.clamp(in.getIntOr("g3DrawFloor",900),1,1000);selection=Math.clamp(in.getIntOr("g3Selection",-1),-1,2);cores=Math.clamp(in.getIntOr("g3Cores",1),1,256);isolated=in.getBooleanOr("g3Isolated",false);
+        carrier=in.read("g3Carrier",ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);input0=in.read("g3Input0",ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);input1=in.read("g3Input1",ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);product=in.read("g3Product",ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);footprint=in.read("g3Footprint",BlockPos.CODEC.listOf()).orElse(List.of());jobRunning=in.getBooleanOr("g3Running",false);recovery=in.getBooleanOr("g3Recovery",false);paidSamples=Math.clamp(in.getLongOr("g3Samples",0),0,3000000);paidYieldSum=Math.clamp(in.getLongOr("g3YieldSum",0),0,1000L*paidSamples);
         var f=in.read("g3Frozen",Codec.INT.listOf()).orElse(List.of());
         try{if(f.size()!=21)throw new IllegalArgumentException();prepPhase=PrepPhase.values()[f.get(0)];phaseProgress=f.get(1);phaseDuration=f.get(2);phaseEnergyPerTick=f.get(3);phaseWaterMb=f.get(4);rinseDuration=f.get(5);rinseFe=f.get(6);rinseWater=f.get(7);dryDuration=f.get(8);dryFe=f.get(9);pumpFe=f.get(10);jobProgress=f.get(11);jobDuration=f.get(12);jobEnergyPerTick=f.get(13);frozenUses=f.get(14);vacuumSpec=new VacuumPumpSpec(f.get(15),f.get(16),f.get(17),f.get(18),f.get(19),f.get(20));if(jobRunning&&(large()?(carrier.isEmpty()||footprint.size()!=175||phaseDuration<1||phaseEnergyPerTick<1||rinseDuration<1||rinseFe<1||rinseWater<1||dryDuration<1||dryFe<1||phaseProgress<0||phaseProgress>=phaseDuration):(input0.isEmpty()||input1.isEmpty()||product.isEmpty()||jobDuration<1||jobEnergyPerTick<1||jobProgress<0||jobProgress>jobDuration)))throw new IllegalArgumentException();}
         catch(RuntimeException invalid){jobRunning=false;product=ItemStack.EMPTY;recovery=true;prepPhase=carrier.isEmpty()?PrepPhase.IDLE:PrepPhase.COMPLETE;}

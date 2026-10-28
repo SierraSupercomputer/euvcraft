@@ -149,7 +149,7 @@ public final class EuvMachines {
         // Scanner power port energy capability
         event.registerBlockEntity(Capabilities.Energy.BLOCK, SCANNER_MEMBER_BE.get(),
                 (be, side) -> be.structureKind() == BlockKind.POWER_PORT && be.scanner() != null
-                        ? com.euvcraft.lithmod.mc.multiblock.T7EnergyPort.view(be,be.scanner(),()->{var owner=be.scanner();if(owner==null)return false;owner.revalidate();return be.controller()==owner&&owner.isFormed()&&owner.members().contains(be.getBlockPos())&&be.structureKind()==BlockKind.POWER_PORT;})
+                        ? be.power()
                         : null);
 
         // Scanner water inlet fluid capability
@@ -161,7 +161,7 @@ public final class EuvMachines {
         // Light source power port energy capability
         event.registerBlockEntity(Capabilities.Energy.BLOCK, LIGHT_SOURCE_MEMBER_BE.get(),
                 (be, side) -> be.structureKind() == BlockKind.POWER_PORT && be.lightSource() != null
-                        ? com.euvcraft.lithmod.mc.multiblock.T7EnergyPort.view(be,be.lightSource(),()->{var owner=be.lightSource();if(owner==null)return false;owner.revalidate();return be.controller()==owner&&owner.isFormed()&&owner.members().contains(be.getBlockPos())&&be.structureKind()==BlockKind.POWER_PORT;})
+                        ? be.power()
                         : null);
 
         // Light source tin inlet fluid capability (for tin)

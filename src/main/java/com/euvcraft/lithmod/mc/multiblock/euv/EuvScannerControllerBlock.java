@@ -25,8 +25,6 @@ public class EuvScannerControllerBlock extends BaseEntityBlock {
 
     public static final BooleanProperty FORMED = BooleanProperty.create("formed");
     public static final IntegerProperty PART = IntegerProperty.create("part", 0, 174);
-    public static final BooleanProperty POWERED = BooleanProperty.create("powered");
-    public static final BooleanProperty CALIBRATED = BooleanProperty.create("calibrated");
     public static final net.minecraft.world.level.block.state.properties.Property<Direction> FACING = net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING;
 
     private static final VoxelShape SHAPE = Shapes.block();
@@ -36,14 +34,12 @@ public class EuvScannerControllerBlock extends BaseEntityBlock {
         this.registerDefaultState(this.stateDefinition.any()
                 .setValue(FORMED, false)
                 .setValue(PART, 0)
-                .setValue(POWERED, false)
-                .setValue(CALIBRATED, false)
                 .setValue(FACING, Direction.NORTH));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FORMED, PART, POWERED, CALIBRATED, FACING);
+        builder.add(FORMED, PART, FACING);
     }
 
     @Override
@@ -67,4 +63,7 @@ public class EuvScannerControllerBlock extends BaseEntityBlock {
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return SHAPE;
     }
+
+    @Override public BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext context){return defaultBlockState().setValue(FACING,context.getHorizontalDirection().getOpposite());}
+    @Override protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.item.ItemStack stack,BlockState state,net.minecraft.world.level.Level level,BlockPos pos,net.minecraft.world.entity.player.Player player,net.minecraft.world.InteractionHand hand,net.minecraft.world.phys.BlockHitResult hit){if(!level.isClientSide()&&level.getBlockEntity(pos) instanceof com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity owner)player.openMenu(owner,pos);return net.minecraft.world.InteractionResult.SUCCESS;}
 }

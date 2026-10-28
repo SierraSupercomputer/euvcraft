@@ -32,7 +32,7 @@ public final class EuvLightSourceControllerBlockEntity extends FabMachineBlockEn
         @Override protected void revertToSnapshot(Integer amount){hydrogenTank.restoreAmount(amount);}
         @Override protected void onRootCommit(Integer old){setChanged();}
     };
-    private VacuumChamberState vacuum=VacuumChamberState.evacuated();
+    private VacuumChamberState vacuum=VacuumChamberState.at(VacuumChamberState.MAX_PRESSURE_MICROTORR,0);
     private VacuumPumpSpec spec=new VacuumPumpSpec(5000,100,2000,10000,50000,1000);
     private int tinTicks;
     private @Nullable BlockPos pairedScanner;
