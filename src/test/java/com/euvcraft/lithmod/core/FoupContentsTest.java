@@ -2,6 +2,7 @@ package com.euvcraft.lithmod.core;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -13,6 +14,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+
+import com.euvcraft.lithmod.core.cleanroom.CleanroomExposure;
+import com.euvcraft.lithmod.core.t7.G3Preparation;
 
 /**
  * Unit tests for {@link Wafer}, {@link FoupContents}, {@link FoupPublicView} and
@@ -394,5 +398,210 @@ class FoupContentsTest {
         assertTrue(text.contains("capacity=25"), text);
         assertTrue(text.contains("wafers=2"), text);
         assertTrue(!text.contains("0.42"), "a roll leaked into " + text);
+    }
+
+    @Nested
+    @DisplayName("G3 preparation evidence")
+    class G3PreparationTest {
+
+        private FoupContents freshElectronic(int count) {
+            List<Wafer> list = new ArrayList<>(count);
+            for (int i = 0; i < count; i++) {
+                list.add(Wafer.unprocessed());
+            }
+            return FoupContents.of(LOT, 25, list, WaferSubstrate.ELECTRONIC_GRADE);
+        }
+
+        private RunSpec spec() {
+            return new RunSpec("logic", 3, 0, 0.9, 24);
+        }
+
+        @Test
+        @DisplayName("the eight-argument legacy constructor still means no G3 evidence")
+        void legacyConstructorDefaultsToNoEvidence() {
+            FoupContents lot = new FoupContents(LOT, 25, List.of(Wafer.unprocessed()), null,
+                WaferSubstrate.ELECTRONIC_GRADE, FoupContents.PREPARATION_LEGACY, CleanroomExposure.empty(), 0);
+
+            assertEquals(FoupContents.PREPARATION_LEGACY, lot.preparationGeneration());
+            assertEquals(G3Preparation.none(), lot.g3Preparation());
+            assertFalse(lot.isG3Prepared());
+        }
+
+        @Test
+        @DisplayName("G3 preparation is a single deterministic commit with one factor per wafer")
+        void preparedG3CommitsOnce() {
+            FoupContents fresh = freshElectronic(2);
+            FoupContents prepared = fresh.preparedG3(800, new int[] {1000, 500});
+
+            assertEquals(FoupContents.PREPARATION_G3, prepared.preparationGeneration());
+            assertTrue(prepared.isG3Prepared());
+            assertEquals(2, prepared.g3Preparation().factorCount());
+            assertEquals(800, prepared.g3Preparation().factorPermilleAt(0));
+            assertEquals(400, prepared.g3Preparation().factorPermilleAt(1));
+            assertEquals(800, prepared.g3Preparation().cleanroomMeanPermille());
+            assertThrows(IllegalStateException.class, () -> prepared.preparedG3(900, new int[] {1000, 1000}));
+        }
+
+        @Test
+        @DisplayName("G3 factors are deterministic for the same paid mean and draws")
+        void commitIsDeterministic() {
+            G3Preparation first = G3Preparation.commit(800, new int[] {1000, 500, 0});
+            G3Preparation second = G3Preparation.commit(800, new int[] {1000, 500, 0});
+
+            assertEquals(first, second);
+            assertEquals(800, first.factorPermilleAt(0));
+            assertEquals(400, first.factorPermilleAt(1));
+            assertEquals(1, first.factorPermilleAt(2));
+            assertEquals(500, G3Preparation.commit(999, new int[] {500}).factorPermilleAt(0));
+        }
+
+        @Test
+        @DisplayName("G3 rejects non-electronic, empty, started and processed lots")
+        void preparedG3RejectsWrongLots() {
+            assertThrows(IllegalArgumentException.class,
+                () -> FoupContents.of(LOT, 25, List.of(Wafer.unprocessed()), WaferSubstrate.PURE)
+                    .preparedG3(800, new int[] {1000}));
+            assertThrows(IllegalArgumentException.class,
+                () -> FoupContents.of(LOT, 25, List.of(Wafer.unprocessed()), WaferSubstrate.ORDINARY)
+                    .preparedG3(800, new int[] {1000}));
+            assertThrows(IllegalArgumentException.class,
+                () -> FoupContents.empty(LOT, 25, WaferSubstrate.ELECTRONIC_GRADE).preparedG3(800, new int[] {1000}));
+            assertThrows(IllegalArgumentException.class,
+                () -> freshElectronic(1).withRun(spec()).preparedG3(800, new int[] {1000}));
+            assertThrows(IllegalArgumentException.class,
+                () -> freshElectronic(1).withWafer(new Wafer(1, 0.5f, 0)).preparedG3(800, new int[] {1000, 1000}));
+            assertThrows(IllegalArgumentException.class,
+                () -> freshElectronic(2).preparedG3(800, new int[] {1000}));
+            assertThrows(IllegalArgumentException.class,
+                () -> freshElectronic(2).preparedG3(800, new int[] {1001, 1000}));
+            assertThrows(IllegalArgumentException.class,
+                () -> freshElectronic(1).preparedG3(0, new int[] {1000}));
+        }
+
+        @Test
+        @DisplayName("a prepared G3 lot cannot be mixed with fresh wafers or downgraded")
+        void preparedG3CannotMixOrDowngrade() {
+            FoupContents prepared = freshElectronic(2).preparedG3(800, new int[] {1000, 500});
+
+            assertThrows(IllegalStateException.class, () -> prepared.withWafer(Wafer.unprocessed()));
+            assertThrows(IllegalStateException.class,
+                () -> prepared.withWafers(List.of(Wafer.unprocessed())));
+            assertThrows(IllegalArgumentException.class, () -> prepared.withPreparationGeneration(2));
+        }
+
+        @Test
+        @DisplayName("run, layer and room-exposure copies preserve the frozen factors")
+        void copiesPreserveEvidence() {
+            FoupContents prepared = freshElectronic(2).preparedG3(800, new int[] {1000, 500});
+            RunSpec run = spec();
+            CleanroomExposure exposure = CleanroomExposure.empty().sample(700);
+
+            FoupContents withRun = prepared.withRun(run);
+            FoupContents withExposure = prepared.withRoomExposure(exposure, 700);
+            FoupContents processed = prepared.withProcessedWafers(List.of(
+                new Wafer(1, 0.9f, 0), new Wafer(1, 0.8f, 0)));
+
+            assertEquals(prepared.g3Preparation(), withRun.g3Preparation());
+            assertEquals(prepared.g3Preparation(), withExposure.g3Preparation());
+            assertEquals(prepared.g3Preparation(), processed.g3Preparation());
+            assertEquals(FoupContents.PREPARATION_G3, withRun.preparationGeneration());
+            assertEquals(FoupContents.PREPARATION_G3, withExposure.preparationGeneration());
+            assertEquals(FoupContents.PREPARATION_G3, processed.preparationGeneration());
+            assertEquals(run, withRun.run());
+            assertEquals(exposure, withExposure.roomExposure());
+            assertEquals(700, withExposure.roomYieldPermille());
+            assertEquals(1, processed.lotLayer());
+        }
+
+        @Test
+        @DisplayName("removing a wafer drops only its factor; emptying resets all evidence")
+        void removalPreservesAndEmptyingResets() {
+            FoupContents prepared = freshElectronic(2).preparedG3(800, new int[] {1000, 500});
+
+            FoupContents oneLeft = prepared.withoutWaferAt(0);
+            assertEquals(1, oneLeft.size());
+            assertEquals(1, oneLeft.g3Preparation().factorCount());
+            assertEquals(400, oneLeft.g3Preparation().factorPermilleAt(0));
+
+            FoupContents empty = oneLeft.withoutWaferAt(0);
+            assertTrue(empty.isEmpty());
+            assertEquals(FoupContents.PREPARATION_LEGACY, empty.preparationGeneration());
+            assertEquals(G3Preparation.none(), empty.g3Preparation());
+        }
+
+        @Test
+        @DisplayName("the public view exposes generation 3 but no per-wafer factors")
+        void publicViewExposesStateWithoutFactors() {
+            FoupContents prepared = freshElectronic(2).preparedG3(800, new int[] {1000, 500});
+            FoupPublicView view = prepared.publicView();
+
+            assertEquals(FoupPublicView.PREPARATION_G3, view.preparationGeneration());
+            assertTrue(view.isG3Prepared());
+            assertEquals(5, FoupPublicView.class.getRecordComponents().length);
+            for (java.lang.reflect.RecordComponent component : FoupPublicView.class.getRecordComponents()) {
+                assertNotSame(G3Preparation.class, component.getType());
+            }
+            assertTrue(!prepared.toString().contains("400"), "a G3 factor leaked into " + prepared);
+            assertTrue(!prepared.toString().contains("800"), "a G3 factor leaked into " + prepared);
+        }
+
+        @Test
+        @DisplayName("the constructor rejects inconsistent G3 evidence")
+        void constructorValidatesEvidence() {
+            G3Preparation evidence = G3Preparation.of(800, List.of(800, 800));
+
+            assertThrows(IllegalArgumentException.class, () -> new FoupContents(LOT, 25,
+                List.of(Wafer.unprocessed()), null, WaferSubstrate.ELECTRONIC_GRADE, FoupContents.PREPARATION_G3,
+                CleanroomExposure.empty(), 0, G3Preparation.none()));
+            assertThrows(IllegalArgumentException.class, () -> new FoupContents(LOT, 25,
+                List.of(Wafer.unprocessed()), null, WaferSubstrate.ELECTRONIC_GRADE, FoupContents.PREPARATION_G3,
+                CleanroomExposure.empty(), 0, evidence));
+            assertThrows(IllegalArgumentException.class, () -> new FoupContents(LOT, 25,
+                List.of(Wafer.unprocessed()), null, WaferSubstrate.PURE, FoupContents.PREPARATION_G3,
+                CleanroomExposure.empty(), 0, G3Preparation.of(800, List.of(800))));
+            assertThrows(IllegalArgumentException.class, () -> new FoupContents(LOT, 25,
+                List.of(Wafer.unprocessed()), null, WaferSubstrate.ELECTRONIC_GRADE, FoupContents.PREPARATION_G2,
+                CleanroomExposure.empty(), 0, G3Preparation.of(800, List.of(800))));
+            assertThrows(IllegalArgumentException.class, () -> new FoupContents(LOT, 25,
+                List.of(Wafer.unprocessed()), null, WaferSubstrate.ELECTRONIC_GRADE, FoupContents.PREPARATION_LEGACY,
+                CleanroomExposure.empty(), 0, G3Preparation.of(800, List.of(800))));
+        }
+
+        @Test
+        @DisplayName("the evidence record validates factors, redaction and copies")
+        void evidenceValidates() {
+            assertThrows(IllegalArgumentException.class, () -> G3Preparation.of(0, List.of(800)));
+            assertThrows(IllegalArgumentException.class, () -> G3Preparation.of(1001, List.of(800)));
+            assertThrows(IllegalArgumentException.class, () -> G3Preparation.of(800, List.of()));
+            assertThrows(IllegalArgumentException.class, () -> G3Preparation.of(800, List.of(0)));
+            assertThrows(IllegalArgumentException.class, () -> G3Preparation.of(800, List.of(1001)));
+            assertThrows(IllegalArgumentException.class, () -> G3Preparation.commit(800, new int[0]));
+            assertThrows(IllegalArgumentException.class, () -> G3Preparation.commit(800, new int[] {-1}));
+
+            G3Preparation exact = G3Preparation.of(800, List.of(800, 400));
+            int[] factors = exact.factorArray();
+            factors[0] = 1;
+            assertEquals(800, exact.factorPermilleAt(0));
+            assertEquals(G3Preparation.none(), exact.withoutFactorAt(1).withoutFactorAt(0));
+
+            G3Preparation redacted = G3Preparation.redacted();
+            assertTrue(redacted.isPrepared());
+            assertFalse(redacted.hasFactors());
+            assertEquals(0, redacted.factorCount());
+            assertThrows(IllegalStateException.class, () -> redacted.factorPermilleAt(0));
+            assertEquals(redacted, redacted.withoutFactorAt(0));
+            assertEquals("G3Preparation[redacted]", redacted.toString());
+        }
+
+        @Test
+        @DisplayName("the G3 evidence list is immutable")
+        void evidenceListIsImmutable() {
+            List<Integer> source = new ArrayList<>(List.of(800, 400));
+            G3Preparation evidence = G3Preparation.of(800, source);
+            source.set(0, 1);
+
+            assertEquals(800, evidence.factorPermilleAt(0));
+            assertThrows(UnsupportedOperationException.class, () -> evidence.waferFactorsPermille().set(0, 1));
+        }
     }
 }

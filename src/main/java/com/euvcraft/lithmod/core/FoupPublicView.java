@@ -9,7 +9,9 @@ import java.util.Objects;
  * lot holds at most, how many it currently holds, the lowest layer any of those
  * wafers has reached, the wafer substrate grade, and the preparation generation.
  * The hidden per-wafer {@link Wafer#cumulativeRoll()} and {@link Wafer#flags()} are
- * not in this record and cannot be derived from it.</p>
+ * not in this record and cannot be derived from it. Neither are the hidden G3
+ * per-wafer preparation factors: generation 3 is public state, the factors are
+ * server-only and never part of this record.</p>
  *
  * <p>This record has no Minecraft or NeoForge dependencies.</p>
  *
@@ -17,7 +19,7 @@ import java.util.Objects;
  * @param waferCount            number of wafers in the lot, {@code 0..capacity}
  * @param lotLayer              lowest layer across the wafers, {@code 0} when the lot is empty
  * @param grade                 the wafer substrate grade, never null
- * @param preparationGeneration the preparation generation: 1 = legacy/unprepared, 2 = G2 prepared
+ * @param preparationGeneration the preparation generation: 1 = legacy/unprepared, 2 = G2, 3 = G3
  */
 public record FoupPublicView(int capacity, int waferCount, int lotLayer, WaferSubstrate grade, int preparationGeneration) {
 
@@ -29,6 +31,9 @@ public record FoupPublicView(int capacity, int waferCount, int lotLayer, WaferSu
 
     /** The G2 prepared generation value. */
     public static final int PREPARATION_G2 = 2;
+
+    /** The G3 prepared generation value. */
+    public static final int PREPARATION_G3 = 3;
 
     /**
      * Creates a view with ordinary substrate grade and legacy preparation generation (1)
@@ -59,8 +64,9 @@ public record FoupPublicView(int capacity, int waferCount, int lotLayer, WaferSu
      *
      * @throws IllegalArgumentException if the capacity is below one, the count is
      *                                  negative or above the capacity, the lot
-     *                                  layer is negative, the grade is null, or
-     *                                  preparationGeneration is not 1 or 2
+     *                                  layer is negative, the grade is null, the
+     *                                  preparation generation is not 1, 2 or 3, or
+     *                                  the generation does not match the grade
      */
     public FoupPublicView {
         if (capacity < 1) {
@@ -74,11 +80,17 @@ public record FoupPublicView(int capacity, int waferCount, int lotLayer, WaferSu
             throw new IllegalArgumentException("lotLayer must be >= 0, got " + lotLayer);
         }
         Objects.requireNonNull(grade, "grade must not be null");
-        if (preparationGeneration == PREPARATION_G2 && (waferCount == 0 || grade.generation() < WaferSubstrate.PURE.generation())) {
+        if (preparationGeneration == PREPARATION_G2
+            && (waferCount == 0 || grade.generation() < WaferSubstrate.PURE.generation())) {
             throw new IllegalArgumentException("G2 preparation requires nonempty pure-or-better wafers");
         }
-        if (preparationGeneration < PREPARATION_LEGACY || preparationGeneration > PREPARATION_G2) {
-            throw new IllegalArgumentException("preparationGeneration must be " + PREPARATION_LEGACY + " or " + PREPARATION_G2 + ", got " + preparationGeneration);
+        if (preparationGeneration == PREPARATION_G3
+            && (waferCount == 0 || grade.generation() < WaferSubstrate.ELECTRONIC_GRADE.generation())) {
+            throw new IllegalArgumentException("G3 preparation requires nonempty electronic-grade-or-better wafers");
+        }
+        if (preparationGeneration < PREPARATION_LEGACY || preparationGeneration > PREPARATION_G3) {
+            throw new IllegalArgumentException("preparationGeneration must be " + PREPARATION_LEGACY + ", "
+                + PREPARATION_G2 + " or " + PREPARATION_G3 + ", got " + preparationGeneration);
         }
     }
 
@@ -106,10 +118,11 @@ public record FoupPublicView(int capacity, int waferCount, int lotLayer, WaferSu
 
     /**
      * Creates the view of a lot with no wafers in it, the given grade and preparation generation.
+     * An empty view cannot be prepared, so only generation 1 is accepted here.
      *
      * @param capacity              maximum number of wafers in the lot
      * @param grade                 the wafer substrate grade, not null
-     * @param preparationGeneration the preparation generation: 1 or 2
+     * @param preparationGeneration the preparation generation: must be 1 for an empty lot
      * @return a view reporting zero wafers at layer {@link #EMPTY_LOT_LAYER} with the given grade and preparation
      */
     public static FoupPublicView empty(int capacity, WaferSubstrate grade, int preparationGeneration) {
@@ -133,5 +146,15 @@ public record FoupPublicView(int capacity, int waferCount, int lotLayer, WaferSu
      */
     public boolean isFull() {
         return this.waferCount >= this.capacity;
+    }
+
+    /** Returns whether the lot is G2 prepared. */
+    public boolean isG2Prepared() {
+        return this.preparationGeneration == PREPARATION_G2;
+    }
+
+    /** Returns whether the lot is G3 prepared. */
+    public boolean isG3Prepared() {
+        return this.preparationGeneration == PREPARATION_G3;
     }
 }
