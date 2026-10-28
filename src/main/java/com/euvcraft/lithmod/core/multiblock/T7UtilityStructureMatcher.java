@@ -27,7 +27,7 @@ public final class T7UtilityStructureMatcher {
     private T7UtilityStructureMatcher() {}
 
     /**
-     * Shape for the hydrogen purifier: 2 wide, 3 tall, 3 deep (18 cells).
+     * Shape for the hydrogen purifier: 2 wide, 2 tall, 3 deep (12 cells).
      */
     public static final StructureShape PURIFIER_SHAPE = new StructureShape(2, 2, 3);
 

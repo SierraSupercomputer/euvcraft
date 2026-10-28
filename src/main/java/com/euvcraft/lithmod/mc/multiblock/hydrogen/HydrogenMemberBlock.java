@@ -2,11 +2,10 @@ package com.euvcraft.lithmod.mc.multiblock.hydrogen;
 
 import com.euvcraft.lithmod.core.multiblock.BlockKind;
 import com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedCasingBlock;
-import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.level.block.Block;
-
-import org.jspecify.annotations.Nullable;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Shared member block for the hydrogen purifier: casing, power port, gas inlet, gas outlet, operating panel.
@@ -26,7 +25,7 @@ public final class HydrogenMemberBlock extends AdvancedCasingBlock {
     }
 
     @Override
-    public @Nullable BlockEntityType<?> getBlockEntityType() {
-        return HydrogenMachines.MEMBER_BE.get();
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new HydrogenMemberBlockEntity(pos, state);
     }
 }

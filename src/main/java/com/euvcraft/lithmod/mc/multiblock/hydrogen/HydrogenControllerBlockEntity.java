@@ -17,15 +17,14 @@ import net.neoforged.neoforge.transfer.transaction.SnapshotJournal;
 
 import org.jspecify.annotations.Nullable;
 
+import java.util.Optional;
+
 /**
  * The hydrogen purifier: consumes raw H2 + filter medium + FE to produce fab_hydrogen gas fluid.
  *
- * <p>One admitted job at a time, frozen from admission to completion. The machine takes its
- * first matching resolved recipe for {@code machine=hydrogen_purifier} through
- * {@code FabMachineBlockEntity.recipes()} and {@link com.euvcraft.lithmod.mc.recipe.MachineRecipeRunner#matchesSlot};
- * the recipe's ingredient count, assembled product, tick length and per-tick energy (falling back
- * to the machine definition) are authoritative and nothing about them is hard-coded. Admission
- * reserves the input count and the exact raw H2 batch + filter cost only when the machine is formed,
+ * <p>FLUID-ONLY purification using definition params, NOT MachineRecipe/item-output job.
+ * One admitted job at a time, frozen from admission to completion.
+ * Admission reserves the exact raw H2 batch + filter cost only when the machine is formed,
  * the data is valid, the frozen output has room and the buffer holds the first tick's FE.
  * From then on the job never re-matches: it pauses without spending anything while unformed,
  * out of FE or blocked on output, and on completion it writes the frozen product exactly once
@@ -55,19 +54,16 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
     /** The admitted original filter stack, held until completion, break or recovery. */
     private ItemStack pendingFilter = ItemStack.EMPTY;
 
-    /** The frozen product of the admitted recipe; written once, on completion. */
-    private ItemStack pendingResult = ItemStack.EMPTY;
-
     /** The batch's reserved raw H2, frozen at admission (mB). */
     private int rawCost;
 
     /** The batch's reserved filters, frozen at admission. */
     private int filterCost;
 
-    /** The admitted recipe's tick length, frozen at admission. */
+    /** The admitted job's tick length, frozen at admission. */
     private int durationTicks;
 
-    /** The admitted recipe's per-tick FE, frozen at admission. */
+    /** The admitted job's per-tick FE, frozen at admission. */
     private int fePerTick;
 
     private int progress;
@@ -75,7 +71,7 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
     private boolean recovery;
 
     public HydrogenControllerBlockEntity(BlockPos pos, BlockState state) {
-        super(HydrogenMachines.CONTROLLER_BE.get(), pos, state, 1, 1);
+        super(HydrogenMachines.CONTROLLER_BE.get(), pos, state, 1, 0);
     }
 
     @Override protected String machineId() {
@@ -149,18 +145,18 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
 
     /** Raw mB one batch draws, from settings; 0 with no definition. */
     public int batchRawMb() {
-        return definition().isPresent() ? param("raw_per_batch_mb", 8000) : 0;
+        return definition().map(d -> d.paramOrDefault("raw_per_batch_mb", 8000)).orElse(0);
     }
 
     /** mB the batch produces: the admitted amount while running, else the configured amount. */
     public int batchOutputMb() {
         if (hasJob()) return rawCost; // 1:1 for hydrogen purification
-        return definition().isPresent() ? param("pure_per_batch_mb", 8000) : 0;
+        return definition().map(d -> d.paramOrDefault("pure_per_batch_mb", 8000)).orElse(0);
     }
 
     /** Filters charged per batch, from settings; 0 with no definition. */
     public int batchFilters() {
-        return definition().isPresent() ? param("filters_per_batch", 1) : 0;
+        return definition().map(d -> d.paramOrDefault("filters_per_batch", 1)).orElse(0);
     }
 
     /** FE per tick: the admitted cost while running, else the configured cost; 0 with no definition. */
@@ -170,11 +166,7 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
 
     /** Ticks of the current or next batch, admitted duration or settings. */
     public int batchTicks() {
-        return hasJob() ? durationTicks : definition().isPresent() ? param("duration", 200) : 0;
-    }
-
-    private int param(String key, int fallback) {
-        return definition().map(d -> d.paramOrDefault(key, fallback)).orElse(fallback);
+        return hasJob() ? durationTicks : definition().map(d -> d.paramOrDefault("duration", 200)).orElse(0);
     }
 
     // ------------------------------------------------------------------
@@ -213,16 +205,23 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
         sync();
     }
 
+    private int param(String key, int fallback) {
+        return definition().map(d -> d.paramOrDefault(key, fallback)).orElse(fallback);
+    }
+
     /**
-     * Admission: the first matching one-input recipe reserves its input count and the exact
-     * raw H2 batch + filter cost, and freezes the product, length and cost. Anything invalid
-     * refuses before anything is taken.
+     * Admission: reserves the exact raw H2 batch + filter cost, and freezes the product,
+     * length and cost from definition params. Anything invalid refuses before anything is taken.
      */
     private void tryAdmit() {
         MachineDefinition definition = definition().orElseThrow();
         int rawPerBatch = definition.paramOrDefault("raw_per_batch_mb", 8000);
         int purePerBatch = definition.paramOrDefault("pure_per_batch_mb", 8000);
         int filtersPerBatch = definition.paramOrDefault("filters_per_batch", 1);
+        int ticks = definition.paramOrDefault("duration", 200);
+        int fe = definition.energyPerTick(null, com.euvcraft.lithmod.mc.EUVCRAFTMod.settings());
+
+        // Validate definition params
         if (rawPerBatch < 1 || rawPerBatch > rawHydrogen.capacity() || rawHydrogen.amount() < rawPerBatch) {
             return;
         }
@@ -232,39 +231,35 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
         if (filtersPerBatch < 1 || filtersPerBatch > 64) {
             return;
         }
-        var recipe = firstMatchingRecipe();
-        if (recipe == null) {
-            return;
-        }
-        int inputCount = recipe.ingredientCounts().get(0);
-        if (inputCount < 1 || inputCount > 64) {
-            return;
-        }
-        int ticks = recipe.ticks();
         if (ticks < 1 || ticks > 72000) {
             return;
         }
-        int fe = recipe.energyPerTick(definition.energyPerTick(null, com.euvcraft.lithmod.mc.EUVCRAFTMod.settings()));
         if (fe < 0 || fe > buffer().getCapacityAsInt()) {
             return;
         }
-        ItemStack result = recipe.assemble();
-        if (!hasRoomFor(result, outputSlot())) {
+
+        // Check filter input slot
+        ItemStack filterStack = slot(0);
+        if (filterStack.isEmpty() || !filterStack.is(ModItems.UTILITY_FILTER.get())) {
             return;
         }
+        if (filterStack.getCount() < filtersPerBatch) {
+            return;
+        }
+        // Check FE buffer for first tick
         if (buffer().getAmountAsLong() < fe) {
             return;
         }
+
         // Valid admission: reserve input count + exact raw H2 + filters, then freeze the job.
-        ItemStack admitted = slot(0).copy();
-        admitted.setCount(inputCount);
+        ItemStack admitted = filterStack.copy();
+        admitted.setCount(filtersPerBatch);
         pendingFilter = admitted;
-        slot(0).shrink(inputCount);
-        if (slot(0).isEmpty()) {
+        filterStack.shrink(filtersPerBatch);
+        if (filterStack.isEmpty()) {
             clearSlot(0);
         }
         rawHydrogen.drainExact(rawPerBatch, false);
-        pendingResult = result;
         rawCost = rawPerBatch;
         filterCost = filtersPerBatch;
         durationTicks = ticks;
@@ -273,25 +268,13 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
         setChanged();
     }
 
-    /** The first resolved recipe for this machine whose single input the slot satisfies. */
-    private com.euvcraft.lithmod.mc.recipe.@Nullable MachineRecipe firstMatchingRecipe() {
-        for (var recipe : recipes()) {
-            if (recipe.inputSlotCount() != 1) {
-                continue;
-            }
-            if (com.euvcraft.lithmod.mc.recipe.MachineRecipeRunner.matchesSlot(recipe, 0, slot(0))) {
-                return recipe;
-            }
-        }
-        return null;
-    }
-
     /**
      * One tick of the admitted job. No rerolls: the frozen numbers are the whole truth.
      * Pauses (without spending FE) while the output is blocked or the buffer is short.
      */
     private void advanceJob() {
-        if (!hasRoomFor(pendingResult, outputSlot())) {
+        // Check output tank has room
+        if (pureHydrogen.capacity() - pureHydrogen.amount() < rawCost) {
             return;
         }
         if (energySource().draw(fePerTick) != fePerTick) {
@@ -299,9 +282,8 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
         }
         progress++;
         if (progress >= durationTicks) {
-            // Completion: output exactly once, consume the pending input.
-            giveOutput(pendingResult);
-            pendingResult = ItemStack.EMPTY;
+            // Completion: produce exact frozen pureH2 once, consume the pending input.
+            pureHydrogen.fillExact(rawCost, false);
             pendingFilter = ItemStack.EMPTY;
             rawCost = 0;
             filterCost = 0;
@@ -310,17 +292,6 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
             progress = 0;
         }
         setChanged();
-    }
-
-    /** Whether {@code output} can take the frozen {@code result} right now. */
-    private static boolean hasRoomFor(ItemStack result, ItemStack output) {
-        if (output.isEmpty()) {
-            return true;
-        }
-        if (!ItemStack.isSameItemSameComponents(output, result)) {
-            return false;
-        }
-        return output.getCount() + result.getCount() <= output.getMaxStackSize();
     }
 
     private void sync() {
@@ -345,11 +316,10 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
      * dropped, and the slots' own contents (normally empty mid-job) drop through the base
      * Container path.
      */
-    @Override protected void dropExtraContents(net.minecraft.world.level.@Nullable Level level, BlockPos pos) {
+    @Override protected void dropExtraContents(@Nullable net.minecraft.world.level.Level level, BlockPos pos) {
         if (!pendingFilter.isEmpty()) {
             var returned = pendingFilter;
             pendingFilter = ItemStack.EMPTY;
-            pendingResult = ItemStack.EMPTY;
             rawCost = 0;
             filterCost = 0;
             durationTicks = 0;
@@ -370,7 +340,6 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
         output.putInt("hydrogenPureMb", pureHydrogen.amount());
         if (!pendingFilter.isEmpty()) {
             output.store("hydrogenPendingFilter", ItemStack.OPTIONAL_CODEC, pendingFilter);
-            output.store("hydrogenPendingResult", ItemStack.OPTIONAL_CODEC, pendingResult);
             output.putInt("hydrogenRawCost", rawCost);
             output.putInt("hydrogenFilterCost", filterCost);
             output.putInt("hydrogenDuration", durationTicks);
@@ -385,7 +354,6 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
         rawHydrogen.restoreAmount(Math.clamp(input.getIntOr("hydrogenRawMb", 0), 0, WaterTank.MAX_CAPACITY));
         pureHydrogen.restoreAmount(Math.clamp(input.getIntOr("hydrogenPureMb", 0), 0, WaterTank.MAX_CAPACITY));
         ItemStack savedFilter = input.read("hydrogenPendingFilter", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
-        ItemStack savedResult = input.read("hydrogenPendingResult", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
         int savedRaw = input.getIntOr("hydrogenRawCost", 0);
         int savedFilters = input.getIntOr("hydrogenFilterCost", 0);
         int savedDuration = input.getIntOr("hydrogenDuration", 0);
@@ -396,7 +364,6 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
             // No job may exist without its reserved input; a frozen result is unearned and is
             // dropped rather than paid out or carried into a new job.
             pendingFilter = ItemStack.EMPTY;
-            pendingResult = ItemStack.EMPTY;
             rawCost = 0;
             filterCost = 0;
             durationTicks = 0;
@@ -413,14 +380,12 @@ public final class HydrogenControllerBlockEntity extends FabMachineBlockEntity i
             recovery = malformed || savedRecovery;
             if (malformed) {
                 // The original input is kept for recovery; the frozen numbers are discarded.
-                pendingResult = ItemStack.EMPTY;
                 rawCost = 0;
                 filterCost = 0;
                 durationTicks = 0;
                 fePerTick = 0;
                 progress = 0;
             } else {
-                pendingResult = savedResult;
                 rawCost = savedRaw;
                 filterCost = savedFilters;
                 durationTicks = savedDuration;
