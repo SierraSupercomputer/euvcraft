@@ -20,7 +20,7 @@ public final class EuvScannerOperatingMenu extends ProcessCellMenu {
         this.scanner = scanner;
         panelPos = pos.immutable();
         panel = scanner != null && scanner.getLevel() != null && scanner.getLevel().getBlockEntity(pos) instanceof EuvScannerMemberBlockEntity m ? m : null;
-        scannerData = scanner == null ? new SimpleContainerData(10) : new ContainerData() {
+        scannerData = scanner == null ? new SimpleContainerData(12) : new ContainerData() {
             public int get(int i) {
                 return switch (i) {
                     case 0 -> scanner.operatingCalibrated() ? 1 : 0;
@@ -33,11 +33,13 @@ public final class EuvScannerOperatingMenu extends ProcessCellMenu {
                     case 7 -> scanner.hasReservedLightSource() ? 1 : 0;
                     case 8 -> scanner.contaminationState().requiresRepair() ? 1 : 0;
                     case 9 -> scanner.operatingIssue();
+                    case 10 -> scanner.sourceIssue();
+                    case 11 -> scanner.sourceMultiplier();
                     default -> 0;
                 };
             }
             public void set(int i, int v) {}
-            public int getCount() { return 10; }
+            public int getCount() { return 12; }
         };
         addDataSlots(scannerData);
     }
@@ -58,6 +60,8 @@ public final class EuvScannerOperatingMenu extends ProcessCellMenu {
                 && player.distanceToSqr(panelPos.getX() + .5, panelPos.getY() + .5, panelPos.getZ() + .5) <= 64;
     }
 
+    public int sourceIssue(){return scannerData.get(10);}
+    public int sourceMultiplier(){return scannerData.get(11);}
     public int operatingIssue() { return scannerData.get(9); }
     public boolean hasLightSource() { return scannerData.get(7) == 1; }
     public boolean contaminated() { return scannerData.get(8) == 1; }

@@ -20,6 +20,18 @@
     "hydrogen_capacity_mb": 32000,
     "hydrogen_per_tick_mb": 10,
     "tin_exposure_ticks": 1000,
-    "beamline_max_length": 16
+    "beamline_max_length": 16,
+    "pulse_control_min": 0,
+    "pulse_control_max": 100,
+    "pulse_timing_tolerance": 18,
+    "pulse_amplitude_tolerance": 20,
+    "pulse_min_quality": 60,
+    "pulse_min_multiplier_permille": 850,
+    "pulse_max_multiplier_permille": 1000,
+    "pulse_fine_step": 1,
+    "pulse_coarse_step": 5,
+    "pulse_test_fe": 12000,
+    "pulse_test_hydrogen_mb": 50,
+    "pulse_test_tin_ticks": 25
   }
 }

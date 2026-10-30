@@ -16,7 +16,7 @@ public final class EuvScannerOperatingScreen extends AdvancedMachineScreen<EuvSc
     private Button abort;
 
     public EuvScannerOperatingScreen(EuvScannerOperatingMenu menu, Inventory inventory, Component title) {
-        super(menu, inventory, title, 260);
+        super(menu, inventory, title, 288);
     }
 
     @Override
@@ -34,7 +34,7 @@ public final class EuvScannerOperatingScreen extends AdvancedMachineScreen<EuvSc
         super.init();
         abort = addRenderableWidget(Button.builder(Component.translatable("button.lithmod.process_cell.abort"), b -> {
             if (minecraft != null && minecraft.gameMode != null) minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 0);
-        }).bounds(leftPos + 8, topPos + 232, 160, 20).build());
+        }).bounds(leftPos + 8, topPos + 260, 160, 20).build());
     }
 
     @Override
@@ -45,6 +45,9 @@ public final class EuvScannerOperatingScreen extends AdvancedMachineScreen<EuvSc
 
     @Override
     protected void extractLabels(GuiGraphicsExtractor g, int mx, int my) {
+        String[] sourceIssues={"Source available","Check physical beamline","Original source required","Calibrate source panel","Source utilities not ready"};
+        line(g,Component.literal(sourceIssues[Math.clamp(menu.sourceIssue(),0,4)]),8,234,160);
+        line(g,Component.literal("Source yield x"+menu.sourceMultiplier()/1000.0),8,246,160);
         line(g, Component.translatable("block.lithmod.euv_scanner_operating_panel"), 8, 6, 160);
         line(g, Component.literal("FOUP     Mask    Resist"), 24, 22, 142);
         line(g, Component.literal(menu.energy() + " / " + menu.energyCapacity() + " FE"), 26, 56, 142);

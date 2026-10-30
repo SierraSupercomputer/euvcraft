@@ -27,5 +27,9 @@ public final class T7Content {
         }
         ITEMS.register(bus);
     }
-    public static List<Item> blockItems() { return BLOCK_ITEMS.stream().map(entry->(Item)entry.get()).toList(); }
+    public static List<Item> blockItems() {
+        var items=BLOCK_ITEMS.stream().map(entry->(Item)entry.get()).toList();var result=new ArrayList<Item>();
+        for(var item:items)if(!isPulse(item))result.add(item);for(var item:items)if(isPulse(item))result.add(item);return List.copyOf(result);
+    }
+    private static boolean isPulse(Item item){var id=net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item).getPath();return id.equals("euv_light_source_pulse_module")||id.equals("euv_light_source_calibration_panel");}
 }

@@ -527,5 +527,8 @@
   "button.lithmod.euv.vacuum_isolation": "Isolation",
   "block.lithmod.euv_scanner_equipment_cabinet": "EUV Scanner Equipment Cabinet",
   "item.lithmod.tin_feedstock": "Tin Feedstock",
-  "tier.lithmod.t7": "T7 EUV"
+  "tier.lithmod.t7": "T7 EUV",
+  "block.lithmod.euv_light_source_pulse_module": "EUV Pulse Control Module",
+  "block.lithmod.euv_light_source_calibration_panel": "EUV Source Calibration Panel",
+  "tooltip.lithmod.t7.source_pulse": "Pulse Control Module + Source Calibration Panel (middle layer)"
 }

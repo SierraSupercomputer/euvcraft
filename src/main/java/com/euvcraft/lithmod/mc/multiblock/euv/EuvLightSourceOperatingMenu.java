@@ -33,7 +33,7 @@ public final class EuvLightSourceOperatingMenu extends FabMachineMenu {
         this.lightSource = lightSource;
         this.panelPos = pos.immutable();
         panel=lightSource!=null&&lightSource.getLevel()!=null&&lightSource.getLevel().getBlockEntity(pos) instanceof EuvLightSourceMemberBlockEntity p?p:null;
-        this.values = lightSource == null ? new SimpleContainerData(8) : new ContainerData() {
+        this.values = lightSource == null ? new SimpleContainerData(13) : new ContainerData() {
             public int get(int i) {
                 return switch (i) {
                     case 0 -> lightSource.isFormed() ? 1 : 0;
@@ -43,12 +43,15 @@ public final class EuvLightSourceOperatingMenu extends FabMachineMenu {
                     case 4 -> lightSource.tinStored();
                     case 5 -> lightSource.tinCreditTicks();
                     case 6 -> lightSource.vacuumState().pressureMicroTorr() / 1000;
-                    case 7 -> lightSource.hasScannerReservation() ? 1 : 0;
+                    case 7 -> lightSource.physicalScanner()!=null ? 1 : 0;
+                    case 8,9,10 -> lightSource.physicalScanner()==null?0:switch(i){case 8->lightSource.physicalScanner().getBlockPos().getX();case 9->lightSource.physicalScanner().getBlockPos().getY();default->lightSource.physicalScanner().getBlockPos().getZ();};
+                    case 11 -> lightSource.pulses.calibrated()?1:0;
+                    case 12 -> lightSource.readiness();
                     default -> 0;
                 };
             }
             public void set(int i, int v) {}
-            public int getCount() { return 8; }
+            public int getCount() { return 13; }
         };
         addDataSlots(new WideContainerData(values));
     }

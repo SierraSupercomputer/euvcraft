@@ -26,7 +26,6 @@ public final class EuvScannerCalibrationScreen extends AbstractContainerScreen<E
     protected void init() {
         super.init();
         controls.clear();
-        if (menu.value(0) == 0) return;
 
         String[] labels = {"X −", "X +", "Y −", "Y +", "Focus −", "Focus +"};
         for (int i = 0; i < 6; i++) {
@@ -77,7 +76,7 @@ public final class EuvScannerCalibrationScreen extends AbstractContainerScreen<E
     protected void extractLabels(GuiGraphicsExtractor g, int mx, int my) {
         text(g, Component.translatable("block.lithmod.euv_scanner_calibration_panel").getString(), 8, 7, 264);
         if (menu.value(0) == 0) {
-            text(g, "Unformed: check the 5x7x5 structure", 12, 32, 256);
+            text(g, "Unformed: check the 5x5x7 structure", 12, 32, 256);
             return;
         }
         text(g, "Center the spot; reduce focus error to zero.", 12, 20, 256);

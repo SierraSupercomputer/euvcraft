@@ -98,6 +98,10 @@ public final class EuvMachines {
 
     public static final DeferredBlock<EuvLightSourceMemberBlock> LIGHT_SOURCE_OPERATING_PANEL =
             lightSourceMember("euv_light_source_operating_panel", BlockKind.OPERATING_PANEL);
+    public static final DeferredBlock<EuvLightSourceMemberBlock> LIGHT_SOURCE_PULSE_MODULE =
+            lightSourceMember("euv_light_source_pulse_module", BlockKind.PULSE_MODULE);
+    public static final DeferredBlock<EuvLightSourceMemberBlock> LIGHT_SOURCE_CALIBRATION_PANEL =
+            lightSourceMember("euv_light_source_calibration_panel", BlockKind.CALIBRATION_PANEL);
     public static final DeferredBlock<EuvLightSourceMemberBlock> LIGHT_SOURCE_TIN_INLET =
             lightSourceMember("euv_light_source_tin_inlet", BlockKind.FLUID_OUTLET); // Reusing for tin input
     public static final DeferredBlock<EuvLightSourceMemberBlock> LIGHT_SOURCE_HYDROGEN_INLET =
@@ -116,7 +120,7 @@ public final class EuvMachines {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EuvLightSourceMemberBlockEntity>> LIGHT_SOURCE_MEMBER_BE =
             BLOCK_ENTITIES.register("euv_light_source_member",
                     () -> new BlockEntityType<>(EuvLightSourceMemberBlockEntity::new,
-                            LIGHT_SOURCE_OPERATING_PANEL.get(), LIGHT_SOURCE_TIN_INLET.get(),
+                            LIGHT_SOURCE_OPERATING_PANEL.get(), LIGHT_SOURCE_PULSE_MODULE.get(), LIGHT_SOURCE_CALIBRATION_PANEL.get(), LIGHT_SOURCE_TIN_INLET.get(),
                             LIGHT_SOURCE_HYDROGEN_INLET.get(), LIGHT_SOURCE_VACUUM_MODULE.get(),
                             LIGHT_SOURCE_POWER_PORT.get(), LIGHT_SOURCE_CASING.get()));
 
@@ -134,6 +138,8 @@ public final class EuvMachines {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EuvBeamlineBlockEntity>> BEAM_LINE_BE =
             BLOCK_ENTITIES.register("euv_beam_line",
                     () -> new BlockEntityType<>(EuvBeamlineBlockEntity::new, BEAM_LINE.get()));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<EuvSourceCalibrationMenu>> SOURCE_CALIBRATION_MENU = MENUS.register("euv_source_calibration", () -> IMenuTypeExtension.create(EuvSourceCalibrationMenu::new));
 
     private EuvMachines() {}
 

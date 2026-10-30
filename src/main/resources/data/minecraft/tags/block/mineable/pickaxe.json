@@ -104,6 +104,8 @@
     "lithmod:vacuum_operating_panel",
     "lithmod:vacuum_service_conduit",
     "lithmod:cleanroom_vacuum_port",
-    "lithmod:vacuum_service_outlet"
+    "lithmod:vacuum_service_outlet",
+    "lithmod:euv_light_source_pulse_module",
+    "lithmod:euv_light_source_calibration_panel"
   ]
 }

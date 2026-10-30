@@ -34,6 +34,7 @@ public final class EuvLightSourceControllerBlockEntity extends FabMachineBlockEn
     };
     private VacuumChamberState vacuum=VacuumChamberState.at(VacuumChamberState.MAX_PRESSURE_MICROTORR,0);
     private VacuumPumpSpec spec=new VacuumPumpSpec(5000,100,2000,10000,50000,1000);
+    public final SourcePulseState pulses=new SourcePulseState(this);
     private int tinTicks;
     private @Nullable BlockPos pairedScanner;
     private @Nullable UUID pairedInstallation;
@@ -61,6 +62,50 @@ public final class EuvLightSourceControllerBlockEntity extends FabMachineBlockEn
     private int fe(int raw){return (int)Math.clamp(Math.round(raw*EUVCRAFTMod.settings().fePowerMultiplier()),1,Integer.MAX_VALUE);}
     public int exposureFe(){return definition().map(d->d.energyPerTick(null,EUVCRAFTMod.settings())).orElse(Integer.MAX_VALUE);}
     public int hydrogenPerTick(){return p("hydrogen_per_tick_mb",10);}
+    @Override public void revalidate(){formation.validate();pulses.refresh();}
+    public int param(String key,int fallback){return p(key,fallback);}
+    public int trialFe(){return fe(p("pulse_test_fe",12000));}
+    public int trialHydrogen(){return p("pulse_test_hydrogen_mb",50);}
+    public int trialTin(){return p("pulse_test_tin_ticks",25);}
+    public boolean validTrialCosts(){return p("pulse_test_fe",12000)>0&&trialFe()<=buffer().getCapacityAsInt()&&trialHydrogen()>0&&trialHydrogen()<=hydrogenTank.capacity()&&trialTin()>0&&trialTin()<=1000000&&p("tin_exposure_ticks",1000)>0&&p("tin_exposure_ticks",1000)<=1000000;}
+    public long availableTinCredit(){return tinTicks+(long)slot(0).getCount()*Math.clamp(p("tin_exposure_ticks",1000),1,1000000);}
+    public boolean calibrationLocked(){
+        if(level==null||pairedScanner==null)return false;
+        if(!level.hasChunkAt(pairedScanner))return true;
+        return level.getBlockEntity(pairedScanner) instanceof EuvScannerControllerBlockEntity s&&s.installationId().equals(pairedInstallation)&&s.inputsLocked();
+    }
+    public boolean reserveForLot(EuvScannerControllerBlockEntity scanner){if(!canExpose(scanner))return false;pairedScanner=scanner.getBlockPos().immutable();pairedInstallation=scanner.installationId();setChanged();return true;}
+    public boolean payTrial(){
+        if(!validTrialCosts()||pulses.locked()||!isFormed()||!vacuum.canProcess(spec)||buffer().getAmountAsLong()<trialFe()||hydrogenTank.amount()<trialHydrogen()||availableTinCredit()<trialTin())return false;
+        int per=p("tin_exposure_ticks",1000),need=Math.max(0,trialTin()-tinTicks),items=(need+per-1)/per;
+        try(var transaction=net.neoforged.neoforge.transfer.transaction.Transaction.openRoot()){
+            if(buffer().extract(trialFe(),transaction)!=trialFe())return false;
+            hydrogenJournal.updateSnapshots(transaction);exposureJournal.updateSnapshots(transaction);
+            if(!hydrogenTank.drainExact(trialHydrogen(),false))return false;
+            slot(0).shrink(items);tinTicks=tinTicks+items*per-trialTin();transaction.commit();return true;
+        }
+    }
+    private long linkTick=Long.MIN_VALUE;
+    private EuvScannerControllerBlockEntity linked;
+    /** Loaded physical link, independent of calibration, resources and exposure reservations. */
+    public EuvScannerControllerBlockEntity physicalScanner(){
+        if(level==null||!isFormed())return null;if(linkTick==level.getGameTime())return linked;
+        linkTick=level.getGameTime();linked=null;
+        for(var pos:members())if(level.getBlockState(pos).is(EuvMachines.LIGHT_SOURCE_CASING.get()))
+            for(var direction:net.minecraft.core.Direction.values())for(int distance=1;distance<=65;distance++){
+                var next=pos.relative(direction,distance);if(!level.hasChunkAt(next))break;
+                if(level.getBlockState(next).is(EuvMachines.BEAM_LINE.get()))continue;
+                if(distance>1&&level.getBlockEntity(next) instanceof EuvScannerMemberBlockEntity endpoint&&endpoint.structureKind()==com.euvcraft.lithmod.core.multiblock.BlockKind.EXPOSURE_MODULE){
+                    var candidate=endpoint.scanner();if(candidate!=null&&candidate.isFormed()&&EuvBeamlineConnection.source(candidate)==this){if(linked!=null&&linked!=candidate){linked=null;return null;}linked=candidate;}
+                }break;
+            }
+        return linked;
+    }
+    public int readiness(){
+        if(!isFormed())return 0;var s=physicalScanner();if(s==null)return 1;if(!pulses.calibrated())return 2;
+        if(!vacuum.canProcess(spec))return 3;if(buffer().getAmountAsLong()<exposureFe())return 4;if(hydrogenTank.amount()<hydrogenPerTick())return 5;
+        if(availableTinCredit()<1)return 6;if(!s.operatingCalibrated())return 7;return calibrationLocked()?9:8;
+    }
     public int tinStored(){return slot(0).getCount();}
     public int tinCreditTicks(){return tinTicks;}
     public boolean acceptsTin(net.neoforged.neoforge.transfer.item.ItemResource resource){return !resource.isEmpty()&&resource.toStack().is(TIN);}
@@ -76,6 +121,7 @@ public final class EuvLightSourceControllerBlockEntity extends FabMachineBlockEn
     public boolean canExpose(EuvScannerControllerBlockEntity scanner){
         if(level==null||isRemoved()||scanner.isRemoved()||scanner.getLevel()!=level||level.getBlockEntity(worldPosition)!=this||level.getBlockEntity(scanner.getBlockPos())!=scanner)return false;
         revalidate();
+        if(!pulses.calibrated())return false;
         if(!isFormed()||definition().isEmpty()||!vacuum.canProcess(spec)||hydrogenTank.amount()<hydrogenPerTick()||buffer().getAmountAsLong()<exposureFe())return false;
         if(tinTicks==0&&(slot(0).isEmpty()||!slot(0).is(TIN)))return false;
         if(EuvBeamlineConnection.source(scanner)!=this)return false;
@@ -108,6 +154,6 @@ public final class EuvLightSourceControllerBlockEntity extends FabMachineBlockEn
     }
     @Override public void setRemoved(){formation.unload();super.setRemoved();}
     @Override protected AbstractContainerMenu createMachineMenu(int id,Inventory inventory,FabMachineBlockEntity machine){return new EuvLightSourceDashboardMenu(id,inventory,this,worldPosition);}
-    @Override protected void saveAdditional(ValueOutput out){super.saveAdditional(out);out.putInt("euvHydrogen",hydrogenTank.amount());out.putInt("euvTinTicks",tinTicks);out.putInt("euvPressure",vacuum.pressureMicroTorr());out.putInt("euvReserve",vacuum.reserveMicroTorr());out.putBoolean("euvIsolation",isolated);if(pairedScanner!=null)out.store("euvPairedScanner",BlockPos.CODEC,pairedScanner);if(pairedInstallation!=null)out.putString("euvPairedInstallation",pairedInstallation.toString());}
-    @Override protected void loadAdditional(ValueInput in){super.loadAdditional(in);hydrogenTank.restoreAmount(Math.clamp(in.getIntOr("euvHydrogen",0),0,WaterTank.MAX_CAPACITY));tinTicks=Math.clamp(in.getIntOr("euvTinTicks",0),0,1000000);vacuum=VacuumChamberState.at(Math.clamp(in.getIntOr("euvPressure",0),0,VacuumChamberState.MAX_PRESSURE_MICROTORR),Math.clamp(in.getIntOr("euvReserve",0),0,1000000));isolated=in.getBooleanOr("euvIsolation",false);pairedScanner=in.read("euvPairedScanner",BlockPos.CODEC).orElse(null);try{pairedInstallation=UUID.fromString(in.getString("euvPairedInstallation").orElse(""));}catch(IllegalArgumentException invalid){pairedInstallation=null;pairedScanner=null;}grant=0;grantTick=usedGrantTick=lastExposure=Long.MIN_VALUE;}
+    @Override protected void saveAdditional(ValueOutput out){super.saveAdditional(out);pulses.save(out);out.putInt("euvHydrogen",hydrogenTank.amount());out.putInt("euvTinTicks",tinTicks);out.putInt("euvPressure",vacuum.pressureMicroTorr());out.putInt("euvReserve",vacuum.reserveMicroTorr());out.putBoolean("euvIsolation",isolated);if(pairedScanner!=null)out.store("euvPairedScanner",BlockPos.CODEC,pairedScanner);if(pairedInstallation!=null)out.putString("euvPairedInstallation",pairedInstallation.toString());}
+    @Override protected void loadAdditional(ValueInput in){super.loadAdditional(in);pulses.load(in);hydrogenTank.restoreAmount(Math.clamp(in.getIntOr("euvHydrogen",0),0,WaterTank.MAX_CAPACITY));tinTicks=Math.clamp(in.getIntOr("euvTinTicks",0),0,1000000);vacuum=VacuumChamberState.at(Math.clamp(in.getIntOr("euvPressure",0),0,VacuumChamberState.MAX_PRESSURE_MICROTORR),Math.clamp(in.getIntOr("euvReserve",0),0,1000000));isolated=in.getBooleanOr("euvIsolation",false);pairedScanner=in.read("euvPairedScanner",BlockPos.CODEC).orElse(null);try{pairedInstallation=UUID.fromString(in.getString("euvPairedInstallation").orElse(""));}catch(IllegalArgumentException invalid){pairedInstallation=null;pairedScanner=null;}grant=0;grantTick=usedGrantTick=lastExposure=Long.MIN_VALUE;}
 }

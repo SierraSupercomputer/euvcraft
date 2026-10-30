@@ -22,7 +22,8 @@ public final class EuvClientEvents {
         event.register(EuvMachines.SCANNER_DASHBOARD_MENU.get(), EuvScannerDashboardScreen::new);
         event.register(EuvMachines.SCANNER_EQUIPMENT_MENU.get(), EuvScannerEquipmentScreen::new);
 
-        // EUV Light Source (2 panels)
+        event.register(EuvMachines.SOURCE_CALIBRATION_MENU.get(), EuvSourceCalibrationScreen::new);
+        // EUV Light Source (3 panels)
         event.register(EuvMachines.LIGHT_SOURCE_OPERATING_MENU.get(), EuvLightSourceOperatingScreen::new);
         event.register(EuvMachines.LIGHT_SOURCE_DASHBOARD_MENU.get(), EuvLightSourceDashboardScreen::new);
     }

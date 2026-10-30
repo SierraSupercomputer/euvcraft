@@ -89,6 +89,7 @@ public class EuvLightSourceMemberBlockEntity extends BlockEntity implements Menu
     public Component getDisplayName() {
         String key = switch (structureKind()) {
             case OPERATING_PANEL -> "euv_light_source_operating_panel";
+            case CALIBRATION_PANEL -> "euv_light_source_calibration_panel";
             default -> "euv_light_source_" + structureKind().name().toLowerCase();
         };
         return Component.translatable("block.lithmod." + key);
@@ -99,6 +100,7 @@ public class EuvLightSourceMemberBlockEntity extends BlockEntity implements Menu
         var ls = lightSource();
         if (ls == null) return null;
         return switch (structureKind()) {
+            case CALIBRATION_PANEL -> new EuvSourceCalibrationMenu(id, inventory, ls, worldPosition);
             case OPERATING_PANEL -> new EuvLightSourceOperatingMenu(id, inventory, ls, worldPosition);
             default -> null;
         };

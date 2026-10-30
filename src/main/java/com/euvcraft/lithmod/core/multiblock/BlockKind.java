@@ -51,5 +51,6 @@ public enum BlockKind {
     VACUUM_CONDUIT,
     VACUUM_MODULE,
     VACUUM_PORT,
-    WRITING_MODULE
+    WRITING_MODULE,
+    PULSE_MODULE
 }

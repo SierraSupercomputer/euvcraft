@@ -46,7 +46,9 @@ public final class LightSourceStructureMatcher {
     private static final BlockKind[] MODULE_KINDS = {
         BlockKind.VACUUM_MODULE,
         BlockKind.FLUID_OUTLET,  // tin inlet
-        BlockKind.WATER_INLET    // hydrogen inlet
+        BlockKind.WATER_INLET,   // hydrogen inlet
+        BlockKind.PULSE_MODULE,
+        BlockKind.CALIBRATION_PANEL
     };
 
     private LightSourceStructureMatcher() {}

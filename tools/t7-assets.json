@@ -635,6 +635,30 @@
       ],
       "formed": true,
       "facing": true
+    },
+    {
+      "id": "euv_light_source_pulse_module",
+      "role": "module",
+      "casing": "euv_light_source_casing",
+      "tone": [
+        121,
+        182,
+        213
+      ],
+      "formed": true,
+      "facing": true
+    },
+    {
+      "id": "euv_light_source_calibration_panel",
+      "role": "panel",
+      "casing": "euv_light_source_casing",
+      "tone": [
+        121,
+        182,
+        213
+      ],
+      "formed": true,
+      "facing": true
     }
   ],
   "componentRecipes": {

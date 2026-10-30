@@ -89,6 +89,8 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
     private int currentLayerTargetTicks;
 
 
+    private UUID frozenSourceId;
+    private int frozenSourceMultiplier;
     private UUID installationId=UUID.randomUUID();
     private java.util.List<BlockPos> activeFootprint=java.util.List.of();
     public final SimpleContainer repairItems=new SimpleContainer(2);
@@ -102,7 +104,9 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
     private int centralGrant;
     public UUID installationId(){return installationId;}
     public boolean vacuumIsolated(){return vacuumIsolated;}
-    private EuvLightSourceControllerBlockEntity source(){return EuvBeamlineConnection.source(this);}
+    private EuvLightSourceControllerBlockEntity source(){var source=EuvBeamlineConnection.source(this);return source!=null&&(!inputsLocked()||!yieldFrozen||frozenSourceId!=null&&frozenSourceId.equals(source.pulses.installation()))?source:null;}
+    public int sourceIssue(){var physical=EuvBeamlineConnection.source(this);if(physical==null)return 1;if(inputsLocked()&&yieldFrozen&&(frozenSourceId==null||!frozenSourceId.equals(physical.pulses.installation())))return 2;if(!physical.pulses.calibrated())return 3;return physical.readiness()==8||physical.readiness()==9?0:4;}
+    public int sourceMultiplier(){var source=source();return inputsLocked()&&yieldFrozen?frozenSourceMultiplier:source==null?0:source.pulses.multiplier();}
     public boolean hasReservedLightSource(){var source=source();return source!=null&&source.canExpose(this);}
     private int p(String key,int fallback){return definition().map(d->d.paramOrDefault(key,fallback)).orElse(fallback);}
     private int scaledFe(int raw){return (int)Math.clamp(Math.round(raw*com.euvcraft.lithmod.mc.EUVCRAFTMod.settings().fePowerMultiplier()),1,Integer.MAX_VALUE);}
@@ -221,7 +225,10 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
         // Freeze calibration multiplier at admission
         activeFootprint=java.util.List.copyOf(members());
         acceptedHardware = hardwareFingerprint;
-        frozenYieldMultiplier = acceptedMultiplier * diagnosticMultiplier;
+        var source=source();
+        if(source==null||!source.reserveForLot(this))throw new IllegalStateException("Source lost before lot admission");
+        frozenSourceId=source.pulses.installation();frozenSourceMultiplier=source.pulses.multiplier();
+        frozenYieldMultiplier = acceptedMultiplier * diagnosticMultiplier * frozenSourceMultiplier / 1000.0;
         yieldFrozen = true;
         // Freeze room yield
         CleanroomRooms.Sample room = roomSample();
@@ -608,6 +615,8 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+        try{frozenSourceId=UUID.fromString(input.getString("euvFrozenSource").orElse(""));}catch(IllegalArgumentException error){frozenSourceId=null;}
+        frozenSourceMultiplier=Math.clamp(input.getIntOr("euvFrozenSourceMultiplier",0),0,1000);
         formed = input.getIntOr("euvFormed", 0) != 0;
         hardwareFingerprint = input.getString("euvHardware").orElse("");
         calibratedHardware = input.getString("euvCalibratedHardware").orElse("");
@@ -662,6 +671,8 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+        if(frozenSourceId!=null)output.putString("euvFrozenSource",frozenSourceId.toString());
+        output.putInt("euvFrozenSourceMultiplier",frozenSourceMultiplier);
         output.putInt("euvFormed", formed ? 1 : 0);
         output.putString("euvHardware", hardwareFingerprint);
         output.putString("euvCalibratedHardware", calibratedHardware);

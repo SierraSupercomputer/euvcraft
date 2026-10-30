@@ -41,6 +41,10 @@ public class EuvScannerMemberBlock extends BaseEntityBlock {
                 .setValue(FACING, Direction.NORTH));
     }
 
+    @Override public BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext context) {
+        return defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
+    }
+
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(FORMED, PART, FACING);
