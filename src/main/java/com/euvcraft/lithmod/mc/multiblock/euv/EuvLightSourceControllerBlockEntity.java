@@ -72,7 +72,9 @@ public final class EuvLightSourceControllerBlockEntity extends FabMachineBlockEn
     public boolean calibrationLocked(){
         if(level==null||pairedScanner==null)return false;
         if(!level.hasChunkAt(pairedScanner))return true;
-        return level.getBlockEntity(pairedScanner) instanceof EuvScannerControllerBlockEntity s&&s.installationId().equals(pairedInstallation)&&s.inputsLocked();
+        var entity=level.getBlockEntity(pairedScanner);
+        if(entity==null)return level.getBlockState(pairedScanner).getBlock() instanceof EuvScannerControllerBlock;
+        return entity instanceof EuvScannerControllerBlockEntity s&&s.installationId().equals(pairedInstallation)&&s.inputsLocked();
     }
     public boolean reserveForLot(EuvScannerControllerBlockEntity scanner){if(!canExpose(scanner))return false;pairedScanner=scanner.getBlockPos().immutable();pairedInstallation=scanner.installationId();setChanged();return true;}
     public boolean payTrial(){
@@ -135,7 +137,7 @@ public final class EuvLightSourceControllerBlockEntity extends FabMachineBlockEn
         if(!canExpose(scanner))return false;
         if(buffer().extract(exposureFe(),transaction)!=exposureFe())return false;
         hydrogenJournal.updateSnapshots(transaction);exposureJournal.updateSnapshots(transaction);
-        hydrogenTank.drainExact(hydrogenPerTick(),false);
+        if(!hydrogenTank.drainExact(hydrogenPerTick(),false))return false;
         if(tinTicks==0){slot(0).shrink(1);tinTicks=p("tin_exposure_ticks",1000);}
         tinTicks--;pairedScanner=scanner.getBlockPos().immutable();pairedInstallation=scanner.installationId();lastExposure=level.getGameTime();return true;
     }

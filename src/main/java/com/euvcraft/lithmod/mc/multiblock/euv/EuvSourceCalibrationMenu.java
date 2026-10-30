@@ -16,7 +16,7 @@ public final class EuvSourceCalibrationMenu extends AbstractContainerMenu {
     public EuvSourceCalibrationMenu(int id,Inventory inv,@Nullable EuvLightSourceControllerBlockEntity source,BlockPos pos){
         super(EuvMachines.SOURCE_CALIBRATION_MENU.get(),id);this.source=source;this.pos=pos.immutable();
         panel=source!=null&&source.getLevel()!=null&&source.getLevel().getBlockEntity(pos) instanceof EuvLightSourceMemberBlockEntity p?p:null;
-        values=source==null?new SimpleContainerData(22):new ContainerData(){public int get(int i){return source.pulses.value(i);}public void set(int i,int v){}public int getCount(){return 22;}};
+        values=source==null?new SimpleContainerData(25):new ContainerData(){public int get(int i){return source.pulses.value(i);}public void set(int i,int v){}public int getCount(){return 25;}};
         addDataSlots(new WideContainerData(values));
     }
     public EuvSourceCalibrationMenu(int id,Inventory inv,RegistryFriendlyByteBuf buf){this(id,inv,null,buf.readBlockPos());}

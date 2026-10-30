@@ -10,7 +10,7 @@ import java.util.List;
 /** Deliberate pulse tuning: markers preview settings; only paid trials update the measured trace. */
 public final class EuvSourceCalibrationScreen extends AbstractContainerScreen<EuvSourceCalibrationMenu> {
     private final List<Button> controls=new ArrayList<>();private Button test,accept;
-    public EuvSourceCalibrationScreen(EuvSourceCalibrationMenu menu,Inventory inv,Component title){super(menu,inv,title,320,250);}
+    public EuvSourceCalibrationScreen(EuvSourceCalibrationMenu menu,Inventory inv,Component title){super(menu,inv,title,320,260);}
     private void send(int id){if(minecraft!=null&&minecraft.gameMode!=null)minecraft.gameMode.handleInventoryButtonClick(menu.containerId,id);}
     @Override protected void init(){
         super.init();controls.clear();
@@ -48,6 +48,7 @@ public final class EuvSourceCalibrationScreen extends AbstractContainerScreen<Eu
         text(g,issues[Math.clamp(menu.value(9),0,issues.length-1)],10,185,300);
         if(menu.value(4)>=0){text(g,"Last quality "+menu.value(4)+"/100; minimum "+menu.value(19)+(menu.value(6)==0?" (settings changed)":""),10,198,300);
             text(g,"Phase "+direction(menu.value(11))+"; delay "+direction(menu.value(12))+"; amplitude "+direction(menu.value(13)),10,211,300);}
+        text(g,"Test: "+menu.value(22)+" FE / "+menu.value(23)+" mB H2 / "+menu.value(24)+" tin ticks",10,242,300);
         text(g,menu.value(5)!=0?"Accepted — source yield x"+menu.value(7)/1000.0:"Adjust, test, then accept. No scanner needed.",10,226,300);
     }
     private String direction(int error){return error<0?"increase":error>0?"decrease":"aligned";}

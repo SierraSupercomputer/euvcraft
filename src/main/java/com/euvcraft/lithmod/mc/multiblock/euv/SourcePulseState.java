@@ -18,7 +18,7 @@ public final class SourcePulseState {
     private boolean accepted;
     public SourcePulseState(EuvLightSourceControllerBlockEntity owner) { this.owner=owner; }
     public Spec spec() {
-        return new Spec(owner.param("pulse_control_min",0),owner.param("pulse_control_max",100),
+        return new Spec(owner.param("pulse_control_min",1),owner.param("pulse_control_max",100),
                 owner.param("pulse_timing_tolerance",18),owner.param("pulse_amplitude_tolerance",20),
                 owner.param("pulse_min_quality",60),owner.param("pulse_min_multiplier_permille",850),owner.param("pulse_max_multiplier_permille",1000));
     }
@@ -33,7 +33,7 @@ public final class SourcePulseState {
         String key="";
         for(var pos:owner.members())if(level.getBlockEntity(pos) instanceof EuvLightSourceMemberBlockEntity member
                 && member.structureKind()==BlockKind.PULSE_MODULE)key=installation+":"+member.installation()+":"+spec();
-        if(key.isEmpty())return;
+        if(key.isEmpty()){hardware="";tested=null;measurement=null;accepted=false;owner.setChanged();return;}
         if(!hardware.equals(key)) {
             hardware=key;seed=UUID.randomUUID().getLeastSignificantBits();
             int center=(spec().min()+spec().max())/2;controls=new Controls(center,center,center);
@@ -87,6 +87,7 @@ public final class SourcePulseState {
             case 16 -> tested==null?50:tested.phase(); case 17 -> tested==null?50:tested.delay(); case 18 -> tested==null?50:tested.amplitude();
             case 19 -> validSpec()?spec().minimumQuality():101;
             case 20 -> Math.clamp(owner.param("pulse_fine_step",1),1,100);case 21 -> Math.clamp(owner.param("pulse_coarse_step",5),1,100);
+            case 22 -> owner.trialFe();case 23 -> owner.trialHydrogen();case 24 -> owner.trialTin();
             default -> 0;
         };
     }

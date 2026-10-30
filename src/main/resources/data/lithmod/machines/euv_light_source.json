@@ -21,7 +21,7 @@
     "hydrogen_per_tick_mb": 10,
     "tin_exposure_ticks": 1000,
     "beamline_max_length": 16,
-    "pulse_control_min": 0,
+    "pulse_control_min": 1,
     "pulse_control_max": 100,
     "pulse_timing_tolerance": 18,
     "pulse_amplitude_tolerance": 20,

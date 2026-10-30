@@ -1,5 +1,8 @@
 # T7 EUV playtest
 
+
+For 0.7.1, install the source Pulse Control Module and Source Calibration Panel and complete the [source pulse calibration walkthrough](manual-walkthrough-source-calibration.md) before exposure.
+
 Use a backed-up test world. T1–T6 machines keep their existing roles. Dimensions below are **width × height × depth**; structures are filled volumes, not hollow rooms. Hold Shift over a controller for its build requirements. These are playtest instructions, not a record of manual acceptance.
 
 ## 1. Build the utilities

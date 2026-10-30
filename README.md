@@ -17,13 +17,13 @@ Recipes and machine balance are defined in editable JSON resources. This is an *
 
 ## Installation and dependencies
 
-Download the JAR from [GitHub Releases](https://github.com/SierraSupercomputer/euvcraft/releases). The current release is [0.7.0 Alpha](https://github.com/SierraSupercomputer/euvcraft/releases/tag/v0.7.0).
+Download the JAR from [GitHub Releases](https://github.com/SierraSupercomputer/euvcraft/releases). The current release is [0.7.1 Alpha](https://github.com/SierraSupercomputer/euvcraft/releases/tag/v0.7.1).
 
-| Requirement | Tested version for 0.7.0 |
+| Requirement | Tested version for 0.7.1 |
 | --- | --- |
 | Minecraft | 26.3 |
 | Java | 25 |
-| NeoForge | 26.3.0.69-beta |
+| NeoForge | 26.3.0.99 |
 | [Arcforge](https://github.com/zagdrath/arcforge) — required | 2.8.1+26.3 |
 | [Encoded Logistics](https://github.com/zagdrath/encoded-logistics) — required | 1.5.0+26.3 |
 
@@ -37,8 +37,9 @@ Install EUVCRAFT, Arcforge and Encoded Logistics in the client and server's mods
 
 - [T1–T5 progression guide](docs/playtest-progression.md): the early production route, machine layouts, utilities, cleanrooms and assembly.
 - [T6 walkthrough](docs/manual-walkthrough-t6.md): electronic-grade silicon, multi-patterning and reflow assembly.
+- [Source pulse calibration](docs/manual-walkthrough-source-calibration.md): tin timing, laser amplitude and accepted source quality.
 - [T7 walkthrough](docs/manual-walkthrough-t7.md): the EUV line, hydrogen, vacuum and contamination recovery.
 - [Recipe reference](docs/recipes.md): crafting ingredients and machine recipes.
-- [0.7.0 release notes](docs/releases/0.7.0.md): installation details and current limitations.
+- [0.7.1 release notes](docs/releases/0.7.1.md): installation details and current limitations.
 
 The T7 manual client walkthrough and balance review remain in progress. Report problems through [GitHub Issues](https://github.com/SierraSupercomputer/euvcraft/issues), including the mod version, reproduction steps and relevant logs.
