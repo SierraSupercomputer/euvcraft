@@ -93,7 +93,7 @@ public final class EuvLightSourceControllerBlockEntity extends FabMachineBlockEn
     public EuvScannerControllerBlockEntity physicalScanner(){
         if(level==null||!isFormed())return null;if(linkTick==level.getGameTime())return linked;
         linkTick=level.getGameTime();linked=null;
-        for(var pos:members())if(level.getBlockState(pos).is(EuvMachines.LIGHT_SOURCE_CASING.get()))
+        for(var pos:members())if(level.hasChunkAt(pos)&&level.getBlockState(pos).is(EuvMachines.LIGHT_SOURCE_CASING.get()))
             for(var direction:net.minecraft.core.Direction.values())for(int distance=1;distance<=65;distance++){
                 var next=pos.relative(direction,distance);if(!level.hasChunkAt(next))break;
                 if(level.getBlockState(next).is(EuvMachines.BEAM_LINE.get()))continue;
