@@ -39,6 +39,7 @@ public final class T7RuntimeGameTests {
     private static final Map<String,Consumer<GameTestHelper>> CASES=new LinkedHashMap<>();
     static{
         add("unformed_member_ticks",T7RuntimeGameTests::unformedMemberTicks);add("member_formation_visuals",T7RuntimeGameTests::memberFormationVisuals);
+        add("pulse_trial_lifecycle",T7RuntimeGameTests::sourcePulseTrial);add("pulse_idle_link_menu",T7RuntimeGameTests::sourcePulseLink);add("pulse_frozen_quality",T7RuntimeGameTests::sourcePulseFreeze);add("placement_facing",T7RuntimeGameTests::euvPlacementFacing);
         add("geometry",T7RuntimeGameTests::geometry);add("hydrogen_transactions",T7RuntimeGameTests::hydrogenTransactions);add("hydrogen_saved_job",T7RuntimeGameTests::hydrogenJob);add("g3_water_transactions",T7RuntimeGameTests::water);
         add("reticle_saved_job",T7RuntimeGameTests::writer);add("reticle_break",T7RuntimeGameTests::writerBreak);add("prep_saved_job",T7RuntimeGameTests::prep);add("prep_breach_repair",T7RuntimeGameTests::prepBreach);
         add("arcforge_gas_transport",T7RuntimeGameTests::gasTransport);add("contaminated_pickup",T7RuntimeGameTests::pickup);add("central_vacuum",T7RuntimeGameTests::central);
@@ -120,6 +121,50 @@ public final class T7RuntimeGameTests {
         h.succeed();
     }
 
+    private static void sourcePulseTrial(GameTestHelper h){try(var arena=new Arena(h)){
+        var cell=arena.source();var light=(EuvLightSourceControllerBlockEntity)cell.machine();light.setStoredEnergy(4000000);
+        for(int i=0;i<250;i++)light.serverTick();light.hydrogenTank.fill(32000,false);light.setSlot(0,new ItemStack(tin(),4));
+        check(h,!light.pulses.calibrated()&&!light.pulses.accept(),"Fresh source requires a paid accepted test");
+        light.setStoredEnergy(0);int gas=light.hydrogenTank.amount(),tin=light.tinStored();check(h,!light.pulses.test(),"Missing FE refuses test");eq(h,gas,light.hydrogenTank.amount(),"No partial gas payment");eq(h,tin,light.tinStored(),"No partial tin payment");
+        light.setStoredEnergy(4000000);long fe=light.buffer().getAmountAsLong();check(h,light.pulses.test(),"Standalone source tests without a scanner");
+        eq(h,fe-light.trialFe(),light.buffer().getAmountAsLong(),"Exact trial FE");eq(h,gas-light.trialHydrogen(),light.hydrogenTank.amount(),"Exact trial gas");eq(h,3,light.tinStored(),"Only one tin opened");eq(h,1000-light.trialTin(),light.tinCreditTicks(),"Remainder retained as credit");
+        var measured=light.pulses.measurement();var controls=light.pulses.controls();var saved=save(arena.level,light);
+        arena.level.removeBlockEntity(cell.anchor());light=new EuvLightSourceControllerBlockEntity(cell.anchor(),arena.level.getBlockState(cell.anchor()));arena.level.setBlockEntity(light);load(arena.level,light,saved);light.revalidate();
+        check(h,controls.equals(light.pulses.controls())&&measured.equals(light.pulses.measurement()),"Same target and paid measurement after reload");
+        check(h,light.pulses.adjust(0,1)&&!light.pulses.accept(),"Changed settings cannot accept stale measurement");
+        calibrateSource(light);var identity=light.pulses.installation();int quality=light.pulses.value(4);saved=save(arena.level,light);
+        arena.level.removeBlockEntity(cell.anchor());light=new EuvLightSourceControllerBlockEntity(cell.anchor(),arena.level.getBlockState(cell.anchor()));arena.level.setBlockEntity(light);load(arena.level,light,saved);light.revalidate();
+        check(h,light.pulses.calibrated()&&identity.equals(light.pulses.installation()),"Accepted calibration/identity survive reload");eq(h,quality,light.pulses.value(4),"Accepted quality stable");
+        var module=arena.block(cell,EuvMachines.LIGHT_SOURCE_PULSE_MODULE.get());arena.put(module,Blocks.AIR);arena.put(module,EuvMachines.LIGHT_SOURCE_PULSE_MODULE.get());light.revalidate();check(h,!light.pulses.calibrated(),"Replacing physical pulse module invalidates calibration");
+    }h.succeed();}
+    private static void sourcePulseLink(GameTestHelper h){try(var arena=new Arena(h)){
+        var scanner=arena.scanner();var cell=arena.source();arena.beam();var light=(EuvLightSourceControllerBlockEntity)cell.machine();
+        check(h,light.physicalScanner()==scanner.machine(),"Idle physical link exists before calibration/resources/exposure");eq(h,2,light.readiness(),"Physical link reports source calibration rather than disconnected");
+        var panel=arena.block(cell,EuvMachines.LIGHT_SOURCE_CALIBRATION_PANEL.get());var player=player(h,panel);var menu=new EuvSourceCalibrationMenu(42,player.getInventory(),light,panel);
+        check(h,!menu.clickMenuButton(player,0),"Wrong active menu rejected");player.containerMenu=menu;check(h,!menu.clickMenuButton(player,999),"Unknown button rejected");
+        check(h,menu.clickMenuButton(player,0),"Authorized tuning through source panel");arena.put(panel,Blocks.AIR);check(h,!menu.clickMenuButton(player,1),"Stale panel/menu cannot mutate source");
+    }h.succeed();}
+    private static void sourcePulseFreeze(GameTestHelper h){try(var arena=new Arena(h)){
+        var scanner=arena.scanner();var source=arena.source();prepareLine(arena,scanner,source);var s=(EuvScannerControllerBlockEntity)scanner.machine();var light=(EuvLightSourceControllerBlockEntity)source.machine();
+        for(int i=0;i<10;i++)light.pulses.adjust(2,1);check(h,light.pulses.test()&&light.pulses.accept(),"Deliberately imperfect accepted source");int multiplier=light.pulses.multiplier();check(h,multiplier>=850&&multiplier<1000,"Bounded source yield penalty");align(s);
+        s.setSlot(0,lot(2,true));var mask=new ItemStack(ModItems.MASK.get());mask.set(ModDataComponents.MASK_DATA.get(),new MaskData("memory",7,5,3));s.setSlot(1,mask);s.setSlot(2,new ItemStack(ModItems.RESIST_T7.get(),64));s.serverTick();
+        check(h,s.inputsLocked(),"Lot admitted with source calibration");eq(h,multiplier,s.sourceMultiplier(),"Source quality frozen once");check(h,light.pulses.locked()&&!light.pulses.adjust(0,1)&&!light.pulses.test(),"Active source rejects tuning and new trials");
+        var snapshot=save(arena.level,s);arena.level.removeBlockEntity(scanner.anchor());s=new EuvScannerControllerBlockEntity(scanner.anchor(),arena.level.getBlockState(scanner.anchor()));arena.level.setBlockEntity(s);load(arena.level,s,snapshot);s.revalidate();eq(h,multiplier,s.sourceMultiplier(),"Frozen source yield survives scanner reload");
+        light.setStoredEnergy(0);s.serverTick();eq(h,multiplier,s.sourceMultiplier(),"Utility outage preserves frozen quality");
+        var sourceId=light.pulses.installation();arena.level.removeBlockEntity(source.anchor());light=new EuvLightSourceControllerBlockEntity(source.anchor(),arena.level.getBlockState(source.anchor()));arena.level.setBlockEntity(light);light.revalidate();
+        check(h,!sourceId.equals(light.pulses.installation()),"New controller has a new installation identity");eq(h,2,s.sourceIssue(),"In-flight lot requires original source, cannot gain new quality");
+    }h.succeed();}
+    private static void euvPlacementFacing(GameTestHelper h){try(var arena=new Arena(h)){
+        var pos=arena.anchor();var player=player(h,pos);
+        for(var facing:List.of(Direction.NORTH,Direction.EAST,Direction.SOUTH,Direction.WEST)){
+            player.setYRot(facing.toYRot());
+            for(var block:List.of(EuvMachines.LIGHT_SOURCE_OPERATING_PANEL.get(),EuvMachines.SCANNER_CALIBRATION_PANEL.get())){
+                var hit=new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(pos.below()),Direction.UP,pos.below(),false);
+                var context=new net.minecraft.world.item.context.BlockPlaceContext(player,net.minecraft.world.InteractionHand.MAIN_HAND,new ItemStack(block),hit);
+                var state=block.getStateForPlacement(context);check(h,state!=null&&state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING)==context.getHorizontalDirection().getOpposite(),"Standalone placement faces the player");
+            }
+        }
+    }h.succeed();}
     private static void geometry(GameTestHelper h){
         for(var facing:List.of(Direction.NORTH,Direction.EAST,Direction.SOUTH,Direction.WEST))for(int group=0;group<6;group++)try(var arena=new Arena(h,facing)){
             var cell=switch(group){case 0->arena.writer();case 1->arena.prep();case 2->arena.hydrogen();case 3->arena.plant();case 4->arena.scanner();default->arena.source();};

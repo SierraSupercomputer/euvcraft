@@ -80,9 +80,9 @@ public final class SourcePulseState {
             case 4 -> measurement==null?-1:measurement.quality(); case 5 -> calibrated()?1:0;
             case 6 -> tested!=null&&tested.equals(controls)?1:0; case 7 -> multiplier(); case 8 -> locked()?1:0; case 9 -> trialIssue();
             case 10 -> measurement==null?0:measurement.responsePermille();
-            case 11 -> measurement==null?0:Integer.signum(measurement.phaseError());
-            case 12 -> measurement==null?0:Integer.signum(measurement.delayError());
-            case 13 -> measurement==null?0:Integer.signum(measurement.amplitudeError());
+            case 11 -> measurement==null?0:measurement.phaseError();
+            case 12 -> measurement==null?0:measurement.delayError();
+            case 13 -> measurement==null?0:measurement.amplitudeError();
             case 14 -> validSpec()?spec().min():0; case 15 -> validSpec()?spec().max():100;
             case 16 -> tested==null?50:tested.phase(); case 17 -> tested==null?50:tested.delay(); case 18 -> tested==null?50:tested.amplitude();
             case 19 -> validSpec()?spec().minimumQuality():101;

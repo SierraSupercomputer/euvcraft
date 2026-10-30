@@ -30,13 +30,12 @@ public final class EuvSourceCalibrationScreen extends AbstractContainerScreen<Eu
         int x=leftPos+10,y=topPos+30;g.fill(x,y,x+146,y+112,0xFF142333);
         // Desired output band and fixed pre-pulse reference.
         g.fill(x+4,y+45,x+142,y+55,0xFF255744);g.fill(x+35,y+5,x+36,y+105,0xFF91CFFF);
-        int phase=Math.clamp(menu.value(1),0,100),delay=Math.clamp(menu.value(2),0,100);
-        int droplet=x+5+phase*130/100,main=x+40+delay;
+        int droplet=x+Math.clamp(35+menu.value(11),5,140),main=x+Math.clamp(80+menu.value(12),5,140);
         g.fill(droplet,y+90,droplet+2,y+102,0xFF55DDAA);g.fill(main,y+80,main+2,y+103,0xFFDD77FF);
         if(menu.value(4)>=0){
             int peak=Math.clamp(menu.value(10),0,2000);int previousY=y+101;
             // Display the last measured pulse, never a free score/trace for untested controls.
-            for(int i=1;i<141;i++){double t=(i-80)/15.0;int response=(int)Math.round(50.0*peak/1000.0*Math.exp(-.5*t*t));int nextY=y+101-Math.clamp(response,0,98);
+            for(int i=1;i<141;i++){double t=(i-80-Math.clamp(menu.value(12),-65,55))/15.0;int response=(int)Math.round(50.0*peak/1000.0*Math.exp(-.5*t*t));int nextY=y+101-Math.clamp(response,0,98);
                 g.fill(x+i,Math.min(previousY,nextY),x+i+1,Math.max(previousY,nextY)+1,0xFFFFC65A);previousY=nextY;}
         }
     }
@@ -44,7 +43,7 @@ public final class EuvSourceCalibrationScreen extends AbstractContainerScreen<Eu
     @Override protected void extractLabels(GuiGraphicsExtractor g,int mx,int my){
         text(g,"EUV source pulse calibration",8,7,304);text(g,"Green: tin  Blue: pre  Purple: main",10,18,300);
         String[] names={"Droplet phase","Main-pulse delay","Pulse amplitude"};for(int i=0;i<3;i++)text(g,names[i]+": "+menu.value(i+1),170,34+i*36,140);
-        text(g,"Amber: last paid response",10,145,300);
+        text(g,"Markers / amber: last paid test",10,145,300);
         String[] issues={"Ready for a paid test","Form the source / install modules","Locked: source serves an active lot","Invalid JSON calibration settings","Pump down the source first","Supply FE for the test","Supply Fab Hydrogen for the test","Supply tin feedstock for the test"};
         text(g,issues[Math.clamp(menu.value(9),0,issues.length-1)],10,185,300);
         if(menu.value(4)>=0){text(g,"Last quality "+menu.value(4)+"/100; minimum "+menu.value(19)+(menu.value(6)==0?" (settings changed)":""),10,198,300);
