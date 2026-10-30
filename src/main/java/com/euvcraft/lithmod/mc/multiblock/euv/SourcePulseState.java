@@ -57,14 +57,14 @@ public final class SourcePulseState {
         return 0;
     }
     public boolean adjust(int axis,int delta) {
-        refresh();if(!owner.isFormed()||locked()||!validSpec()||axis<0||axis>2)return false;
+        owner.revalidate();refresh();if(!owner.isFormed()||locked()||!validSpec()||axis<0||axis>2)return false;
         int fine=Math.clamp(owner.param("pulse_fine_step",1),1,100),coarse=Math.clamp(owner.param("pulse_coarse_step",5),1,100);
         if(Math.abs(delta)!=fine&&Math.abs(delta)!=coarse)return false;
         var next=SourcePulseCalibration.clamp(new Controls(controls.phase()+(axis==0?delta:0),controls.delay()+(axis==1?delta:0),controls.amplitude()+(axis==2?delta:0)),spec());
         if(next.equals(controls))return false;controls=next;accepted=false;owner.setChanged();return true;
     }
     public boolean test() {
-        refresh();if(trialIssue()!=0)return false;
+        owner.revalidate();refresh();if(trialIssue()!=0)return false;
         var result=SourcePulseCalibration.measure(target(),controls,spec());
         if(!owner.payTrial())return false;
         tested=controls;measurement=result;accepted=false;owner.setChanged();return true;

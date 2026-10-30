@@ -530,5 +530,7 @@
   "tier.lithmod.t7": "T7 EUV",
   "block.lithmod.euv_light_source_pulse_module": "EUV Pulse Control Module",
   "block.lithmod.euv_light_source_calibration_panel": "EUV Source Calibration Panel",
-  "tooltip.lithmod.t7.source_pulse": "Pulse Control Module + Source Calibration Panel (middle layer)"
+  "tooltip.lithmod.t7.source_pulse": "Pulse Control Module + Source Calibration Panel (middle layer)",
+  "item.lithmod.euv_light_source_pulse_module": "EUV Pulse Control Module",
+  "item.lithmod.euv_light_source_calibration_panel": "EUV Source Calibration Panel"
 }

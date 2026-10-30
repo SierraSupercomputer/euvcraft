@@ -68,7 +68,7 @@ public final class EuvLightSourceControllerBlockEntity extends FabMachineBlockEn
     public int trialHydrogen(){return p("pulse_test_hydrogen_mb",50);}
     public int trialTin(){return p("pulse_test_tin_ticks",25);}
     public boolean validTrialCosts(){return p("pulse_test_fe",12000)>0&&trialFe()<=buffer().getCapacityAsInt()&&trialHydrogen()>0&&trialHydrogen()<=hydrogenTank.capacity()&&trialTin()>0&&trialTin()<=1000000&&p("tin_exposure_ticks",1000)>0&&p("tin_exposure_ticks",1000)<=1000000;}
-    public long availableTinCredit(){return tinTicks+(long)slot(0).getCount()*Math.clamp(p("tin_exposure_ticks",1000),1,1000000);}
+    public long availableTinCredit(){return tinTicks+(long)(slot(0).is(TIN)?slot(0).getCount():0)*Math.clamp(p("tin_exposure_ticks",1000),1,1000000);}
     public boolean calibrationLocked(){
         if(level==null||pairedScanner==null)return false;
         if(!level.hasChunkAt(pairedScanner))return true;
