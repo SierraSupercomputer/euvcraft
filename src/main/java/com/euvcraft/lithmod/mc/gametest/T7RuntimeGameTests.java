@@ -135,6 +135,8 @@ public final class T7RuntimeGameTests {
         calibrateSource(light);var identity=light.pulses.installation();int quality=light.pulses.value(4);saved=save(arena.level,light);
         arena.level.removeBlockEntity(cell.anchor());light=new EuvLightSourceControllerBlockEntity(cell.anchor(),arena.level.getBlockState(cell.anchor()));arena.level.setBlockEntity(light);load(arena.level,light,saved);light.revalidate();
         check(h,light.pulses.calibrated()&&identity.equals(light.pulses.installation()),"Accepted calibration/identity survive reload");eq(h,quality,light.pulses.value(4),"Accepted quality stable");
+        var frame=cell.positions().getLast();var frameState=arena.level.getBlockState(frame);arena.put(frame,Blocks.AIR);
+        check(h,!light.pulses.accept(),"Acceptance immediately revalidates a breached structure");arena.put(frame,frameState);light.revalidate();
         var module=arena.block(cell,EuvMachines.LIGHT_SOURCE_PULSE_MODULE.get());arena.put(module,Blocks.AIR);arena.put(module,EuvMachines.LIGHT_SOURCE_PULSE_MODULE.get());light.revalidate();check(h,!light.pulses.calibrated(),"Replacing physical pulse module invalidates calibration");
     }h.succeed();}
     private static void sourcePulseLink(GameTestHelper h){try(var arena=new Arena(h)){
@@ -150,6 +152,7 @@ public final class T7RuntimeGameTests {
         s.setSlot(0,lot(2,true));var mask=new ItemStack(ModItems.MASK.get());mask.set(ModDataComponents.MASK_DATA.get(),new MaskData("memory",7,5,3));s.setSlot(1,mask);s.setSlot(2,new ItemStack(ModItems.RESIST_T7.get(),64));s.serverTick();
         check(h,s.inputsLocked(),"Lot admitted with source calibration");eq(h,multiplier,s.sourceMultiplier(),"Source quality frozen once");check(h,light.pulses.locked()&&!light.pulses.adjust(0,1)&&!light.pulses.test(),"Active source rejects tuning and new trials");
         var snapshot=save(arena.level,s);arena.level.removeBlockEntity(scanner.anchor());s=new EuvScannerControllerBlockEntity(scanner.anchor(),arena.level.getBlockState(scanner.anchor()));arena.level.setBlockEntity(s);load(arena.level,s,snapshot);s.revalidate();eq(h,multiplier,s.sourceMultiplier(),"Frozen source yield survives scanner reload");
+        var healthy=save(arena.level,s);var malformed=healthy.copy();malformed.putBoolean("euvYieldFrozen",false);malformed.remove("euvFrozenSource");load(arena.level,s,malformed);s.revalidate();eq(h,2,s.sourceIssue(),"Missing binding fails closed even when freeze flag is missing");load(arena.level,s,healthy);s.revalidate();
         light.setStoredEnergy(0);s.serverTick();eq(h,multiplier,s.sourceMultiplier(),"Utility outage preserves frozen quality");
         var sourceId=light.pulses.installation();arena.level.removeBlockEntity(source.anchor());light=new EuvLightSourceControllerBlockEntity(source.anchor(),arena.level.getBlockState(source.anchor()));arena.level.setBlockEntity(light);light.revalidate();
         check(h,!sourceId.equals(light.pulses.installation()),"New controller has a new installation identity");eq(h,2,s.sourceIssue(),"In-flight lot requires original source, cannot gain new quality");

@@ -70,7 +70,7 @@ public final class SourcePulseState {
         tested=controls;measurement=result;accepted=false;owner.setChanged();return true;
     }
     public boolean accept() {
-        refresh();if(!owner.isFormed()||locked()||!validSpec()||tested==null||!tested.equals(controls)
+        owner.revalidate();refresh();if(!owner.isFormed()||locked()||!validSpec()||tested==null||!tested.equals(controls)
                 ||measurement==null||measurement.quality()<spec().minimumQuality())return false;
         accepted=true;owner.setChanged();return true;
     }

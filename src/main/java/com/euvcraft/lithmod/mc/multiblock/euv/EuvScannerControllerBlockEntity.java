@@ -104,9 +104,9 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
     private int centralGrant;
     public UUID installationId(){return installationId;}
     public boolean vacuumIsolated(){return vacuumIsolated;}
-    private EuvLightSourceControllerBlockEntity source(){var source=EuvBeamlineConnection.source(this);return source!=null&&(!inputsLocked()||!yieldFrozen||frozenSourceId!=null&&frozenSourceId.equals(source.pulses.installation()))?source:null;}
-    public int sourceIssue(){var physical=EuvBeamlineConnection.source(this);if(physical==null)return 1;if(inputsLocked()&&yieldFrozen&&(frozenSourceId==null||!frozenSourceId.equals(physical.pulses.installation())))return 2;if(!physical.pulses.calibrated())return 3;return physical.readiness()==8||physical.readiness()==9?0:4;}
-    public int sourceMultiplier(){var source=source();return inputsLocked()&&yieldFrozen?frozenSourceMultiplier:source==null?0:source.pulses.multiplier();}
+    private EuvLightSourceControllerBlockEntity source(){var source=EuvBeamlineConnection.source(this);return source!=null&&(!inputsLocked()||frozenSourceId!=null&&frozenSourceId.equals(source.pulses.installation()))?source:null;}
+    public int sourceIssue(){var physical=EuvBeamlineConnection.source(this);if(physical==null)return 1;if(inputsLocked()&&(frozenSourceId==null||!frozenSourceId.equals(physical.pulses.installation())))return 2;if(!physical.pulses.calibrated())return 3;return physical.readiness()==8||physical.readiness()==9?0:4;}
+    public int sourceMultiplier(){var source=source();return inputsLocked()?frozenSourceMultiplier:source==null?0:source.pulses.multiplier();}
     public boolean hasReservedLightSource(){var source=source();return source!=null&&source.canExpose(this);}
     private int p(String key,int fallback){return definition().map(d->d.paramOrDefault(key,fallback)).orElse(fallback);}
     private int scaledFe(int raw){return (int)Math.clamp(Math.round(raw*com.euvcraft.lithmod.mc.EUVCRAFTMod.settings().fePowerMultiplier()),1,Integer.MAX_VALUE);}
@@ -175,7 +175,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
         if(simulate)return amount;
         try(var transaction=net.neoforged.neoforge.transfer.transaction.Transaction.openRoot()){
             if(buffer().extract(amount,transaction)!=amount||!source.payExposure(this,transaction))return 0;
-            upwJournal.updateSnapshots(transaction);upwTank.drainExact(water,false);transaction.commit();setChanged();return amount;
+            upwJournal.updateSnapshots(transaction);if(!upwTank.drainExact(water,false))return 0;transaction.commit();setChanged();return amount;
         }
     }
 
