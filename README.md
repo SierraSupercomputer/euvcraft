@@ -1,31 +1,42 @@
-
 # EUVCRAFT
 
-Start with the [T1–T5 playtest progression guide](docs/playtest-progression.md) for the current production route, machine layouts, cleanrooms, assembly and FOUP cleaning. See the [recipe reference](docs/recipes.md) for crafting ingredients.
+EUVCRAFT is a semiconductor fabrication mod for Minecraft. Build a fab that turns silicon into wafers, processes them through increasingly demanding lithography equipment, and packages the results into logic, compute, memory and NAND chips.
 
-The development setup information below comes from the NeoForge template.
+Progression currently spans **T1–T7**, from a compact early process cell to a large EUV production line with a separate light source. Each generation adds infrastructure to manage: wafer preparation, physical machine modules, calibration, ultrapure water, cleanrooms, hydrogen and vacuum.
 
-Installation information
-=======
+## What you can build
 
-This template repository can be directly cloned to get you started with a new
-mod. Simply create a new repository cloned from this one, by following the
-instructions provided by [GitHub](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template).
+- **A complete wafer production chain:** grow and purify boules, slice wafers into FOUP carriers, prepare and expose them, then test and package the chips.
+- **Larger multiblock machines:** deposition/etch chambers, lithography scanners, mask writers and assembly equipment, with separate operating and equipment panels where applicable.
+- **Interactive calibration and yield management:** beam alignment, diagnostic curve fitting, and high binning that trades yield for a chance to produce higher-tier compute chips or early-generation logic chips.
+- **Fab utilities and cleanrooms:** supply FE power and ultrapure water, control contamination with powered filtration and gowns, and protect high-tier production from containment breaches.
+- **EUV infrastructure at T7:** route Fab Hydrogen, connect a light source to its scanner by beamline, and use dedicated pumping or a shared central vacuum plant.
+- **Chip assembly and recovery:** assemble CPUs, DIMMs and microcontrollers at supported tiers; clean rejected or contaminated wafer lots without spending chip packages.
 
-Once you have your clone, simply open the repository in the IDE of your choice. The usual recommendation for an IDE is either IntelliJ IDEA or Eclipse.
+Recipes and machine balance are defined in editable JSON resources. This is an **Alpha** project: progression and costs are still being playtested. Encoded Logistics hardware/server upgrades and T8 progression are planned, rather than included in the current release.
 
-If at any point you are missing libraries in your IDE, or you've run into problems you can
-run `gradlew --refresh-dependencies` to refresh the local cache. `gradlew clean` to reset everything 
-{this does not affect your code} and then start the process again.
+## Installation and dependencies
 
-Mapping Names:
-============
-By default, the MDK is configured to use the official mapping names from Mojang for methods and fields 
-in the Minecraft codebase. These names are covered by a specific license. All modders should be aware of this
-license. For the latest license text, refer to the mapping file itself, or the reference copy here:
-https://github.com/NeoForged/NeoForm/blob/main/Mojang.md
+Download the JAR from [GitHub Releases](https://github.com/SierraSupercomputer/euvcraft/releases). The current release is [0.7.0 Alpha](https://github.com/SierraSupercomputer/euvcraft/releases/tag/v0.7.0).
 
-Additional Resources: 
-==========
-Community Documentation: https://docs.neoforged.net/  
-NeoForged Discord: https://discord.neoforged.net/
+| Requirement | Tested version for 0.7.0 |
+| --- | --- |
+| Minecraft | 26.3 |
+| Java | 25 |
+| NeoForge | 26.3.0.69-beta |
+| [Arcforge](https://github.com/zagdrath/arcforge) — required | 2.8.1+26.3 |
+| [Encoded Logistics](https://github.com/zagdrath/encoded-logistics) — required | 1.5.0+26.3 |
+
+Install EUVCRAFT, Arcforge and Encoded Logistics in the client and server's mods folders. Use matching Minecraft versions and remove older duplicate mod JARs when updating.
+
+**Do not install arcforge-api-1.2.0+26.3.jar.** It is a developer compile-time dependency; the full Arcforge mod supplies the API during gameplay.
+
+## Getting started
+
+- [T1–T5 progression guide](docs/playtest-progression.md): the early production route, machine layouts, utilities, cleanrooms and assembly.
+- [T6 walkthrough](docs/manual-walkthrough-t6.md): electronic-grade silicon, multi-patterning and reflow assembly.
+- [T7 walkthrough](docs/manual-walkthrough-t7.md): the EUV line, hydrogen, vacuum and contamination recovery.
+- [Recipe reference](docs/recipes.md): crafting ingredients and machine recipes.
+- [0.7.0 release notes](docs/releases/0.7.0.md): installation details and current limitations.
+
+The T7 manual client walkthrough and balance review remain in progress. Report problems through [GitHub Issues](https://github.com/SierraSupercomputer/euvcraft/issues), including the mod version, reproduction steps and relevant logs.
