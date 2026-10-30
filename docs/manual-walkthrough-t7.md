@@ -16,7 +16,7 @@ Build a **3×3×5 G3 Reticle Writer** with G3 Casing. Use a lower-front controll
 
 In the upper Operating Panel, select compute, memory or NAND. Compute also offers the configured core counts. Supply one Blank Mask, 64 redstone and FE; press Write. Selection is frozen while the job runs. The lower cabinet is a status interface.
 
-The starting job takes 3,600 paid ticks at 1,920 FE/t. Outside a cleanroom it still works, but the resulting reticle has fewer uses. This penalty changes durability only. Compare two jobs under different cleanroom conditions; do not expect cleanroom quality on the mask to multiply downstream wafer yield.
+The starting job takes 3,600 paid ticks at 8,000 FE/t. Outside a cleanroom it still works, but the resulting reticle has fewer uses. This penalty changes durability only. Compare two jobs under different cleanroom conditions; do not expect cleanroom quality on the mask to multiply downstream wafer yield.
 
 ## 3. Prepare electronic-grade wafers
 
