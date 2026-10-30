@@ -105,7 +105,7 @@ public final class T7RuntimeGameTests {
                     var state = arena.level.getBlockState(pos);
                     check(h, state.getValue(formed), "Every formed member has its joined visual state");
                     check(h, parts.add(state.getValue(part)), "Every member has a distinct panel part");
-                    eq(h, facing, state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING), "Formed facing retained");
+                    check(h, facing == state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING), "Formed facing retained");
                 }
                 eq(h, cell.positions().size(), parts.size(), "All joined panels assigned");
                 var breach = cell.positions().getLast(); arena.put(breach, Blocks.AIR); owner.revalidate();
