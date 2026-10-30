@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class SourcePulseCalibrationTest {
 
     private static final SourcePulseCalibration.Spec DEFAULT_SPEC = new SourcePulseCalibration.Spec(
-            0, 100, 10, 10, 0, 500, 1500
+            0, 100, 10, 10, 0, 500, 1000
     );
 
     @Test
@@ -54,7 +54,7 @@ class SourcePulseCalibrationTest {
 
     @Test
     void phaseKnobPenalty() {
-        SourcePulseCalibration.Target target = SourcePulseCalibration.Target(50, 50, 50);
+        SourcePulseCalibration.Target target = new SourcePulseCalibration.Target(50, 50, 50);
         SourcePulseCalibration.Controls controls = new SourcePulseCalibration.Controls(60, 50, 50);
         SourcePulseCalibration.Measurement m = SourcePulseCalibration.measure(target, controls, DEFAULT_SPEC);
         assertTrue(m.quality() < 100, "Phase error must reduce quality");
@@ -65,7 +65,7 @@ class SourcePulseCalibrationTest {
 
     @Test
     void delayKnobPenalty() {
-        SourcePulseCalibration.Target target = SourcePulseCalibration.Target(50, 50, 50);
+        SourcePulseCalibration.Target target = new SourcePulseCalibration.Target(50, 50, 50);
         SourcePulseCalibration.Controls controls = new SourcePulseCalibration.Controls(50, 60, 50);
         SourcePulseCalibration.Measurement m = SourcePulseCalibration.measure(target, controls, DEFAULT_SPEC);
         assertTrue(m.quality() < 100, "Delay error must reduce quality");
@@ -76,7 +76,7 @@ class SourcePulseCalibrationTest {
 
     @Test
     void amplitudeKnobPenalty() {
-        SourcePulseCalibration.Target target = SourcePulseCalibration.Target(50, 50, 50);
+        SourcePulseCalibration.Target target = new SourcePulseCalibration.Target(50, 50, 50);
         SourcePulseCalibration.Controls controls = new SourcePulseCalibration.Controls(50, 50, 60);
         SourcePulseCalibration.Measurement m = SourcePulseCalibration.measure(target, controls, DEFAULT_SPEC);
         assertTrue(m.quality() < 100, "Amplitude error must reduce quality");
@@ -87,7 +87,7 @@ class SourcePulseCalibrationTest {
 
     @Test
     void excessiveAmplitudePenalizesResponse() {
-        SourcePulseCalibration.Target target = SourcePulseCalibration.Target(50, 50, 10);
+        SourcePulseCalibration.Target target = new SourcePulseCalibration.Target(50, 50, 10);
         SourcePulseCalibration.Controls controls = new SourcePulseCalibration.Controls(50, 50, 100);
         SourcePulseCalibration.Measurement m = SourcePulseCalibration.measure(target, controls, DEFAULT_SPEC);
         assertEquals(90, m.amplitudeError());
@@ -126,7 +126,7 @@ class SourcePulseCalibrationTest {
 
     @Test
     void qualityClampedTo0To100() {
-        SourcePulseCalibration.Spec tightSpec = new SourcePulseCalibration.Spec(0, 100, 1, 1, 0, 500, 1500);
+        SourcePulseCalibration.Spec tightSpec = new SourcePulseCalibration.Spec(0, 100, 1, 1, 0, 500, 1000);
         SourcePulseCalibration.Target target = new SourcePulseCalibration.Target(50, 50, 50);
         SourcePulseCalibration.Controls controls = new SourcePulseCalibration.Controls(100, 100, 100);
         SourcePulseCalibration.Measurement m = SourcePulseCalibration.measure(target, controls, tightSpec);
@@ -135,7 +135,7 @@ class SourcePulseCalibrationTest {
 
     @Test
     void responsePermilleClampedTo0To2000() {
-        SourcePulseCalibration.Spec spec = new SourcePulseCalibration.Spec(0, 100, 10, 10, 0, 500, 1500);
+        SourcePulseCalibration.Spec spec = new SourcePulseCalibration.Spec(0, 100, 10, 10, 0, 500, 1000);
         SourcePulseCalibration.Target target = new SourcePulseCalibration.Target(50, 50, 0);
         SourcePulseCalibration.Controls controls = new SourcePulseCalibration.Controls(50, 50, 100);
         SourcePulseCalibration.Measurement m = SourcePulseCalibration.measure(target, controls, spec);
@@ -144,7 +144,7 @@ class SourcePulseCalibrationTest {
 
     @Test
     void deterministicIndependentScoring() {
-        SourcePulseCalibration.Target target = SourcePulseCalibration.Target(50, 50, 50);
+        SourcePulseCalibration.Target target = new SourcePulseCalibration.Target(50, 50, 50);
         SourcePulseCalibration.Controls c1 = new SourcePulseCalibration.Controls(55, 50, 50);
         SourcePulseCalibration.Controls c2 = new SourcePulseCalibration.Controls(50, 55, 50);
         SourcePulseCalibration.Controls c3 = new SourcePulseCalibration.Controls(50, 50, 55);
@@ -159,12 +159,12 @@ class SourcePulseCalibrationTest {
 
     @Test
     void multiplierPermilleInterpolation() {
-        SourcePulseCalibration.Spec spec = new SourcePulseCalibration.Spec(0, 100, 10, 10, 0, 500, 1500);
+        SourcePulseCalibration.Spec spec = new SourcePulseCalibration.Spec(0, 100, 10, 10, 0, 500, 1000);
         assertEquals(500, SourcePulseCalibration.multiplierPermille(0, spec));
-        assertEquals(1500, SourcePulseCalibration.multiplierPermille(100, spec));
-        assertEquals(1000, SourcePulseCalibration.multiplierPermille(50, spec));
-        assertEquals(750, SourcePulseCalibration.multiplierPermille(25, spec));
-        assertEquals(1250, SourcePulseCalibration.multiplierPermille(75, spec));
+        assertEquals(1000, SourcePulseCalibration.multiplierPermille(100, spec));
+        assertEquals(750, SourcePulseCalibration.multiplierPermille(50, spec));
+        assertEquals(625, SourcePulseCalibration.multiplierPermille(25, spec));
+        assertEquals(875, SourcePulseCalibration.multiplierPermille(75, spec));
     }
 
     @ParameterizedTest
@@ -175,33 +175,33 @@ class SourcePulseCalibrationTest {
 
     @Test
     void specValidationMinMax() {
-        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(-1, 100, 10, 10, 0, 500, 1500));
-        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 101, 10, 10, 0, 500, 1500));
-        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(50, 50, 10, 10, 0, 500, 1500));
+        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(-1, 100, 10, 10, 0, 500, 1000));
+        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 101, 10, 10, 0, 500, 1000));
+        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(50, 50, 10, 10, 0, 500, 1000));
     }
 
     @Test
     void specValidationTolerances() {
-        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 100, 0, 10, 0, 500, 1500));
-        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 100, 101, 10, 0, 500, 1500));
-        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 100, 10, 0, 0, 500, 1500));
-        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 100, 10, 101, 0, 500, 1500));
+        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 100, 0, 10, 0, 500, 1000));
+        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 100, 101, 10, 0, 500, 1000));
+        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 100, 10, 0, 0, 500, 1000));
+        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 100, 10, 101, 0, 500, 1000));
     }
 
     @Test
     void specValidationQualityAndMultipliers() {
-        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 100, 10, 10, -1, 500, 1500));
-        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 100, 10, 10, 101, 500, 1500));
-        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 100, 10, 10, 0, -1, 1500));
-        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 100, 10, 10, 0, 1001, 1500));
+        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 100, 10, 10, -1, 500, 1000));
+        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 100, 10, 10, 101, 500, 1000));
+        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 100, 10, 10, 0, -1, 1000));
+        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 100, 10, 10, 0, 1001, 1000));
         assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 100, 10, 10, 0, 500, -1));
         assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 100, 10, 10, 0, 500, 1001));
-        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 100, 10, 10, 0, 1500, 500));
+        assertThrows(IllegalArgumentException.class, () -> new SourcePulseCalibration.Spec(0, 100, 10, 10, 0, 1000, 500));
     }
 
     @Test
     void measureNoNaNOrOverflow() {
-        SourcePulseCalibration.Spec spec = new SourcePulseCalibration.Spec(0, 100, 10, 10, 0, 500, 1500);
+        SourcePulseCalibration.Spec spec = new SourcePulseCalibration.Spec(0, 100, 10, 10, 0, 500, 1000);
         SourcePulseCalibration.Target target = new SourcePulseCalibration.Target(0, 0, 0);
         SourcePulseCalibration.Controls controls = new SourcePulseCalibration.Controls(100, 100, 100);
         SourcePulseCalibration.Measurement m = SourcePulseCalibration.measure(target, controls, spec);

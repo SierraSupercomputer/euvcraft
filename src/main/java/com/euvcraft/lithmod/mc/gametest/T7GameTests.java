@@ -53,7 +53,7 @@ public final class T7GameTests {
     }
     private static void blockEntities(GameTestHelper h) {
         var pos=h.absolutePos(new BlockPos(2,2,2));
-        check(h,T7Content.blockItems().size()==45,"Every T7 block has a registered item");
+        check(h,T7Content.blockItems().size()==47,"Every T7 block has a registered item");
         for(var item:T7Content.blockItems()) {
             var id=BuiltInRegistries.ITEM.getKey(item);
             var block=BuiltInRegistries.BLOCK.getValue(id);

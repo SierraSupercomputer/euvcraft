@@ -212,10 +212,12 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.EUV_STAGE.get());
                 output.accept(ModItems.EUV_FILTRATION.get());
                 output.accept(ModItems.EUV_METROLOGY.get());
-                com.euvcraft.lithmod.mc.T7Content.blockItems().forEach(output::accept);
+                com.euvcraft.lithmod.mc.T7Content.blockItems().stream().filter(item -> item != com.euvcraft.lithmod.mc.multiblock.euv.EuvMachines.LIGHT_SOURCE_PULSE_MODULE.get().asItem() && item != com.euvcraft.lithmod.mc.multiblock.euv.EuvMachines.LIGHT_SOURCE_CALIBRATION_PANEL.get().asItem()).forEach(output::accept);
                 output.accept(ModItems.DIMM_T7.get());
                 output.accept(ModItems.RESIST_T7.get());
                 output.accept(ModItems.TIN_FEEDSTOCK.get());
+                output.accept(com.euvcraft.lithmod.mc.multiblock.euv.EuvMachines.LIGHT_SOURCE_PULSE_MODULE.get());
+                output.accept(com.euvcraft.lithmod.mc.multiblock.euv.EuvMachines.LIGHT_SOURCE_CALIBRATION_PANEL.get());
             })
             .build()
     );
