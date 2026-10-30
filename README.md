@@ -27,6 +27,8 @@ Download the JAR from [GitHub Releases](https://github.com/SierraSupercomputer/e
 | [Arcforge](https://github.com/zagdrath/arcforge) — required | 2.8.1+26.3 |
 | [Encoded Logistics](https://github.com/zagdrath/encoded-logistics) — required | 1.5.0+26.3 |
 
+The development checkout now targets **NeoForge 26.3.0.99**; the table above records the published 0.7.0 environment. See the [loader upgrade notes](docs/neoforge-26.3.0.99.md) for verification and WorldEdit testing.
+
 Install EUVCRAFT, Arcforge and Encoded Logistics in the client and server's mods folders. Use matching Minecraft versions and remove older duplicate mod JARs when updating.
 
 **Do not install arcforge-api-1.2.0+26.3.jar.** It is a developer compile-time dependency; the full Arcforge mod supplies the API during gameplay.
