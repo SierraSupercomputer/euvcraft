@@ -8,7 +8,7 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
   - com.euvcraft.lithmod.core (61 files)
   - com.euvcraft.lithmod.core.cleanroom (3 files)
   - com.euvcraft.lithmod.core.multiblock (15 files)
-  - com.euvcraft.lithmod.core.t7 (10 files)
+  - com.euvcraft.lithmod.core.t7 (11 files)
   - com.euvcraft.lithmod.mc (23 files)
   - com.euvcraft.lithmod.mc.cleanroom (20 files)
   - com.euvcraft.lithmod.mc.compat (1 files)
@@ -29,7 +29,7 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
   - com.euvcraft.lithmod.mc.multiblock (13 files)
   - com.euvcraft.lithmod.mc.multiblock.advanced (16 files)
   - com.euvcraft.lithmod.mc.multiblock.assembly (8 files)
-  - com.euvcraft.lithmod.mc.multiblock.euv (35 files)
+  - com.euvcraft.lithmod.mc.multiblock.euv (38 files)
   - com.euvcraft.lithmod.mc.multiblock.g3 (32 files)
   - com.euvcraft.lithmod.mc.multiblock.hydrogen (9 files)
   - com.euvcraft.lithmod.mc.multiblock.reflow (13 files)
@@ -1357,6 +1357,64 @@ public final int hashCode();
 public final boolean equals(java.lang.Object);
 public com.euvcraft.lithmod.core.t7.MachineContaminationState$Phase phase();
 public long lastBreachTick();
+```
+
+### com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Controls
+```java
+public com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Controls(int, int, int);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public int phase();
+public int delay();
+public int amplitude();
+```
+
+### com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Measurement
+```java
+public com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Measurement(int, int, int, int, int);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public int quality();
+public int phaseError();
+public int delayError();
+public int amplitudeError();
+public int responsePermille();
+```
+
+### com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Spec
+```java
+public com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Spec(int, int, int, int, int, int, int);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public int min();
+public int max();
+public int timingTolerance();
+public int amplitudeTolerance();
+public int minimumQuality();
+public int minMultiplierPermille();
+public int maxMultiplierPermille();
+```
+
+### com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Target
+```java
+public com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Target(int, int, int);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public int phase();
+public int delay();
+public int amplitude();
+```
+
+### com.euvcraft.lithmod.core.t7.SourcePulseCalibration
+```java
+public static com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Target target(long, com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Spec);
+public static com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Controls clamp(com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Controls, com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Spec);
+public static com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Measurement measure(com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Target, com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Controls, com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Spec);
+public static int multiplierPermille(int, com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Spec);
 ```
 
 ### com.euvcraft.lithmod.core.t7.VacuumChamberState
@@ -3317,6 +3375,18 @@ public void onFormed();
 public void onUnformed();
 public int exposureFe();
 public int hydrogenPerTick();
+public void revalidate();
+public int param(java.lang.String, int);
+public int trialFe();
+public int trialHydrogen();
+public int trialTin();
+public boolean validTrialCosts();
+public long availableTinCredit();
+public boolean calibrationLocked();
+public boolean reserveForLot(com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerControllerBlockEntity);
+public boolean payTrial();
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerControllerBlockEntity physicalScanner();
+public int readiness();
 public int tinStored();
 public int tinCreditTicks();
 public boolean acceptsTin(net.neoforged.neoforge.transfer.item.ItemResource);
@@ -3387,6 +3457,7 @@ public net.neoforged.neoforge.transfer.resource.Resource getResource(int);
 ### com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceMemberBlock
 ```java
 public com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceMemberBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties, com.euvcraft.lithmod.core.multiblock.BlockKind);
+public net.minecraft.world.level.block.state.BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext);
 protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition$Builder<net.minecraft.world.level.block.Block, net.minecraft.world.level.block.state.BlockState>);
 public com.euvcraft.lithmod.core.multiblock.BlockKind kind();
 public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
@@ -3494,6 +3565,8 @@ protected net.minecraft.world.InteractionResult useItemOn(net.minecraft.world.it
 ```java
 public java.util.UUID installationId();
 public boolean vacuumIsolated();
+public int sourceIssue();
+public int sourceMultiplier();
 public boolean hasReservedLightSource();
 public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerControllerBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
 protected java.lang.String machineId();
@@ -3619,6 +3692,7 @@ protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int,
 ### com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerMemberBlock
 ```java
 public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerMemberBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties, com.euvcraft.lithmod.core.multiblock.BlockKind);
+public net.minecraft.world.level.block.state.BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext);
 protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition$Builder<net.minecraft.world.level.block.Block, net.minecraft.world.level.block.state.BlockState>);
 public com.euvcraft.lithmod.core.multiblock.BlockKind kind();
 public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
@@ -3654,6 +3728,8 @@ public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerOperatingMenu(int, net.m
 public com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerOperatingMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
 public boolean isOperatingPanel();
 public boolean stillValid(net.minecraft.world.entity.player.Player);
+public int sourceIssue();
+public int sourceMultiplier();
 public int operatingIssue();
 public boolean hasLightSource();
 public boolean contaminated();
@@ -3694,6 +3770,25 @@ public long getCapacityAsLong(int, net.neoforged.neoforge.transfer.resource.Reso
 public net.neoforged.neoforge.transfer.resource.Resource getResource(int);
 ```
 
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvSourceCalibrationMenu
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvSourceCalibrationMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceControllerBlockEntity, net.minecraft.core.BlockPos);
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvSourceCalibrationMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+public int value(int);
+public boolean stillValid(net.minecraft.world.entity.player.Player);
+public boolean clickMenuButton(net.minecraft.world.entity.player.Player, int);
+public net.minecraft.world.item.ItemStack quickMoveStack(net.minecraft.world.entity.player.Player, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.EuvSourceCalibrationScreen
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.EuvSourceCalibrationScreen(com.euvcraft.lithmod.mc.multiblock.euv.EuvSourceCalibrationMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
+protected void init();
+protected void containerTick();
+public void extractBackground(net.minecraft.client.gui.GuiGraphicsExtractor, int, int, float);
+protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
 ### com.euvcraft.lithmod.mc.multiblock.euv.Formation
 ```java
 public abstract boolean formed();
@@ -3709,6 +3804,27 @@ public abstract com.euvcraft.lithmod.core.multiblock.MatchResult matchStructure(
 ### com.euvcraft.lithmod.mc.multiblock.euv.LightSourceStructureMatcher
 ```java
 public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.euv.SourcePulseState
+```java
+public com.euvcraft.lithmod.mc.multiblock.euv.SourcePulseState(com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceControllerBlockEntity);
+public com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Spec spec();
+public boolean validSpec();
+public java.util.UUID installation();
+public com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Controls controls();
+public com.euvcraft.lithmod.core.t7.SourcePulseCalibration$Measurement measurement();
+public boolean locked();
+public void refresh();
+public boolean calibrated();
+public int multiplier();
+public int trialIssue();
+public boolean adjust(int, int);
+public boolean test();
+public boolean accept();
+public int value(int);
+public void save(net.minecraft.world.level.storage.ValueOutput);
+public void load(net.minecraft.world.level.storage.ValueInput);
 ```
 
 ### com.euvcraft.lithmod.mc.multiblock.g3.G3CasingBlock
@@ -5532,7 +5648,19 @@ test_machine definitions/recipes are dropped before validation outside fixture m
     "hydrogen_capacity_mb": 32000,
     "hydrogen_per_tick_mb": 10,
     "tin_exposure_ticks": 1000,
-    "beamline_max_length": 16
+    "beamline_max_length": 16,
+    "pulse_control_min": 1,
+    "pulse_control_max": 100,
+    "pulse_timing_tolerance": 18,
+    "pulse_amplitude_tolerance": 20,
+    "pulse_min_quality": 60,
+    "pulse_min_multiplier_permille": 850,
+    "pulse_max_multiplier_permille": 1000,
+    "pulse_fine_step": 1,
+    "pulse_coarse_step": 5,
+    "pulse_test_fe": 12000,
+    "pulse_test_hydrogen_mb": 50,
+    "pulse_test_tin_ticks": 25
   }
 }
 ```
@@ -5852,9 +5980,9 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 }
 ```
 
-## Recipe Summary (183 actual resources: 181 production + 2 fixture-gated)
+## Recipe Summary (185 actual resources: 183 production + 2 fixture-gated)
 
-### Vanilla recipe datapack files (160 production)
+### Vanilla recipe datapack files (162 production)
 
 | Path | Type | Result | Count |
 |------|------|--------|-------|
@@ -5897,11 +6025,13 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/recipe/crafting/euv_beam_line.json | minecraft:crafting_shaped | lithmod:euv_beam_line | 8 |
 | src/main/resources/data/lithmod/recipe/crafting/euv_filtration.json | minecraft:crafting_shaped | lithmod:euv_filtration | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/euv_light_source.json | minecraft:crafting_shaped | lithmod:euv_light_source | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_light_source_calibration_panel.json | minecraft:crafting_shaped | lithmod:euv_light_source_calibration_panel | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/euv_light_source_casing.json | minecraft:crafting_shaped | lithmod:euv_light_source_casing | 8 |
 | src/main/resources/data/lithmod/recipe/crafting/euv_light_source_controller.json | minecraft:crafting_shaped | lithmod:euv_light_source_controller | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/euv_light_source_hydrogen_inlet.json | minecraft:crafting_shaped | lithmod:euv_light_source_hydrogen_inlet | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/euv_light_source_operating_panel.json | minecraft:crafting_shaped | lithmod:euv_light_source_operating_panel | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/euv_light_source_power_port.json | minecraft:crafting_shaped | lithmod:euv_light_source_power_port | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/euv_light_source_pulse_module.json | minecraft:crafting_shaped | lithmod:euv_light_source_pulse_module | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/euv_light_source_tin_inlet.json | minecraft:crafting_shaped | lithmod:euv_light_source_tin_inlet | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/euv_light_source_vacuum_module.json | minecraft:crafting_shaped | lithmod:euv_light_source_vacuum_module | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/euv_metrology.json | minecraft:crafting_shaped | lithmod:euv_metrology | 1 |
@@ -6604,7 +6734,7 @@ Tier JSON fields per file (raw literals read from src/main/resources/data/lithmo
 | data/lithmod/tiers/t8.json | T8 | 8 | 90 | 100 | 80.0 | False |
 
 
-M0-owned data files stay as tracked: data/lithmod/die_rules/rules.json, data/lithmod/support_lines/matrix.json, and the 8 data/lithmod/tiers/t<index>.json files. Block loot tables: 102 files under data/lithmod/loot_table/blocks; block tag files: 2. Counts are read at generation time.
+M0-owned data files stay as tracked: data/lithmod/die_rules/rules.json, data/lithmod/support_lines/matrix.json, and the 8 data/lithmod/tiers/t<index>.json files. Block loot tables: 104 files under data/lithmod/loot_table/blocks; block tag files: 2. Counts are read at generation time.
 
 ### Machine data codecs (actual codec sources; core records stay game-independent)
 

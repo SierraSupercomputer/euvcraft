@@ -288,8 +288,8 @@ $craftingNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($craftingDir, '*.
 $cookingNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($recipeRoot, '*.json'))
 $machineRecipeNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($mrDir, '*.json'))
 $totalRecipes = $craftingNames.Count + $cookingNames.Count + $machineRecipeNames.Count
-if ($totalRecipes -ne 183) {
-    Fail "expected 183 recipe resources (181 production + 2 fixture-gated), found $totalRecipes"
+if ($totalRecipes -ne 185) {
+    Fail "expected 185 recipe resources (183 production + 2 fixture-gated), found $totalRecipes"
 }
 if ($machineRecipeNames.Count -ne 23) {
     Fail "expected 23 machine recipe files in data/lithmod/machine_recipes, found $($machineRecipeNames.Count)"
@@ -337,8 +337,8 @@ foreach ($rFile in $machineRecipeNames) {
 if ($fixtureRecipeCount -ne 2) {
     Fail "expected the two '$fixtureMachineId' fixture recipes to be payload-gated, found $fixtureRecipeCount"
 }
-if (($totalRecipes - $fixtureRecipeCount) -ne 181) {
-    Fail 'production recipe count is not 181'
+if (($totalRecipes - $fixtureRecipeCount) -ne 183) {
+    Fail 'production recipe count is not 183'
 }
 
 # ---- loader directory strings + codec sources (derived from tracked source) --

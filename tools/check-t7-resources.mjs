@@ -7,7 +7,7 @@ import {outputs} from './generate-t7-assets.mjs';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const json=p=>JSON.parse(read(join(root,p)));
 const manifest=json('tools/t7-assets.json'),ids=new Set(manifest.blocks.map(b=>b.id));
-assert.equal(ids.size,45,'Each registered T7 block needs one unique asset entry');
+assert.equal(ids.size,47,'Each registered T7 block needs one unique asset entry');
 const lang=json('src/main/resources/assets/lithmod/lang/en_us.json');
 for(const [path,bytes]of outputs(manifest))assert.ok(existsSync(join(root,path))&&read(join(root,path)).equals(bytes),'Stale generated resource '+path);
 for(const b of manifest.blocks){
@@ -32,4 +32,4 @@ const shell=json('src/main/resources/data/lithmod/tags/block/cleanroom_shell_ext
 assert.ok(shell.includes('lithmod:euv_beam_line')&&shell.includes('lithmod:cleanroom_vacuum_port'));
 assert.ok(!shell.includes('lithmod:vacuum_service_conduit'),'Ordinary vacuum conduit cannot seal a cleanroom');
 for(const family of ['compute','memory','nand']){const r=json('src/main/resources/data/lithmod/support_recipes/g3_'+family+'_t7.json');assert.equal(r.machine,'g3_reticle_writer');assert.equal(r.output,'lithmod:mask');assert.ok(r.input.count===1&&r.secondary.count>0&&r.energy_per_tick>0);}
-console.log('T7 resources: 45 blocks, editable bootstrap recipes/definitions, sealed penetrations and three reticle families pass');
+console.log('T7 resources: 47 blocks, editable bootstrap recipes/definitions, sealed penetrations and three reticle families pass');
