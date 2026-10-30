@@ -23,8 +23,9 @@ import org.jspecify.annotations.Nullable;
 /** EUV Scanner member block - casing, modules, panels, ports, inlets. */
 public class EuvScannerMemberBlock extends BaseEntityBlock {
 
-    public static final BooleanProperty FORMED = BooleanProperty.create("formed");
-    public static final IntegerProperty PART = IntegerProperty.create("part", 0, 174);
+    // Formation and orphan ticks use the controller properties; share their exact instances.
+    public static final BooleanProperty FORMED = EuvScannerControllerBlock.FORMED;
+    public static final IntegerProperty PART = EuvScannerControllerBlock.PART;
     public static final net.minecraft.world.level.block.state.properties.Property<Direction> FACING = net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING;
 
     private static final VoxelShape SHAPE = Shapes.block();

@@ -38,6 +38,7 @@ public final class T7RuntimeGameTests {
     private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS=DeferredRegister.create(Registries.TEST_FUNCTION,"lithmod");
     private static final Map<String,Consumer<GameTestHelper>> CASES=new LinkedHashMap<>();
     static{
+        add("unformed_member_ticks",T7RuntimeGameTests::unformedMemberTicks);add("member_formation_visuals",T7RuntimeGameTests::memberFormationVisuals);
         add("geometry",T7RuntimeGameTests::geometry);add("hydrogen_transactions",T7RuntimeGameTests::hydrogenTransactions);add("hydrogen_saved_job",T7RuntimeGameTests::hydrogenJob);add("g3_water_transactions",T7RuntimeGameTests::water);
         add("reticle_saved_job",T7RuntimeGameTests::writer);add("reticle_break",T7RuntimeGameTests::writerBreak);add("prep_saved_job",T7RuntimeGameTests::prep);add("prep_breach_repair",T7RuntimeGameTests::prepBreach);
         add("arcforge_gas_transport",T7RuntimeGameTests::gasTransport);add("contaminated_pickup",T7RuntimeGameTests::pickup);add("central_vacuum",T7RuntimeGameTests::central);
@@ -46,6 +47,79 @@ public final class T7RuntimeGameTests {
     }
     private static void add(String name,Consumer<GameTestHelper> body){String id="t7_runtime_"+name;CASES.put(id,body);FUNCTIONS.register(id,()->body);}
     public static void register(IEventBus bus){FUNCTIONS.register(bus);bus.addListener((Consumer<RegisterGameTestsEvent>)event->{for(String name:CASES.keySet()){var id=Identifier.fromNamespaceAndPath("lithmod",name);Holder<TestEnvironmentDefinition<?>> environment=event.registerEnvironment(id,new TestEnvironmentDefinition[0]);var data=new TestData<>(environment,Level.OVERWORLD,Identifier.withDefaultNamespace("empty"),400,0,true,Rotation.NONE,false,1,1,false,0);event.registerTest(id,new FunctionGameTestInstance(ResourceKey.<Consumer<GameTestHelper>>create(Registries.TEST_FUNCTION,id),data));}});}
+    /** Standalone placed members must survive real world ticks, including stale formed state. */
+    private static void unformedMemberTicks(GameTestHelper h) {
+        var arena = new Arena(h);
+        var positions = new ArrayList<BlockPos>();
+        try {
+            var blocks = net.minecraft.core.registries.BuiltInRegistries.BLOCK.stream()
+                    .filter(b -> b instanceof EuvScannerMemberBlock || b instanceof EuvLightSourceMemberBlock).toList();
+            check(h, blocks.size() >= 18, "Every registered EUV member family is present");
+            int index = 0;
+            for (var facing : List.of(Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST)) {
+                for (var block : blocks) {
+                    var pos = arena.anchor().offset(index % 9, 0, index / 9); index++;
+                    var state = block.defaultBlockState().setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING, facing);
+                    arena.put(pos, state); positions.add(pos);
+                    var member = arena.level.getBlockEntity(pos);
+                    if (member instanceof EuvScannerMemberBlockEntity scanner) scanner.serverTick();
+                    else ((EuvLightSourceMemberBlockEntity) member).serverTick();
+                    // A saved formed block reloads before its transient controller association is rebuilt.
+                    var formed = block instanceof EuvScannerMemberBlock ? EuvScannerMemberBlock.FORMED : EuvLightSourceMemberBlock.FORMED;
+                    var part = block instanceof EuvScannerMemberBlock ? EuvScannerMemberBlock.PART : EuvLightSourceMemberBlock.PART;
+                    arena.put(pos, state.setValue(formed, true).setValue(part, 2));
+                    var saved = save(arena.level, member);
+                    arena.level.removeBlockEntity(pos);
+                    var restored = ((BaseEntityBlock) block).newBlockEntity(pos, arena.level.getBlockState(pos));
+                    arena.level.setBlockEntity(restored); load(arena.level, restored, saved);
+                }
+            }
+        } catch (RuntimeException | Error error) { arena.close(); throw error; }
+        h.runAfterDelay(3, () -> {
+            try (arena) {
+                for (var pos : positions) {
+                    var member = arena.level.getBlockEntity(pos);
+                    if (member instanceof EuvScannerMemberBlockEntity scanner) scanner.serverTick();
+                    else ((EuvLightSourceMemberBlockEntity) member).serverTick();
+                    var state = arena.level.getBlockState(pos);
+                    var formed = state.getBlock() instanceof EuvScannerMemberBlock ? EuvScannerMemberBlock.FORMED : EuvLightSourceMemberBlock.FORMED;
+                    var part = state.getBlock() instanceof EuvScannerMemberBlock ? EuvScannerMemberBlock.PART : EuvLightSourceMemberBlock.PART;
+                    check(h, !state.getValue(formed), "Unowned member clears stale formed flag: " + pos);
+                    eq(h, 0, state.getValue(part), "Unowned member resets panel part");
+                }
+            }
+            h.succeed();
+        });
+    }
+
+    /** Every rendered member gets formation state and loses it after a structure breach. */
+    private static void memberFormationVisuals(GameTestHelper h) {
+        for (var facing : List.of(Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST)) {
+            for (int group = 0; group < 2; group++) try (var arena = new Arena(h, facing)) {
+                var cell = group == 0 ? arena.scanner() : arena.source();
+                var owner = (EuvFormationOwner) cell.machine();
+                var formed = group == 0 ? EuvScannerControllerBlock.FORMED : EuvLightSourceControllerBlock.FORMED;
+                var part = group == 0 ? EuvScannerControllerBlock.PART : EuvLightSourceControllerBlock.PART;
+                var parts = new HashSet<Integer>();
+                for (var pos : cell.positions()) {
+                    var state = arena.level.getBlockState(pos);
+                    check(h, state.getValue(formed), "Every formed member has its joined visual state");
+                    check(h, parts.add(state.getValue(part)), "Every member has a distinct panel part");
+                    eq(h, facing, state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING), "Formed facing retained");
+                }
+                eq(h, cell.positions().size(), parts.size(), "All joined panels assigned");
+                var breach = cell.positions().getLast(); arena.put(breach, Blocks.AIR); owner.revalidate();
+                check(h, !owner.isFormed(), "Removing a frame member unforms the machine");
+                for (var pos : cell.positions()) if (!pos.equals(breach)) {
+                    var state = arena.level.getBlockState(pos);
+                    check(h, !state.getValue(formed), "Controller and remaining members clear their formed state");
+                    eq(h, 0, state.getValue(part), "Unformed panel part resets");
+                }
+            }
+        }
+        h.succeed();
+    }
+
     private static void geometry(GameTestHelper h){
         for(var facing:List.of(Direction.NORTH,Direction.EAST,Direction.SOUTH,Direction.WEST))for(int group=0;group<6;group++)try(var arena=new Arena(h,facing)){
             var cell=switch(group){case 0->arena.writer();case 1->arena.prep();case 2->arena.hydrogen();case 3->arena.plant();case 4->arena.scanner();default->arena.source();};

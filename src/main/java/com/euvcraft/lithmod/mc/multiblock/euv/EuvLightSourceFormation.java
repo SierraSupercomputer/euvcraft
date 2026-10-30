@@ -64,7 +64,15 @@ public final class EuvLightSourceFormation implements Formation {
     @Override
     public void unload() { formed = false; data.set(0, 0); members = List.of(); }
     @Override
-    public void detach() { formed = false; data.set(0, 0); for (var pos : members) clear(pos); members = List.of(); }
+    public void detach() {
+        formed = false; data.set(0, 0);
+        for (var pos : members) clear(pos);
+        members = List.of();
+        var machine = owner.machine();
+        if (machine.getLevel() != null && machine.getLevel().getBlockEntity(machine.getBlockPos()) == machine) {
+            visual(machine.getBlockPos(), false, 0, Direction.NORTH);
+        }
+    }
 
     @Override
     public MatchResult matchStructure(MultiblockPos anchor, MultiblockDirection facing,

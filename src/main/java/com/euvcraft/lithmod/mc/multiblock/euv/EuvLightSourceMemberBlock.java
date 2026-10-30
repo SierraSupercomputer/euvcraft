@@ -23,8 +23,9 @@ import org.jspecify.annotations.Nullable;
 /** EUV Light Source member block - casing, inlets, modules, ports. */
 public class EuvLightSourceMemberBlock extends BaseEntityBlock {
 
-    public static final BooleanProperty FORMED = BooleanProperty.create("formed");
-    public static final IntegerProperty PART = IntegerProperty.create("part", 0, 44);
+    // Formation and orphan ticks use the controller properties; share their exact instances.
+    public static final BooleanProperty FORMED = EuvLightSourceControllerBlock.FORMED;
+    public static final IntegerProperty PART = EuvLightSourceControllerBlock.PART;
     public static final net.minecraft.world.level.block.state.properties.Property<Direction> FACING = net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING;
 
     private static final VoxelShape SHAPE = Shapes.block();
