@@ -1,6 +1,6 @@
 # EUV light-source pulse calibration — proposal
 
-Status: owner approved this proposal and all three issue repairs on October 30, 2026. Implementation and verification are in progress. The subsequent owner request authorizes publication as 0.7.1 after checks pass. Earlier planning-only language below is retained as design history.
+Status: owner approved this proposal and all three issue repairs on October 30, 2026. Implemented in 0.7.1; automated checks pass and owner graphical playtesting remains pending. The subsequent owner request authorizes publication as 0.7.1 after checks pass. Earlier planning-only language below is retained as design history.
 Written: October 30, 2026.
 
 ## Goal and physical inspiration
