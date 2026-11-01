@@ -106,6 +106,8 @@
     "lithmod:cleanroom_vacuum_port",
     "lithmod:vacuum_service_outlet",
     "lithmod:euv_light_source_pulse_module",
-    "lithmod:euv_light_source_calibration_panel"
+    "lithmod:euv_light_source_calibration_panel",
+    "lithmod:etch_cell",
+    "lithmod:fab_item_port"
   ]
 }

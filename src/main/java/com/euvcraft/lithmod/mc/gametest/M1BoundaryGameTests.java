@@ -273,6 +273,10 @@ public final class M1BoundaryGameTests {
         // --- Test 2: Registered ItemStack stream with registry-friendly buffers ---
         ItemStack stack1 = FoupItems.with(ModItems.FOUP_MK1.get(), lot1);
         ItemStack stack2 = FoupItems.with(ModItems.FOUP_MK1.get(), lot2);
+        // Public routing is now deliberately visible. Hold ALL public components equal
+        // while varying the private lot body to retain the privacy regression.
+        var publicRoute=new com.euvcraft.lithmod.mc.routing.FoupRoutingData(new com.euvcraft.lithmod.core.routing.FabProgress(com.euvcraft.lithmod.core.routing.FabProgress.Stage.EXPOSING,1,1),DieTypes.LOGIC,0,false);
+        for(var carrier:List.of(stack1,stack2)){carrier.set(ModDataComponents.FOUP_ROUTING.get(),publicRoute);carrier.set(ModDataComponents.FOUP_NEXT_STEPS.get(),java.util.Map.of("process_cell_controller",List.of(1)));}
 
         // Encode via ItemStack.STREAM_CODEC (registry-friendly)
         RegistryFriendlyByteBuf regBuf1 = new RegistryFriendlyByteBuf(Unpooled.buffer(), level.registryAccess());
@@ -424,6 +428,10 @@ public final class M1BoundaryGameTests {
 
         ItemStack stack1 = FoupItems.with(ModItems.FOUP_MK1.get(), lot1);
         ItemStack stack2 = FoupItems.with(ModItems.FOUP_MK1.get(), lot2);
+        // Public routing is now deliberately visible. Hold ALL public components equal
+        // while varying the private lot body to retain the privacy regression.
+        var publicRoute=new com.euvcraft.lithmod.mc.routing.FoupRoutingData(new com.euvcraft.lithmod.core.routing.FabProgress(com.euvcraft.lithmod.core.routing.FabProgress.Stage.EXPOSING,1,1),DieTypes.LOGIC,0,false);
+        for(var carrier:List.of(stack1,stack2)){carrier.set(ModDataComponents.FOUP_ROUTING.get(),publicRoute);carrier.set(ModDataComponents.FOUP_NEXT_STEPS.get(),java.util.Map.of("process_cell_controller",List.of(1)));}
 
         // --- Capture tooltip via actual registered pipeline ---
         // FoupTooltipAppenders registers a TooltipAppender for FOUP_CONTENTS component
@@ -589,7 +597,7 @@ public final class M1BoundaryGameTests {
      */
     private static void allHandFed(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
-        Set<String> expected = new HashSet<>(Set.of("crystal_puller", "wafer_slicer", "pattern_generator",
+        Set<String> expected = new HashSet<>(Set.of("etch_cell", "fab_item_port", "crystal_puller", "wafer_slicer", "pattern_generator",
                 "test_package", "process_cell_controller", "process_cell_casing", "process_cell_power_port", "process_cell_operating_panel",
                 "boule_purifier", "ebeam_mask_writer", "support_casing", "support_power_port", "support_water_inlet", "deposition_etcher", "advanced_test_package", "advanced_casing", "advanced_operating_panel", "advanced_power_port", "scanner_controller", "scanner_operating_panel", "scanner_calibration_panel", "scanner_exposure_module", "scanner_optics_module", "scanner_stage_module", "scanner_filtration_module", "scanner_metrology_module", "utility_plant", "utility_water_inlet", "utility_pure_outlet", "pick_and_place", "scanner_diagnostic_panel", "scanner_water_inlet", "scanner_immersion_module","assembly_casing","assembly_power_port"));
         Set<String> cleanroom = Set.of("cleanroom_floor","cleanroom_wall","cleanroom_window","cleanroom_door","cleanroom_controller","cleanroom_filter","cleanroom_power_port","cleanroom_fluid_port","cleanroom_item_port","foup_cleaner");

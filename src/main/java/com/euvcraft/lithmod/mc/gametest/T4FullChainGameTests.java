@@ -44,7 +44,7 @@ final class T4FullChainGameTests {
    check(h,initial.grade()==WaferSubstrate.PURE&&initial.preparationGeneration()==1,"Purity does not invent preparation");
    try(var fixture=build(h,Kind.DEPOSITION)){
     var machine=(DepositionEtcherControllerBlockEntity)fixture.machine();machine.setSlot(0,foup);
-    machine.setSlot(1,new ItemStack(ModItems.SILICON.get(),4));runPreparation(h,machine);foup=machine.slot(2).copy();
+    machine.setSlot(1,new ItemStack(ModItems.SILICON.get(),2));runPreparation(h,machine);check(h,machine.slot(1).isEmpty(),"Deposition consumes exactly its allocated silicon");foup=machine.slot(2).copy();
    }
    var prepared=FoupItems.trustedContentsOf(foup);eq(h,2,prepared.preparationGeneration(),"Native preparation installed");
    check(h,prepared.lotId().equals(initial.lotId())&&prepared.wafers().equals(initial.wafers()),"Preparation preserves actual sliced identity and rolls");

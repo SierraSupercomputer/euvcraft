@@ -1579,6 +1579,7 @@ public final class MaskGameTests {
         tab.buildContents(new CreativeModeTab.ItemDisplayParameters(
             helper.getLevel().enabledFeatures(), true, helper.getLevel().registryAccess()));
         Collection<ItemStack> displayed = tab.getDisplayItems();
+        var blocks=ModCreativeTabs.FAB_BLOCKS.get();blocks.buildContents(new CreativeModeTab.ItemDisplayParameters(helper.getLevel().enabledFeatures(),true,helper.getLevel().registryAccess()));
         List<ItemStack> entries = new ArrayList<>(displayed);
 
         // Check generator presence in original displayed collection separately
@@ -1589,7 +1590,7 @@ public final class MaskGameTests {
                 break;
             }
         }
-        helper.assertTrue(hasGenerator, "the pattern generator is missing from the main tab");
+        helper.assertTrue(hasGenerator, "the pattern generator is missing from Fab Blocks");
 
         // Build filtered list: ONLY blank_mask and mask (four entries: blank + three variants)
         List<ItemStack> maskFiltered = new ArrayList<>();
