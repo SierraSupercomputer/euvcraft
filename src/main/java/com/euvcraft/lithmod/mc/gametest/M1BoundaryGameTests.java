@@ -10,6 +10,7 @@ import com.euvcraft.lithmod.mc.FoupContentsCodec;
 import com.euvcraft.lithmod.mc.FoupDebugCommand;
 import com.euvcraft.lithmod.mc.FoupItems;
 import com.euvcraft.lithmod.mc.registry.ModItems;
+import com.euvcraft.lithmod.mc.registry.ModDataComponents;
 import com.mojang.logging.LogUtils;
 
 import io.netty.buffer.ByteBuf;

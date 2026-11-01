@@ -259,8 +259,8 @@ foreach ($catName in $expectedConfig.Keys) {
 $machineDir = Join-Path $Root 'src\main\resources\data\lithmod\machines'
 Assert-Dir $machineDir
 $machineNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($machineDir, '*.json'))
-if ($machineNames.Count -ne 27) {
-    Fail "expected 27 machine definition files in data/lithmod/machines, found $($machineNames.Count)"
+if ($machineNames.Count -ne 28) {
+    Fail "expected 28 machine definition files in data/lithmod/machines, found $($machineNames.Count)"
 }
 $machineDefs = New-Object 'System.Collections.Generic.List[object]'
 $fixtureMachineId = 'test_machine'
