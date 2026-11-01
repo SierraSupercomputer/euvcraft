@@ -102,9 +102,11 @@ public final class LinearFabGameTests {
         try(var c=build(h,Kind.PACKAGING)){
             var m=(AdvancedTestPackageControllerBlockEntity)c.machine();var p=port(c,1);
             var cap=c.level().getCapability(Capabilities.Item.BLOCK,p,Direction.NORTH);check(h,cap!=null,"Packaging port formed");
+            var first=complete(4,DieTypes.LOGIC,0);
+            int passing=com.euvcraft.lithmod.mc.FabYieldService.countPassing(c.level(),FoupItems.trustedContentsOf(first),com.euvcraft.lithmod.mc.data.TierDataLoader.getRegistry().getByIndex(4),DieTypes.LOGIC,null);
             try(var tx=Transaction.openRoot()){
                 eq(h,0,cap.insert(0,ItemResource.of(exposed()),1,tx),"Unetched T4 input refused by transfer");
-                eq(h,1,cap.insert(0,ItemResource.of(complete(4,DieTypes.LOGIC,0)),1,tx),"Etched T4 accepted");
+                eq(h,1,cap.insert(0,ItemResource.of(first),1,tx),"Etched T4 accepted");
                 eq(h,3,cap.insert(1,ItemResource.of(ModItems.CHIP_PACKAGE.get()),3,tx),"Packages accepted");tx.commit();
             }
             replenish(m);m.serverTick();check(h,m.isQueueActive(),"Actual packaging owns frozen wafer results");
@@ -119,7 +121,7 @@ public final class LinearFabGameTests {
             for(int i=0;i<20000&&m.isQueueActive();i++){replenish(m);m.serverTick();}
             check(h,!m.isQueueActive(),"First queue completes with next lot waiting");int outputs=0;
             for(int slot=2;slot<m.getContainerSize();slot++){var resource=cap.getResource(slot);int amount=(int)cap.getAmountAsLong(slot);if(amount>0)try(var tx=Transaction.openRoot()){eq(h,amount,cap.extract(slot,resource,amount,tx),"Chip/scrap output transfers");outputs+=amount;tx.commit();}}
-            check(h,outputs>0&&m.slot(1).isEmpty(),"Produced chips/scrap and spent exactly three packages");check(h,body.equals(FoupItems.trustedContentsOf(m.slot(0))),"Queued carrier remains intact");
+            check(h,outputs>0,"Produced chips and scrap are extractable");eq(h,3-passing,m.slot(1).getCount(),"Only passing wafers consume chip packages");check(h,body.equals(FoupItems.trustedContentsOf(m.slot(0))),"Queued carrier remains intact");
         }h.succeed();
     }
     private static void arcforge(GameTestHelper h){
