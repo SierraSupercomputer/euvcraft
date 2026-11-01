@@ -13,23 +13,26 @@ import net.minecraft.world.level.storage.*;
 import org.jspecify.annotations.Nullable;
 
 /** One frozen job owns the original carrier until completion or break recovery. */
-public final class DepositionEtcherControllerBlockEntity extends AdvancedControllerBlockEntity {
+public class DepositionEtcherControllerBlockEntity extends AdvancedControllerBlockEntity {
     public static final int SLOT_FOUP_INPUT=0,SLOT_SILICON_REAGENT=1,SLOT_PREPARED_FOUP_OUTPUT=2;
     private ItemStack pending=ItemStack.EMPTY;
     private int duration,perTick,progress;
     private boolean recovery;
     public DepositionEtcherControllerBlockEntity(BlockPos pos,BlockState state){
-        super(AdvancedMachines.DEPOSITION_ETCHER_CONTROLLER_BE.get(),pos,state,2,1);
+        this(AdvancedMachines.DEPOSITION_ETCHER_CONTROLLER_BE.get(),pos,state);
+    }
+    protected DepositionEtcherControllerBlockEntity(net.minecraft.world.level.block.entity.BlockEntityType<?> type,BlockPos pos,BlockState state){
+        super(type,pos,state,2,1);
     }
     @Override protected String machineId(){return "deposition_etcher";}
     public boolean hasJob(){return !pending.isEmpty();}
     public int jobProgress(){return progress;}
     public int jobDuration(){return duration;}
-    private @Nullable FoupContents eligible(ItemStack stack){
+    protected @Nullable FoupContents eligible(ItemStack stack){
         if(stack.isEmpty()||stack.getCount()!=1||!FoupItems.isFoup(stack))return null;
         try {
             var lot=FoupItems.trustedContentsOf(stack);
-            if(lot.isEmpty()||lot.grade().generation()<WaferSubstrate.PURE.generation()||lot.preparationGeneration()!=1||lot.isStarted()
+            if(lot.isEmpty()||lot.isContaminated()||!com.euvcraft.lithmod.mc.routing.FoupRouting.matchesPrivateLot(stack)||lot.grade().generation()<WaferSubstrate.PURE.generation()||lot.preparationGeneration()!=1||lot.isStarted()
                 ||lot.wafers().stream().anyMatch(w->w.layerIndex()!=0))return null;
             return lot;
         } catch(RuntimeException invalid){return null;}
@@ -45,12 +48,12 @@ public final class DepositionEtcherControllerBlockEntity extends AdvancedControl
         if(pending.isEmpty()){
             var definition=definition().orElseThrow();
             int nextDuration=definition.param("duration").orElse(0);
-            int silicon=definition.param("silicon_per_lot").orElse(0);
+            int silicon=reagentRequired();
             int nextCost=definition.energyPerTick(null,EUVCRAFTMod.settings());
             if(nextDuration<1||nextDuration>72000||silicon<1||silicon>64||nextCost<0
                 ||nextCost>buffer().getCapacityAsInt()||buffer().getAmountAsLong()<nextCost
                 ||!slot(2).isEmpty()||eligible(slot(0))==null
-                ||!slot(1).is(ModItems.SILICON.get())||slot(1).getCount()<silicon){syncJob();return;}
+                ||!acceptsReagent(slot(1))||slot(1).getCount()<silicon){syncJob();return;}
             pending=slot(0).copy();clearSlot(0);
             slot(1).shrink(silicon);if(slot(1).isEmpty())clearSlot(1);
             duration=nextDuration;perTick=nextCost;progress=0;setChanged();
@@ -59,14 +62,19 @@ public final class DepositionEtcherControllerBlockEntity extends AdvancedControl
             if(progress==duration){
                 var original=eligible(pending);
                 if(original==null){recovery=true;syncJob();setChanged();return;}
-                ItemStack output=pending.copy();
-                output.set(ModDataComponents.FOUP_CONTENTS.get(),original.withPreparationGeneration(2));
-                com.euvcraft.lithmod.mc.routing.FoupRouting.deposited(output);
+                ItemStack output=completeCarrier(pending,original);
                 pending=ItemStack.EMPTY;setSlot(2,output);progress=0;
             }
             setChanged();
         }
         syncJob();
+    }
+    public boolean acceptsReagent(ItemStack stack){return stack.is(ModItems.SILICON.get());}
+    public boolean canReceiveCarrier(ItemStack stack){return eligible(stack)!=null;}
+    protected int reagentRequired(){return definition().map(d->d.param("silicon_per_lot").orElse(0)).orElse(0);}
+    protected ItemStack completeCarrier(ItemStack carrier,FoupContents original){
+        var output=carrier.copy();output.set(ModDataComponents.FOUP_CONTENTS.get(),original.withPreparationGeneration(2));
+        com.euvcraft.lithmod.mc.routing.FoupRouting.deposited(output);return output;
     }
     private void syncJob(){
         data().set(DATA_PROGRESS,progress);data().set(DATA_TICKS,pending.isEmpty()?0:duration);

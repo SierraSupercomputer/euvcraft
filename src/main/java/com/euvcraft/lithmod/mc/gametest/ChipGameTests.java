@@ -164,10 +164,8 @@ public final class ChipGameTests {
         assertDesign(helper, ModItems.COMPUTE_CHIP_T3.get(), DieTypes.COMPUTE, 3);
         assertDesign(helper, ModItems.NAND_CHIP_T3.get(), DieTypes.NAND, 3);
 
-        CreativeModeTab tab = ModCreativeTabs.MAIN.get();
-        tab.buildContents(new CreativeModeTab.ItemDisplayParameters(
+        Collection<ItemStack> displayed = ModCreativeTabs.displayEntries(new CreativeModeTab.ItemDisplayParameters(
             helper.getLevel().enabledFeatures(), true, helper.getLevel().registryAccess()));
-        Collection<ItemStack> displayed = tab.getDisplayItems();
 
         // Filter to only the chip/consumable items (7 M1 + 5 T3 = 12)
         java.util.Set<Item> chipItems = new java.util.HashSet<>();

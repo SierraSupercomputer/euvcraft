@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "CCC",
+    "RPR",
+    "CCC"
+  ],
+  "key": {
+    "C": "lithmod:advanced_casing",
+    "R": "minecraft:redstone",
+    "P": "lithmod:logic_chip_t3"
+  },
+  "result": {
+    "id": "lithmod:etch_cell",
+    "count": 1
+  }
+}

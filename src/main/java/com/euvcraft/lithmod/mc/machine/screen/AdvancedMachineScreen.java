@@ -13,6 +13,7 @@ public abstract class AdvancedMachineScreen<M extends FabMachineMenu> extends Fa
  }
  protected abstract boolean formed();
  protected boolean cabinet(){return true;}
+ protected Component formationLabel(){return Component.translatable(formed()?"state.lithmod.process_cell.formed":"state.lithmod.process_cell.unformed");}
  @Override protected int energyBarX(){return 12;}
  @Override protected int energyBarY(){return 18;}
  @Override protected int progressBarX(){return 78;}
@@ -26,7 +27,7 @@ public abstract class AdvancedMachineScreen<M extends FabMachineMenu> extends Fa
   line(graphics,playerInventoryTitle,8,72,160);
   line(graphics,Component.literal(menu.energy()+" / "+menu.energyCapacity()+" FE"),30,20,138);
   if(cabinet())line(graphics,Component.translatable("label.lithmod.t4.cabinet"),30,42,138);
-  line(graphics,Component.translatable(formed()?"state.lithmod.process_cell.formed":"state.lithmod.process_cell.unformed"),8,168,160);
+  line(graphics,formationLabel(),8,168,160);
   line(graphics,Component.translatable("screen.lithmod.progress",menu.progress(),menu.ticks()),8,180,160);
  }
 }

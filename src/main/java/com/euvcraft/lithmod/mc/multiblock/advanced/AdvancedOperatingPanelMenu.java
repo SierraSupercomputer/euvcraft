@@ -34,7 +34,7 @@ public class AdvancedOperatingPanelMenu extends FabMachineMenu {
   addFoupSlot(0,38,35);
   addCustomSlot(new Slot(machineSlots(),1,38,53){
    @Override public boolean mayPlace(ItemStack stack){
-    return machineSlots().getContainerSize()==3?stack.is(ModItems.SILICON.get()):TestPackageBlockEntity.isPackage(stack);
+    return machineSlots().getContainerSize()==3?(blockEntity instanceof DepositionEtcherControllerBlockEntity process?process.acceptsReagent(stack):stack.is(ModItems.SILICON.get())||stack.is(ModItems.ETCHANT_CHARGE.get())):TestPackageBlockEntity.isPackage(stack);
    }
   });
   if(machineSlots().getContainerSize()==3)addOutputSlot(2,98,44);

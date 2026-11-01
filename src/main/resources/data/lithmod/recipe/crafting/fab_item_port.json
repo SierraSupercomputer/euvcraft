@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " C ",
+    "HLH",
+    " C "
+  ],
+  "key": {
+    "C": "lithmod:advanced_casing",
+    "H": "minecraft:hopper",
+    "L": "lithmod:logic_chip_t3"
+  },
+  "result": {
+    "id": "lithmod:fab_item_port",
+    "count": 2
+  }
+}

@@ -238,6 +238,9 @@ public final class ModItems {
      * Each has a lower controller and upper operating panel. They share casing and power port blocks.
      * Same {@code registerSimpleBlockItem} rule as other multiblocks.</p>
      */
+    public static final DeferredItem<BlockItem> FAB_ITEM_PORT=ITEMS.registerSimpleBlockItem("fab_item_port",()->com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines.ITEM_PORT.get());
+    public static final DeferredItem<BlockItem> ETCH_CELL=ITEMS.registerSimpleBlockItem("etch_cell",()->com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines.ETCH_CELL.get());
+    public static final DeferredItem<net.minecraft.world.item.Item> ETCHANT_CHARGE=ITEMS.registerSimpleItem("etchant_charge");
     public static final DeferredItem<BlockItem> DEPOSITION_ETCHER_CONTROLLER =
         ITEMS.registerSimpleBlockItem("deposition_etcher",
             () -> AdvancedMachines.DEPOSITION_ETCHER_CONTROLLER.get());

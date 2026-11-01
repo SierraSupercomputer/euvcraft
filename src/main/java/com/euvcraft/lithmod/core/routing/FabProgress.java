@@ -31,6 +31,8 @@ public record FabProgress(Stage stage, int tier, int version) {
         DEPOSITED,
         /** Resist has been coated (spin-coated) at a high tier (5-7). */
         COATED,
+        /** An exposure run has started; its program is fixed but the lot is not complete. */
+        EXPOSING,
         /** Exposure and developing have completed at the bound tier. */
         EXPOSED,
         /** The developed pattern has been transferred into the material film by etching. */
@@ -71,7 +73,7 @@ public record FabProgress(Stage stage, int tier, int version) {
                     throw new IllegalArgumentException("COATED requires tier 5..7, got " + tier);
                 }
             }
-            case EXPOSED -> {
+            case EXPOSING, EXPOSED -> {
                 if (tier < 1 || tier > 7) {
                     throw new IllegalArgumentException("EXPOSED requires tier 1..7, got " + tier);
                 }
@@ -147,6 +149,10 @@ public record FabProgress(Stage stage, int tier, int version) {
     public FabProgress exposed(int tier) {
         if (tier < 1 || tier > 7) {
             throw new IllegalArgumentException("exposed() tier must be 1..7, got " + tier);
+        }
+        if(stage==Stage.EXPOSING){
+            if(this.tier!=tier)throw new IllegalArgumentException("Cannot rebind an active exposure program");
+            return new FabProgress(Stage.EXPOSED,tier,CURRENT_VERSION);
         }
         return switch (tier) {
             case 1, 2, 3 -> {

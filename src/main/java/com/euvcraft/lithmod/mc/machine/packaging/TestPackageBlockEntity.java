@@ -397,6 +397,7 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
         }
 
         PackagingRefusalReason reason = admissionRefusal(lot);
+        if(reason==null&&!com.euvcraft.lithmod.mc.routing.FoupRouting.packagingReady(foupStack))reason=PackagingRefusalReason.ETCHING_REQUIRED;
         if (reason != null) {
             this.refusal = reason;
             this.paused = false;

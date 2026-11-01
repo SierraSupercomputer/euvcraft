@@ -28,7 +28,7 @@ import net.minecraft.world.phys.AABB;
 
 /** Independent fixtures keep every orientation within a five-by-five footprint. */
 final class T4RuntimeFixtures {
- enum Kind { DEPOSITION, PACKAGING, LITHOGRAPHY, SCANNER, PURIFIER, EBEAM }
+ enum Kind { ETCH, DEPOSITION, PACKAGING, LITHOGRAPHY, SCANNER, PURIFIER, EBEAM }
  record Cell(ServerLevel level,List<BlockPos> positions,BlockPos anchor,FabMachineBlockEntity machine) implements AutoCloseable {
   BlockPos port(){return positions.stream().filter(p->level.getBlockState(p).getBlock()==AdvancedMachines.ADVANCED_POWER_PORT.get()
       ||level.getBlockState(p).getBlock()==ModMultiblocks.PROCESS_CELL_POWER_PORT.get()
@@ -48,7 +48,7 @@ final class T4RuntimeFixtures {
  static void check(GameTestHelper h,boolean value,String message){h.assertTrue(value,message);}
  static void eq(GameTestHelper h,long expected,long actual,String message){h.assertTrue(expected==actual,message+" expected="+expected+" actual="+actual);}
  static Cell build(GameTestHelper h,Kind kind,Direction facing,int column){
-  boolean big=kind==Kind.DEPOSITION||kind==Kind.SCANNER,advanced=big||kind==Kind.PACKAGING,panel=advanced||kind==Kind.LITHOGRAPHY;
+  boolean big=kind==Kind.ETCH||kind==Kind.DEPOSITION||kind==Kind.SCANNER,advanced=big||kind==Kind.PACKAGING,panel=advanced||kind==Kind.LITHOGRAPHY;
   int width=big?3:2,height=big?3:2,depth=big?5:3;
   int rx=switch(facing){case NORTH->1;case SOUTH->-1;default->0;};
   int rz=switch(facing){case EAST->1;case WEST->-1;default->0;};
@@ -68,6 +68,7 @@ final class T4RuntimeFixtures {
   Block controller=switch(kind){
    case SCANNER->com.euvcraft.lithmod.mc.multiblock.scanner.ScannerMachines.CONTROLLER.get();
    case DEPOSITION->AdvancedMachines.DEPOSITION_ETCHER_CONTROLLER.get();
+   case ETCH->com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines.ETCH_CELL.get();
    case PACKAGING->AdvancedMachines.ADVANCED_TEST_PACKAGE_CONTROLLER.get();
    case LITHOGRAPHY->ModMultiblocks.PROCESS_CELL_CONTROLLER.get();
    case PURIFIER->SupportMachines.BOULE_PURIFIER.get();
@@ -94,7 +95,9 @@ final class T4RuntimeFixtures {
   var t=TierDataLoader.getRegistry().getByIndex(tier);
   var wafers=List.of(new Wafer(t.layers(),1f,0),new Wafer(t.layers(),Float.MIN_VALUE,0),new Wafer(t.layers(),.5f,0));
   var spec=new RunSpec(family,tier,cores,.90,t.layers()*EUVCRAFTMod.settings().rollsPerLayer());
-  return FoupItems.with(ModItems.FOUP_MK1.get(),new FoupContents(UUID.randomUUID(),25,wafers,spec,WaferSubstrate.PURE));
+  var stack=FoupItems.with(ModItems.FOUP_MK1.get(),new FoupContents(UUID.randomUUID(),25,wafers,spec,WaferSubstrate.PURE,tier>=4?2:1));
+  if(tier==4)stack.set(ModDataComponents.FOUP_ROUTING.get(),new com.euvcraft.lithmod.mc.routing.FoupRoutingData(new com.euvcraft.lithmod.core.routing.FabProgress(com.euvcraft.lithmod.core.routing.FabProgress.Stage.ETCHED,4,1),family,cores,false));
+  return stack;
  }
  static CompoundTag save(ServerLevel level,BlockEntity machine){
   var output=TagValueOutput.createWithContext(ProblemReporter.DISCARDING,level.registryAccess());machine.saveWithId(output);return output.buildResult();

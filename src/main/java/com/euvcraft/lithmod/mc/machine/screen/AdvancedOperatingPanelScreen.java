@@ -9,6 +9,13 @@ public final class AdvancedOperatingPanelScreen extends AdvancedMachineScreen<Ad
  public AdvancedOperatingPanelScreen(AdvancedOperatingPanelMenu menu,Inventory inventory,Component title){super(menu,inventory,title);}
  @Override protected boolean formed(){return menu.formed();}
  @Override protected boolean cabinet(){return false;}
+ @Override protected Component formationLabel(){
+  if(menu.formed()&&!menu.deposition()){
+   int offset=menu.state()-com.euvcraft.lithmod.mc.machine.packaging.TestPackageBlockEntity.STATE_REFUSED_BASE;
+   if(offset>=0&&offset<com.euvcraft.lithmod.core.PackagingRefusalReason.values().length)return Component.translatable(com.euvcraft.lithmod.mc.machine.packaging.TestPackageScreen.refusalKey(com.euvcraft.lithmod.core.PackagingRefusalReason.values()[offset]));
+  }
+  return super.formationLabel();
+ }
  @Override protected void init(){
   super.init();
   if(!menu.deposition())binning=addRenderableWidget(Button.builder(Component.empty(),button->{

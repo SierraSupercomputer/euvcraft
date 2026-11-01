@@ -351,7 +351,8 @@ public final class PresentationGameTests {
 
         List<ItemStack> actualEntries = ModCreativeTabs.entries(params);
 
-        // Expected 49 stacks in exact order
+        var existingEntries=actualEntries.stream().filter(e->!e.is(ModItems.ETCH_CELL.get())&&!e.is(ModItems.FAB_ITEM_PORT.get())&&!e.is(ModItems.ETCHANT_CHARGE.get())).toList();
+        // Keep the original catalog order within each category.
         List<Item> expectedItems = List.of(
             // M1 items
             ModItems.CRYSTAL_PULLER.get(),
@@ -510,22 +511,23 @@ public final class PresentationGameTests {
         fullExpected.add(ModItems.DIMM_T7.get());fullExpected.add(ModItems.RESIST_T7.get());fullExpected.add(ModItems.TIN_FEEDSTOCK.get());
         fullExpected.add(com.euvcraft.lithmod.mc.multiblock.euv.EuvMachines.LIGHT_SOURCE_PULSE_MODULE.get().asItem());
         fullExpected.add(com.euvcraft.lithmod.mc.multiblock.euv.EuvMachines.LIGHT_SOURCE_CALIBRATION_PANEL.get().asItem());
-          h.assertValueEqual(215, actualEntries.size(), "MAIN tab exact entry count");
+          h.assertValueEqual(218, actualEntries.size(), "Creative catalog exact entry count");
         for (int i = 0; i < 215; i++) {
             Item expected = fullExpected.get(i);
-            Item actual = actualEntries.get(i).getItem();
+            Item actual = existingEntries.get(i).getItem();
             h.assertTrue(actual == expected,
                 "MAIN tab entry " + i + " is " + actual + " expected " + expected);
         }
 
+
         // Verify the three mask entries have correct designs
-        MaskData d1 = actualEntries.get(32).get(ModDataComponents.MASK_DATA.get());
+        MaskData d1 = existingEntries.get(32).get(ModDataComponents.MASK_DATA.get());
         h.assertTrue(d1 != null && DieTypes.LOGIC.equals(d1.dieType()) && d1.tierIndex() == 1,
             "Entry 18 (mask 0) not logic T1: " + d1);
-        MaskData d2 = actualEntries.get(33).get(ModDataComponents.MASK_DATA.get());
+        MaskData d2 = existingEntries.get(33).get(ModDataComponents.MASK_DATA.get());
         h.assertTrue(d2 != null && DieTypes.LOGIC.equals(d2.dieType()) && d2.tierIndex() == 2,
             "Entry 19 (mask 1) not logic T2: " + d2);
-        MaskData d3 = actualEntries.get(34).get(ModDataComponents.MASK_DATA.get());
+        MaskData d3 = existingEntries.get(34).get(ModDataComponents.MASK_DATA.get());
         h.assertTrue(d3 != null && DieTypes.MEMORY.equals(d3.dieType()) && d3.tierIndex() == 2,
             "Entry 20 (mask 2) not memory T2: " + d3);
 

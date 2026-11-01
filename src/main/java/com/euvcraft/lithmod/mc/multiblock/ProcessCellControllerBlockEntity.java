@@ -327,6 +327,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
 
         // Admission hooks: structural formation, tier support, readiness, refusal
         if (!supportsTier(tier)) { lastRefusal = RefusalReason.LINE_CANNOT_RUN_TIER; return; }
+        if(!com.euvcraft.lithmod.mc.routing.FoupRouting.canExpose(slot(SLOT_FOUP),tier.index())){lastRefusal=new RefusalReason(RefusalReason.Code.PROCESS_STEP_REQUIRED);return;}
         var blocker = admissionBlocker(tier);
         if (blocker != null) { lastRefusal = blocker; return; }
         if (!structureFormed()) { lastRefusal = RefusalReason.LINE_CANNOT_RUN_TIER; return; }
@@ -553,6 +554,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         ItemStack carrier = slot(SLOT_FOUP).copy();
         ItemStack sealed = FoupItems.with(carrier.getItem(), updated);
         carrier.set(ModDataComponents.FOUP_CONTENTS.get(), sealed.get(ModDataComponents.FOUP_CONTENTS.get()));
+        com.euvcraft.lithmod.mc.routing.FoupRouting.exposureActive(carrier);
         setSlot(SLOT_FOUP, carrier);
         return updated;
     }

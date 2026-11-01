@@ -24,7 +24,8 @@ public record RefusalReason(Code code, List<String> unmetLines) implements Proce
         CONTAMINATED_FOUP,
         VACUUM_REQUIRED,
         EUV_SOURCE_REQUIRED,
-        MACHINE_REPAIR_REQUIRED
+        MACHINE_REPAIR_REQUIRED,
+        PROCESS_STEP_REQUIRED
     }
 
     public RefusalReason {

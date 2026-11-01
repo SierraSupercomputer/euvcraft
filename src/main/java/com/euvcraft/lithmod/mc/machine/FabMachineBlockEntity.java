@@ -161,6 +161,12 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
         setChanged();
     }
 
+    private net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.item.ItemResource> fabPortItems;
+    public final net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.item.ItemResource> fabPortItems(){
+        if(fabPortItems==null)fabPortItems=com.euvcraft.lithmod.mc.routing.FabItemAccess.create(this);
+        return fabPortItems;
+    }
+
     /**
      * Puts the product into the output slot.
      *

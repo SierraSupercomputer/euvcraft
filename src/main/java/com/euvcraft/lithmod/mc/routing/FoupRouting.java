@@ -23,7 +23,7 @@ public final class FoupRouting {
         }
         var matrix=SupportLineDataLoader.getMatrix();var tiers=TierDataLoader.getRegistry();
         if(data!=null&&matrix!=null&&tiers!=null){
-            var options=FabNextSteps.options(lot.publicView(),data.progress(),data.contaminated(),matrix,tiers);
+            var options=FabNextSteps.options(lot.publicView(),data.progress(),data.contaminated(),matrix,tiers,Set.of(4));
             if(!data.contaminated()&&lot.run()!=null&&data.progress().stage().ordinal()<FabProgress.Stage.EXPOSED.ordinal()){
                 int tier=lot.run().tierIndex();options=Map.of(tier<=3?"process_cell_controller":tier==7?"euv_scanner_controller":"lithography_scanner",List.of(tier));
             }
@@ -47,6 +47,12 @@ public final class FoupRouting {
         stack.set(ModDataComponents.FOUP_ROUTING.get(),new FoupRoutingData(new FabProgress(FabProgress.Stage.EXPOSED,run.tierIndex(),FabProgress.CURRENT_VERSION),run.dieType(),run.cores(),false));refresh(stack);
     }
 
+    public static void exposureActive(ItemStack stack){
+        var lot=FoupItems.trustedContentsOf(stack);if(lot==null||lot.run()==null||lot.isContaminated())throw new IllegalStateException("Missing active exposure data");
+        var run=lot.run();stack.set(ModDataComponents.FOUP_ROUTING.get(),new FoupRoutingData(new FabProgress(FabProgress.Stage.EXPOSING,run.tierIndex(),FabProgress.CURRENT_VERSION),run.dieType(),run.cores(),false));
+        refresh(stack);
+    }
+
     public static boolean matchesPrivateLot(ItemStack stack){
         var lot=FoupItems.trustedContentsOf(stack);var data=stack.get(ModDataComponents.FOUP_ROUTING.get());
         if(lot==null||data==null||data.contaminated()!=lot.isContaminated())return false;
@@ -55,8 +61,22 @@ public final class FoupRouting {
             case UNPROCESSED -> lot.preparationGeneration()==1&&lot.run()==null;
             case DEPOSITED -> lot.isPrepared()&&lot.run()==null;
             case COATED -> lot.isPrepared()&&(lot.run()==null||lot.run().tierIndex()==data.progress().tier());
-            case EXPOSED,ETCHED,CLEANED -> lot.run()!=null&&lot.run().tierIndex()==data.progress().tier()&&lot.run().dieType().equals(data.dieType())&&lot.run().cores()==data.cores();
+            case EXPOSING,EXPOSED,ETCHED,CLEANED -> lot.run()!=null&&lot.run().tierIndex()==data.progress().tier()&&lot.run().dieType().equals(data.dieType())&&lot.run().cores()==data.cores();
         };
+    }
+
+    public static boolean packagingReady(ItemStack stack){
+        var lot=FoupItems.trustedContentsOf(stack);
+        if(lot==null||lot.run()==null||lot.isEmpty()||lot.isContaminated())return false;
+        if(lot.run().tierIndex()!=4)return true;
+        var data=stack.get(ModDataComponents.FOUP_ROUTING.get());
+        return data!=null&&data.progress().stage()==FabProgress.Stage.ETCHED&&matchesPrivateLot(stack);
+    }
+
+    public static boolean canExpose(ItemStack stack,int tier){
+        if(tier!=4)return true;
+        var lot=FoupItems.trustedContentsOf(stack);var data=stack.get(ModDataComponents.FOUP_ROUTING.get());
+        return lot!=null&&lot.run()==null&&lot.isPrepared()&&!lot.isContaminated()&&data!=null&&data.progress().stage()==FabProgress.Stage.DEPOSITED&&matchesPrivateLot(stack);
     }
 
     private FoupRouting(){}

@@ -70,6 +70,7 @@ public class EUVCRAFTMod {
         ModMultiblocks.register(modEventBus);
         SupportMachines.register(modEventBus);
         AdvancedMachines.register(modEventBus);
+        com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines.register(modEventBus);
         com.euvcraft.lithmod.mc.multiblock.utilities.UtilityFluids.register(modEventBus);
         com.euvcraft.lithmod.mc.multiblock.utilities.UtilityMachines.register(modEventBus);
         com.euvcraft.lithmod.mc.multiblock.assembly.AssemblyMachines.register(modEventBus);
@@ -111,6 +112,7 @@ modEventBus.addListener(ComponentTooltipAppenders::register);
             SupportMultiblockGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.WaterInletGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.T4RuntimeGameTests.register(modEventBus);
+            com.euvcraft.lithmod.mc.gametest.LinearFabGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.ScannerGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.T5GameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.T6GameTests.register(modEventBus);

@@ -91,6 +91,18 @@ final class T4FullChainGameTests {
     legacy.setSlot(0,foup.copy());legacy.setSlot(1,new ItemStack(ModItems.CHIP_PACKAGE.get(),64));replenish(legacy);legacy.serverTick();
     check(h,!legacy.isQueueActive()&&FoupItems.trustedContentsOf(legacy.slot(0)).size()==3,"G1 refuses real T4 lot without consumption");
    }finally{legacy.clearContent();h.getLevel().setBlock(pos,Blocks.AIR.defaultBlockState(),3);}
+   try(var fixture=build(h,Kind.PACKAGING)){
+    var machine=(AdvancedTestPackageControllerBlockEntity)fixture.machine();machine.setSlot(0,foup.copy());machine.setSlot(1,new ItemStack(ModItems.CHIP_PACKAGE.get(),64));replenish(machine);machine.serverTick();
+    check(h,machine.refusalReason()==PackagingRefusalReason.ETCHING_REQUIRED&&!machine.isQueueActive(),"Exposed T4 lot requires etching before packaging");
+    eq(h,3,FoupItems.trustedContentsOf(machine.slot(0)).size(),"Refusal preserves all wafers");eq(h,64,machine.slot(1).getCount(),"Refusal spends no packages");
+   }
+   try(var fixture=build(h,Kind.ETCH)){
+    var machine=(com.euvcraft.lithmod.mc.multiblock.linear.EtchCellBlockEntity)fixture.machine();machine.setSlot(0,foup);machine.setSlot(1,new ItemStack(ModItems.ETCHANT_CHARGE.get()));
+    for(int tick=0;tick<10000&&machine.slot(2).isEmpty();tick++){replenish(machine);machine.serverTick();}
+    check(h,!machine.slot(2).isEmpty(),"Actual post-exposure etch completes");foup=machine.slot(2).copy();
+    check(h,FoupItems.trustedContentsOf(foup).equals(completed),"Etching preserves the complete private exposure result");
+    check(h,foup.get(ModDataComponents.FOUP_ROUTING.get()).progress().stage()==com.euvcraft.lithmod.core.routing.FabProgress.Stage.ETCHED,"Etch completion commits the public route once");
+   }
    int passing=FabYieldService.countPassing(h.getLevel(),completed,TierDataLoader.getRegistry().getByIndex(4),family,family.equals(DieTypes.COMPUTE)?1:null);
    try(var fixture=build(h,Kind.PACKAGING)){
     var machine=(AdvancedTestPackageControllerBlockEntity)fixture.machine();

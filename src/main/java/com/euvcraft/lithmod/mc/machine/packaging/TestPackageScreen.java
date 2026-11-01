@@ -107,7 +107,7 @@ public class TestPackageScreen extends FabMachineScreen<TestPackageMenu> {
     }
 
     /** The translation key for one refusal reason. */
-    private static String refusalKey(PackagingRefusalReason reason) {
+    public static String refusalKey(PackagingRefusalReason reason) {
         return switch (reason) {
             case NO_LOT -> "state.lithmod.test_package.no_lot";
             case LOT_INCOMPLETE -> "state.lithmod.test_package.lot_incomplete";
@@ -116,6 +116,7 @@ public class TestPackageScreen extends FabMachineScreen<TestPackageMenu> {
             case GENERATION_UNMET -> "state.lithmod.test_package.generation_unmet";
             case CLEANROOM_REQUIRED -> "state.lithmod.test_package.cleanroom_required";
             case CONTAMINATED_FOUP -> "state.lithmod.foup.contaminated";
+            case ETCHING_REQUIRED -> "state.lithmod.test_package.etching_required";
         };
     }
 }

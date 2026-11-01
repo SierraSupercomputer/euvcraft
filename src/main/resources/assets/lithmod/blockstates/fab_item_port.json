@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "formed=false,facing=north": {
+      "model": "lithmod:block/fab_item_port"
+    },
+    "formed=false,facing=east": {
+      "model": "lithmod:block/fab_item_port",
+      "y": 90
+    },
+    "formed=false,facing=south": {
+      "model": "lithmod:block/fab_item_port",
+      "y": 180
+    },
+    "formed=false,facing=west": {
+      "model": "lithmod:block/fab_item_port",
+      "y": 270
+    },
+    "formed=true,facing=north": {
+      "model": "lithmod:block/fab_item_port_formed"
+    },
+    "formed=true,facing=east": {
+      "model": "lithmod:block/fab_item_port_formed",
+      "y": 90
+    },
+    "formed=true,facing=south": {
+      "model": "lithmod:block/fab_item_port_formed",
+      "y": 180
+    },
+    "formed=true,facing=west": {
+      "model": "lithmod:block/fab_item_port_formed",
+      "y": 270
+    }
+  }
+}

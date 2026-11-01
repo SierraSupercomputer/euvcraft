@@ -1575,7 +1575,7 @@ public final class MaskGameTests {
         }
 
         // The unified MAIN tab: filter to blank_mask and mask entries (blank + three variants)
-        CreativeModeTab tab = ModCreativeTabs.MAIN.get();
+        CreativeModeTab tab = ModCreativeTabs.ITEMS.get();
         tab.buildContents(new CreativeModeTab.ItemDisplayParameters(
             helper.getLevel().enabledFeatures(), true, helper.getLevel().registryAccess()));
         Collection<ItemStack> displayed = tab.getDisplayItems();

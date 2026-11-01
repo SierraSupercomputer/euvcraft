@@ -202,9 +202,7 @@ public final class M1ShippingGameTests {
         var level = helper.getLevel();
         var params = new CreativeModeTab.ItemDisplayParameters(
             level.enabledFeatures(), true, level.registryAccess());
-        CreativeModeTab tab = com.euvcraft.lithmod.mc.registry.ModCreativeTabs.MAIN.get();
-        tab.buildContents(params);
-        var display = tab.getDisplayItems();
+        var display = com.euvcraft.lithmod.mc.registry.ModCreativeTabs.displayEntries(params);
         helper.assertTrue(!display.isEmpty(), "production creative tab must have contents");
         helper.assertTrue(display.stream().anyMatch(stack ->
             Identifier.parse("lithmod:crystal_puller").equals(BuiltInRegistries.ITEM.getKey(stack.getItem()))),

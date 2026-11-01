@@ -32,5 +32,6 @@ public enum PackagingRefusalReason {
 
     /** T7 targets, including high binning, require an enclosed cleanroom. */
     CLEANROOM_REQUIRED,
-    CONTAMINATED_FOUP
+    CONTAMINATED_FOUP,
+    ETCHING_REQUIRED
 }

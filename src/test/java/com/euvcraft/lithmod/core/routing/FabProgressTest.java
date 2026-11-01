@@ -294,7 +294,7 @@ class FabProgressTest {
         void cannotSkipToDeposited() {
             FabProgress p = FabProgress.initial().deposited();
             assertThrows(IllegalStateException.class, p::deposited);
-            assertThrows(IllegalStateException.class, () -> p.coated(5));
+            assertThrows(IllegalStateException.class, () -> p.coated(5).deposited());
         }
 
         @Test

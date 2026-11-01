@@ -319,7 +319,7 @@ public final class FoupGameTests {
      */
     private static void creativeTabEntries(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
-        CreativeModeTab tab = ModCreativeTabs.MAIN.get();
+        CreativeModeTab tab = ModCreativeTabs.ITEMS.get();
         tab.buildContents(new CreativeModeTab.ItemDisplayParameters(
             level.enabledFeatures(), true, level.registryAccess()));
         Collection<ItemStack> displayed = tab.getDisplayItems();

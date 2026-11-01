@@ -61,7 +61,6 @@ public final class ModCreativeTabs {
     /**
      * Alias for FAB_BLOCKS retained for source compatibility.
      */
-    @Deprecated(forRemoval = true, since = "M1")
     public static final Supplier<CreativeModeTab> MAIN = FAB_BLOCKS;
 
     /**
@@ -110,10 +109,12 @@ public final class ModCreativeTabs {
         output.accept(ModItems.SUPPORT_WATER_INLET.get());
         // T4 advanced multiblocks (appended after T3 support multiblocks)
         output.accept(ModItems.DEPOSITION_ETCHER_CONTROLLER.get());
+        output.accept(ModItems.ETCH_CELL.get());
         output.accept(ModItems.ADVANCED_OPERATING_PANEL.get());
         output.accept(ModItems.ADVANCED_TEST_PACKAGE_CONTROLLER.get());
         output.accept(ModItems.ADVANCED_CASING.get());
         output.accept(ModItems.ADVANCED_POWER_PORT.get());
+        output.accept(ModItems.FAB_ITEM_PORT.get());
         output.accept(ModItems.SCANNER_CONTROLLER.get());
         output.accept(ModItems.SCANNER_OPERATING_PANEL.get());
         output.accept(ModItems.SCANNER_CALIBRATION_PANEL.get());
@@ -127,6 +128,7 @@ public final class ModCreativeTabs {
         output.accept(FoupItems.emptyFoup(ModItems.FOUP_MK2.get()));
         // Silicon feedstock and boule
         output.accept(ModItems.SILICON.get());
+        output.accept(ModItems.ETCHANT_CHARGE.get());
         output.accept(ModItems.SILICON_BOULE.get());
         // Pure boule (appended after the ordinary boule; production is the purifier)
         output.accept(ModItems.PURE_SILICON_BOULE.get());
@@ -309,6 +311,15 @@ public final class ModCreativeTabs {
     public static List<ItemStack> entries(CreativeModeTab.ItemDisplayParameters parameters) {
         List<ItemStack> result = new ArrayList<>();
         populate(parameters, (stack, visibility) -> result.add(stack));
+        return List.copyOf(result);
+    }
+
+    /** Acceptance/debug helper that reads the actual built category tabs. */
+    public static List<ItemStack> displayEntries(CreativeModeTab.ItemDisplayParameters parameters) {
+        var result=new ArrayList<ItemStack>();
+        for(var tab:List.of(RESOURCES.get(),FAB_BLOCKS.get(),ITEMS.get())){
+            tab.buildContents(parameters);result.addAll(tab.getDisplayItems());
+        }
         return List.copyOf(result);
     }
 

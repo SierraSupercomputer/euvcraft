@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "lithmod:silicon",
+    "lithmod:silicon",
+    "minecraft:redstone"
+  ],
+  "result": {
+    "id": "lithmod:etchant_charge",
+    "count": 1
+  }
+}
