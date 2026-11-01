@@ -61,6 +61,7 @@ public final class DepositionEtcherControllerBlockEntity extends AdvancedControl
                 if(original==null){recovery=true;syncJob();setChanged();return;}
                 ItemStack output=pending.copy();
                 output.set(ModDataComponents.FOUP_CONTENTS.get(),original.withPreparationGeneration(2));
+                com.euvcraft.lithmod.mc.routing.FoupRouting.deposited(output);
                 pending=ItemStack.EMPTY;setSlot(2,output);progress=0;
             }
             setChanged();

@@ -130,7 +130,7 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         }
         setChanged();
     }
-    private void finishCarrier(){if(carrier.isEmpty()){prepPhase=PrepPhase.IDLE;return;}if(!slot(3).isEmpty()){status=Status.OUTPUT_BLOCKED;return;}setSlot(3,carrier);carrier=ItemStack.EMPTY;prepPhase=PrepPhase.IDLE;jobRunning=false;footprint=List.of();setChanged();}
+    private void finishCarrier(){if(carrier.isEmpty()){prepPhase=PrepPhase.IDLE;return;}if(!slot(3).isEmpty()){status=Status.OUTPUT_BLOCKED;return;}if(!FoupItems.trustedContentsOf(carrier).isContaminated())com.euvcraft.lithmod.mc.routing.FoupRouting.deposited(carrier);setSlot(3,carrier);carrier=ItemStack.EMPTY;prepPhase=PrepPhase.IDLE;jobRunning=false;footprint=List.of();setChanged();}
     public boolean notifyStructuralBreach(long tick){if(!large()||carrier.isEmpty())return false;var lot=FoupItems.trustedContentsOf(carrier);if(lot==null||lot.isContaminated())return false;contaminationState=MachineContaminationState.contaminated(tick);carrier.set(ModDataComponents.FOUP_CONTENTS.get(),lot.contaminated());prepPhase=PrepPhase.COMPLETE;jobRunning=false;setChanged();return true;}
     public boolean repair(){
         if(!large()||!isFormed()||!contaminationState.requiresRepair()||!enclosed(room()))return false;

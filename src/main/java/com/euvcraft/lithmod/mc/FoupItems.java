@@ -66,6 +66,7 @@ public final class FoupItems {
     public static ItemStack with(Item item, FoupContents contents) {
         ItemStack stack = new ItemStack(item);
         stack.set(ModDataComponents.FOUP_CONTENTS.get(), contents);
+        com.euvcraft.lithmod.mc.routing.FoupRouting.refresh(stack);
         return stack;
     }
 

@@ -92,6 +92,17 @@ public final class ModDataComponents {
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Boolean>> CONTAMINATED_EQUIPMENT =
         DATA_COMPONENTS.registerComponentType("contaminated_equipment", builder -> builder.persistent(Codec.BOOL).networkSynchronized(ByteBufCodecs.BOOL));
 
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.euvcraft.lithmod.mc.routing.FoupRoutingData>> FOUP_ROUTING =
+        DATA_COMPONENTS.registerComponentType("foup_routing", builder -> builder.persistent(com.euvcraft.lithmod.mc.routing.FoupRoutingData.CODEC).networkSynchronized(com.euvcraft.lithmod.mc.routing.FoupRoutingData.STREAM_CODEC));
+
+    private static final Codec<java.util.Map<String,java.util.List<Integer>>> NEXT_STEPS_CODEC =
+        Codec.unboundedMap(Codec.STRING,Codec.intRange(1,7).listOf()).comapFlatMap(map->{
+            if(map.size()>8||map.entrySet().stream().anyMatch(e->!e.getKey().matches("[a-z0-9_]{1,64}")||e.getValue().size()>7||e.getValue().stream().distinct().count()!=e.getValue().size()))return com.mojang.serialization.DataResult.error(()->"Invalid next-step summary");
+            var copy=new java.util.LinkedHashMap<String,java.util.List<Integer>>();map.forEach((k,v)->copy.put(k,java.util.List.copyOf(v)));return com.mojang.serialization.DataResult.success(java.util.Collections.unmodifiableMap(copy));
+        },java.util.function.Function.identity());
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<java.util.Map<String,java.util.List<Integer>>>> FOUP_NEXT_STEPS =
+        DATA_COMPONENTS.registerComponentType("foup_next_steps", builder -> builder.persistent(NEXT_STEPS_CODEC).networkSynchronized(ByteBufCodecs.fromCodec(NEXT_STEPS_CODEC)));
+
     private ModDataComponents() {
     }
 }

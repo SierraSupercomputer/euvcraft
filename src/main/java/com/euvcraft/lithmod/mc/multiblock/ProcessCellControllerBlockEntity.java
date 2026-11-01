@@ -295,6 +295,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
                             }
                         }
                     }
+                    if(run.state()==ProcessState.FINISHED){com.euvcraft.lithmod.mc.routing.FoupRouting.exposureFinished(slot(SLOT_FOUP));setChanged();}
                     if (!before.equals(run.snapshot())) setChanged();
                 } catch (RuntimeException invalid) {
                     // No refund or retry after a rejected private contract/yield operation.
@@ -385,6 +386,8 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         for (int index = SLOT_LIGHT_SOURCE; index <= SLOT_METROLOGY; index++) components.add(equipment(index).copy());
         ItemStack carrier = slot(SLOT_FOUP).copy();
         carrier.remove(ModDataComponents.FOUP_CONTENTS.get());
+        carrier.remove(ModDataComponents.FOUP_ROUTING.get());
+        carrier.remove(ModDataComponents.FOUP_NEXT_STEPS.get());
         double frozenYieldFactor = admissionYieldMultiplier();
         try {
             contract = new Contract(tier, mask.dieType(), mask.usesRemaining(), tier.layerTicks(settings),
@@ -437,6 +440,8 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         if (contract == null || run == null || !Objects.equals(trustedLot(), run.lot())) return false;
         ItemStack carrier = slot(SLOT_FOUP).copy();
         carrier.remove(ModDataComponents.FOUP_CONTENTS.get());
+        carrier.remove(ModDataComponents.FOUP_ROUTING.get());
+        carrier.remove(ModDataComponents.FOUP_NEXT_STEPS.get());
         if (!ItemStack.isSameItemSameComponents(carrier, contract.foupTemplate())
                 || !sameSingleton(slot(SLOT_MASK), contract.mask())) return false;
         for (int i = 0; i < 5; i++)

@@ -57,5 +57,20 @@ record FoupTooltip(FoupPublicView view, boolean contaminated) implements Tooltip
                     .withStyle(ChatFormatting.DARK_GRAY));
             }
         }
+        var routing=components.get(com.euvcraft.lithmod.mc.registry.ModDataComponents.FOUP_ROUTING.get());
+        if(routing!=null&&!this.view.isEmpty()){
+            consumer.accept(Component.translatable("tooltip.lithmod.foup.route_state",Component.translatable("tooltip.lithmod.foup.stage."+routing.progress().stage().name().toLowerCase(java.util.Locale.ROOT))).withStyle(ChatFormatting.GRAY));
+            if(routing.progress().tier()==0)consumer.accept(Component.translatable("tooltip.lithmod.foup.route_unassigned").withStyle(ChatFormatting.DARK_GRAY));
+            else if(routing.dieType().isEmpty())consumer.accept(Component.translatable("tooltip.lithmod.foup.route_coating",routing.progress().tier()).withStyle(ChatFormatting.DARK_GRAY));
+            else if(routing.dieType().equals("compute"))consumer.accept(Component.translatable("tooltip.lithmod.foup.route_compute",routing.progress().tier(),routing.cores()).withStyle(ChatFormatting.DARK_GRAY));
+            else consumer.accept(Component.translatable("tooltip.lithmod.foup.route_program",routing.progress().tier(),routing.dieType()).withStyle(ChatFormatting.DARK_GRAY));
+        }
+        boolean discard=contaminated||routing!=null&&routing.contaminated();
+        if(discard){consumer.accept(Component.translatable("tooltip.lithmod.foup.dispose").withStyle(ChatFormatting.RED));return;}
+        var next=components.get(com.euvcraft.lithmod.mc.registry.ModDataComponents.FOUP_NEXT_STEPS.get());
+        if(next!=null)next.entrySet().stream().sorted(java.util.Map.Entry.comparingByKey()).forEach(e->{
+            var name=Component.translatable("tooltip.lithmod.foup.destination."+e.getKey());
+            consumer.accept((e.getValue().isEmpty()?Component.translatable("tooltip.lithmod.foup.next",name):Component.translatable("tooltip.lithmod.foup.next_tiers",name,e.getValue().stream().map(String::valueOf).collect(java.util.stream.Collectors.joining(", ")))).withStyle(ChatFormatting.AQUA));
+        });
     }
 }

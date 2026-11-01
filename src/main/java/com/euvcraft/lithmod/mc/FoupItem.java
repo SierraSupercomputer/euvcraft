@@ -55,6 +55,7 @@ public class FoupItem extends Item {
         super.inventoryTick(stack, level, owner, slot);
         FoupItems.initializeIfMissing(stack);
         maybeReplaceCreativeClientView(stack, owner);
+        com.euvcraft.lithmod.mc.routing.FoupRouting.refresh(stack);
     }
 
     @Override

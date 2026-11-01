@@ -150,6 +150,7 @@ public abstract class FabMachineBlockEntity extends BlockEntity implements MenuP
      * read goes back through {@link #slot(int)}, so the replacement is always seen.</p>
      */
     public final void setSlot(int index, ItemStack stack) {
+        com.euvcraft.lithmod.mc.routing.FoupRouting.refresh(stack);
         this.items.set(index, stack);
         setChanged();
     }

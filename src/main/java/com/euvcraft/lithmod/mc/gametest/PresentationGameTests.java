@@ -349,9 +349,7 @@ public final class PresentationGameTests {
         var params = new CreativeModeTab.ItemDisplayParameters(
             level.enabledFeatures(), true, level.registryAccess());
 
-        CreativeModeTab mainTab = ModCreativeTabs.MAIN.get();
-        mainTab.buildContents(params);
-        List<ItemStack> actualEntries = new ArrayList<>(mainTab.getDisplayItems());
+        List<ItemStack> actualEntries = ModCreativeTabs.entries(params);
 
         // Expected 49 stacks in exact order
         List<Item> expectedItems = List.of(
@@ -550,7 +548,22 @@ public final class PresentationGameTests {
         // Assert exactly one registered lithmod CreativeModeTab
         long lithmodTabCount = BuiltInRegistries.CREATIVE_MODE_TAB.keySet().stream()
             .filter(key -> EUVCRAFTMod.MODID.equals(key.getNamespace())).count();
-        h.assertValueEqual(1L, lithmodTabCount, "Exactly one lithmod creative tab");
+        h.assertValueEqual(3L, lithmodTabCount, "Exactly three lithmod creative tabs");
+        var categories=com.euvcraft.lithmod.mc.registry.CreativeTabCategory.values();
+        var tabs=List.of(ModCreativeTabs.RESOURCES.get(),ModCreativeTabs.FAB_BLOCKS.get(),ModCreativeTabs.ITEMS.get());
+        var locations=new java.util.HashMap<Item,Integer>();
+        for(int tabIndex=0;tabIndex<tabs.size();tabIndex++){
+            var tab=tabs.get(tabIndex);tab.buildContents(params);var shown=new ArrayList<>(tab.getDisplayItems());var category=categories[tabIndex];
+            var expected=actualEntries.stream().filter(e->com.euvcraft.lithmod.mc.registry.CreativeTabCategory.of(e.getItem())==category).toList();
+            h.assertValueEqual(expected.size(),shown.size(),"Partition entry count "+category);
+            for(int i=0;i<shown.size();i++){
+                var stack=shown.get(i);h.assertTrue(stack.getItem()==expected.get(i).getItem(),"Stable category order "+category+" index "+i);
+                h.assertTrue(java.util.Objects.equals(stack.get(ModDataComponents.MASK_DATA.get()),expected.get(i).get(ModDataComponents.MASK_DATA.get())),"Mask design preserved");
+                if(FoupItems.isFoup(stack))h.assertTrue(FoupItems.trustedContentsOf(stack)!=null&&FoupItems.trustedContentsOf(stack).isEmpty(),"Creative carriers remain real empty sealed lots");
+                var previous=locations.putIfAbsent(stack.getItem(),tabIndex);h.assertTrue(previous==null||previous==tabIndex,"Item appears in multiple categories");
+            }
+        }
+        h.assertTrue(locations.keySet().stream().map(item->BuiltInRegistries.ITEM.getKey(item).getPath()).collect(java.util.stream.Collectors.toSet()).equals(expectedItemIds),"All player-facing registry items partition exactly once");
         h.succeed();
     }
 
