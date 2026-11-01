@@ -1584,7 +1584,7 @@ public final class MaskGameTests {
 
         // Check generator presence in original displayed collection separately
         boolean hasGenerator = false;
-        for (ItemStack stack : entries) {
+        for (ItemStack stack : blocks.getDisplayItems()) {
             if (stack.getItem() == ModItems.PATTERN_GENERATOR.get()) {
                 hasGenerator = true;
                 break;
