@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { connectedWallAssets } from './lib/cleanroom-walls.mjs';
 import{readFileSync,writeFileSync,mkdirSync,existsSync}from'node:fs';
 import{dirname,resolve,join}from'node:path';import{fileURLToPath}from'node:url';import{deflateSync,crc32}from'node:zlib';
 import{connectedWindowAssets}from'./lib/cleanroom-windows.mjs';
@@ -222,7 +223,7 @@ export function outputs(){const out=new Map(),put=(path,value)=>{if(out.has(path
  for(const[role,material]of Object.entries({power:'minecraft:redstone',fluid:'minecraft:bucket',item:'minecraft:hopper'}))craft('cleanroom_'+role+'_port',['III','WMW','III'],{I:'minecraft:iron_ingot',W:'lithmod:cleanroom_wall',M:material});
  craft('cleanroom_filter_medium',['PPP','CFC','PPP'],{P:'minecraft:paper',C:'minecraft:charcoal',F:'lithmod:fine_air_filter'},4);
  for(const[id,pattern]of Object.entries({hood:['WWW','WLW','   '],suit:['W W','WLW','WWW'],trousers:['WWW','WLW','W W'],boots:['   ','W W','L L']}))craft('cleanroom_'+id,pattern,{W:'minecraft:white_wool',L:'minecraft:leather'});
- put(A+'equipment/cleanroom_gown.json',{layers:{humanoid:[{texture:'lithmod:cleanroom_gown'}],humanoid_leggings:[{texture:'lithmod:cleanroom_gown'}]}});for(const layer of['humanoid','humanoid_leggings'])put(A+'textures/entity/equipment/'+layer+'/cleanroom_gown.png',tile('gown',false,64,32,layer));for(const[path,bytes]of connectedWindowAssets())out.set(path,bytes);return out;
+ put(A+'equipment/cleanroom_gown.json',{layers:{humanoid:[{texture:'lithmod:cleanroom_gown'}],humanoid_leggings:[{texture:'lithmod:cleanroom_gown'}]}});for(const layer of['humanoid','humanoid_leggings'])put(A+'textures/entity/equipment/'+layer+'/cleanroom_gown.png',tile('gown',false,64,32,layer));for(const[path,bytes]of connectedWindowAssets())out.set(path,bytes);for(const[path,bytes]of connectedWallAssets())out.set(path,bytes);return out;
 }
 export function main(){const args=process.argv.slice(2);if(args.length>1||args.length===1&&args[0]!=='--check')throw Error('Usage: node tools/generate-cleanroom-assets.mjs [--check]');const map=outputs();let stale=0;for(const[path,bytes]of map){if(!(path.startsWith(A)||path.startsWith(D+'recipe/crafting/cleanroom_')||path.startsWith(D+'loot_table/blocks/cleanroom_')))throw Error('Output escapes scope '+path);const to=join(root,path);if(args[0]==='--check'){if(!existsSync(to)||!readFileSync(to).equals(bytes)){console.error('Missing/stale '+path);stale++;}}else{mkdirSync(dirname(to),{recursive:true});writeFileSync(to,bytes);}}if(stale)throw Error('Stale cleanroom outputs: '+stale);console.log((args[0]==='--check'?'Checked ':'Generated ')+map.size+' deterministic cleanroom assets');}
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url))main();

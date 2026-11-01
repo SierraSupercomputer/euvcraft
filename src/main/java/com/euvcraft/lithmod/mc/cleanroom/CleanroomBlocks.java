@@ -15,7 +15,7 @@ public final class CleanroomBlocks {
  public static final DeferredRegister<BlockEntityType<?>> BES=DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE,EUVCRAFTMod.MODID);
  public static final DeferredRegister<MenuType<?>> MENUS=DeferredRegister.create(Registries.MENU,EUVCRAFTMod.MODID);
  public static final DeferredBlock<Block> FLOOR=BLOCKS.registerSimpleBlock("cleanroom_floor",p->p.strength(3).requiresCorrectToolForDrops());
- public static final DeferredBlock<Block> WALL=BLOCKS.registerSimpleBlock("cleanroom_wall",p->p.strength(3).requiresCorrectToolForDrops());
+ public static final DeferredBlock<Block> WALL=BLOCKS.registerBlock("cleanroom_wall",CleanroomWallBlock::new,p->p.strength(3).requiresCorrectToolForDrops());
  public static final DeferredBlock<CleanroomWindowBlock> WINDOW=BLOCKS.registerBlock("cleanroom_window",CleanroomWindowBlock::new,p->p.strength(2).noOcclusion());
  public static final DeferredBlock<DoorBlock> DOOR=BLOCKS.registerBlock("cleanroom_door",p->new DoorBlock(BlockSetType.IRON,p),p->p.strength(3).noOcclusion());
  public static final DeferredBlock<CleanroomMachineBlock> CONTROLLER=BLOCKS.registerBlock("cleanroom_controller",CleanroomMachineBlock::new,p->p.strength(4).requiresCorrectToolForDrops());

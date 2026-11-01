@@ -34,6 +34,8 @@ public final class CleanroomTopology {
    if(block==CleanroomBlocks.CONTROLLER.get())controllers++;
    if(!b.shell(p))continue;
    if(!CleanroomBlocks.isShell(block)){if(firstMissing==null)firstMissing=p.immutable();continue;}
+   // Refresh legacy visual flags in the already bounded, loaded shell scan. No neighbor propagation.
+   if(block instanceof CleanroomWallBlock wall){var connected=wall.connectionsAt(state,level,p);if(connected!=state)level.setBlock(p,connected,net.minecraft.world.level.block.Block.UPDATE_CLIENTS|net.minecraft.world.level.block.Block.UPDATE_KNOWN_SHAPE);}
    if(block==CleanroomBlocks.FILTER.get())filters.add(p.immutable());
    if(block==CleanroomBlocks.DOOR.get()){
     var other=p.relative(state.getValue(DoorBlock.HALF)==DoubleBlockHalf.LOWER?Direction.UP:Direction.DOWN);

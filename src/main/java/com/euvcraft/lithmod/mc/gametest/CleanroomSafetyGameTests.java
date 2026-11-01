@@ -9,7 +9,7 @@ import java.util.*;import java.util.function.Consumer;
 public final class CleanroomSafetyGameTests {
  private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS=DeferredRegister.create(Registries.TEST_FUNCTION,"lithmod");
  private static final Map<String,Consumer<GameTestHelper>> CASES=new LinkedHashMap<>();
- static{add("t5_cleanroom_safety_windows",CleanroomSafetyGameTests::windows);add("t5_cleanroom_safety_unloaded",CleanroomSafetyGameTests::unloaded);add("t5_cleanroom_safety_formation",CleanroomSafetyGameTests::formation);add("t5_cleanroom_safety_breach",CleanroomSafetyGameTests::breach);add("t5_cleanroom_safety_two_controllers",CleanroomSafetyGameTests::two);add("t5_cleanroom_safety_door",CleanroomSafetyGameTests::door);add("t5_cleanroom_safety_filtration",CleanroomSafetyGameTests::filter);add("t5_cleanroom_safety_persistence",CleanroomSafetyGameTests::persistence);add("t5_cleanroom_safety_gown",CleanroomSafetyGameTests::gown);}
+ static{add("t5_cleanroom_safety_walls",CleanroomSafetyGameTests::walls);add("t5_cleanroom_safety_windows",CleanroomSafetyGameTests::windows);add("t5_cleanroom_safety_unloaded",CleanroomSafetyGameTests::unloaded);add("t5_cleanroom_safety_formation",CleanroomSafetyGameTests::formation);add("t5_cleanroom_safety_breach",CleanroomSafetyGameTests::breach);add("t5_cleanroom_safety_two_controllers",CleanroomSafetyGameTests::two);add("t5_cleanroom_safety_door",CleanroomSafetyGameTests::door);add("t5_cleanroom_safety_filtration",CleanroomSafetyGameTests::filter);add("t5_cleanroom_safety_persistence",CleanroomSafetyGameTests::persistence);add("t5_cleanroom_safety_gown",CleanroomSafetyGameTests::gown);}
  private static void add(String id,Consumer<GameTestHelper> run){CASES.put(id,run);FUNCTIONS.register(id,()->run);}
  public static void register(IEventBus bus){FUNCTIONS.register(bus);bus.addListener((Consumer<RegisterGameTestsEvent>)event->{Holder<TestEnvironmentDefinition<?>> env=event.registerEnvironment(Identifier.parse("lithmod:cleanroom_safety"),new TestEnvironmentDefinition[0]);var data=new TestData<>(env,Level.OVERWORLD,Identifier.withDefaultNamespace("empty"),400,0,true,Rotation.NONE,false,1,1,false,0);for(var name:CASES.keySet()){var id=Identifier.fromNamespaceAndPath("lithmod",name);event.registerTest(id,new FunctionGameTestInstance(ResourceKey.<Consumer<GameTestHelper>>create(Registries.TEST_FUNCTION,id),data));}});}
  private record Room(ServerLevel level,BlockPos origin,List<BlockPos> shell,CleanroomControllerBlockEntity controller,CleanroomFilterBlockEntity filter) implements AutoCloseable{
@@ -52,5 +52,39 @@ public final class CleanroomSafetyGameTests {
   }
   h.succeed();
  }
+
+ private static void placeWall(ServerLevel l,BlockPos p){l.setBlock(p,Block.updateFromNeighbourShapes(CleanroomBlocks.WALL.get().defaultBlockState(),l,p),3);}
+ private static void walls(GameTestHelper h){
+  var l=h.getLevel();var origin=h.absolutePos(new BlockPos(9,2,9));var positions=new ArrayList<BlockPos>();positions.add(origin);
+  try{
+   placeWall(l,origin);
+   for(var d:Direction.values()){var p=origin.relative(d);positions.add(p);placeWall(l,p);}
+   for(var d:Direction.values()){
+    check(h,l.getBlockState(origin).getValue(CleanroomWallBlock.CONNECTIONS.get(d)),"Wall joins on "+d);
+    check(h,l.getBlockState(origin.relative(d)).getValue(CleanroomWallBlock.CONNECTIONS.get(d.getOpposite())),"Reciprocal wall join "+d);
+   }
+   l.setBlock(origin.above(),CleanroomBlocks.FLOOR.get().defaultBlockState(),3);
+   check(h,!l.getBlockState(origin).getValue(CleanroomWallBlock.CONNECTIONS.get(Direction.UP)),"Tiled floor does not join wall");
+   check(h,l.getBlockState(origin.above()).getProperties().isEmpty(),"Floor retains simple tiled state");
+   l.setBlock(origin.east(),CleanroomBlocks.WINDOW.get().defaultBlockState(),3);
+   check(h,!l.getBlockState(origin).getValue(CleanroomWallBlock.CONNECTIONS.get(Direction.EAST)),"Window keeps wall frame");
+   l.setBlock(origin.west(),Blocks.AIR.defaultBlockState(),3);
+   check(h,!l.getBlockState(origin).getValue(CleanroomWallBlock.CONNECTIONS.get(Direction.WEST)),"Removal restores wall border");
+   var north=CleanroomBlocks.WALL.get().defaultBlockState().setValue(CleanroomWallBlock.CONNECTIONS.get(Direction.NORTH),true);
+   var rotated=north.rotate(Rotation.CLOCKWISE_90);
+   check(h,rotated.getValue(CleanroomWallBlock.CONNECTIONS.get(Direction.EAST))&&!rotated.getValue(CleanroomWallBlock.CONNECTIONS.get(Direction.NORTH)),"Wall rotation");
+   check(h,north.mirror(Mirror.LEFT_RIGHT).getValue(CleanroomWallBlock.CONNECTIONS.get(Direction.SOUTH)),"Wall mirror");
+  }finally{for(var p:positions)l.setBlock(p,Blocks.AIR.defaultBlockState(),3);}
+  try(var r=room(h)){
+   for(var p:r.shell)if(l.getBlockState(p).is(CleanroomBlocks.WALL.get()))l.setBlock(p,CleanroomBlocks.WALL.get().defaultBlockState(),Block.UPDATE_CLIENTS|Block.UPDATE_KNOWN_SHAPE);
+   int before=r.controller.cleanliness();r.controller.markTopologyDirty();r.controller.validateKnown();
+   eq(h,1,r.controller.state(),"Legacy wall refresh keeps room enclosed");eq(h,before,r.controller.cleanliness(),"Visual refresh does not change cleanliness");
+   for(var p:r.shell)if(l.getBlockState(p).getBlock() instanceof CleanroomWallBlock wall)check(h,l.getBlockState(p)==wall.connectionsAt(l.getBlockState(p),l,p),"Existing shell flags refreshed");
+   l.setBlock(r.wall(),Blocks.AIR.defaultBlockState(),3);r.controller.markTopologyDirty();r.controller.validateKnown();eq(h,2,r.controller.state(),"Missing connected wall breaches room");
+   placeWall(l,r.wall());r.controller.markTopologyDirty();r.controller.validateKnown();eq(h,1,r.controller.state(),"Replacing wall repairs room");
+  }
+  h.succeed();
+ }
  private CleanroomSafetyGameTests(){}
+
 }

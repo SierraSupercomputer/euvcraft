@@ -1,7 +1,1060 @@
 {
-  "variants": {
-    "": {
-      "model": "lithmod:block/cleanroom_wall"
+  "multipart": [
+    {
+      "when": {
+        "east": "false",
+        "west": "false",
+        "up": "false",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_north_0"
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "west": "false",
+        "up": "false",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_north_1"
+      }
+    },
+    {
+      "when": {
+        "east": "false",
+        "west": "true",
+        "up": "false",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_north_2"
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "west": "true",
+        "up": "false",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_north_3"
+      }
+    },
+    {
+      "when": {
+        "east": "false",
+        "west": "false",
+        "up": "true",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_north_4"
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "west": "false",
+        "up": "true",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_north_5"
+      }
+    },
+    {
+      "when": {
+        "east": "false",
+        "west": "true",
+        "up": "true",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_north_6"
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "west": "true",
+        "up": "true",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_north_7"
+      }
+    },
+    {
+      "when": {
+        "east": "false",
+        "west": "false",
+        "up": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_north_8"
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "west": "false",
+        "up": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_north_9"
+      }
+    },
+    {
+      "when": {
+        "east": "false",
+        "west": "true",
+        "up": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_north_10"
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "west": "true",
+        "up": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_north_11"
+      }
+    },
+    {
+      "when": {
+        "east": "false",
+        "west": "false",
+        "up": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_north_12"
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "west": "false",
+        "up": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_north_13"
+      }
+    },
+    {
+      "when": {
+        "east": "false",
+        "west": "true",
+        "up": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_north_14"
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "west": "true",
+        "up": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_north_15"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "false",
+        "up": "false",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_south_0"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "false",
+        "up": "false",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_south_1"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "true",
+        "up": "false",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_south_2"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "true",
+        "up": "false",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_south_3"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "false",
+        "up": "true",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_south_4"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "false",
+        "up": "true",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_south_5"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "true",
+        "up": "true",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_south_6"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "true",
+        "up": "true",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_south_7"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "false",
+        "up": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_south_8"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "false",
+        "up": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_south_9"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "true",
+        "up": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_south_10"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "true",
+        "up": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_south_11"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "false",
+        "up": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_south_12"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "false",
+        "up": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_south_13"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "true",
+        "up": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_south_14"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "true",
+        "up": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_south_15"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "up": "false",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_west_0"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "false",
+        "up": "false",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_west_1"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "true",
+        "up": "false",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_west_2"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "true",
+        "up": "false",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_west_3"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "up": "true",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_west_4"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "false",
+        "up": "true",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_west_5"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "true",
+        "up": "true",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_west_6"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "true",
+        "up": "true",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_west_7"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "up": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_west_8"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "false",
+        "up": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_west_9"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "true",
+        "up": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_west_10"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "true",
+        "up": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_west_11"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "up": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_west_12"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "false",
+        "up": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_west_13"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "true",
+        "up": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_west_14"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "true",
+        "up": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_west_15"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "north": "false",
+        "up": "false",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_east_0"
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "north": "false",
+        "up": "false",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_east_1"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "north": "true",
+        "up": "false",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_east_2"
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "north": "true",
+        "up": "false",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_east_3"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "north": "false",
+        "up": "true",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_east_4"
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "north": "false",
+        "up": "true",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_east_5"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "north": "true",
+        "up": "true",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_east_6"
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "north": "true",
+        "up": "true",
+        "down": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_east_7"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "north": "false",
+        "up": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_east_8"
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "north": "false",
+        "up": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_east_9"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "north": "true",
+        "up": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_east_10"
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "north": "true",
+        "up": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_east_11"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "north": "false",
+        "up": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_east_12"
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "north": "false",
+        "up": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_east_13"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "north": "true",
+        "up": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_east_14"
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "north": "true",
+        "up": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_east_15"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "false",
+        "north": "false",
+        "south": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_up_0"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "false",
+        "north": "false",
+        "south": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_up_1"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "true",
+        "north": "false",
+        "south": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_up_2"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "true",
+        "north": "false",
+        "south": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_up_3"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "false",
+        "north": "true",
+        "south": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_up_4"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "false",
+        "north": "true",
+        "south": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_up_5"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "true",
+        "north": "true",
+        "south": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_up_6"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "true",
+        "north": "true",
+        "south": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_up_7"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "false",
+        "north": "false",
+        "south": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_up_8"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "false",
+        "north": "false",
+        "south": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_up_9"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "true",
+        "north": "false",
+        "south": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_up_10"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "true",
+        "north": "false",
+        "south": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_up_11"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "false",
+        "north": "true",
+        "south": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_up_12"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "false",
+        "north": "true",
+        "south": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_up_13"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "true",
+        "north": "true",
+        "south": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_up_14"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "true",
+        "north": "true",
+        "south": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_up_15"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "false",
+        "south": "false",
+        "north": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_down_0"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "false",
+        "south": "false",
+        "north": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_down_1"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "true",
+        "south": "false",
+        "north": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_down_2"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "true",
+        "south": "false",
+        "north": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_down_3"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "false",
+        "south": "true",
+        "north": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_down_4"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "false",
+        "south": "true",
+        "north": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_down_5"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "true",
+        "south": "true",
+        "north": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_down_6"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "true",
+        "south": "true",
+        "north": "false"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_down_7"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "false",
+        "south": "false",
+        "north": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_down_8"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "false",
+        "south": "false",
+        "north": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_down_9"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "true",
+        "south": "false",
+        "north": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_down_10"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "true",
+        "south": "false",
+        "north": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_down_11"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "false",
+        "south": "true",
+        "north": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_down_12"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "false",
+        "south": "true",
+        "north": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_down_13"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "east": "true",
+        "south": "true",
+        "north": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_down_14"
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "east": "true",
+        "south": "true",
+        "north": "true"
+      },
+      "apply": {
+        "model": "lithmod:block/cleanroom_wall_down_15"
+      }
     }
-  }
+  ]
 }
