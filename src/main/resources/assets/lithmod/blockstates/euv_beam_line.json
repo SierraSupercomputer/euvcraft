@@ -1,7 +1,15 @@
 {
   "variants": {
-    "": {
+    "axis=z": {
       "model": "lithmod:block/euv_beam_line"
+    },
+    "axis=x": {
+      "model": "lithmod:block/euv_beam_line",
+      "y": 90
+    },
+    "axis=y": {
+      "model": "lithmod:block/euv_beam_line",
+      "x": 90
     }
   }
 }

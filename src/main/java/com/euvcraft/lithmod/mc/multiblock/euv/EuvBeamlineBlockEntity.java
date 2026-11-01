@@ -10,6 +10,7 @@ import org.jspecify.annotations.Nullable;
 
 /** EUV Beamline block entity - simple transport, no inventory. */
 public class EuvBeamlineBlockEntity extends BlockEntity {
+    private boolean visualChecked;
 
     public EuvBeamlineBlockEntity(BlockPos pos, BlockState state) {
         this(EuvMachines.BEAM_LINE_BE.get(), pos, state);
@@ -20,7 +21,14 @@ public class EuvBeamlineBlockEntity extends BlockEntity {
     }
 
     public void serverTick() {
-        // Beamline is passive - no logic needed
+        // Refresh legacy saved states once; subsequent neighbor changes update the block normally.
+        if (visualChecked || level == null || level.isClientSide()) return;
+        visualChecked = true;
+        var state = getBlockState();
+        if (state.getBlock() instanceof EuvBeamlineBlock block) {
+            var aligned = block.alignToNeighbors(state, level, worldPosition);
+            if (aligned != state) level.setBlock(worldPosition, aligned, net.minecraft.world.level.block.Block.UPDATE_CLIENTS | net.minecraft.world.level.block.Block.UPDATE_KNOWN_SHAPE);
+        }
     }
 
     @Override

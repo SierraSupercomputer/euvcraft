@@ -38,6 +38,7 @@ public final class T7RuntimeGameTests {
     private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS=DeferredRegister.create(Registries.TEST_FUNCTION,"lithmod");
     private static final Map<String,Consumer<GameTestHelper>> CASES=new LinkedHashMap<>();
     static{
+        add("beamline_model",T7RuntimeGameTests::beamlineModel);
         add("unformed_member_ticks",T7RuntimeGameTests::unformedMemberTicks);add("member_formation_visuals",T7RuntimeGameTests::memberFormationVisuals);
         add("pulse_trial_lifecycle",T7RuntimeGameTests::sourcePulseTrial);add("pulse_idle_link_menu",T7RuntimeGameTests::sourcePulseLink);add("pulse_frozen_quality",T7RuntimeGameTests::sourcePulseFreeze);add("placement_facing",T7RuntimeGameTests::euvPlacementFacing);
         add("geometry",T7RuntimeGameTests::geometry);add("hydrogen_transactions",T7RuntimeGameTests::hydrogenTransactions);add("hydrogen_saved_job",T7RuntimeGameTests::hydrogenJob);add("g3_water_transactions",T7RuntimeGameTests::water);
@@ -167,6 +168,48 @@ public final class T7RuntimeGameTests {
                 var state=block.getStateForPlacement(context);check(h,state!=null&&state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING)==context.getHorizontalDirection().getOpposite(),"Standalone placement faces the player");
             }
         }
+    }h.succeed();}
+    private static void beamlineModel(GameTestHelper h){try(var arena=new Arena(h)){
+        var block=EuvMachines.BEAM_LINE.get();var pos=arena.anchor();var player=player(h,pos);
+        for(var direction:Direction.values()){
+            for(var d:Direction.values())arena.put(pos.relative(d),Blocks.AIR);
+            arena.put(pos,Blocks.AIR);var support=pos.relative(direction.getOpposite());arena.put(support,Blocks.STONE);
+            var hit=new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(support),direction,support,false);
+            var ctx=new net.minecraft.world.item.context.BlockPlaceContext(player,net.minecraft.world.InteractionHand.MAIN_HAND,new ItemStack(block),hit);
+            check(h,block.getStateForPlacement(ctx).getValue(EuvBeamlineBlock.AXIS)==direction.getAxis(),"Clicked-face placement "+direction);
+        }
+        net.minecraft.world.phys.shapes.VoxelShape expected=net.minecraft.world.phys.shapes.Shapes.empty();
+        try(var in=T7RuntimeGameTests.class.getResourceAsStream("/assets/lithmod/models/block/euv_beam_line.json")){
+            var model=com.google.gson.JsonParser.parseReader(new java.io.InputStreamReader(in,java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
+            for(var value:model.getAsJsonArray("elements")){
+                var e=value.getAsJsonObject();var from=e.getAsJsonArray("from");var to=e.getAsJsonArray("to");var rot=e.getAsJsonObject("rotation");var origin=rot.getAsJsonArray("origin");
+                var pivot=new org.joml.Vector3f(origin.get(0).getAsFloat(),origin.get(1).getAsFloat(),origin.get(2).getAsFloat());
+                var matrix=new org.joml.Matrix4f().rotationZYX((float)Math.toRadians(rot.get("z").getAsDouble()),(float)Math.toRadians(rot.get("y").getAsDouble()),(float)Math.toRadians(rot.get("x").getAsDouble()));
+                double[] min={Double.POSITIVE_INFINITY,Double.POSITIVE_INFINITY,Double.POSITIVE_INFINITY},max={Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY};
+                for(int corner=0;corner<8;corner++){
+                    var v=new org.joml.Vector3f((corner&1)==0?from.get(0).getAsFloat():to.get(0).getAsFloat(),(corner&2)==0?from.get(1).getAsFloat():to.get(1).getAsFloat(),(corner&4)==0?from.get(2).getAsFloat():to.get(2).getAsFloat());
+                    matrix.transformPosition(v.sub(pivot));v.add(pivot);
+                    for(int axis=0;axis<3;axis++){double n=Math.round(v.get(axis)*100000d)/100000d;min[axis]=Math.min(min[axis],n);max[axis]=Math.max(max[axis],n);}
+                }
+                expected=net.minecraft.world.phys.shapes.Shapes.or(expected,Block.box(min[0],min[1],min[2],max[0],max[1],max[2]));
+            }
+        }catch(java.io.IOException ex){throw new RuntimeException(ex);}
+        for(var axis:Direction.Axis.values()){
+            var state=block.defaultBlockState().setValue(EuvBeamlineBlock.AXIS,axis);
+            var shape=state.getShape(arena.level,pos);var desired=switch(axis){case X->net.minecraft.world.phys.shapes.Shapes.rotate(expected,com.mojang.math.OctahedralGroup.BLOCK_ROT_Y_90);case Y->net.minecraft.world.phys.shapes.Shapes.rotate(expected,com.mojang.math.OctahedralGroup.BLOCK_ROT_X_90);case Z->expected;};
+            check(h,!net.minecraft.world.phys.shapes.Shapes.joinIsNotEmpty(shape,desired,net.minecraft.world.phys.shapes.BooleanOp.NOT_SAME),"Model cuboids match selection "+axis);
+            check(h,!net.minecraft.world.phys.shapes.Shapes.joinIsNotEmpty(state.getCollisionShape(arena.level,pos),desired,net.minecraft.world.phys.shapes.BooleanOp.NOT_SAME),"Model cuboids match collision "+axis);
+            check(h,!state.isCollisionShapeFullBlock(arena.level,pos),"Pipe is not a full collision cube");
+            for(var d:Direction.values())arena.put(pos.relative(d),Blocks.AIR);
+            var d=Direction.fromAxisAndDirection(axis,Direction.AxisDirection.POSITIVE);arena.put(pos.relative(d),block);
+            arena.written.add(pos);arena.level.setBlock(pos,block.defaultBlockState(),Block.UPDATE_CLIENTS|Block.UPDATE_KNOWN_SHAPE);
+            ((EuvBeamlineBlockEntity)arena.level.getBlockEntity(pos)).serverTick();
+            check(h,arena.level.getBlockState(pos).getValue(EuvBeamlineBlock.AXIS)==axis,"Legacy straight line aligns on first tick "+axis);
+            arena.put(pos.relative(d),Blocks.AIR);
+            check(h,arena.level.getBlockState(pos).getValue(EuvBeamlineBlock.AXIS)==axis,"Isolated pipe retains orientation after removal");
+        }
+        check(h,block.defaultBlockState().rotate(Rotation.CLOCKWISE_90).getValue(EuvBeamlineBlock.AXIS)==Direction.Axis.X,"Rotation transforms axis");
+        var remote=new BlockPos(20000000,100,20000000);check(h,!arena.level.hasChunkAt(remote),"Remote chunk initially unloaded");block.alignToNeighbors(block.defaultBlockState(),arena.level,remote);check(h,!arena.level.hasChunkAt(remote),"Alignment never loads chunks");
     }h.succeed();}
     private static void geometry(GameTestHelper h){
         for(var facing:List.of(Direction.NORTH,Direction.EAST,Direction.SOUTH,Direction.WEST))for(int group=0;group<6;group++)try(var arena=new Arena(h,facing)){

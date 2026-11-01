@@ -4,6 +4,7 @@ import {readFileSync,writeFileSync,mkdirSync,existsSync} from 'node:fs';
 import {dirname,resolve,join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {deflateSync,crc32} from 'node:zlib';
+import {beamlineAssets} from './lib/beamline-model.mjs';
 const ROOT=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 function chunk(type,data){const t=Buffer.from(type),n=Buffer.alloc(4),c=Buffer.alloc(4);n.writeUInt32BE(data.length);c.writeUInt32BE(crc32(Buffer.concat([t,data]))>>>0);return Buffer.concat([n,t,data,c]);}
 function png(pixels){const h=Buffer.alloc(13);h.writeUInt32BE(16);h.writeUInt32BE(16,4);h[8]=8;h[9]=6;const rows=Buffer.alloc(16*65);for(let y=0;y<16;y++)pixels.copy(rows,y*65+1,y*64,(y+1)*64);return Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',h),chunk('IDAT',deflateSync(rows,{level:9})),chunk('IEND',Buffer.alloc(0))]);}
@@ -38,6 +39,7 @@ export function outputs(manifest){const usedRecipes=new Set();const out=new Map(
   put(D+'recipe/crafting/'+id+'.json',uniqueRecipe(block.recipe??{type:'minecraft:crafting_shaped',category:'misc',pattern,key,result:{id:'lithmod:'+id,count}},usedRecipes));
  }
  for(const [id,recipe]of Object.entries(manifest.componentRecipes??{}))put(D+'recipe/crafting/'+id+'.json',uniqueRecipe(recipe,usedRecipes));
+ for(const[path,bytes]of beamlineAssets(JSON.parse(readFileSync(join(ROOT,'tools/models/beamline_pipe.json'))),readFileSync(join(ROOT,'tools/models/beamline_pipe.png'))))out.set(path,bytes);
  return out;
 }
 export function main(args=process.argv.slice(2)){const manifest=JSON.parse(readFileSync(join(ROOT,'tools/t7-assets.json'))),check=args.includes('--check');let failures=0;for(const[path,value]of outputs(manifest)){const target=join(ROOT,path);if(check){if(!existsSync(target)||!readFileSync(target).equals(value)){console.error('Out of date: '+path);failures++;}}else{mkdirSync(dirname(target),{recursive:true});writeFileSync(target,value);}}if(failures)throw Error(failures+' T7 asset differences');console.log((check?'Checked ':'Generated ')+outputs(manifest).size+' T7 assets/recipes');}

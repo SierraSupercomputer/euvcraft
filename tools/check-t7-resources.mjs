@@ -22,7 +22,7 @@ for(const b of manifest.blocks){
   if(b.id!=='central_vacuum_plant')assert.ok(!/_t[78]$/.test(id),'Essential machine needs a future product: '+b.id);
  }
  const variants=json('src/main/resources/assets/lithmod/blockstates/'+b.id+'.json').variants;
- assert.equal(Object.keys(variants).length,(b.formed?2:1)*(b.facing?4:1),'Incomplete visual states '+b.id);
+ assert.equal(Object.keys(variants).length,b.id==='euv_beam_line'?3:(b.formed?2:1)*(b.facing?4:1),'Incomplete visual states '+b.id);
  for(const model of Object.values(variants))assert.ok(existsSync(join(root,'src/main/resources/assets/lithmod/models/'+model.model.slice(8)+'.json')),'Missing block model '+model.model);
 }
 for(const id of ['g3_reticle_writer','g3_deposition_etcher','euv_scanner','euv_light_source','hydrogen_purifier','central_vacuum_plant']){
