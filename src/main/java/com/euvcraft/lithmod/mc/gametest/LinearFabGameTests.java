@@ -36,6 +36,7 @@ public final class LinearFabGameTests {
         add("linear_t4_etch_reload",LinearFabGameTests::etchReload);
         add("linear_t4_etch_refusals",LinearFabGameTests::etchRefusals);
         add("linear_t4_item_port_transactions",LinearFabGameTests::transactions);
+        add("linear_t4_packaging_port",LinearFabGameTests::packagingPort);
         add("linear_t4_arcforge_items",LinearFabGameTests::arcforge);
     }
     private static void add(String name,Consumer<GameTestHelper> body){CASES.put(name,body);FUNCTIONS.register(name,()->body);}
@@ -96,6 +97,30 @@ public final class LinearFabGameTests {
         var conduit=(ConduitBlockEntity)c.level().getBlockEntity(pipe);for(var side:Direction.values())conduit.setSetting(side,SideSetting.DISABLED);
         conduit.setSetting(Direction.NORTH,reverse?SideSetting.INPUT:SideSetting.OUTPUT);conduit.setSetting(Direction.SOUTH,reverse?SideSetting.OUTPUT:SideSetting.INPUT);
         net.zagdrath.arcforge.block.conduit.ConduitBlock.refreshConnections(c.level(),pipe);ConduitNetworkManager.get(c.level()).markDirty(pipe);
+    }
+    private static void packagingPort(GameTestHelper h){
+        try(var c=build(h,Kind.PACKAGING)){
+            var m=(AdvancedTestPackageControllerBlockEntity)c.machine();var p=port(c,1);
+            var cap=c.level().getCapability(Capabilities.Item.BLOCK,p,Direction.NORTH);check(h,cap!=null,"Packaging port formed");
+            try(var tx=Transaction.openRoot()){
+                eq(h,0,cap.insert(0,ItemResource.of(exposed()),1,tx),"Unetched T4 input refused by transfer");
+                eq(h,1,cap.insert(0,ItemResource.of(complete(4,DieTypes.LOGIC,0)),1,tx),"Etched T4 accepted");
+                eq(h,3,cap.insert(1,ItemResource.of(ModItems.CHIP_PACKAGE.get()),3,tx),"Packages accepted");tx.commit();
+            }
+            replenish(m);m.serverTick();check(h,m.isQueueActive(),"Actual packaging owns frozen wafer results");
+            var empty=ItemResource.of(m.slot(0));check(h,FoupItems.trustedContentsOf(m.slot(0)).isEmpty(),"Packaging returns empty carrier in input slot");
+            try(var tx=Transaction.openRoot()){eq(h,1,cap.extract(0,empty,1,tx),"Returned empty carrier is an automation output");}
+            check(h,!m.slot(0).isEmpty(),"Carrier extraction rolls back");
+            var next=complete(4,DieTypes.LOGIC,0);var body=FoupItems.trustedContentsOf(next);
+            try(var tx=Transaction.openRoot()){
+                eq(h,1,cap.extract(0,empty,1,tx),"Return carrier exactly once");eq(h,1,cap.insert(0,ItemResource.of(next),1,tx),"Queue next carrier without blocking output");
+                eq(h,0,cap.extract(0,ItemResource.of(next),1,tx),"Queued wafers cannot be stolen");tx.commit();
+            }
+            for(int i=0;i<20000&&m.isQueueActive();i++){replenish(m);m.serverTick();}
+            check(h,!m.isQueueActive(),"First queue completes with next lot waiting");int outputs=0;
+            for(int slot=2;slot<m.getContainerSize();slot++){var resource=cap.getResource(slot);int amount=(int)cap.getAmountAsLong(slot);if(amount>0)try(var tx=Transaction.openRoot()){eq(h,amount,cap.extract(slot,resource,amount,tx),"Chip/scrap output transfers");outputs+=amount;tx.commit();}}
+            check(h,outputs>0&&m.slot(1).isEmpty(),"Produced chips/scrap and spent exactly three packages");check(h,body.equals(FoupItems.trustedContentsOf(m.slot(0))),"Queued carrier remains intact");
+        }h.succeed();
     }
     private static void arcforge(GameTestHelper h){
         var c=build(h,Kind.ETCH);var m=(EtchCellBlockEntity)c.machine();var p=port(c,1);var pipe=p.north();var chest=p.north(2);

@@ -69,6 +69,10 @@ public final class FabItemAccess {
     private static boolean canExtract(FabMachineBlockEntity machine,int slot){
         if(machine.isRemoved())return false;
         if(machine instanceof ProcessCellControllerBlockEntity scanner)return slot==0&&scanner.processState()==ProcessState.FINISHED;
+        if(machine instanceof TestPackageBlockEntity&&slot==0){
+            var returned=FoupItems.trustedContentsOf(machine.slot(0));
+            return returned!=null&&returned.isEmpty();
+        }
         return slot>=machine.inputSlotCount()&&slot<machine.getContainerSize();
     }
     private FabItemAccess(){}

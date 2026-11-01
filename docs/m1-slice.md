@@ -7,14 +7,15 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
 
   - com.euvcraft.lithmod.core (61 files)
   - com.euvcraft.lithmod.core.cleanroom (3 files)
-  - com.euvcraft.lithmod.core.multiblock (15 files)
+  - com.euvcraft.lithmod.core.multiblock (16 files)
+  - com.euvcraft.lithmod.core.routing (2 files)
   - com.euvcraft.lithmod.core.t7 (11 files)
   - com.euvcraft.lithmod.mc (23 files)
-  - com.euvcraft.lithmod.mc.cleanroom (20 files)
+  - com.euvcraft.lithmod.mc.cleanroom (21 files)
   - com.euvcraft.lithmod.mc.compat (1 files)
   - com.euvcraft.lithmod.mc.compat.mixin (4 files)
   - com.euvcraft.lithmod.mc.data (14 files)
-  - com.euvcraft.lithmod.mc.gametest (40 files)
+  - com.euvcraft.lithmod.mc.gametest (41 files)
   - com.euvcraft.lithmod.mc.machine (4 files)
   - com.euvcraft.lithmod.mc.machine.cleaner (7 files)
   - com.euvcraft.lithmod.mc.machine.client (1 files)
@@ -32,6 +33,7 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
   - com.euvcraft.lithmod.mc.multiblock.euv (38 files)
   - com.euvcraft.lithmod.mc.multiblock.g3 (32 files)
   - com.euvcraft.lithmod.mc.multiblock.hydrogen (9 files)
+  - com.euvcraft.lithmod.mc.multiblock.linear (3 files)
   - com.euvcraft.lithmod.mc.multiblock.reflow (13 files)
   - com.euvcraft.lithmod.mc.multiblock.scanner (13 files)
   - com.euvcraft.lithmod.mc.multiblock.support (12 files)
@@ -40,7 +42,8 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
   - com.euvcraft.lithmod.mc.multiblock.zone (11 files)
   - com.euvcraft.lithmod.mc.network (1 files)
   - com.euvcraft.lithmod.mc.recipe (4 files)
-  - com.euvcraft.lithmod.mc.registry (4 files)
+  - com.euvcraft.lithmod.mc.registry (5 files)
+  - com.euvcraft.lithmod.mc.routing (3 files)
 
 ## Generated API (compiled bytecode via tools/generate-m0-api.ps1 -M1)
 
@@ -1143,6 +1146,11 @@ public static com.euvcraft.lithmod.core.multiblock.BlockKind valueOf(java.lang.S
 public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
 ```
 
+### com.euvcraft.lithmod.core.multiblock.LinearStructureMatcher
+```java
+public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, com.euvcraft.lithmod.core.multiblock.StructureShape, boolean, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+```
+
 ### com.euvcraft.lithmod.core.multiblock.MatchResult
 ```java
 public com.euvcraft.lithmod.core.multiblock.MatchResult(boolean, java.util.List<com.euvcraft.lithmod.core.multiblock.MultiblockPos>, java.lang.String);
@@ -1232,6 +1240,36 @@ public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraf
 ### com.euvcraft.lithmod.core.multiblock.ZoneStructureMatcher
 ```java
 public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+```
+
+### com.euvcraft.lithmod.core.routing.FabNextSteps
+```java
+public static java.util.Map<java.lang.String, java.util.List<java.lang.Integer>> options(com.euvcraft.lithmod.core.FoupPublicView, com.euvcraft.lithmod.core.routing.FabProgress, boolean, com.euvcraft.lithmod.core.GenerationMatrix, com.euvcraft.lithmod.core.TierRegistry);
+public static java.util.Map<java.lang.String, java.util.List<java.lang.Integer>> options(com.euvcraft.lithmod.core.FoupPublicView, com.euvcraft.lithmod.core.routing.FabProgress, boolean, com.euvcraft.lithmod.core.GenerationMatrix, com.euvcraft.lithmod.core.TierRegistry, java.util.Set<java.lang.Integer>);
+```
+
+### com.euvcraft.lithmod.core.routing.FabProgress$Stage
+```java
+public static com.euvcraft.lithmod.core.routing.FabProgress$Stage[] values();
+public static com.euvcraft.lithmod.core.routing.FabProgress$Stage valueOf(java.lang.String);
+```
+
+### com.euvcraft.lithmod.core.routing.FabProgress
+```java
+public com.euvcraft.lithmod.core.routing.FabProgress(com.euvcraft.lithmod.core.routing.FabProgress$Stage, int, int);
+public static com.euvcraft.lithmod.core.routing.FabProgress initial();
+public com.euvcraft.lithmod.core.routing.FabProgress deposited();
+public com.euvcraft.lithmod.core.routing.FabProgress coated(int);
+public com.euvcraft.lithmod.core.routing.FabProgress exposed(int);
+public com.euvcraft.lithmod.core.routing.FabProgress etched();
+public com.euvcraft.lithmod.core.routing.FabProgress cleaned();
+public boolean readyForPackaging();
+public java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public com.euvcraft.lithmod.core.routing.FabProgress$Stage stage();
+public int tier();
+public int version();
 ```
 
 ### com.euvcraft.lithmod.core.t7.BreachConditions
@@ -1949,6 +1987,17 @@ public static com.euvcraft.lithmod.mc.cleanroom.CleanroomTopology$Result discove
 public static com.euvcraft.lithmod.mc.cleanroom.CleanroomTopology$Result validate(net.minecraft.server.level.ServerLevel, net.minecraft.core.BlockPos, com.euvcraft.lithmod.mc.cleanroom.RoomBounds);
 ```
 
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomWallBlock
+```java
+public com.euvcraft.lithmod.mc.cleanroom.CleanroomWallBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition$Builder<net.minecraft.world.level.block.Block, net.minecraft.world.level.block.state.BlockState>);
+public net.minecraft.world.level.block.state.BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext);
+public net.minecraft.world.level.block.state.BlockState connectionsAt(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.LevelReader, net.minecraft.core.BlockPos);
+protected net.minecraft.world.level.block.state.BlockState updateShape(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.LevelReader, net.minecraft.world.level.ScheduledTickAccess, net.minecraft.core.BlockPos, net.minecraft.core.Direction, net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState, net.minecraft.util.RandomSource);
+protected net.minecraft.world.level.block.state.BlockState rotate(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.Rotation);
+protected net.minecraft.world.level.block.state.BlockState mirror(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.Mirror);
+```
+
 ### com.euvcraft.lithmod.mc.cleanroom.CleanroomWindowBlock
 ```java
 public com.euvcraft.lithmod.mc.cleanroom.CleanroomWindowBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
@@ -2222,6 +2271,7 @@ public final int slotCount();
 public final net.minecraft.world.item.ItemStack slot(int);
 public final void setSlot(int, net.minecraft.world.item.ItemStack);
 public final void clearSlot(int);
+public final net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.item.ItemResource> fabPortItems();
 public final void giveOutput(net.minecraft.world.item.ItemStack);
 public final java.util.List<net.minecraft.world.item.ItemStack> inputSlots();
 public final net.minecraft.world.item.ItemStack outputSlot();
@@ -2525,6 +2575,7 @@ protected int energyBarY();
 protected int progressBarX();
 protected int progressBarY();
 protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+public static java.lang.String refusalKey(com.euvcraft.lithmod.core.PackagingRefusalReason);
 ```
 
 ### com.euvcraft.lithmod.mc.machine.process.OperatingPanelMenu
@@ -2710,6 +2761,7 @@ protected com.euvcraft.lithmod.mc.machine.screen.AdvancedMachineScreen(M, net.mi
 protected com.euvcraft.lithmod.mc.machine.screen.AdvancedMachineScreen(M, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component, int);
 protected abstract boolean formed();
 protected boolean cabinet();
+protected net.minecraft.network.chat.Component formationLabel();
 protected int energyBarX();
 protected int energyBarY();
 protected int progressBarX();
@@ -2724,6 +2776,7 @@ protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int,
 public com.euvcraft.lithmod.mc.machine.screen.AdvancedOperatingPanelScreen(com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOperatingPanelMenu, net.minecraft.world.entity.player.Inventory, net.minecraft.network.chat.Component);
 protected boolean formed();
 protected boolean cabinet();
+protected net.minecraft.network.chat.Component formationLabel();
 protected void init();
 protected void containerTick();
 protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
@@ -3150,6 +3203,7 @@ public int wafersTotal();
 public boolean clickMenuButton(net.minecraft.world.entity.player.Player, int);
 public boolean stillValid(net.minecraft.world.entity.player.Player);
 static net.minecraft.world.Container access$000(com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOperatingPanelMenu);
+static com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity access$100(com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOperatingPanelMenu);
 ```
 
 ### com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedOwner
@@ -3202,11 +3256,17 @@ public boolean formed();
 ### com.euvcraft.lithmod.mc.multiblock.advanced.DepositionEtcherControllerBlockEntity
 ```java
 public com.euvcraft.lithmod.mc.multiblock.advanced.DepositionEtcherControllerBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected com.euvcraft.lithmod.mc.multiblock.advanced.DepositionEtcherControllerBlockEntity(net.minecraft.world.level.block.entity.BlockEntityType<?>, net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
 protected java.lang.String machineId();
 public boolean hasJob();
 public int jobProgress();
 public int jobDuration();
+protected com.euvcraft.lithmod.core.FoupContents eligible(net.minecraft.world.item.ItemStack);
 public void serverTick();
+public boolean acceptsReagent(net.minecraft.world.item.ItemStack);
+public boolean canReceiveCarrier(net.minecraft.world.item.ItemStack);
+protected int reagentRequired();
+protected net.minecraft.world.item.ItemStack completeCarrier(net.minecraft.world.item.ItemStack, com.euvcraft.lithmod.core.FoupContents);
 protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput);
 protected void loadAdditional(net.minecraft.world.level.storage.ValueInput);
 protected void dropExtraContents(net.minecraft.world.level.Level, net.minecraft.core.BlockPos);
@@ -3283,6 +3343,11 @@ protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int,
 ### com.euvcraft.lithmod.mc.multiblock.euv.EuvBeamlineBlock
 ```java
 public com.euvcraft.lithmod.mc.multiblock.euv.EuvBeamlineBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition$Builder<net.minecraft.world.level.block.Block, net.minecraft.world.level.block.state.BlockState>);
+public net.minecraft.world.level.block.state.BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext);
+public net.minecraft.world.level.block.state.BlockState alignToNeighbors(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.LevelReader, net.minecraft.core.BlockPos);
+protected net.minecraft.world.level.block.state.BlockState updateShape(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.LevelReader, net.minecraft.world.level.ScheduledTickAccess, net.minecraft.core.BlockPos, net.minecraft.core.Direction, net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState, net.minecraft.util.RandomSource);
+protected net.minecraft.world.level.block.state.BlockState rotate(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.Rotation);
 public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
 public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level, net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.entity.BlockEntityType<T>);
 public net.minecraft.world.level.block.RenderShape getRenderShape(net.minecraft.world.level.block.state.BlockState);
@@ -4316,6 +4381,41 @@ public com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenScreen(com.euvcraft.l
 protected boolean formed();
 protected boolean cabinet();
 protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.linear.EtchCellBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.linear.EtchCellBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected java.lang.String machineId();
+public com.euvcraft.lithmod.core.multiblock.MatchResult matchStructure(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
+public boolean acceptsReagent(net.minecraft.world.item.ItemStack);
+protected int reagentRequired();
+protected com.euvcraft.lithmod.core.FoupContents eligible(net.minecraft.world.item.ItemStack);
+protected net.minecraft.world.item.ItemStack completeCarrier(net.minecraft.world.item.ItemStack, com.euvcraft.lithmod.core.FoupContents);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.linear.FabItemPortBlockEntity
+```java
+public com.euvcraft.lithmod.mc.multiblock.linear.FabItemPortBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+public com.euvcraft.lithmod.core.multiblock.BlockKind structureKind();
+public net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.item.ItemResource> items(net.minecraft.core.Direction);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines$EtchCellBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines$EtchCellBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines$FabItemPortBlock
+```java
+public com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines$FabItemPortBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+```
+
+### com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines
+```java
+public static void register(net.neoforged.bus.api.IEventBus);
 ```
 
 ### com.euvcraft.lithmod.mc.multiblock.reflow.ReflowCalibrationMenu
@@ -5388,8 +5488,24 @@ public int energyPerTick();
 public int waterMb();
 ```
 
+### com.euvcraft.lithmod.mc.registry.CreativeTabCategory
+```java
+public static com.euvcraft.lithmod.mc.registry.CreativeTabCategory[] values();
+public static com.euvcraft.lithmod.mc.registry.CreativeTabCategory valueOf(java.lang.String);
+public static com.euvcraft.lithmod.mc.registry.CreativeTabCategory of(net.minecraft.world.item.Item);
+```
+
+### com.euvcraft.lithmod.mc.registry.ModCreativeTabs$FilteredOutput
+```java
+com.euvcraft.lithmod.mc.registry.ModCreativeTabs$FilteredOutput(net.minecraft.world.item.CreativeModeTab$Output, com.euvcraft.lithmod.mc.registry.CreativeTabCategory);
+public void accept(net.minecraft.world.item.ItemStack);
+public void accept(net.minecraft.world.item.ItemStack, net.minecraft.world.item.CreativeModeTab$TabVisibility);
+```
+
 ### com.euvcraft.lithmod.mc.registry.ModCreativeTabs
 ```java
+public static java.util.List<net.minecraft.world.item.ItemStack> entries(net.minecraft.world.item.CreativeModeTab$ItemDisplayParameters);
+public static java.util.List<net.minecraft.world.item.ItemStack> displayEntries(net.minecraft.world.item.CreativeModeTab$ItemDisplayParameters);
 ```
 
 ### com.euvcraft.lithmod.mc.registry.ModDataComponents
@@ -5402,6 +5518,48 @@ public int waterMb();
 
 ### com.euvcraft.lithmod.mc.registry.ModMenus
 ```java
+```
+
+### com.euvcraft.lithmod.mc.routing.FabItemAccess
+```java
+public static net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.item.ItemResource> create(com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
+```
+
+### com.euvcraft.lithmod.mc.routing.FoupRouting
+```java
+public static void refresh(net.minecraft.world.item.ItemStack);
+public static void deposited(net.minecraft.world.item.ItemStack);
+public static void exposureFinished(net.minecraft.world.item.ItemStack);
+public static void exposureActive(net.minecraft.world.item.ItemStack);
+public static boolean matchesPrivateLot(net.minecraft.world.item.ItemStack);
+public static boolean packagingReady(net.minecraft.world.item.ItemStack);
+public static boolean canExpose(net.minecraft.world.item.ItemStack, int);
+```
+
+### com.euvcraft.lithmod.mc.routing.FoupRoutingData$Fields
+```java
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public java.lang.String stage();
+public int tier();
+public int version();
+public java.lang.String dieType();
+public int cores();
+public boolean contaminated();
+```
+
+### com.euvcraft.lithmod.mc.routing.FoupRoutingData
+```java
+public com.euvcraft.lithmod.mc.routing.FoupRoutingData(com.euvcraft.lithmod.core.routing.FabProgress, java.lang.String, int, boolean);
+public static com.euvcraft.lithmod.mc.routing.FoupRoutingData initial();
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public com.euvcraft.lithmod.core.routing.FabProgress progress();
+public java.lang.String dieType();
+public int cores();
+public boolean contaminated();
 ```
 
 ## Config: FabConfig (ModConfig.Type.LOCAL registered in EUVCRAFTMod.java, runtime run/config/lithmod-local.toml)
@@ -5445,6 +5603,7 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/machines/crystal_puller.json | crystal_puller | 20000 | 2000 | 20 | production |
 | src/main/resources/data/lithmod/machines/deposition_etcher.json | deposition_etcher | 1000000 | 20000 | 1000 | production |
 | src/main/resources/data/lithmod/machines/ebeam_mask_writer.json | ebeam_mask_writer | 4000000 | 32000 | 2000 | production |
+| src/main/resources/data/lithmod/machines/etch_cell.json | etch_cell | 1000000 | 20000 | 1000 | production |
 | src/main/resources/data/lithmod/machines/euv_light_source.json | euv_light_source | 4000000 | 80000 | 1200 | production |
 | src/main/resources/data/lithmod/machines/euv_scanner.json | euv_scanner | 4000000 | 80000 | 960 | production |
 | src/main/resources/data/lithmod/machines/foup_cleaner.json | foup_cleaner | 40000 | 2000 | 20 | production |
@@ -5604,8 +5763,8 @@ test_machine definitions/recipes are dropped before validation outside fixture m
   "energy_per_tick": 1000,
   "per_tier_energy_per_tick": {},
   "params": {
-    "duration": 1200,
-    "silicon_per_lot": 4
+    "duration": 800,
+    "silicon_per_lot": 2
   }
 }
 ```
@@ -5620,6 +5779,22 @@ test_machine definitions/recipes are dropped before validation outside fixture m
   "energy_per_tick": 2000,
   "per_tier_energy_per_tick": {},
   "params": {}
+}
+```
+
+### src/main/resources/data/lithmod/machines/etch_cell.json
+
+```json
+{
+  "id": "etch_cell",
+  "energy_capacity": 1000000,
+  "max_receive": 20000,
+  "energy_per_tick": 1000,
+  "per_tier_energy_per_tick": {},
+  "params": {
+    "duration": 400,
+    "etchant_per_lot": 1
+  }
 }
 ```
 
@@ -5980,9 +6155,9 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 }
 ```
 
-## Recipe Summary (185 actual resources: 183 production + 2 fixture-gated)
+## Recipe Summary (188 actual resources: 186 production + 2 fixture-gated)
 
-### Vanilla recipe datapack files (162 production)
+### Vanilla recipe datapack files (165 production)
 
 | Path | Type | Result | Count |
 |------|------|--------|-------|
@@ -6022,6 +6197,8 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/recipe/crafting/dimm_blank.json | minecraft:crafting_shaped | lithmod:dimm_blank | 2 |
 | src/main/resources/data/lithmod/recipe/crafting/duv_projection_lens.json | minecraft:crafting_shaped | lithmod:duv_projection_lens | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/ebeam_mask_writer.json | minecraft:crafting_shaped | lithmod:ebeam_mask_writer | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/etch_cell.json | minecraft:crafting_shaped | lithmod:etch_cell | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/etchant_charge.json | minecraft:crafting_shapeless | lithmod:etchant_charge | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/euv_beam_line.json | minecraft:crafting_shaped | lithmod:euv_beam_line | 8 |
 | src/main/resources/data/lithmod/recipe/crafting/euv_filtration.json | minecraft:crafting_shaped | lithmod:euv_filtration | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/euv_light_source.json | minecraft:crafting_shaped | lithmod:euv_light_source | 1 |
@@ -6050,6 +6227,7 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/recipe/crafting/euv_scanner_vacuum_module.json | minecraft:crafting_shaped | lithmod:euv_scanner_vacuum_module | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/euv_scanner_water_inlet.json | minecraft:crafting_shaped | lithmod:euv_scanner_water_inlet | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/euv_stage.json | minecraft:crafting_shaped | lithmod:euv_stage | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/fab_item_port.json | minecraft:crafting_shaped | lithmod:fab_item_port | 2 |
 | src/main/resources/data/lithmod/recipe/crafting/fine_air_filter.json | minecraft:crafting_shaped | lithmod:fine_air_filter | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/foup_cleaner.json | minecraft:crafting_shaped | lithmod:foup_cleaner | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/foup_mk1.json | minecraft:crafting_shaped | lithmod:foup_mk1 | 1 |
@@ -6734,7 +6912,7 @@ Tier JSON fields per file (raw literals read from src/main/resources/data/lithmo
 | data/lithmod/tiers/t8.json | T8 | 8 | 90 | 100 | 80.0 | False |
 
 
-M0-owned data files stay as tracked: data/lithmod/die_rules/rules.json, data/lithmod/support_lines/matrix.json, and the 8 data/lithmod/tiers/t<index>.json files. Block loot tables: 104 files under data/lithmod/loot_table/blocks; block tag files: 2. Counts are read at generation time.
+M0-owned data files stay as tracked: data/lithmod/die_rules/rules.json, data/lithmod/support_lines/matrix.json, and the 8 data/lithmod/tiers/t<index>.json files. Block loot tables: 106 files under data/lithmod/loot_table/blocks; block tag files: 2. Counts are read at generation time.
 
 ### Machine data codecs (actual codec sources; core records stay game-independent)
 
