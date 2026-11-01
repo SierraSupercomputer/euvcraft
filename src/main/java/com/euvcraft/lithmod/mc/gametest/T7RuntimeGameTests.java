@@ -200,6 +200,7 @@ public final class T7RuntimeGameTests {
             check(h,!net.minecraft.world.phys.shapes.Shapes.joinIsNotEmpty(shape,desired,net.minecraft.world.phys.shapes.BooleanOp.NOT_SAME),"Model cuboids match selection "+axis);
             check(h,!net.minecraft.world.phys.shapes.Shapes.joinIsNotEmpty(state.getCollisionShape(arena.level,pos),desired,net.minecraft.world.phys.shapes.BooleanOp.NOT_SAME),"Model cuboids match collision "+axis);
             check(h,!state.isCollisionShapeFullBlock(arena.level,pos),"Pipe is not a full collision cube");
+            arena.put(pos,Blocks.AIR);
             for(var d:Direction.values())arena.put(pos.relative(d),Blocks.AIR);
             var d=Direction.fromAxisAndDirection(axis,Direction.AxisDirection.POSITIVE);arena.put(pos.relative(d),block);
             arena.written.add(pos);arena.level.setBlock(pos,block.defaultBlockState(),Block.UPDATE_CLIENTS|Block.UPDATE_KNOWN_SHAPE);
