@@ -1,5 +1,7 @@
 # EUVCRAFT playtest progression guide — T1 to T5
 
+**Linear-fab development update:** T4 now follows Deposition → Scanner → Etch Cell → Advanced Test & Package. Use the [T4 checkpoint walkthrough](manual-walkthrough-linear-t4.md) for the new chamber, consumable split, creative tabs and optional item ports; it supersedes the older T4 route below. T5–T7 retain their existing external paths until this checkpoint is accepted.
+
 Follow this route to test current progression. Use Survival to check crafting costs, or Creative to speed up construction. Keep chips from each generation: later recipes consume earlier chips. Exact crafting ingredients are in the [recipe reference](recipes.md); quantities below assume bundled defaults.
 
 ## Before starting
