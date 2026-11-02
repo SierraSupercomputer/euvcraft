@@ -15,7 +15,7 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
   - com.euvcraft.lithmod.mc.compat (1 files)
   - com.euvcraft.lithmod.mc.compat.mixin (4 files)
   - com.euvcraft.lithmod.mc.data (14 files)
-  - com.euvcraft.lithmod.mc.gametest (43 files)
+  - com.euvcraft.lithmod.mc.gametest (44 files)
   - com.euvcraft.lithmod.mc.machine (4 files)
   - com.euvcraft.lithmod.mc.machine.cleaner (7 files)
   - com.euvcraft.lithmod.mc.machine.client (1 files)
@@ -5697,8 +5697,9 @@ public static java.util.List<net.minecraft.world.item.ItemStack> displayEntries(
 
 ### com.euvcraft.lithmod.mc.routing.CoatingReceipt
 ```java
+public com.euvcraft.lithmod.mc.routing.CoatingReceipt(int, int, int, int, int, int, int, int, int, int, int, int);
 public com.euvcraft.lithmod.mc.routing.CoatingReceipt(int, int, int, int, int, int, int, int, int, int, int);
-public com.euvcraft.lithmod.mc.routing.CoatingReceipt(int, int, int, int, com.euvcraft.lithmod.core.routing.LinearBudget, int, int, int);
+public com.euvcraft.lithmod.mc.routing.CoatingReceipt(int, int, int, int, com.euvcraft.lithmod.core.routing.LinearBudget, int, int, int, int);
 public int totalResist();
 public int totalCleanTicks();
 public final java.lang.String toString();
@@ -5715,6 +5716,7 @@ public int cleanWaterMb();
 public int energyPerTick();
 public int rinseTicks();
 public int rinseEnergyPerTick();
+public int scannerWaterPerTick();
 ```
 
 ### com.euvcraft.lithmod.mc.routing.FabItemAccess
@@ -5952,7 +5954,6 @@ test_machine definitions/recipes are dropped before validation outside fixture m
   "energy_per_tick": 240,
   "params": {
     "coat_ticks_per_layer": 5,
-    "clean_ticks_per_layer": 5,
     "water_capacity": 32000,
     "repair_filter_medium": 2,
     "repair_redstone": 16,
@@ -6152,12 +6153,8 @@ test_machine definitions/recipes are dropped before validation outside fixture m
     "dry_energy_per_tick": 960,
     "preparation_min_draw_permille": 900,
     "linear_vacuum_duration": 200,
-    "linear_rinse_duration": 0,
-    "linear_rinse_water_mb": 0,
     "linear_dry_duration": 100,
-    "linear_moved_rinse_duration": 200,
-    "linear_moved_rinse_water_mb": 4000,
-    "linear_rinse_fe": 480
+    "linear_rinse_moved": 1
   }
 }
 ```
@@ -6195,12 +6192,8 @@ test_machine definitions/recipes are dropped before validation outside fixture m
     "dry_energy_per_tick": 960,
     "preparation_min_draw_permille": 900,
     "linear_vacuum_duration": 200,
-    "linear_rinse_duration": 0,
-    "linear_rinse_water_mb": 0,
     "linear_dry_duration": 100,
-    "linear_moved_rinse_duration": 200,
-    "linear_moved_rinse_water_mb": 4000,
-    "linear_rinse_fe": 480,
+    "linear_rinse_moved": 1,
     "etchant_per_lot": 1
   }
 }
@@ -6429,8 +6422,10 @@ test_machine definitions/recipes are dropped before validation outside fixture m
   "max_receive": 20000,
   "energy_per_tick": 240,
   "params": {
-    "coat_ticks_per_layer": 5,
     "clean_ticks_per_layer": 5,
+    "t7_rinse_duration": 200,
+    "t7_rinse_water_mb": 4000,
+    "t7_rinse_energy_per_tick": 480,
     "water_capacity": 32000,
     "repair_filter_medium": 2,
     "repair_redstone": 16,
