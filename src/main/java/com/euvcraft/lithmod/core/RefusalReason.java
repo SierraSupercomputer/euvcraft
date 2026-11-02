@@ -25,7 +25,8 @@ public record RefusalReason(Code code, List<String> unmetLines) implements Proce
         VACUUM_REQUIRED,
         EUV_SOURCE_REQUIRED,
         MACHINE_REPAIR_REQUIRED,
-        PROCESS_STEP_REQUIRED
+        PROCESS_STEP_REQUIRED,
+        COATING_REQUIRED
     }
 
     public RefusalReason {

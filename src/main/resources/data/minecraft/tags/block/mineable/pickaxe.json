@@ -108,6 +108,12 @@
     "lithmod:euv_light_source_pulse_module",
     "lithmod:euv_light_source_calibration_panel",
     "lithmod:etch_cell",
-    "lithmod:fab_item_port"
+    "lithmod:fab_item_port",
+    "lithmod:coating_track",
+    "lithmod:wet_cleaner",
+    "lithmod:fab_upw_inlet",
+    "lithmod:g3_etch_cell",
+    "lithmod:g3_fab_item_port",
+    "lithmod:euv_fab_item_port"
   ]
 }

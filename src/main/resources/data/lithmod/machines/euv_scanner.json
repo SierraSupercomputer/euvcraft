@@ -25,6 +25,8 @@
     "diagnostic_max_multiplier_permille": 1000,
     "upw_capacity_mb": 32000,
     "upw_per_tick_mb": 5,
-    "beamline_max_length": 16
+    "beamline_max_length": 16,
+    "linear_upw_per_tick_mb": 4,
+    "linear_original_upw_per_tick": 5
   }
 }

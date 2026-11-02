@@ -97,7 +97,7 @@ final class T4RuntimeFixtures {
   var spec=new RunSpec(family,tier,cores,.90,t.layers()*EUVCRAFTMod.settings().rollsPerLayer());
   var stack=FoupItems.with(ModItems.FOUP_MK1.get(),new FoupContents(UUID.randomUUID(),25,wafers,spec,WaferSubstrate.PURE,tier>=4?2:1));
   if(tier==4)stack.set(ModDataComponents.FOUP_ROUTING.get(),new com.euvcraft.lithmod.mc.routing.FoupRoutingData(new com.euvcraft.lithmod.core.routing.FabProgress(com.euvcraft.lithmod.core.routing.FabProgress.Stage.ETCHED,4,1),family,cores,false));
-  return stack;
+  return tier>=5?LaterFabFixtures.completedRouteFixture(stack):stack;
  }
  static CompoundTag save(ServerLevel level,BlockEntity machine){
   var output=TagValueOutput.createWithContext(ProblemReporter.DISCARDING,level.registryAccess());machine.saveWithId(output);return output.buildResult();

@@ -1,0 +1,36 @@
+{
+  "variants": {
+    "facing=north,formed=false": {
+      "model": "lithmod:block/fab_upw_inlet",
+      "y": 0
+    },
+    "facing=north,formed=true": {
+      "model": "lithmod:block/fab_upw_inlet_formed",
+      "y": 0
+    },
+    "facing=east,formed=false": {
+      "model": "lithmod:block/fab_upw_inlet",
+      "y": 90
+    },
+    "facing=east,formed=true": {
+      "model": "lithmod:block/fab_upw_inlet_formed",
+      "y": 90
+    },
+    "facing=south,formed=false": {
+      "model": "lithmod:block/fab_upw_inlet",
+      "y": 180
+    },
+    "facing=south,formed=true": {
+      "model": "lithmod:block/fab_upw_inlet_formed",
+      "y": 180
+    },
+    "facing=west,formed=false": {
+      "model": "lithmod:block/fab_upw_inlet",
+      "y": 270
+    },
+    "facing=west,formed=true": {
+      "model": "lithmod:block/fab_upw_inlet_formed",
+      "y": 270
+    }
+  }
+}

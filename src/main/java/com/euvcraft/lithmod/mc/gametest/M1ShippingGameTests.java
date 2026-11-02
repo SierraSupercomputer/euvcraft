@@ -125,7 +125,7 @@ public final class M1ShippingGameTests {
         if (definitions != null) {
             helper.assertTrue(definitions.byId("test_machine").isEmpty(),
                 "test_machine definition must be absent when fixtures are off");
-            helper.assertValueEqual(27, definitions.size(),
+            helper.assertValueEqual(30, definitions.size(),
                 "production machine definition inventory when fixtures are off");
             for (String machineId : PRODUCTION_DEFINITIONS) {
                 helper.assertTrue(definitions.byId(machineId).isPresent(),

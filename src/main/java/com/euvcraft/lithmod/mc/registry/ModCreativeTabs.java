@@ -110,6 +110,12 @@ public final class ModCreativeTabs {
         // T4 advanced multiblocks (appended after T3 support multiblocks)
         output.accept(ModItems.DEPOSITION_ETCHER_CONTROLLER.get());
         output.accept(ModItems.ETCH_CELL.get());
+        output.accept(ModItems.G3_ETCH_CELL.get());
+        output.accept(ModItems.G3_FAB_ITEM_PORT.get());
+        output.accept(ModItems.EUV_FAB_ITEM_PORT.get());
+        output.accept(ModItems.COATING_TRACK.get());
+        output.accept(ModItems.WET_CLEANER.get());
+        output.accept(ModItems.FAB_UPW_INLET.get());
         output.accept(ModItems.ADVANCED_OPERATING_PANEL.get());
         output.accept(ModItems.ADVANCED_TEST_PACKAGE_CONTROLLER.get());
         output.accept(ModItems.ADVANCED_CASING.get());

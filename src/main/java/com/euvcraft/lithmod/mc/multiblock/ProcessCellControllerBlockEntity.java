@@ -327,7 +327,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
 
         // Admission hooks: structural formation, tier support, readiness, refusal
         if (!supportsTier(tier)) { lastRefusal = RefusalReason.LINE_CANNOT_RUN_TIER; return; }
-        if(!com.euvcraft.lithmod.mc.routing.FoupRouting.canExpose(slot(SLOT_FOUP),tier.index())){lastRefusal=new RefusalReason(RefusalReason.Code.PROCESS_STEP_REQUIRED);return;}
+        if(!com.euvcraft.lithmod.mc.routing.FoupRouting.canExpose(slot(SLOT_FOUP),tier.index())){lastRefusal=new RefusalReason(tier.index()>=5?RefusalReason.Code.COATING_REQUIRED:RefusalReason.Code.PROCESS_STEP_REQUIRED);return;}
         var blocker = admissionBlocker(tier);
         if (blocker != null) { lastRefusal = blocker; return; }
         if (!structureFormed()) { lastRefusal = RefusalReason.LINE_CANNOT_RUN_TIER; return; }
@@ -348,7 +348,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         }
 
         LineLoadout loadout = LineLoadoutReader.read(equipment(SLOT_LIGHT_SOURCE), equipment(SLOT_OPTICS),
-            equipment(SLOT_STAGE), equipment(SLOT_CLEANROOM), equipment(SLOT_METROLOGY), slot(SLOT_RESIST), mask.tierIndex());
+            equipment(SLOT_STAGE), equipment(SLOT_CLEANROOM), equipment(SLOT_METROLOGY), processingResist(), mask.tierIndex());
         DefaultStatRules rules = new DefaultStatRules(registry);
         FabSettings settings = EUVCRAFTMod.settings();
         int passes=admissionPasses(tier);
@@ -359,6 +359,8 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
             catch(ArithmeticException invalid){lastRefusal=RefusalReason.LINE_CANNOT_RUN_TIER;return;}
             settings=settings.toBuilder().layerTicksOverrides(overrides).build();
         }
+        var coating=slot(SLOT_FOUP).get(ModDataComponents.COATING_RECEIPT.get());
+        if(tier.index()>=5&&coating!=null){var overrides=new java.util.HashMap<>(settings.layerTicksOverrides());overrides.put(tier.id(),coating.scannerTicksPerLayer());settings=settings.toBuilder().resistPerLayer(0).layerTicksOverrides(overrides).build();}
         GenerationMatrix matrix = SupportLineDataLoader.getMatrix();
 
         // Derive actual installed generations for T3 admission:
@@ -393,7 +395,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         try {
             contract = new Contract(tier, mask.dieType(), mask.usesRemaining(), tier.layerTicks(settings),
                 settings.resistPerLayer(), request.energyPerTick(), request.lineStats(), registry.all(),
-                required, maskStack.copy(), components, slot(SLOT_RESIST).copyWithCount(1), lot.lotId(), carrier, lot.grade(), lot.preparationGeneration(), frozenYieldFactor);
+                required, maskStack.copy(), components, processingResist().copyWithCount(1), lot.lotId(), carrier, lot.grade(), lot.preparationGeneration(), frozenYieldFactor);
             run = (ProcessRun) result;
             lastRefusal = null;
             setChanged();
@@ -507,6 +509,12 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
 
     public boolean inputsLocked() { return pendingRun != null || run != null && run.state() != ProcessState.FINISHED; }
     public boolean aborted() { return abortLatched; }
+    /** The upstream coating receipt supplies the resist type for stats; no phantom consumable is paid here. */
+    protected ItemStack processingResist(){
+        var receipt=slot(SLOT_FOUP).get(ModDataComponents.COATING_RECEIPT.get());
+        if(receipt!=null)return new ItemStack(switch(receipt.tier()){case 5->ModItems.RESIST_T5.get();case 6->ModItems.RESIST_T6.get();default->ModItems.RESIST_T7.get();});
+        return slot(SLOT_RESIST);
+    }
     public boolean canTopUpResist(ItemStack stack) {
         Contract accepted = contract != null ? contract : pendingRun == null ? null : pendingRun.contract();
         return accepted != null && !stack.isEmpty()

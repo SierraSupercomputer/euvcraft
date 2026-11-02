@@ -26,6 +26,13 @@
     "rinse_water_mb": 4000,
     "dry_duration": 200,
     "dry_energy_per_tick": 960,
-    "preparation_min_draw_permille": 900
+    "preparation_min_draw_permille": 900,
+    "linear_vacuum_duration": 200,
+    "linear_rinse_duration": 0,
+    "linear_rinse_water_mb": 0,
+    "linear_dry_duration": 100,
+    "linear_moved_rinse_duration": 200,
+    "linear_moved_rinse_water_mb": 4000,
+    "linear_rinse_fe": 480
   }
 }

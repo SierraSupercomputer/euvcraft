@@ -238,6 +238,12 @@ public final class ModItems {
      * Each has a lower controller and upper operating panel. They share casing and power port blocks.
      * Same {@code registerSimpleBlockItem} rule as other multiblocks.</p>
      */
+    public static final DeferredItem<BlockItem> G3_FAB_ITEM_PORT=ITEMS.registerSimpleBlockItem("g3_fab_item_port",()->com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines.G3_ITEM_PORT.get());
+    public static final DeferredItem<BlockItem> EUV_FAB_ITEM_PORT=ITEMS.registerSimpleBlockItem("euv_fab_item_port",()->com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines.EUV_ITEM_PORT.get());
+    public static final DeferredItem<BlockItem> G3_ETCH_CELL=ITEMS.registerSimpleBlockItem("g3_etch_cell",()->com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines.G3_ETCH.get());
+    public static final DeferredItem<BlockItem> COATING_TRACK=ITEMS.registerSimpleBlockItem("coating_track",()->com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines.COATING_TRACK.get());
+    public static final DeferredItem<BlockItem> WET_CLEANER=ITEMS.registerSimpleBlockItem("wet_cleaner",()->com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines.WET_CLEANER.get());
+    public static final DeferredItem<BlockItem> FAB_UPW_INLET=ITEMS.registerSimpleBlockItem("fab_upw_inlet",()->com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines.UPW_INLET.get());
     public static final DeferredItem<BlockItem> FAB_ITEM_PORT=ITEMS.registerSimpleBlockItem("fab_item_port",()->com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines.ITEM_PORT.get());
     public static final DeferredItem<BlockItem> ETCH_CELL=ITEMS.registerSimpleBlockItem("etch_cell",()->com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines.ETCH_CELL.get());
     public static final DeferredItem<net.minecraft.world.item.Item> ETCHANT_CHARGE=ITEMS.registerSimpleItem("etchant_charge");

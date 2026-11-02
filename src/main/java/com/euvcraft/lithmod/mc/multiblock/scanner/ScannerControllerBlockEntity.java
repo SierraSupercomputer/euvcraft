@@ -92,7 +92,7 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
  public boolean acceptDiagnostic(){if(level==null||level.isClientSide())return false;revalidate();if(!isFormed()||!immersion||inputsLocked()||!diagnosticParams()||!diagnosticPlotted||diagnostic.quality()<diagnosticMinimum())return false;diagnosticHardware=hardware;diagnosticQuality=diagnostic.quality();diagnosticMultiplier=diagnosticPreview();acceptedRecalibration();setChanged();return true;}
  private int maskTier(){var mask=slot(SLOT_MASK).get(com.euvcraft.lithmod.mc.registry.ModDataComponents.MASK_DATA.get());return mask==null?0:mask.tierIndex();}
  public boolean operatingCalibrated(){return calibrated()&&(maskTier()<5||diagnosed())&&(maskTier()!=6||multipatterning&&!exposure.invalidated());}
- public int waterPerTick(){return definition().map(d->d.paramOrDefault("pure_water_per_tick_mb",2)).orElse(0);}
+ public int waterPerTick(){return definition().map(d->d.paramOrDefault("linear_upw_per_tick_mb",d.paramOrDefault("pure_water_per_tick_mb",2))).orElse(0);}
  @Override public int extractEnergy(int amount,boolean simulate){
   if(amount<0)return 0;if(tierIndex()<5)return super.extractEnergy(amount,simulate);
   int water=waterPerTick();if(water<1||water>pureWater.capacity()||pureWater.amount()<water)return 0;
@@ -182,7 +182,7 @@ public final class ScannerControllerBlockEntity extends ProcessCellControllerBlo
  private com.euvcraft.lithmod.mc.cleanroom.CleanroomRooms.Sample roomSample(){return level instanceof net.minecraft.server.level.ServerLevel server?com.euvcraft.lithmod.mc.cleanroom.CleanroomRooms.sample(server,members()):new com.euvcraft.lithmod.mc.cleanroom.CleanroomRooms.Sample(false,500,null);}
  @Override public FoupContents processingTick(FoupContents lot){if(tierIndex()<5)return lot;var sample=roomSample();if(!sample.available())throw new IllegalStateException("Room chunk unavailable");sampleCalibrationExposure(sample);var next=lot.withRoomExposure(lot.roomExposure().sample(sample.yieldPermille()),0);storeRoomLot(next);return next;}
  private void storeRoomLot(FoupContents lot){var carrier=slot(SLOT_FOUP).copy();carrier.set(com.euvcraft.lithmod.mc.registry.ModDataComponents.FOUP_CONTENTS.get(),lot);setSlot(SLOT_FOUP,carrier);}
- @Override public FoupContents applyLayer(FoupContents lot,int layer,double defectFactor){var next=super.applyLayer(lot,layer,defectFactor);if(tierIndex()>=5){var tier=com.euvcraft.lithmod.mc.data.TierDataLoader.getRegistry().byIndex(tierIndex()).orElseThrow();if(layer==tier.layers()){next=CleanroomYield.finish(next,tier);storeRoomLot(next);}}return next;}
+ @Override public FoupContents applyLayer(FoupContents lot,int layer,double defectFactor){var next=super.applyLayer(lot,layer,defectFactor);if(tierIndex()>=5){var tier=com.euvcraft.lithmod.mc.data.TierDataLoader.getRegistry().byIndex(tierIndex()).orElseThrow();if(layer==tier.layers()&&!slot(0).has(com.euvcraft.lithmod.mc.registry.ModDataComponents.COATING_RECEIPT.get())){next=CleanroomYield.finish(next,tier);storeRoomLot(next);}}return next;}
  @Override public void serverTick(){revalidate();pureWater.resize(Math.clamp(definition().map(d->d.paramOrDefault("pure_capacity_mb",16000)).orElse(16000),1,1000000));super.serverTick();}
  @Override protected void dropExtraContents(net.minecraft.world.level.Level level,BlockPos pos){super.dropExtraContents(level,pos);dropContainer(level,pos,diagnosticPaper);}
  @Override public void setRemoved(){formation.unload();super.setRemoved();}

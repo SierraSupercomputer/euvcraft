@@ -166,7 +166,7 @@ public final class PresentationGameTests {
     }
     private static void recipeRegistry(GameTestHelper h) {
         var vanilla = resources(h, "recipe");
-        h.assertValueEqual(165, vanilla.size(), "M1 vanilla recipe inventory");
+        h.assertValueEqual(171, vanilla.size(), "M1 vanilla recipe inventory");
         for (var entry : vanilla.entrySet()) {
             JsonObject source = json(entry.getValue());
             expectedOutput(h, source, assemble(h, entry.getKey(), source), entry.getKey().toString());
@@ -211,7 +211,7 @@ public final class PresentationGameTests {
                 cooking++;
             }
         }
-        h.assertValueEqual(163, crafting, "Crafting lookup inventory");
+        h.assertValueEqual(169, crafting, "Crafting lookup inventory");
         h.assertValueEqual(2, cooking, "Cooking lookup inventory");
         var sand = manager.getRecipeFor(RecipeType.SMELTING, new SingleRecipeInput(new ItemStack(Items.SAND)), h.getLevel()).orElseThrow();
         h.assertTrue(sand.value().assemble(new SingleRecipeInput(new ItemStack(Items.SAND))).is(Items.GLASS), "Sand must still smelt to glass");
@@ -351,7 +351,7 @@ public final class PresentationGameTests {
 
         List<ItemStack> actualEntries = ModCreativeTabs.entries(params);
 
-        var existingEntries=actualEntries.stream().filter(e->!e.is(ModItems.ETCH_CELL.get())&&!e.is(ModItems.FAB_ITEM_PORT.get())&&!e.is(ModItems.ETCHANT_CHARGE.get())).toList();
+        var existingEntries=actualEntries.stream().filter(e->!e.is(ModItems.ETCH_CELL.get())&&!e.is(ModItems.FAB_ITEM_PORT.get())&&!e.is(ModItems.ETCHANT_CHARGE.get())&&!e.is(ModItems.COATING_TRACK.get())&&!e.is(ModItems.WET_CLEANER.get())&&!e.is(ModItems.FAB_UPW_INLET.get())&&!e.is(ModItems.G3_ETCH_CELL.get())&&!e.is(ModItems.G3_FAB_ITEM_PORT.get())&&!e.is(ModItems.EUV_FAB_ITEM_PORT.get())).toList();
         // Keep the original catalog order within each category.
         List<Item> expectedItems = List.of(
             // M1 items
@@ -511,7 +511,7 @@ public final class PresentationGameTests {
         fullExpected.add(ModItems.DIMM_T7.get());fullExpected.add(ModItems.RESIST_T7.get());fullExpected.add(ModItems.TIN_FEEDSTOCK.get());
         fullExpected.add(com.euvcraft.lithmod.mc.multiblock.euv.EuvMachines.LIGHT_SOURCE_PULSE_MODULE.get().asItem());
         fullExpected.add(com.euvcraft.lithmod.mc.multiblock.euv.EuvMachines.LIGHT_SOURCE_CALIBRATION_PANEL.get().asItem());
-          h.assertValueEqual(218, actualEntries.size(), "Creative catalog exact entry count");
+          h.assertValueEqual(224, actualEntries.size(), "Creative catalog exact entry count");
         for (int i = 0; i < 215; i++) {
             Item expected = fullExpected.get(i);
             Item actual = existingEntries.get(i).getItem();

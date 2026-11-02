@@ -19,6 +19,8 @@
     "pure_water_per_tick_mb": 2,
     "multipattern_passes": 2,
     "contamination_ppm": 2500,
-    "contamination_ticks": 1200
+    "contamination_ticks": 1200,
+    "linear_upw_per_tick_mb": 1,
+    "linear_original_upw_per_tick": 2
   }
 }

@@ -57,7 +57,8 @@ public class DepositionEtcherControllerBlockEntity extends AdvancedControllerBlo
             pending=slot(0).copy();clearSlot(0);
             slot(1).shrink(silicon);if(slot(1).isEmpty())clearSlot(1);
             duration=nextDuration;perTick=nextCost;progress=0;setChanged();
-        } else if(slot(2).isEmpty()&&energySource().draw(perTick)==perTick){
+        } else if(slot(2).isEmpty()&&canWork(pending)&&energySource().draw(perTick)==perTick){
+            paidTick(pending);
             progress++;
             if(progress==duration){
                 var original=eligible(pending);
@@ -70,6 +71,8 @@ public class DepositionEtcherControllerBlockEntity extends AdvancedControllerBlo
         syncJob();
     }
     public boolean acceptsReagent(ItemStack stack){return stack.is(ModItems.SILICON.get());}
+    protected boolean canWork(ItemStack carrier){return true;}
+    protected void paidTick(ItemStack carrier){}
     public boolean canReceiveCarrier(ItemStack stack){return eligible(stack)!=null;}
     protected int reagentRequired(){return definition().map(d->d.param("silicon_per_lot").orElse(0)).orElse(0);}
     protected ItemStack completeCarrier(ItemStack carrier,FoupContents original){

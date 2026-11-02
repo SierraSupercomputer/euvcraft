@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "lithmod:block/vacuum_casing_formed",
+    "down": "lithmod:block/vacuum_casing_formed",
+    "up": "lithmod:block/vacuum_casing_formed",
+    "north": "lithmod:block/euv_scanner_water_inlet_formed",
+    "south": "lithmod:block/vacuum_casing_formed",
+    "west": "lithmod:block/vacuum_casing_formed",
+    "east": "lithmod:block/vacuum_casing_formed"
+  }
+}

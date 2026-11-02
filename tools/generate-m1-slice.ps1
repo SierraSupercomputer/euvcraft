@@ -259,8 +259,8 @@ foreach ($catName in $expectedConfig.Keys) {
 $machineDir = Join-Path $Root 'src\main\resources\data\lithmod\machines'
 Assert-Dir $machineDir
 $machineNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($machineDir, '*.json'))
-if ($machineNames.Count -ne 28) {
-    Fail "expected 28 machine definition files in data/lithmod/machines, found $($machineNames.Count)"
+if ($machineNames.Count -ne 31) {
+    Fail "expected 31 machine definition files in data/lithmod/machines, found $($machineNames.Count)"
 }
 $machineDefs = New-Object 'System.Collections.Generic.List[object]'
 $fixtureMachineId = 'test_machine'
@@ -288,8 +288,8 @@ $craftingNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($craftingDir, '*.
 $cookingNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($recipeRoot, '*.json'))
 $machineRecipeNames = Sort-Ordinal ([System.IO.Directory]::GetFiles($mrDir, '*.json'))
 $totalRecipes = $craftingNames.Count + $cookingNames.Count + $machineRecipeNames.Count
-if ($totalRecipes -ne 188) {
-    Fail "expected 188 recipe resources (186 production + 2 fixture-gated), found $totalRecipes"
+if ($totalRecipes -ne 194) {
+    Fail "expected 194 recipe resources (192 production + 2 fixture-gated), found $totalRecipes"
 }
 if ($machineRecipeNames.Count -ne 23) {
     Fail "expected 23 machine recipe files in data/lithmod/machine_recipes, found $($machineRecipeNames.Count)"
@@ -337,8 +337,8 @@ foreach ($rFile in $machineRecipeNames) {
 if ($fixtureRecipeCount -ne 2) {
     Fail "expected the two '$fixtureMachineId' fixture recipes to be payload-gated, found $fixtureRecipeCount"
 }
-if (($totalRecipes - $fixtureRecipeCount) -ne 186) {
-    Fail 'production recipe count is not 186'
+if (($totalRecipes - $fixtureRecipeCount) -ne 192) {
+    Fail 'production recipe count is not 192'
 }
 
 # ---- loader directory strings + codec sources (derived from tracked source) --

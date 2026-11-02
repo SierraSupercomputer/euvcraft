@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " C ",
+    "BPB",
+    " C "
+  ],
+  "key": {
+    "C": "lithmod:advanced_casing",
+    "B": "minecraft:bucket",
+    "P": "lithmod:logic_chip_t4"
+  },
+  "result": {
+    "id": "lithmod:fab_upw_inlet",
+    "count": 2
+  }
+}

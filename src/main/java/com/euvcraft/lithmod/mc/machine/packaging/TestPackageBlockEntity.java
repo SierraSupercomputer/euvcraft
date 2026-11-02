@@ -397,7 +397,10 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
         }
 
         PackagingRefusalReason reason = admissionRefusal(lot);
-        if(reason==null&&!com.euvcraft.lithmod.mc.routing.FoupRouting.packagingReady(foupStack))reason=PackagingRefusalReason.ETCHING_REQUIRED;
+        if(reason==null&&!com.euvcraft.lithmod.mc.routing.FoupRouting.packagingReady(foupStack)){
+            var route=foupStack.get(ModDataComponents.FOUP_ROUTING.get());
+            reason=lot.run()!=null&&lot.run().tierIndex()>=5&&route!=null&&route.progress().stage()==com.euvcraft.lithmod.core.routing.FabProgress.Stage.ETCHED?PackagingRefusalReason.WET_CLEANING_REQUIRED:PackagingRefusalReason.ETCHING_REQUIRED;
+        }
         if (reason != null) {
             this.refusal = reason;
             this.paused = false;

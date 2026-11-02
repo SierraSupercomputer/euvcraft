@@ -117,6 +117,7 @@ public class TestPackageScreen extends FabMachineScreen<TestPackageMenu> {
             case CLEANROOM_REQUIRED -> "state.lithmod.test_package.cleanroom_required";
             case CONTAMINATED_FOUP -> "state.lithmod.foup.contaminated";
             case ETCHING_REQUIRED -> "state.lithmod.test_package.etching_required";
+            case WET_CLEANING_REQUIRED -> "state.lithmod.test_package.wet_cleaning_required";
         };
     }
 }

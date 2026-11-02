@@ -598,7 +598,7 @@ public final class M1BoundaryGameTests {
      */
     private static void allHandFed(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
-        Set<String> expected = new HashSet<>(Set.of("etch_cell", "fab_item_port", "crystal_puller", "wafer_slicer", "pattern_generator",
+        Set<String> expected = new HashSet<>(Set.of("coating_track", "wet_cleaner", "fab_upw_inlet", "g3_etch_cell", "g3_fab_item_port", "euv_fab_item_port", "etch_cell", "fab_item_port", "crystal_puller", "wafer_slicer", "pattern_generator",
                 "test_package", "process_cell_controller", "process_cell_casing", "process_cell_power_port", "process_cell_operating_panel",
                 "boule_purifier", "ebeam_mask_writer", "support_casing", "support_power_port", "support_water_inlet", "deposition_etcher", "advanced_test_package", "advanced_casing", "advanced_operating_panel", "advanced_power_port", "scanner_controller", "scanner_operating_panel", "scanner_calibration_panel", "scanner_exposure_module", "scanner_optics_module", "scanner_stage_module", "scanner_filtration_module", "scanner_metrology_module", "utility_plant", "utility_water_inlet", "utility_pure_outlet", "pick_and_place", "scanner_diagnostic_panel", "scanner_water_inlet", "scanner_immersion_module","assembly_casing","assembly_power_port"));
         Set<String> cleanroom = Set.of("cleanroom_floor","cleanroom_wall","cleanroom_window","cleanroom_door","cleanroom_controller","cleanroom_filter","cleanroom_power_port","cleanroom_fluid_port","cleanroom_item_port","foup_cleaner");
@@ -619,7 +619,7 @@ public final class M1BoundaryGameTests {
             helper.setBlock(pos, Blocks.AIR);
             helper.setBlock(pos, block);
             BlockEntity be = level.getBlockEntity(helper.absolutePos(pos));
-            if(t7.contains(id.getPath())){
+            if(t7.contains(id.getPath())||Set.of("g3_etch_cell","g3_fab_item_port","euv_fab_item_port").contains(id.getPath())){
                 helper.assertTrue(be!=null,"Explicit T7 registered BE role: "+id);
                 var absolute=helper.absolutePos(pos);var sides=new java.util.ArrayList<Direction>(java.util.List.of(Direction.values()));sides.add(null);
                 for(var side:sides){helper.assertTrue(level.getCapability(Capabilities.Item.BLOCK,absolute,side)==null,"Unformed T7 cannot automate items: "+id+side);helper.assertTrue(level.getCapability(Capabilities.Fluid.BLOCK,absolute,side)==null,"Unformed T7 cannot automate fluids: "+id+side);helper.assertTrue(level.getCapability(Capabilities.Energy.BLOCK,absolute,side)==null,"Unowned T7 port has no energy target: "+id+side);}

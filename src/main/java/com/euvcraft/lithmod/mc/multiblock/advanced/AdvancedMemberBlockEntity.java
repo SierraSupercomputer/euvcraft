@@ -46,7 +46,7 @@ public class AdvancedMemberBlockEntity extends BlockEntity implements MenuProvid
         }
     }
     /** Common advanced frames/FE ports are reusable; role-specific members narrow this. */
-    public boolean supportsOwner(AdvancedOwner candidate){return getBlockState().getBlock()!=AdvancedMachines.ADVANCED_OPERATING_PANEL.get()||candidate instanceof DepositionEtcherControllerBlockEntity||candidate instanceof AdvancedTestPackageControllerBlockEntity;}
+    public boolean supportsOwner(AdvancedOwner candidate){return getBlockState().getBlock()!=AdvancedMachines.ADVANCED_OPERATING_PANEL.get()||candidate instanceof com.euvcraft.lithmod.mc.multiblock.linear.LinearStageBlockEntity||candidate instanceof DepositionEtcherControllerBlockEntity||candidate instanceof AdvancedTestPackageControllerBlockEntity;}
     public @Nullable AdvancedOwner belowOwner(){
         if(level==null)return null;
         return level.getBlockEntity(worldPosition.below()) instanceof AdvancedOwner candidate&&supportsOwner(candidate)?candidate:null;
@@ -76,7 +76,9 @@ public class AdvancedMemberBlockEntity extends BlockEntity implements MenuProvid
     }
     @Override public @Nullable AbstractContainerMenu createMenu(int id,Inventory inventory,Player player){
         var below=belowOwner();
-        return below==null?null:new AdvancedOperatingPanelMenu(id,inventory,below.machine(),worldPosition.below());
+        if(below==null)return null;
+        if(below.machine() instanceof com.euvcraft.lithmod.mc.multiblock.linear.LinearStageBlockEntity stage)return new com.euvcraft.lithmod.mc.multiblock.linear.LinearStageMenu(id,inventory,stage,true);
+        return new AdvancedOperatingPanelMenu(id,inventory,below.machine(),worldPosition.below());
     }
 }
 

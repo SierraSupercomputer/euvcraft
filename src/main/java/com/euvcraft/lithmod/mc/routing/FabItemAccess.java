@@ -46,6 +46,12 @@ public final class FabItemAccess {
 
     private static boolean canInsert(FabMachineBlockEntity machine,int slot,ItemStack stack){
         if(machine.isRemoved()||stack.isEmpty())return false;
+        if(machine instanceof com.euvcraft.lithmod.mc.multiblock.linear.LinearStageBlockEntity stage){
+            return slot==0?stage.canReceiveCarrier(stack):slot==1?stage.acceptsReagent(stack):slot==2&&stage.requiresRepair()&&stack.is(net.minecraft.world.item.Items.REDSTONE);
+        }
+        if(machine instanceof com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity g3){
+            return slot==0?g3.canReceiveCarrier(stack):slot==1?(g3 instanceof com.euvcraft.lithmod.mc.multiblock.linear.G3EtchCellBlockEntity&&stack.is(ModItems.ETCHANT_CHARGE.get())||g3.contaminationState().requiresRepair()&&stack.is(ModItems.UTILITY_FILTER.get())):slot==2&&g3.contaminationState().requiresRepair()&&stack.is(net.minecraft.world.item.Items.REDSTONE);
+        }
         if(machine instanceof DepositionEtcherControllerBlockEntity process){
             return slot==0?process.canReceiveCarrier(stack):slot==1&&process.acceptsReagent(stack);
         }
@@ -55,7 +61,7 @@ public final class FabItemAccess {
                 return !scanner.inputsLocked()&&lot!=null&&!lot.isEmpty()&&!lot.isStarted()&&!lot.isContaminated()&&lot.isPrepared();
             }
             if(slot==1)return !scanner.inputsLocked()&&stack.is(ModItems.MASK.get())&&stack.has(ModDataComponents.MASK_DATA.get());
-            return slot==2&&ResistCatalog.tierOf(stack)>0&&scanner.canTopUpResist(stack);
+            return slot==2&&!machine.slot(0).has(ModDataComponents.COATING_RECEIPT.get())&&ResistCatalog.tierOf(stack)>0&&scanner.canTopUpResist(stack);
         }
         if(machine instanceof TestPackageBlockEntity){
             if(slot==1)return TestPackageBlockEntity.isPackage(stack);

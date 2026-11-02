@@ -180,7 +180,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
     }
 
     public int upwPerTick() {
-        return definition().map(d -> d.paramOrDefault("upw_per_tick_mb", 5)).orElse(5);
+        return definition().map(d -> d.paramOrDefault("linear_upw_per_tick_mb",d.paramOrDefault("upw_per_tick_mb", 5))).orElse(5);
     }
 
     @Override
@@ -243,7 +243,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
     public FoupContents applyLayer(FoupContents lot, int layer, double defectFactor) {
         FoupContents next = super.applyLayer(lot,layer,defectFactor);
         var tier = TierDataLoader.getRegistry().byIndex(7).orElseThrow();
-        if(layer==tier.layers())next=CleanroomYield.finish(next,tier);
+        if(layer==tier.layers()&&!slot(0).has(ModDataComponents.COATING_RECEIPT.get()))next=CleanroomYield.finish(next,tier);
         storeRoomLot(next);
         return next;
     }

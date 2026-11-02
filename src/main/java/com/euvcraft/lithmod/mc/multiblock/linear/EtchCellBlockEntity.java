@@ -19,11 +19,17 @@ public final class EtchCellBlockEntity extends DepositionEtcherControllerBlockEn
         return com.euvcraft.lithmod.core.multiblock.LinearStructureMatcher.match(anchor,facing,com.euvcraft.lithmod.core.multiblock.LinearStructureMatcher.ETCH_3x3x5,false,lookup);
     }
     @Override public boolean acceptsReagent(ItemStack stack){return stack.is(ModItems.ETCHANT_CHARGE.get());}
+    @Override protected boolean canWork(ItemStack carrier){return FoupItems.trustedContentsOf(carrier).run().tierIndex()<5||com.euvcraft.lithmod.mc.cleanroom.CleanroomRooms.sample((net.minecraft.server.level.ServerLevel)level,members()).available();}
+    @Override protected void paidTick(ItemStack carrier){
+        var lot=FoupItems.trustedContentsOf(carrier);if(lot.run().tierIndex()<5)return;
+        var sample=com.euvcraft.lithmod.mc.cleanroom.CleanroomRooms.sample((net.minecraft.server.level.ServerLevel)level,members());carrier.set(ModDataComponents.FOUP_CONTENTS.get(),lot.withRoomExposure(lot.roomExposure().sample(sample.yieldPermille()),0));
+    }
     @Override protected int reagentRequired(){return definition().map(d->d.param("etchant_per_lot").orElse(0)).orElse(0);}
     @Override protected @Nullable FoupContents eligible(ItemStack stack){
         if(stack.isEmpty()||stack.getCount()!=1||!FoupItems.isFoup(stack)||!FoupRouting.matchesPrivateLot(stack))return null;
         var lot=FoupItems.trustedContentsOf(stack);var route=stack.get(ModDataComponents.FOUP_ROUTING.get());
-        if(lot==null||lot.isEmpty()||lot.isContaminated()||lot.preparationGeneration()<2||route.progress().stage()!=FabProgress.Stage.EXPOSED||route.progress().tier()!=4)return null;
+        if(lot==null||lot.isEmpty()||lot.isContaminated()||lot.preparationGeneration()<2||route.progress().stage()!=FabProgress.Stage.EXPOSED||(route.progress().tier()<4||route.progress().tier()>6))return null;
+        if(route.progress().tier()>=5&&!stack.has(ModDataComponents.COATING_RECEIPT.get()))return null;
         return lot;
     }
     @Override protected ItemStack completeCarrier(ItemStack carrier,FoupContents original){

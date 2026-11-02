@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "CRC",
+    "PLP",
+    "CRC"
+  ],
+  "key": {
+    "C": "lithmod:advanced_casing",
+    "R": "minecraft:redstone",
+    "P": "lithmod:precision_overlay_scope",
+    "L": "lithmod:logic_chip_t4"
+  },
+  "result": {
+    "id": "lithmod:coating_track",
+    "count": 1
+  }
+}

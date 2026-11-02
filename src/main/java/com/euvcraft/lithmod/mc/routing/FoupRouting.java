@@ -15,7 +15,7 @@ public final class FoupRouting {
         var lot=stack.get(ModDataComponents.FOUP_CONTENTS.get());
         if(lot==null||FoupContentsCodec.isClientView(lot))return;
         var data=stack.get(ModDataComponents.FOUP_ROUTING.get());
-        if(lot.isEmpty())data=FoupRoutingData.initial();
+        if(lot.isEmpty()){data=FoupRoutingData.initial();stack.remove(ModDataComponents.COATING_RECEIPT.get());}
         else if(data==null&&lot.run()==null)data=new FoupRoutingData(lot.isPrepared()?FabProgress.initial().deposited():FabProgress.initial(),"",0,lot.isContaminated());
         if(data!=null){
             if(data.contaminated()!=lot.isContaminated())data=new FoupRoutingData(data.progress(),data.dieType(),data.cores(),lot.isContaminated());
@@ -23,7 +23,7 @@ public final class FoupRouting {
         }
         var matrix=SupportLineDataLoader.getMatrix();var tiers=TierDataLoader.getRegistry();
         if(data!=null&&matrix!=null&&tiers!=null){
-            var options=FabNextSteps.options(lot.publicView(),data.progress(),data.contaminated(),matrix,tiers,Set.of(4));
+            var options=FabNextSteps.options(lot.publicView(),data.progress(),data.contaminated(),matrix,tiers,Set.of(4,5,6,7));
             if(!data.contaminated()&&lot.run()!=null&&data.progress().stage().ordinal()<FabProgress.Stage.EXPOSED.ordinal()){
                 int tier=lot.run().tierIndex();options=Map.of(tier<=3?"process_cell_controller":tier==7?"euv_scanner_controller":"lithography_scanner",List.of(tier));
             }
@@ -68,15 +68,20 @@ public final class FoupRouting {
     public static boolean packagingReady(ItemStack stack){
         var lot=FoupItems.trustedContentsOf(stack);
         if(lot==null||lot.run()==null||lot.isEmpty()||lot.isContaminated())return false;
-        if(lot.run().tierIndex()!=4)return true;
+        if(lot.run().tierIndex()<4)return true;
         var data=stack.get(ModDataComponents.FOUP_ROUTING.get());
-        return data!=null&&data.progress().stage()==FabProgress.Stage.ETCHED&&matchesPrivateLot(stack);
+        var coating=stack.get(ModDataComponents.COATING_RECEIPT.get());
+        if(lot.run().tierIndex()>=5&&(coating==null||coating.tier()!=lot.run().tierIndex()||lot.lotLayer()!=coating.layers()))return false;
+        return data!=null&&data.progress().stage()==(lot.run().tierIndex()==4?FabProgress.Stage.ETCHED:FabProgress.Stage.CLEANED)&&matchesPrivateLot(stack);
     }
 
     public static boolean canExpose(ItemStack stack,int tier){
-        if(tier!=4)return true;
+        if(tier<4)return true;
         var lot=FoupItems.trustedContentsOf(stack);var data=stack.get(ModDataComponents.FOUP_ROUTING.get());
-        return lot!=null&&lot.run()==null&&lot.isPrepared()&&!lot.isContaminated()&&data!=null&&data.progress().stage()==FabProgress.Stage.DEPOSITED&&matchesPrivateLot(stack);
+        if(lot==null||lot.run()!=null||!lot.isPrepared()||lot.isContaminated()||data==null||!matchesPrivateLot(stack))return false;
+        if(tier==4)return data.progress().stage()==FabProgress.Stage.DEPOSITED;
+        var coating=stack.get(ModDataComponents.COATING_RECEIPT.get());var definition=TierDataLoader.getRegistry().byIndex(tier).orElse(null);
+        return definition!=null&&coating!=null&&coating.tier()==tier&&coating.layers()==definition.layers()&&data.progress().stage()==FabProgress.Stage.COATED&&data.progress().tier()==tier;
     }
 
     private FoupRouting(){}

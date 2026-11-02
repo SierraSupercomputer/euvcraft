@@ -34,7 +34,10 @@ public class G3MemberBlockEntity extends BlockEntity implements com.euvcraft.lit
     private @Nullable Direction facing;
 
     protected G3MemberBlockEntity(BlockPos pos, BlockState state) {
-        super(G3Machines.MEMBER_BE.get(), pos, state);
+        this(G3Machines.MEMBER_BE.get(),pos,state);
+    }
+    protected G3MemberBlockEntity(BlockEntityType<?> type,BlockPos pos,BlockState state){
+        super(type,pos,state);
     }
 
     /** Whether the block here is a {@link G3PowerPortBlock}; the only member that lends FE. */
