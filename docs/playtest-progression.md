@@ -1,6 +1,6 @@
-# EUVCRAFT playtest progression guide — T1 to T5
+# EUVCRAFT playtest progression guide — T1 to T7
 
-**Linear-fab development update:** T4 now follows Deposition → Scanner → Etch Cell → Advanced Test & Package. Use the [T4 checkpoint walkthrough](manual-walkthrough-linear-t4.md) for the new chamber, consumable split, creative tabs and optional item ports; it supersedes the older T4 route below. T5–T7 retain their existing external paths until this checkpoint is accepted.
+**Linear-fab development update:** T4 follows Deposition → Scanner → Etch Cell → Advanced Test & Package. Its checkpoint was accepted on November 2. T5–T7 now add coating before exposure and productive wet cleaning after etching; T7 has separate G3 deposition and etch chambers. Use fresh later-tier batches and the [T5–T7 walkthrough](manual-walkthrough-linear-t5-t7.md). Earlier tier walkthroughs remain useful for modules/calibration, but the routes here supersede their older combined processing steps.
 
 Follow this route to test current progression. Use Survival to check crafting costs, or Creative to speed up construction. Keep chips from each generation: later recipes consume earlier chips. Exact crafting ingredients are in the [recipe reference](recipes.md); quantities below assume bundled defaults.
 
@@ -21,7 +21,10 @@ Dimensions are **width × height × depth**, facing the front. Production multib
 | Crystal Puller, Wafer Slicer, Pattern Generator, Test & Package | Single blocks | Machine itself |
 | Process Cell, T1–T3 | 2×2×3 | Lower Equipment Cabinet: permanent equipment. Operating Panel directly above: FOUP, mask, resist. |
 | Boule Purifier and E-beam Mask Writer | 2×2×3 each | Controller contains inputs; no upper panel. Support Casings/Power Ports. |
-| Deposition/Etch Chamber | 3×3×5 | Advanced Operating Panel above the lower controller; lower cabinet is status-only. |
+| G2 Deposition Chamber / Etch Cell | 3×3×5 each | Advanced Operating Panel above the lower controller; lower cabinet is status-only. |
+| Coating Track, T5–T7 | 3×2×5 | Advanced Operating Panel above controller; Advanced Casing/Power Ports. |
+| Wet-Clean Station, T5–T7 | 2×2×3 | Advanced Operating Panel above controller; one Fab UPW Inlet required. |
+| G3 Deposition Chamber / G3 Etch Cell, T7 | 5×5×7 each | Existing G3 module/panel layout; separate controllers. |
 | Lithography Scanner | 3×3×5 | Scanner Operating Panel above cabinet; separate Calibration and Diagnostic Panels. |
 | Advanced Test & Package | 2×2×3 | Advanced Operating Panel above lower controller. |
 | Utility Plant | 2×2×3 | Controller contains inputs; no upper panel. |
@@ -63,18 +66,18 @@ Build a **Boule Purifier** and **E-beam Mask Writer**, each 2×2×3 with Support
 
 ## Tier 4 — preparation chamber and calibrated scanner
 
-Build **Deposition/Etch (3×3×5)**, **Lithography Scanner (3×3×5)** and **Advanced Test & Package (2×2×3)** with Advanced Fab Casings/Power Ports. The scanner replaces the small Process Cell for T4 processing.
+Build separate **Deposition Chamber and Etch Cell (3×3×5 each)**, **Lithography Scanner (3×3×5)** and **Advanced Test & Package (2×2×3)** with Advanced Fab Casings/Power Ports. The scanner replaces the small Process Cell for T4 processing.
 
 The scanner's **middle layer** needs one each of the physical **Exposure, Optics, Stage, Filtration and Metrology Modules**, plus a **Calibration Panel**. They can occupy any valid middle-layer positions; keep calibration accessible. Fill unused cells with casings/ports. Top/bottom layers form the frame, with the controller and operating panel arranged as in the [scanner walkthrough](manual-walkthrough-scanner.md). Physical modules replace the earlier cabinet equipment items.
 
 Run this route:
 
 1. Pure boule → fresh pure-wafer FOUP.
-2. Deposition/Etch **upper panel:** FOUP + four Silicon → **G2-prepared** pure-wafer FOUP.
+2. Deposition **upper panel:** FOUP + two Silicon → **G2-prepared, Film deposited** pure-wafer FOUP.
 3. E-beam writer: write the desired T4 mask.
 4. Scanner Calibration Panel: adjust beam X, Y and Focus. Reach at least the default quality threshold of 50, then **Accept alignment**. Better alignment improves yield; changing modules invalidates calibration.
 5. Scanner upper panel: prepared FOUP + T4 mask + T4 resist.
-6. Advanced Test & Package upper panel: completed FOUP + Chip Packages. Leave **High Binning off** for normal production.
+6. Etch Cell upper panel: exposed FOUP + one Etchant Charge → **Etched** FOUP. Then Advanced Test & Package upper panel: etched FOUP + Chip Packages. Leave **High Binning off** for normal production.
 
 **Pass:** Produce all four T4 chip families through the full scanner route. Older T4 walkthroughs predate the scanner; follow this route for current progression.
 
@@ -89,7 +92,7 @@ Keep the pure-boule, G2 preparation and advanced packaging chain.
 3. Replace the scanner's Optics Module with an **Immersion Module**. Add a **Scanner Diagnostic Panel** in a spare middle-layer position. Keep other modules and the Calibration Panel.
 4. Accept beam alignment again. In the Diagnostic Panel, match the target curve using **y = Ax² + bx + c**: A controls curvature, b tilt and c vertical offset. Target coefficients are hidden.
 5. Insert **Burn Paper**. Each **Plot** attempt consumes one paper; editing coefficients is free. Reach the default score threshold of 50, then **Accept Fit**. Both accepted calibration qualities affect wafer yield.
-6. Run the prepared FOUP with T5 mask/resist, then advanced packaging.
+6. Run deposited FOUP + 42 T5 resist through the **Coating Track**. Its resist grade commits the tier; family/cores stay unassigned until exposure. Feed coated FOUP + T5 mask into the scanner, leaving its resist slot empty. Then Etch Cell + one Etchant Charge → Wet-Clean Station supplied with UPW → advanced packaging.
 
 One default utility batch makes **8,000 mB UPW**, while a default T5 lot needs **8,400 mB**. Make two batches or replenish during processing; maintain FE throughout.
 
@@ -128,3 +131,9 @@ Outputs retain chip tier. Assembly has no calibration requirement or extra yield
 - **Low yield:** Check calibration and T5 room cleanliness; turn off High Binning for normal production. Small batches can vary.
 
 Report tier/machine, visible status, FOUP tooltip, inputs, power/fluid supply and screenshots of the structure and GUI. Follow the [T6 walkthrough](manual-walkthrough-t6.md) after T5, then the [T7 EUV walkthrough](manual-walkthrough-t7.md). T7 adds Fab Hydrogen, a separate tin-fed source and scanner, G3 preparation/reticles, local or central vacuum, hard cleanroom enclosure, contaminated FOUP disposal and persistent equipment repair. T8, NAND assembly, server hardware compatibility and scrap recycling remain deferred.
+
+## Tier 6 and 7 linear routes
+
+T6: Electronic-grade boule → slicer → G2 deposition → Coating Track (70 T6 resist) → calibrated multi-patterning scanner → G2 Etch Cell (one Etchant Charge) → Wet-Clean Station → advanced packaging → existing reflow assembly. Refill resist beyond 64; it is paid gradually. Existing core selection and two internal exposure passes remain.
+
+T7: Electronic-grade boule → slicer → G3 deposition → Coating Track (80 T7 resist) → EUV scanner with its separate calibrated source → G3 Etch Cell (one Etchant Charge) → Wet-Clean Station → advanced packaging → reflow. Every T7 wafer-processing structure must fit strictly inside an enclosed cleanroom; the shared coater/cleaner only require enclosure for T7. The G3 preparation rinse is now paid at the Wet-Clean Station. The source takes no FOUP. See the [new route walkthrough](manual-walkthrough-linear-t5-t7.md) for layouts, automation, shortages and breach/repair tests.
