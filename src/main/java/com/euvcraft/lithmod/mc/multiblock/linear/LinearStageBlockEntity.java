@@ -26,7 +26,7 @@ import org.jspecify.annotations.Nullable;
 
 /** One reserved lot, one frozen paid budget, one completion. No new yield roll. */
 public abstract class LinearStageBlockEntity extends AdvancedControllerBlockEntity {
-    public enum Status { IDLE,UNFORMED,NO_FOUP,WRONG_STAGE,NO_RESIST,NO_WATER,NO_POWER,WORKING,OUTPUT_BLOCKED,CONFIG,NO_ROOM,REPAIR,RECOVERY }
+    public enum Status { IDLE,UNFORMED,NO_FOUP,WRONG_STAGE,NO_RESIST,NO_WATER,NO_POWER,WORKING,OUTPUT_BLOCKED,CONFIG,NO_ROOM,REPAIR,RECOVERY,COATING,BAKING,RINSING,DRYING }
     private ItemStack carrier=ItemStack.EMPTY;
     private @Nullable CoatingReceipt budget;
     private int progress,resistPaid,waterPaid;
@@ -72,9 +72,9 @@ public abstract class LinearStageBlockEntity extends AdvancedControllerBlockEnti
         int passes=index==6?scanner.paramOrDefault("multipattern_passes",2):1;
         int oldWater=index==7?scanner.paramOrDefault("linear_original_upw_per_tick",5):scanner.paramOrDefault("linear_original_upw_per_tick",2);
         int newWater=index==7?scanner.paramOrDefault("linear_upw_per_tick_mb",scanner.paramOrDefault("upw_per_tick_mb",5)):scanner.paramOrDefault("linear_upw_per_tick_mb",scanner.paramOrDefault("pure_water_per_tick_mb",2));
-        var g3=MachineDefinitionLoader.getRegistry().byId("g3_deposition_etcher").orElseThrow();
-        var plan=LinearBudget.calculate(tier.layers(),tier.layerTicks(EUVCRAFTMod.settings()),passes,EUVCRAFTMod.settings().resistPerLayer(),oldWater,newWater,param("coat_ticks_per_layer",5),param("clean_ticks_per_layer",5),index==7?g3.paramOrDefault("linear_moved_rinse_water_mb",4000):0);
-        return new CoatingReceipt(index,tier.layers(),passes,EUVCRAFTMod.settings().resistPerLayer(),plan,scanner.energyPerTick(tier,EUVCRAFTMod.settings()),index==7?g3.paramOrDefault("linear_moved_rinse_duration",200):0,index==7?scaled(g3.paramOrDefault("linear_rinse_fe",480)):1);
+        var cleaner=MachineDefinitionLoader.getRegistry().byId("wet_cleaner").orElseThrow();
+        var plan=LinearBudget.calculate(tier.layers(),tier.layerTicks(EUVCRAFTMod.settings()),passes,EUVCRAFTMod.settings().resistPerLayer(),oldWater,newWater,param("coat_ticks_per_layer",5),cleaner.paramOrDefault("clean_ticks_per_layer",5),index==7?cleaner.paramOrDefault("t7_rinse_water_mb",4000):0);
+        return new CoatingReceipt(index,tier.layers(),passes,EUVCRAFTMod.settings().resistPerLayer(),plan,scanner.energyPerTick(tier,EUVCRAFTMod.settings()),index==7?cleaner.paramOrDefault("t7_rinse_duration",200):0,index==7?scaled(cleaner.paramOrDefault("t7_rinse_energy_per_tick",480)):1,newWater);
     }
     private CleanroomRooms.Sample room(){return CleanroomRooms.sample((ServerLevel)level,footprint.isEmpty()?members():footprint);}
     private boolean enclosed(CleanroomRooms.Sample sample){return sample.available()&&sample.room()!=null&&sample.room().state()==CleanroomControllerBlockEntity.ENCLOSED;}
@@ -87,8 +87,10 @@ public abstract class LinearStageBlockEntity extends AdvancedControllerBlockEnti
         if(!isFormed()){status(Status.UNFORMED);return;}if(requiresRepair()){status(Status.REPAIR);return;}if(definition().isEmpty()){status(Status.CONFIG);return;}
         if(carrier.isEmpty()){
             if(!slot(3).isEmpty()){status(Status.OUTPUT_BLOCKED);return;}if(slot(0).isEmpty()){status(Status.NO_FOUP);return;}if(!canReceiveCarrier(slot(0))){status(Status.WRONG_STAGE);return;}
+            if(coating()&&(ResistCatalog.tierOf(slot(1))<5||ResistCatalog.tierOf(slot(1))>7)){status(Status.NO_RESIST);return;}
             CoatingReceipt next;try{next=recipe();}catch(RuntimeException invalid){status(Status.CONFIG);return;}
-            if(next==null){status(coating()?Status.NO_RESIST:Status.WRONG_STAGE);return;}
+            if(next==null){status(Status.WRONG_STAGE);return;}
+            if(next.energyPerTick()>buffer().getCapacityAsInt()||next.rinseEnergyPerTick()>buffer().getCapacityAsInt()){status(Status.CONFIG);return;}
             int ticks=coating()?Math.max(1,next.coatTicks()):Math.max(1,next.totalCleanTicks());
             if(coating()&&((long)next.totalResist()+ticks-1)/ticks>64||!coating()&&((long)next.cleanWaterMb()+ticks-1)/ticks>upw.capacity()){status(Status.CONFIG);return;}
             var sample=CleanroomRooms.sample((ServerLevel)level,members());if(!sample.available()||next.tier()==7&&!enclosed(sample)){status(Status.NO_ROOM);return;}
@@ -105,7 +107,7 @@ public abstract class LinearStageBlockEntity extends AdvancedControllerBlockEnti
         if(energySource().draw(cost)!=cost){status(Status.NO_POWER);return;}
         if(needResist>0){slot(1).shrink(needResist);if(slot(1).isEmpty())clearSlot(1);resistPaid+=needResist;}
         if(needWater>0){upw.drainExact(needWater,false);waterPaid+=needWater;}
-        var lot=FoupItems.trustedContentsOf(carrier);carrier.set(ModDataComponents.FOUP_CONTENTS.get(),lot.withRoomExposure(lot.roomExposure().sample(sample.yieldPermille()),0));progress=nextProgress;setChanged();status(Status.WORKING);
+        var lot=FoupItems.trustedContentsOf(carrier);carrier.set(ModDataComponents.FOUP_CONTENTS.get(),lot.withRoomExposure(lot.roomExposure().sample(sample.yieldPermille()),0));progress=nextProgress;setChanged();status(coating()?(progress<=ticks/2?Status.COATING:Status.BAKING):(progress<=budget.rinseTicks()?Status.RINSING:Status.DRYING));
         if(progress==ticks){
             var route=carrier.get(ModDataComponents.FOUP_ROUTING.get());
             if(coating()){carrier.set(ModDataComponents.COATING_RECEIPT.get(),budget);carrier.set(ModDataComponents.FOUP_ROUTING.get(),new FoupRoutingData(route.progress().coated(budget.tier()),"",0,false));}

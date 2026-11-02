@@ -4,8 +4,10 @@
   "max_receive": 20000,
   "energy_per_tick": 240,
   "params": {
-    "coat_ticks_per_layer": 5,
     "clean_ticks_per_layer": 5,
+    "t7_rinse_duration": 200,
+    "t7_rinse_water_mb": 4000,
+    "t7_rinse_energy_per_tick": 480,
     "water_capacity": 32000,
     "repair_filter_medium": 2,
     "repair_redstone": 16,

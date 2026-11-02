@@ -16,9 +16,9 @@ export function outputs(){const out=linearStageAssets();
     out.set(A+'items/g3_etch_cell.json',{model:{type:'minecraft:model',model:'lithmod:item/g3_etch_cell'}});
     const loot=source('../..'+'/data/lithmod/loot_table/blocks/g3_deposition_etcher');
     loot.pools[0].entries[0].name='lithmod:g3_etch_cell';out.set(D+'loot_table/blocks/g3_etch_cell.json',loot);
-    const g3=JSON.parse(fs.readFileSync(join(root,D+'machines/g3_deposition_etcher.json')));g3.id='g3_etch_cell';Object.assign(g3.params,{linear_vacuum_duration:200,linear_rinse_duration:0,linear_rinse_water_mb:0,linear_dry_duration:100,etchant_per_lot:1});out.set(D+'machines/g3_etch_cell.json',g3);
+    const g3=JSON.parse(fs.readFileSync(join(root,D+'machines/g3_deposition_etcher.json')));g3.id='g3_etch_cell';Object.assign(g3.params,{linear_vacuum_duration:200,linear_rinse_moved:1,linear_dry_duration:100,etchant_per_lot:1});out.set(D+'machines/g3_etch_cell.json',g3);
     out.set(D+'recipe/crafting/g3_etch_cell.json',{type:'minecraft:crafting_shaped',category:'equipment',pattern:['CCC','RPR','CCC'],key:{C:'lithmod:g3_casing',R:'minecraft:redstone',P:'lithmod:compute_chip_t6'},result:{id:'lithmod:g3_etch_cell',count:1}});
-    for(const id of['coating_track','wet_cleaner'])out.set(D+'machines/'+id+'.json',{id,energy_capacity:1000000,max_receive:20000,energy_per_tick:240,params:{coat_ticks_per_layer:5,clean_ticks_per_layer:5,water_capacity:32000,repair_filter_medium:2,repair_redstone:16,repair_upw_mb:8000,repair_fe:200000}});
+    for(const id of['coating_track','wet_cleaner'])out.set(D+'machines/'+id+'.json',{id,energy_capacity:1000000,max_receive:20000,energy_per_tick:240,params:{...(id==='coating_track'?{coat_ticks_per_layer:5}:{clean_ticks_per_layer:5,t7_rinse_duration:200,t7_rinse_water_mb:4000,t7_rinse_energy_per_tick:480}),water_capacity:32000,repair_filter_medium:2,repair_redstone:16,repair_upw_mb:8000,repair_fe:200000}});
     for(const[id,pattern,key,count]of[
         ['coating_track',['CRC','PLP','CRC'],{C:'lithmod:advanced_casing',R:'minecraft:redstone',P:'lithmod:precision_overlay_scope',L:'lithmod:logic_chip_t4'},1],
         ['wet_cleaner',['CWC','PLP','CWC'],{C:'lithmod:advanced_casing',W:'minecraft:bucket',P:'minecraft:piston',L:'lithmod:logic_chip_t4'},1],

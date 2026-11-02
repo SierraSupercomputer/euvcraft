@@ -31,7 +31,7 @@ final class LaterFabFixtures {
     }
     record Operation(ItemStack output,long energy,int water,int resist,int ticks){}
     static Operation process(GameTestHelper h,ItemStack input,int tier,boolean coating){
-        try(var arena=new T7RuntimeFixtures.Arena(h)){
+        try(var arena=new LaterArena(h)){
             var c=stage(arena,coating);var m=(LinearStageBlockEntity)c.machine();T7RuntimeFixtures.Room room=null;if(tier==7){room=arena.room(c,coating?3:2,2,coating?5:3);room.controller().setStoredEnergy(200000);room.controller().serverTick();}
             m.setSlot(0,input.copy());int supplied=0,water=0,ticks=0;long energy=0;int remaining=coating?TierDataLoader.getRegistry().getByIndex(tier).layers()*EUVCRAFTMod.settings().resistPerLayer():0;
             for(;ticks<100000&&m.slot(3).isEmpty();ticks++){
@@ -48,7 +48,7 @@ final class LaterFabFixtures {
     static ItemStack coated(GameTestHelper h,ItemStack input,int tier){return process(h,input,tier,true).output();}
     static ItemStack cleaned(GameTestHelper h,ItemStack input,int tier){return process(h,input,tier,false).output();}
     static ItemStack g3(GameTestHelper h,ItemStack input,boolean etch){
-        try(var arena=new T7RuntimeFixtures.Arena(h)){
+        try(var arena=new LaterArena(h)){
             var c=arena.prep();if(etch)arena.oriented(c.anchor(),LinearMachines.G3_ETCH.get());
             var m=(com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity)arena.level.getBlockEntity(c.anchor());m.revalidate();var room=arena.room(c,5,5,7);
             m.setSlot(0,input.copy());if(etch)m.setSlot(1,new ItemStack(ModItems.ETCHANT_CHARGE.get()));

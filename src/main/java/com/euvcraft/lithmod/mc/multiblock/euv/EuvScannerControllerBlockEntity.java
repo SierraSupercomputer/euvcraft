@@ -180,6 +180,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
     }
 
     public int upwPerTick() {
+        var receipt=slot(SLOT_FOUP).get(ModDataComponents.COATING_RECEIPT.get());if(receipt!=null)return receipt.scannerWaterPerTick();
         return definition().map(d -> d.paramOrDefault("linear_upw_per_tick_mb",d.paramOrDefault("upw_per_tick_mb", 5))).orElse(5);
     }
 

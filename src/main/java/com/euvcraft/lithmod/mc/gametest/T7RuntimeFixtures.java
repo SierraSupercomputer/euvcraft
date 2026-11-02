@@ -32,7 +32,7 @@ import net.minecraft.world.phys.AABB;
 final class T7RuntimeFixtures {
     private T7RuntimeFixtures(){}
     record Cell(BlockPos anchor,List<BlockPos> positions,FabMachineBlockEntity machine){}
-    static final class Arena implements AutoCloseable {
+    static class Arena implements AutoCloseable {
         final ServerLevel level;
         final GameTestHelper h;
         final Direction facing;

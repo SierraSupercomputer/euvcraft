@@ -603,5 +603,9 @@
   "tooltip.lithmod.dims.3x2x5": "3 wide × 2 high × 5 deep",
   "tooltip.lithmod.linear.coating": "Matching resist chooses T5–T7; UPW inlet optional for repairs",
   "tooltip.lithmod.linear.water": "One Fab UPW Inlet required; consumes Ultrapure Water",
-  "state.lithmod.linear.recovery": "Recovering interrupted carrier"
+  "state.lithmod.linear.recovery": "Recovering interrupted carrier",
+  "state.lithmod.linear.coating": "Coating resist",
+  "state.lithmod.linear.baking": "Baking resist",
+  "state.lithmod.linear.rinsing": "UPW rinse",
+  "state.lithmod.linear.drying": "Cleaning / drying"
 }

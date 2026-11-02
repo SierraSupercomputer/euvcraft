@@ -379,7 +379,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
             mask.usesRemaining(), rules.stats(loadout.toLineComponents(), tier.index()),
             rules.canRunTier(loadout.toLineComponents(), tier.index()),
             DieRulesDataLoader.getRules().canMake(mask.dieType(), tier), installedGenerations,
-            matrix, settings, definition().orElseThrow().energyPerTick(tier, settings));
+            matrix, settings, tier.index()>=5&&coating!=null?coating.energyPerTick():definition().orElseThrow().energyPerTick(tier, settings));
         ProcessStartResult result = ProcessRun.start(request);
         if (result instanceof RefusalReason refusal) { lastRefusal = refusal; return; }
         Map<String, List<Integer>> required = new LinkedHashMap<>();

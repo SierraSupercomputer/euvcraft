@@ -115,10 +115,10 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         var sample=room();if(!enclosed(sample)||!slot(3).isEmpty())return false;var stack=slot(0);var lot=FoupItems.trustedContentsOf(stack);
         if(!canReceiveCarrier(stack))return false;
         int etchant=p("etchant_per_lot",1);if(etching()&&(etchant<1||etchant>64||!slot(1).is(ModItems.ETCHANT_CHARGE.get())||slot(1).getCount()<etchant))return false;
-        int duration=p("linear_vacuum_duration",p("vacuum_duration",400)),cost=fe(p("vacuum_energy_per_tick",960)),water=p("linear_rinse_water_mb",p("rinse_water_mb",4000));
+        int duration=p("linear_vacuum_duration",p("vacuum_duration",400)),cost=fe(p("vacuum_energy_per_tick",960)),water=p("linear_rinse_moved",1)==1?0:p("rinse_water_mb",4000);
         if(waterTank.amount()<water||buffer().getAmountAsLong()<cost||lot.size()>64)return false;
         drawFloor=Math.clamp(p("preparation_min_draw_permille",900),1,1000);
-        rinseDuration=p("linear_rinse_duration",p("rinse_duration",200));rinseFe=fe(p("rinse_energy_per_tick",480));rinseWater=water;dryDuration=p("linear_dry_duration",p("dry_duration",200));dryFe=fe(p("dry_energy_per_tick",960));pumpFe=fe(p("local_pump_fe_per_tick",200));
+        rinseDuration=p("linear_rinse_moved",1)==1?0:p("rinse_duration",200);rinseFe=fe(p("rinse_energy_per_tick",480));rinseWater=water;dryDuration=p("linear_dry_duration",p("dry_duration",200));dryFe=fe(p("dry_energy_per_tick",960));pumpFe=fe(p("local_pump_fe_per_tick",200));
         vacuumSpec=new VacuumPumpSpec(p("vacuum_pump_rate",5000),p("vacuum_idle_leak",100),p("vacuum_process_load",2000),p("vacuum_operating_pressure",10000),p("vacuum_reserve_capacity",50000),p("vacuum_reserve_recharge",1000));
         if(duration<1||duration>72000||rinseDuration<0||rinseDuration>72000||water<0||dryDuration<1||dryDuration>72000)return false;
         carrier=stack.copy();clearSlot(0);if(etching()){slot(1).shrink(etchant);if(slot(1).isEmpty())clearSlot(1);}footprint=List.copyOf(members());paidSamples=paidYieldSum=0;prepPhase=PrepPhase.VACUUM_DEP_ETCH;phaseProgress=0;phaseDuration=duration;phaseEnergyPerTick=cost;phaseWaterMb=0;jobRunning=true;setChanged();return true;

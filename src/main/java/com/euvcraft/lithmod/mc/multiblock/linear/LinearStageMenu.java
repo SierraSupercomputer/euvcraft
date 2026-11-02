@@ -29,6 +29,6 @@ public final class LinearStageMenu extends FabMachineMenu {
     @Override public boolean stillValid(Player player){
         if(!super.stillValid(player))return false;
         if(!panel)return true;
-        var pos=blockEntity.getBlockPos().above();return blockEntity.getLevel().getBlockEntity(pos) instanceof AdvancedMemberBlockEntity member&&member.belowOwner()==blockEntity&&player.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)<=64;
+        var pos=blockEntity.getBlockPos().above();return blockEntity.getLevel().getBlockEntity(pos) instanceof AdvancedMemberBlockEntity member&&member.belowOwner()==blockEntity&&member.getBlockState().getBlock()==AdvancedMachines.ADVANCED_OPERATING_PANEL.get()&&player.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)<=64;
     }
 }
