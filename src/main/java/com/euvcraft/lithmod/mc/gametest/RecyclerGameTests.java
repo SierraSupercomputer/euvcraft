@@ -50,9 +50,9 @@ public final class RecyclerGameTests {
         m.setStoredEnergy(35200);m.setSlot(1,new ItemStack(ModItems.SILICON.get(),64));ticks(m,20);eq(h,120,m.runner().progress(),"Full output pauses");eq(h,35200,m.buffer().getAmountAsInt(),"Blocked output costs no FE");m.clearSlot(1);ticks(m,280);eq(h,1,m.slot(1).getCount(),"Resumes exactly once");eq(h,24000,m.buffer().getAmountAsInt(),"No progress replay");
     }h.succeed();}
     private static void transfer(GameTestHelper h){try(var a=new Arena(h)){
-        var m=a.machine();var cap=m.items();var resource=ItemResource.of(item("wafer_scrap"));
+        var m=a.machine();check(h,m.acceptsInput(new ItemStack(item("wafer_scrap"),32)),"Partial valid input is admissible before a full batch");var cap=m.items();var resource=ItemResource.of(item("wafer_scrap"));
         for(var side:Direction.values())check(h,a.level.getCapability(Capabilities.Item.BLOCK,a.anchor(),side)==cap,"Same guarded handler on all faces");
-        try(var tx=Transaction.openRoot()){eq(h,64,cap.insert(0,resource,64,tx),"Accept loaded recipe input");eq(h,0,cap.extract(0,resource,64,tx),"Queued inputs protected");}
+        try(var tx=Transaction.openRoot()){eq(h,32,cap.insert(0,resource,32,tx),"Accept partial loaded recipe input");eq(h,0,cap.extract(0,resource,64,tx),"Queued inputs protected");}
         check(h,m.slot(0).isEmpty(),"Aborted insert rolls back");
         try(var tx=Transaction.openRoot()){eq(h,0,cap.insert(0,ItemResource.of(Items.DIRT),64,tx),"Reject nonrecipe");eq(h,64,cap.insert(0,resource,64,tx),"Commit batch");tx.commit();}
         m.setStoredEnergy(40000);ticks(m,1);check(h,!m.acceptsInput(new ItemStack(ModItems.CHIP_SCRAP.get())),"Active recipe locks input");var player=T7RuntimeFixtures.player(h,a.anchor());var menu=new ScrapRecyclerMenu(0,player.getInventory(),m);eq(h,38,menu.slots.size(),"Two machine and36 player slots");check(h,!menu.slots.get(0).mayPickup(player),"Active input cannot be picked up");check(h,!menu.slots.get(1).mayPlace(new ItemStack(ModItems.SILICON.get())),"Output cannot accept items");
