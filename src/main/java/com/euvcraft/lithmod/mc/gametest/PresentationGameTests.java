@@ -351,7 +351,7 @@ public final class PresentationGameTests {
 
         List<ItemStack> actualEntries = ModCreativeTabs.entries(params);
 
-        var existingEntries=actualEntries.stream().filter(e->!e.is(ModItems.ETCH_CELL.get())&&!e.is(ModItems.FAB_ITEM_PORT.get())&&!e.is(ModItems.ETCHANT_CHARGE.get())&&!e.is(ModItems.COATING_TRACK.get())&&!e.is(ModItems.WET_CLEANER.get())&&!e.is(ModItems.FAB_UPW_INLET.get())&&!e.is(ModItems.G3_ETCH_CELL.get())&&!e.is(ModItems.G3_FAB_ITEM_PORT.get())&&!e.is(ModItems.EUV_FAB_ITEM_PORT.get())).toList();
+        var existingEntries=actualEntries.stream().filter(e->!e.is(ModItems.SCRAP_RECYCLER.get())&&!e.is(ModItems.ETCH_CELL.get())&&!e.is(ModItems.FAB_ITEM_PORT.get())&&!e.is(ModItems.ETCHANT_CHARGE.get())&&!e.is(ModItems.COATING_TRACK.get())&&!e.is(ModItems.WET_CLEANER.get())&&!e.is(ModItems.FAB_UPW_INLET.get())&&!e.is(ModItems.G3_ETCH_CELL.get())&&!e.is(ModItems.G3_FAB_ITEM_PORT.get())&&!e.is(ModItems.EUV_FAB_ITEM_PORT.get())).toList();
         // Keep the original catalog order within each category.
         List<Item> expectedItems = List.of(
             // M1 items
