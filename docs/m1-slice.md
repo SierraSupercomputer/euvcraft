@@ -17,13 +17,14 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
   - com.euvcraft.lithmod.mc.compat.jei (2 files)
   - com.euvcraft.lithmod.mc.compat.mixin (4 files)
   - com.euvcraft.lithmod.mc.data (14 files)
-  - com.euvcraft.lithmod.mc.gametest (45 files)
+  - com.euvcraft.lithmod.mc.gametest (46 files)
   - com.euvcraft.lithmod.mc.machine (4 files)
   - com.euvcraft.lithmod.mc.machine.cleaner (7 files)
   - com.euvcraft.lithmod.mc.machine.client (1 files)
   - com.euvcraft.lithmod.mc.machine.mask (9 files)
   - com.euvcraft.lithmod.mc.machine.packaging (6 files)
   - com.euvcraft.lithmod.mc.machine.process (5 files)
+  - com.euvcraft.lithmod.mc.machine.recycler (5 files)
   - com.euvcraft.lithmod.mc.machine.screen (6 files)
   - com.euvcraft.lithmod.mc.machine.silicon (11 files)
   - com.euvcraft.lithmod.mc.machine.silicon.client (1 files)
@@ -2849,6 +2850,47 @@ protected int progressBarY();
 protected void init();
 public void containerTick();
 protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
+```
+
+### com.euvcraft.lithmod.mc.machine.recycler.RecyclerClientEvents$Screen
+```java
+```
+
+### com.euvcraft.lithmod.mc.machine.recycler.RecyclerClientEvents
+```java
+public static void screens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent);
+```
+
+### com.euvcraft.lithmod.mc.machine.recycler.RecyclerMachines
+```java
+public static void register(net.neoforged.bus.api.IEventBus);
+```
+
+### com.euvcraft.lithmod.mc.machine.recycler.ScrapRecyclerBlock
+```java
+public com.euvcraft.lithmod.mc.machine.recycler.ScrapRecyclerBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+protected net.minecraft.world.level.block.entity.BlockEntity createBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+```
+
+### com.euvcraft.lithmod.mc.machine.recycler.ScrapRecyclerBlockEntity
+```java
+public com.euvcraft.lithmod.mc.machine.recycler.ScrapRecyclerBlockEntity(net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState);
+protected java.lang.String machineId();
+public boolean acceptsInput(net.minecraft.world.item.ItemStack);
+public net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.item.ItemResource> items();
+protected net.minecraft.world.inventory.AbstractContainerMenu createMachineMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
+```
+
+### com.euvcraft.lithmod.mc.machine.recycler.ScrapRecyclerMenu
+```java
+protected void addDataSlots(net.minecraft.world.inventory.ContainerData);
+public com.euvcraft.lithmod.mc.machine.recycler.ScrapRecyclerMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
+public com.euvcraft.lithmod.mc.machine.recycler.ScrapRecyclerMenu(int, net.minecraft.world.entity.player.Inventory, net.minecraft.network.RegistryFriendlyByteBuf);
+protected void addMachineSlots();
+static com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity access$000(com.euvcraft.lithmod.mc.machine.recycler.ScrapRecyclerMenu);
+static com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity access$100(com.euvcraft.lithmod.mc.machine.recycler.ScrapRecyclerMenu);
+static com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity access$200(com.euvcraft.lithmod.mc.machine.recycler.ScrapRecyclerMenu);
+static com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity access$300(com.euvcraft.lithmod.mc.machine.recycler.ScrapRecyclerMenu);
 ```
 
 ### com.euvcraft.lithmod.mc.machine.screen.AdvancedMachineScreen
@@ -5942,6 +5984,7 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/machines/pick_and_place.json | pick_and_place | 100000 | 5000 | 20 | production |
 | src/main/resources/data/lithmod/machines/process_cell.json | process_cell | 100000 | 10000 | 20 | production |
 | src/main/resources/data/lithmod/machines/reflow_oven.json | reflow_oven | 500000 | 10000 | 240 | production |
+| src/main/resources/data/lithmod/machines/scrap_recycler.json | scrap_recycler | 40000 | 2000 | 40 | production |
 | src/main/resources/data/lithmod/machines/test_machine.json | test_machine | 10000 | 1000 | 40 | fixture (test-only) |
 | src/main/resources/data/lithmod/machines/test_package.json | test_package | 20000 | 2000 | 20 | production |
 | src/main/resources/data/lithmod/machines/utility_plant.json | utility_plant | 200000 | 10000 | 80 | production |
@@ -6461,6 +6504,17 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 }
 ```
 
+### src/main/resources/data/lithmod/machines/scrap_recycler.json
+
+```json
+{
+  "id": "scrap_recycler",
+  "energy_capacity": 40000,
+  "max_receive": 2000,
+  "energy_per_tick": 40
+}
+```
+
 ### src/main/resources/data/lithmod/machines/test_machine.json
 
 ```json
@@ -6571,9 +6625,9 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 }
 ```
 
-## Recipe Summary (194 actual resources: 192 production + 2 fixture-gated)
+## Recipe Summary (198 actual resources: 196 production + 2 fixture-gated)
 
-### Vanilla recipe datapack files (171 production)
+### Vanilla recipe datapack files (172 production)
 
 | Path | Type | Result | Count |
 |------|------|--------|-------|
@@ -6722,6 +6776,7 @@ test_machine definitions/recipes are dropped before validation outside fixture m
 | src/main/resources/data/lithmod/recipe/crafting/scanner_optics_module.json | minecraft:crafting_shaped | lithmod:scanner_optics_module | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_stage_module.json | minecraft:crafting_shaped | lithmod:scanner_stage_module | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/scanner_water_inlet.json | minecraft:crafting_shaped | lithmod:scanner_water_inlet | 1 |
+| src/main/resources/data/lithmod/recipe/crafting/scrap_recycler.json | minecraft:crafting_shaped | lithmod:scrap_recycler | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/stepper_stage.json | minecraft:crafting_shaped | lithmod:stepper_stage | 1 |
 | src/main/resources/data/lithmod/recipe/crafting/support_casing.json | minecraft:crafting_shaped | lithmod:support_casing | 4 |
 | src/main/resources/data/lithmod/recipe/crafting/support_power_port.json | minecraft:crafting_shaped | lithmod:support_power_port | 1 |
@@ -6776,6 +6831,9 @@ Loaded by MachineRecipeLoader (directory string "machine_recipes") on every serv
 | src/main/resources/data/lithmod/machine_recipes/pattern_logic_t1.json | pattern_generator | lithmod:mask | 1 | 200 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/pattern_logic_t2.json | pattern_generator | lithmod:mask | 1 | 200 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/pattern_memory_t2.json | pattern_generator | lithmod:mask | 1 | 200 | - | production |
+| src/main/resources/data/lithmod/machine_recipes/recycle_assembly_scrap.json | scrap_recycler | lithmod:silicon | 1 | 400 | - | production |
+| src/main/resources/data/lithmod/machine_recipes/recycle_chip_scrap.json | scrap_recycler | lithmod:silicon | 1 | 400 | - | production |
+| src/main/resources/data/lithmod/machine_recipes/recycle_wafer_scrap.json | scrap_recycler | lithmod:silicon | 1 | 400 | - | production |
 | src/main/resources/data/lithmod/machine_recipes/test_machine_from_ingot.json | test_machine | minecraft:gold_ingot | 1 | 4 | - | fixture (test-only) |
 | src/main/resources/data/lithmod/machine_recipes/test_machine_from_planks.json | test_machine | minecraft:stick | 4 | 6 | 5 | fixture (test-only) |
 
@@ -7274,6 +7332,63 @@ The two test_machine entries are the payload-gated fixtures: MachineRecipeLoader
 }
 ```
 
+#### src/main/resources/data/lithmod/machine_recipes/recycle_assembly_scrap.json (production)
+
+```json
+{
+  "machine": "scrap_recycler",
+  "ingredients": [
+    {
+      "item": "lithmod:assembly_scrap",
+      "count": 64
+    }
+  ],
+  "result": {
+    "item": "lithmod:silicon",
+    "count": 1
+  },
+  "ticks": 400
+}
+```
+
+#### src/main/resources/data/lithmod/machine_recipes/recycle_chip_scrap.json (production)
+
+```json
+{
+  "machine": "scrap_recycler",
+  "ingredients": [
+    {
+      "item": "lithmod:chip_scrap",
+      "count": 64
+    }
+  ],
+  "result": {
+    "item": "lithmod:silicon",
+    "count": 1
+  },
+  "ticks": 400
+}
+```
+
+#### src/main/resources/data/lithmod/machine_recipes/recycle_wafer_scrap.json (production)
+
+```json
+{
+  "machine": "scrap_recycler",
+  "ingredients": [
+    {
+      "item": "lithmod:wafer_scrap",
+      "count": 64
+    }
+  ],
+  "result": {
+    "item": "lithmod:silicon",
+    "count": 1
+  },
+  "ticks": 400
+}
+```
+
 #### src/main/resources/data/lithmod/machine_recipes/test_machine_from_ingot.json (fixture (test-only))
 
 ```json
@@ -7334,7 +7449,7 @@ Tier JSON fields per file (raw literals read from src/main/resources/data/lithmo
 | data/lithmod/tiers/t8.json | T8 | 8 | 90 | 100 | 80.0 | False |
 
 
-M0-owned data files stay as tracked: data/lithmod/die_rules/rules.json, data/lithmod/support_lines/matrix.json, and the 8 data/lithmod/tiers/t<index>.json files. Block loot tables: 112 files under data/lithmod/loot_table/blocks; block tag files: 2. Counts are read at generation time.
+M0-owned data files stay as tracked: data/lithmod/die_rules/rules.json, data/lithmod/support_lines/matrix.json, and the 8 data/lithmod/tiers/t<index>.json files. Block loot tables: 113 files under data/lithmod/loot_table/blocks; block tag files: 2. Counts are read at generation time.
 
 ### Machine data codecs (actual codec sources; core records stay game-independent)
 

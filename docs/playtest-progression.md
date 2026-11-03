@@ -1,6 +1,6 @@
 # EUVCRAFT playtest progression guide — T1 to T7
 
-**Linear-fab development update:** T4 follows Deposition → Scanner → Etch Cell → Advanced Test & Package. Its checkpoint was accepted on November 2. T5–T7 now add coating before exposure and productive wet cleaning after etching; T7 has separate G3 deposition and etch chambers. Use fresh later-tier batches. Earlier tier walkthroughs remain useful for modules/calibration, but the routes here supersede their older combined processing steps.
+Current guide for **0.8.0 Alpha**. This document replaces the separate historical walkthroughs. Back up worlds and finish active lots before updating. Older T4+ processed lots may lack paid-stage evidence: use fresh lots or discard and clean them. Existing worlds and panel geometry remain usable.
 
 Follow this route to test current progression. Use Survival to check crafting costs, or Creative to speed up construction. Keep chips from each generation: later recipes consume earlier chips. Exact crafting ingredients are in the [recipe reference](recipes.md); quantities below assume bundled defaults.
 
@@ -13,9 +13,8 @@ Follow this route to test current progression. Use Survival to check crafting co
 - [Tier 3 — pure substrates and selectable masks](#tier-3)
 - [Tier 4 — preparation chamber and calibrated scanner](#tier-4)
 - [Tier 5 — ultrapure water and diagnostic tuning](#tier-5)
-- [T5 cleanroom — optional, but worthwhile](#cleanrooms)
-- [Optional assembly and disposal](#assembly)
-- [Tier 6 and 7 linear routes](#tier-6-and-tier-7)
+- [Tier 6](#tier-6)
+- [Tier 7](#tier-7)
 - [Calibration reference](#calibration)
 - [Cleanrooms](#cleanrooms)
 - [Automation and item/fluid ports](#automation)
@@ -35,6 +34,7 @@ Follow this route to test current progression. Use Survival to check crafting co
 - Masks select chip family and tier. Match mask and Photoresist tier to installed equipment. A completed batch consumes **one mask use**, regardless of wafer count.
 - Missing power, consumables or output space can pause work. Check machine status before assuming it is broken.
 
+<a id="build-reference"></a>
 ## Build reference
 
 Dimensions are **width × height × depth**, facing the front. Production multiblocks are filled cuboids; cleanrooms are hollow. Use matching casings and power ports.
@@ -54,8 +54,25 @@ Dimensions are **width × height × depth**, facing the front. Production multib
 | Pick And Place | 2×2×2 | Controller; no upper panel. |
 | FOUP Cleaner | Single block | Machine itself |
 
-Place production multiblock controllers in the bottom front row, facing outward, with **one or two matching power ports** elsewhere. Fill remaining cells with casings except the modules, panels and fluid ports below. Confirm the machine is formed. Detailed walkthroughs linked at each tier show placement requirements.
+Choose any bottom-front controller column, facing outward; required upper panel goes directly above. Use 1–2 matching power ports for early/advanced machines and 1–4 for G3/EUV/hydrogen/vacuum machines. Fill remaining cells with casing except required modules/inlets below. Hold Shift over a controller for its build requirements. Put calibration interfaces on accessible faces. Physical modules remain flexible within allowed middle layers; the proposed bottom-only equipment bays are not implemented.
 
+| Additional machine | Size | Required frame, interfaces and modules |
+| --- | --- | --- |
+| Zone Refiner | 3×3×5 | Zone Casing, 1–2 Zone Power Ports, one Zone Water Inlet, upper Zone Operating Panel. |
+| Reflow Oven | 3×3×2 | Reflow Casing, 1–2 power ports, upper Operating Panel, one Calibration Panel in another middle-layer cell. |
+| G3 Reticle Writer | 3×3×5 | G3 Casing, 1–4 power ports, upper G3 Operating Panel; one Writing Module and Metrology Module in middle layer. |
+| G3 Deposition Chamber / Etch Cell | 5×5×7 | G3 Casing, 1–4 power ports, upper G3 Operating Panel; one Deposition Module, Rinse Module, Vacuum Module and UPW Inlet in the three middle layers. |
+| EUV Scanner | 5×5×7 | EUV Scanner Casing, 1–4 matching power ports, upper Operating Panel; one Exposure, Optics, Stage, Filtration, Metrology and Vacuum Module, Calibration Panel, Diagnostic Panel and UPW Inlet in the three middle layers. Exposure must be accessible for beamline. |
+| EUV Light Source | 3×3×5 | Source Casing, 1–4 matching power ports, upper Operating Panel; one Tin Inlet, Hydrogen Inlet, Vacuum Module, Pulse Control Module and Source Calibration Panel in middle layer. |
+| Hydrogen Purifier | 2×2×3 | Hydrogen Casing, 1–4 matching power ports, upper Operating Panel, one Gas Inlet and Gas Outlet. |
+| Central Vacuum Plant | 3×3×5 | Vacuum Casing, 1–4 matching power ports, upper Operating Panel, one Service Outlet and Service Conduit. |
+| Scrap Recycler | Single block | Direct FE and input/output GUI; no multiblock or water. |
+
+G2 deposition/etch and advanced packaging use Advanced Casing/Power Ports. Utility Plant additionally needs exactly one Utility Water Inlet and Pure Outlet. Coater optionally takes a Fab UPW Inlet for repair; Wet-Clean requires one. These inlets can replace spare casings. Scanner modules and panels belong in the middle layer; its UPW inlet may occupy a spare frame position. With one power port, T4/T5/T6 scanner uses 36/34/33 casings, Zone Refiner 41 and Reflow Oven 14.
+
+Use Java 25, Minecraft 26.3, NeoForge 26.3.0.99, Arcforge 2.8.1+26.3 and Encoded Logistics 1.5.0+26.3. Do not install the developer Arcforge API JAR. Matching client/server EUVCRAFT builds are required. Creative handling now preserves intact FOUPs; already stripped old processed data cannot be reconstructed. Substrate grade is separate from G2/G3 preparation. Fresh/deposited FOUPs can have multiple destinations; coating commits tier and the mask commits family/cores.
+
+<a id="tier-1"></a>
 ## Tier 1 — first logic chips
 
 1. **Crystal Puller:** Four Silicon → ordinary Silicon Boule.
@@ -67,6 +84,7 @@ Place production multiblock controllers in the bottom front row, facing outward,
 
 **Pass:** Obtain T1 Logic Chips and reuse the carrier. Some scrap is normal.
 
+<a id="tier-2"></a>
 ## Tier 2 — stepper and memory
 
 Keep the Process Cell. Replace its five equipment items with **I-line Lamp, Reduction Lens, Stepper Stage, Fine Air Filter, Overlay Scope**.
@@ -75,6 +93,7 @@ Use ordinary wafers. The Pattern Generator makes **T2 Logic Masks from Blank Mas
 
 **Pass:** Produce T2 Logic and Memory Chips. Save logic chips for the next machines.
 
+<a id="tier-3"></a>
 ## Tier 3 — pure substrates and selectable masks
 
 Build a **Boule Purifier** and **E-beam Mask Writer**, each 2×2×3 with Support Casings/Power Ports. Their controllers contain the inputs.
@@ -87,6 +106,7 @@ Build a **Boule Purifier** and **E-beam Mask Writer**, each 2×2×3 with Support
 
 **Pass:** Produce T3 Logic, Memory, Compute and NAND chips. Compute currently has one core.
 
+<a id="tier-4"></a>
 ## Tier 4 — preparation chamber and calibrated scanner
 
 Build separate **Deposition Chamber and Etch Cell (3×3×5 each)**, **Lithography Scanner (3×3×5)** and **Advanced Test & Package (2×2×3)** with Advanced Fab Casings/Power Ports. The scanner replaces the small Process Cell for T4 processing.
@@ -102,10 +122,11 @@ Run this route:
 5. Scanner upper panel: prepared FOUP + T4 mask + T4 resist.
 6. Etch Cell upper panel: exposed FOUP + one Etchant Charge → **Etched** FOUP. Then Advanced Test & Package upper panel: etched FOUP + Chip Packages. Leave **High Binning off** for normal production.
 
-**Pass:** Produce all four T4 chip families through the full scanner route. Older T4 walkthroughs predate the scanner; follow this route for current progression.
+**Pass:** Produce all four T4 chip families through the full scanner route. Follow this route for current progression.
 
-**Optional high binning:** The advanced packager can turn completed **T3 Logic/Compute lots into T4**, or **T4 Logic/Compute lots into T5**. Enable its toggle before admission. The default success threshold is only 0.15 times the source lot's effective yield: expect heavy losses. It reuses existing wafer rolls. Memory/NAND cannot be high-binned; logic stops at T5. This shortcut does not test the next tier's full machinery.
+**Optional high binning:** The advanced packager can turn completed **T3 Logic/Compute lots into T4**, or **T4 Logic/Compute lots into T5**. Enable its toggle before admission. The default packaging time/energy doubles and the success threshold is only 0.15 times the source lot's effective yield: expect heavy losses. It reuses existing wafer rolls. Memory/NAND cannot be high-binned; logic stops at T5. This shortcut does not test the next tier's full machinery. T3→T4 follows the T3 source route; T4→T5 follows T4 etching without T5 coating/cleaning. T5→T6 compute requires the full T5 route; T6→T7 compute requires the full T6 route and T7 enclosure at packaging. There is no T7→T8 binning.
 
+<a id="tier-5"></a>
 ## Tier 5 — ultrapure water and diagnostic tuning
 
 Keep the pure-boule, G2 preparation and advanced packaging chain.
@@ -121,47 +142,54 @@ One default utility batch makes **8,000 mB UPW**, while a default T5 lot needs *
 
 **Pass:** Produce all four T5 chip families with both calibrations accepted.
 
-## T5 cleanroom — optional, but worthwhile
-
-T5 works outside a cleanroom with a **0.5× room yield factor**. A clean room can raise this toward 1.0×; earlier tiers and Pick And Place have no room penalty.
-
-Build a sealed, hollow **cuboid** using cleanroom floor/wall/window blocks, including ceiling and corners. An outer **9×7×11** gives a **7×5×9 interior**, enough for a scanner and access space. Every scanner block must be strictly inside. Put one Cleanroom Controller and Cleanroom Filters in the shell; use sealed power/fluid/item ports for through-wall connections.
-
-Power the controller **and each filter**, insert Cleanroom Filter Medium, and allow filtration time while chunks stay loaded. New rooms start dirty; larger rooms need more filters. Doors open by redstone and leak when open. A complete four-piece gown reduces occupant contamination but does not eliminate it.
-
-**Pass:** Controller reports enclosed; PPM falls and the room yield factor improves. Compare production under better cleanliness. Current T5 breaches worsen yield; they do **not** abort lots or damage equipment. See the [cleanroom walkthrough](manual-walkthrough-cleanroom.md).
-
-## Optional assembly and disposal
-
-**Pick And Place:** Build a solid 2×2×2 with Assembly Casings, controller and Assembly Power Ports. Supply FE and universal blanks:
-
-| Product | Inputs | Tiers |
-|---|---|---|
-| Microcontroller | One Logic Chip + Microcontroller Blank | T1–T5 |
-| DIMM | Four Memory Chips + DIMM Blank | T2–T5 |
-| CPU | One Compute Chip + CPU Blank | T3–T5 |
-
-Outputs retain chip tier. Assembly has no calibration requirement or extra yield roll. NAND assembly is future content; T6 uses the calibrated reflow successor described below.
-
-**FOUP Cleaner:** Supply FE and ordinary water, insert an unwanted FOUP and choose **Discard & Clean**. This destroys **all wafers** in that carrier. It returns the same empty FOUP and **one Wafer Scrap per wafer**; it does not selectively remove failures. Default water cost: 1,000 mB. No Chip Packages or UPW needed. Wafer Scrap differs from packaging's Chip Scrap; recycling is not implemented. See the [cleaner walkthrough](manual-walkthrough-foup-cleaner.md).
-
-## Troubleshooting and reporting
-
-- **Unformed:** Check dimensions, filled cells, matching casings/ports, controller facing and required panel directly above it.
-- **No input slots:** Deposition/Etch and advanced packaging use the upper panel; lower cabinets are status-only. Purifier, mask writer and utility plant use their controller.
-- **Input refused:** Check FOUP substrate/preparation, matching mask/resist tier, equipment and accepted calibration. T4+ needs the large scanner and advanced packager.
-- **Paused:** Check FE, resist, UPW, filter media and output space. Same-resist top-ups are allowed; swapping resist during a run is not.
-- **Low yield:** Check calibration and T5 room cleanliness; turn off High Binning for normal production. Small batches can vary.
-
-Report tier/machine, visible status, FOUP tooltip, inputs, power/fluid supply and screenshots of the structure and GUI. Follow the [T6 walkthrough](manual-walkthrough-t6.md) after T5, then the [T7 EUV walkthrough](manual-walkthrough-t7.md). T7 adds Fab Hydrogen, a separate tin-fed source and scanner, G3 preparation/reticles, local or central vacuum, hard cleanroom enclosure, contaminated FOUP disposal and persistent equipment repair. T8, NAND assembly, server hardware compatibility and scrap recycling remain deferred.
-
 <a id="tier-6"></a>
+## Tier 6 — electronic-grade wafers and multi-patterning
+
+1. Build Zone Refiner, pipe UPW into its inlet and supply FE. Upper panel: Pure Silicon Boule → Electronic-Grade Boule. Default cost is 4,000 mB UPW and 600 paid ticks at 480 FE/t. Ordinary water is refused.
+2. Slice it into a FOUP. Its electronic-grade substrate is distinct from preparation: the T6 route correctly uses G2 preparation.
+3. Retrofit the T5 scanner with one Multi-Patterning Module in a spare middle-layer cell. Keep Immersion, water inlet and both calibration interfaces. Recalibrate.
+4. E-beam writer offers T6 compute, memory and NAND. Compute cores default to 1, 2, 4, 8, 12 or 24; select before writing. Masks retain this choice; memory/NAND have no core selection.
+
+**Route:** Electronic-grade boule → slicer → G2 deposition → Coating Track (**70 T6 resist**) → multi-patterning scanner → G2 Etch (**one Etchant Charge**) → Wet-Clean Station → advanced packaging → reflow CPU/DIMM.
+
+The scanner performs two internal exposure passes per layer; the carrier does not loop backward through the fab. Leave scanner resist empty. Refill the same-grade resist upstream beyond a stack of64. Core count must survive mask exposure, packaging and assembly, and different core counts must stay in distinct stacks.
+
+T6 rooms remain optional with yield penalties outside. Scanner/reflow count dirty **paid work ticks**: default threshold 1,200 ticks outside or above 2,500 PPM. Current batch retains admitted calibration; next batch requires recalibration. Scanner needs beam and diagnostic acceptance with renewed targets; reflow needs thermal acceptance. Idle/unpaid pause does not spend the grace period. Recalibration restores it even outside.
+
+Pass: all three chip families, at least two compute-core selections, CPU/DIMM assembly and dirty-work recalibration. Logic ends at T5. See [assembly](#assembly) for reflow.
+
 <a id="tier-7"></a>
-## Tier 6 and 7 linear routes
+## Tier 7 — EUV, Fab Hydrogen and vacuum
 
-T6: Electronic-grade boule → slicer → G2 deposition → Coating Track (70 T6 resist) → calibrated multi-patterning scanner → G2 Etch Cell (one Etchant Charge) → Wet-Clean Station → advanced packaging → existing reflow assembly. Refill resist beyond 64; it is paid gradually. Existing core selection and two internal exposure passes remain.
+Use electronic-grade wafers. Build the new G3 reticle writer, **separate G3 deposition and G3 etch chambers**, EUV scanner and independent source using the build table. Every T7 wafer-processing structure must fit strictly inside one enclosed, powered cleanroom. The source and utilities may remain outside. G3 reticle production outside a room loses uses, without a downstream yield factor.
 
-T7: Electronic-grade boule → slicer → G3 deposition → Coating Track (80 T7 resist) → EUV scanner with its separate calibrated source → G3 Etch Cell (one Etchant Charge) → Wet-Clean Station → advanced packaging → reflow. Every T7 wafer-processing structure must fit strictly inside an enclosed cleanroom; the shared coater/cleaner only require enclosure for T7. The G3 preparation rinse is now paid at the Wet-Clean Station. The source takes no FOUP. See the [new route walkthrough](manual-walkthrough-linear-t5-t7.md) for layouts, automation, shortages and breach/repair tests.
+### Supply utilities and reticles
+
+Hydrogen Purifier accepts Arcforge electrolyzer hydrogen through **pressurized gas conduits**. Upper panel takes Utility Filters. Default batch reserves 8,000 mB raw hydrogen +1 filter, pays 400 ticks at600 FE/t and outputs 6,000 mB Fab Hydrogen. Extract via Gas Outlet into compatible gas transport/storage.
+
+G3 writer upper panel selects T7 compute/memory/NAND and compute cores. Starting cost:1 Blank Mask +64 redstone +3,600 paid ticks at8,000 FE/t. Selection locks while working; lower cabinet is status-only.
+
+### Couple and calibrate source
+
+Supply source FE, Fab Hydrogen and Tin Feedstock. Starter recipe makes 4 feedstock from 4 copper,4 redstone and 1 iron; other tagged tin can satisfy c:ingots/tin. Pump down source/scanner vacuum. Source pulse calibration can be performed independently before a scanner is connected.
+
+Connect the scanner Exposure Module by **1–16 straight, loaded Beamline blocks** to a **plain source casing face**, not its inlet/module. Beamline supports X/Y/Z alignment and seals a cleanroom penetration. Avoid multiple source candidates. One source serves one scanner installation at a time; linked coordinates are distinct from readiness/reservation. Accept scanner beam/diagnostics and source pulse calibration before processing.
+
+**Route:** Electronic-grade boule → slicer → G3 deposition → Coating Track (**80 T7 resist**) → EUV scanner → G3 Etch (**one Etchant Charge**) → Wet-Clean → advanced packaging → reflow.
+
+Source takes no FOUP. Scanner takes coated G3-prepared FOUP + G3 T7 reticle, **no physical resist**. Eighty layers require ongoing FE/UPW/Fab Hydrogen/tin credit/pump service. Deposition and etch share the preparation quality budget; rinse is paid at productive cleaning, with room yield finalized once. Do not apply old combined-machine water/energy totals a second time. Shortages pause the admitted lot without rerolling calibration or source binding.
+
+### Breach and repair
+
+T7 containment loss, including controller-power loss during an active FE-paused job, contaminates wafers and leaves affected equipment needing repair. Supply shortages alone do not trigger this. Seal the room and dispose of contaminated wafers in FOUP Cleaner; repairs cannot restore them.
+
+Starting repair bill: **2 Utility Filters +16 redstone +8,000 mB UPW +200,000 FE**, editable per machine. G3/scanner cabinets hold repair materials. Coater/Wet-Clean repair uses upper input 1 filters and input 2 redstone plus UPW/FE, then Repair. Coater may need optional UPW inlet installed. Scanner requires fresh beam/diagnostics afterward; targets change. Machine contamination survives save/controller pickup.
+
+### Optional central vacuum
+
+Build Central Vacuum Plant after local pumps work. Connect Service Outlet via Service Conduits to accessible Vacuum Modules. **Cleanroom Vacuum Port** seals wall crossings; ordinary service conduit does not. Each chamber retains pressure/reserve. Machine isolation falls back to its local pump. Default plant supplies up to20,000 service units/t at350 FE/t under load, versus three local pumps at200 FE/t each. Check demand/client status and disconnect a branch without disturbing others; networks do not load distant chunks.
+
+Pass: T7 compute/memory/NAND, retained CPU cores, calibrated source, shortage/reload recovery, and a deliberate test-world breach → disposal → repair → recalibration cycle.
 
 <a id="calibration"></a>
 ## Calibration reference
@@ -174,18 +202,18 @@ T7: Electronic-grade boule → slicer → G3 deposition → Coating Track (80 T7
 
 **EUV source pulse (T7):** Separate **Source Calibration Panel** on the EUV Light Source. Three knobs: **Droplet Phase**, **Main-pulse Delay**, **Pulse Amplitude**. Each **Test Pulse** costs **12,000 FE + 50 mB Fab H₂ + 25 tin credits** (1 feedstock = 1,000 credits). Accept at quality ≥ 60 (default). Source factor: 0.85 at Q60 → 1.00 at Q100. Survives reload; replacing Pulse Control Module or rebuilding source requires fresh calibration.
 
-**T6 contamination / T7 reticle:** T6 contamination invalidates and reshuffles diagnostic targets. T7 reticle beam calibration follows existing approved-per-mask policy; source instructions shown in panel.
+**T6 contamination:** invalidation renews beam and diagnostic targets once and persists them. Old solutions cannot simply be reaccepted. No recurring per-mask calibration rule is added. Active lots keep frozen qualities; controls lock during operation.
 
 <a id="cleanrooms"></a>
 ## Cleanrooms
 
-Cleanrooms are **hollow sealed cuboids** built from cleanroom floor, wall, and window blocks (including ceiling and corners). One **Cleanroom Controller** and one or more **Cleanroom Filters** inside the shell. Use **Cleanroom Power Port**, **Cleanroom Fluid Port**, **Cleanroom Item Port** for through-wall connections.
+Cleanrooms are **hollow sealed cuboids** built from cleanroom floor, wall, and window blocks (including ceiling and corners). Put one **Cleanroom Controller** and one or more **Cleanroom Filters** in the shell. Use **Cleanroom Power Port**, **Cleanroom Fluid Port**, **Cleanroom Item Port** for through-wall connections.
 
-- **Room yield factor:** Outside = 0.5× (T5+). Inside, PPM falls over time toward 1.0×. Controller reports **enclosed** when sealed.
+- **Room yield factor:** Outside = 0.5× (T5+). Inside, filtration reduces PPM and improves the yield factor toward 1.0×. Controller reports **enclosed** when sealed.
 - **Power:** Controller and each filter need FE. Insert **Cleanroom Filter Medium** into filters.
 - **Filtration time:** Chunks must stay loaded. Larger rooms need more filters. Doors leak when open (redstone-controlled).
 - **Gowns:** Four-piece set reduces occupant contamination; does not eliminate it.
-- **T5/T6:** Soft penalty only. Breaches worsen yield; do not abort lots or damage equipment.
+- **T5/T6:** Outside operation is permitted with yield penalties. T6 additionally invalidates calibration after sustained dirty paid work, as described above. T7-style wafer scrapping/equipment repair does not apply to T5/T6.
 - **T7:** **Hard requirement.** All T7 wafer-processing multiblocks (G3 Deposition, EUV Scanner, G3 Etch, Wet-Clean, Advanced Packager, Reflow) must be strictly inside an enclosed powered room. Coater and cleaner only hard-require enclosure for T7 lots.
 - **Breach during T7 run:** Active wafers become **Contaminated FOUP**. Machine contamination persists through saves and controller pickup. Discard via FOUP Cleaner (returns Wafer Scrap). Repair via lower cabinet: 2 Utility Filters + 16 Redstone + 8,000 mB UPW + 200,000 FE (configurable). Repairs never restore contaminated wafers. Scanner also requires fresh beam + diagnostic calibration (targets change).
 - **Central Vacuum (exists):** 3×3×5 Central Vacuum Plant with Vacuum Casing, Service Outlet, Service Conduits. Connect to machine Vacuum Modules. Cleanroom Vacuum Port seals through walls. Plant: up to 20,000 service units/t at 350 FE/t vs. 200 FE/t per local pump. Isolated chambers fall back to local pump.
@@ -193,11 +221,11 @@ Cleanrooms are **hollow sealed cuboids** built from cleanroom floor, wall, and w
 <a id="automation"></a>
 ## Automation and item/fluid ports
 
-**Fab Item Port** (Advanced) / **G3 Fab Item Port** / **EUV Fab Item Port**: replace any casing in a formed multiblock. Exposes machine inventory on all faces. Works with Arcforge item conduits (configure pull/push at endpoints). Inputs, installed masks, and scanner modules cannot be extracted. Power still enters via power ports. Breaking the shell stops transfers.
+**Fab Item Port** (Advanced) / **G3 Fab Item Port** / **EUV Fab Item Port**: replace any casing in a formed multiblock. Exposes machine inventory on all faces. Works with Arcforge item conduits (configure pull/push at endpoints). Queued/active wafers and installed equipment are protected; finished outputs and empty packaging return FOUPs are extractable. Power still enters via power ports. Breaking the shell stops transfers.
 
 **Fluid/gas:** Arcforge-compatible pipes/conduits. UPW from Utility Plant → Scanner/Coater/Wet-Clean inlets. Fab Hydrogen via pressurized gas conduits from Hydrogen Purifier. Ordinary water refused by UPW inlets.
 
-**Hoppers:** Not supported on any EUVCRAFT machine.
+**Transport:** Dedicated item capabilities do not promise generic vanilla hopper support. Recycler has all-face guarded input/output automation; queued/active input cannot be extracted. Cleanroom power/fluid/item ports bridge real Arcforge networks across walls: configure the axis and both endpoint sides. Fluid ports also support compatible gas transfer with gas conduits; vacuum service uses its separate sealed port.
 
 **Automation checklist:** Process two successive FOUPs through each tier. Confirm finished outputs + empty return-pack FOUPs extract; active/queued wafers and modules protected.
 
@@ -220,31 +248,32 @@ Outputs retain chip tier. No yield roll. NAND assembly deferred.
 
 | Result | Admitted inputs | Default work |
 |---|---|---|
-| T6/T7 CPU | 1 Compute Chip + 1 CPU Blank | 240 ticks, 240 FE/t |
-| T6/T7 DIMM | 4 Memory Chips + 1 DIMM Blank | 240 ticks, 240 FE/t |
+| T6 CPU / T7 CPU | 1 same-tier Compute Chip + 1 CPU Blank | T6:240 ticks; T7:360 ticks, both 240 FE/t |
+| T6 DIMM / T7 DIMM | 4 same-tier Memory Chips + 1 DIMM Blank | T6:240 ticks; T7:360 ticks, both 240 FE/t |
 
 Successful CPU preserves core count. Failed assembly consumes inputs → 1 Assembly Scrap. No T6/T7 microcontroller or NAND assembly. T1–T5 Pick And Place remains available.
 
-**Open issue:** Reflow controls/metrics clustering issue still open. Do not adjust targets or present unverified workarounds.
+**Open report:** [Reflow dwell/cooling clarity](issues/T6_REFLOW_DWELL_COOLING_CLARITY.md) is unreproduced and awaits exact settings, measured values and configured bands. No thermal mechanics changed in this release.
 
 <a id="recycling"></a>
 ## Recycling (new single-block Recycler)
 
-**Recycler** — single block, craftable: **6 Iron + 2 Redstone + Furnace**. GUI: input slot, output slot, FE buffer. Optional **Fab Item Port** on any face for conduit automation (all faces). Hoppers not supported.
+**Recycler** — single block, craftable: **6 Iron + 2 Redstone + Furnace**. GUI: input slot, output slot, FE buffer. Direct guarded item capability on all faces for Arcforge conduit automation; no separate item port is needed. Vanilla hopper support is not provided.
 
 **Recipes** (three editable `machine_recipes` JSON files):
+
 - 64 **Wafer Scrap** → 1 Silicon
 - 64 **Chip Scrap** → 1 Silicon
 - 64 **Assembly Scrap** → 1 Silicon
 
-**Process:** 400 ticks @ 40 FE/t. No water. Default recovery **below 100%**; check loops after config edits. Does not accept live FOUPs, chips, or masks.
+**Process:** 400 ticks @ 40 FE/t = 16,000 FE. Capacity 40,000 FE, max receive 2,000 FE/insertion. A partial batch waits without payment; blocked output or insufficient FE pauses paid progress, including across reload. Only finished output is extractable; inputs lock while active. No water. Default recovery **below 100%**; check loops after config edits. Does not accept live FOUPs, chips, or masks.
 
 **FOUP Cleaner** (existing): FE + ordinary water → **Discard & Clean** destroys all wafers in carrier, returns empty FOUP + 1 Wafer Scrap per wafer (default 1,000 mB water). Does not selectively remove failures. Wafer Scrap ≠ Chip Scrap. Loose scrap can then go to Recycler.
 
 <a id="jei"></a>
 ## JEI integration (optional)
 
-Requires **JEI 31.14.0.72+** for Minecraft 26.3 / NeoForge. Client-side install; dedicated server works without JEI. Matching EUVCRAFT client/server builds provide the process catalog.
+Requires **JEI 31.14.0.72+** for Minecraft 26.3 / NeoForge. Install JEI and its required dependencies (including matching MezzConfig) on the client; dedicated server works without JEI. Matching EUVCRAFT client/server builds provide the process catalog.
 
 - **Station = actual controller block** (not casings/panels). Multiblocks accessed via operating panel still list controller.
 - **Categories:** slicing, preparation, coating, scanning, etching, productive cleaning, disposal, packaging/high binning, utility services, vacuum/light-source services.
@@ -253,7 +282,7 @@ Requires **JEI 31.14.0.72+** for Minecraft 26.3 / NeoForge. Client-side install;
 - **FOUP icons:** generic stage-labelled carrier placeholders, not finished lots. Hover for stage/tier/substrate. Multiple compatible pages shown; private lot data never exposed.
 - **Notes:** abbreviated; hover details for full explanation. FE/t and ticks reflect current server new-job settings. Variable/phase-specific costs in notes. Admitted lots retain frozen budgets (may differ after config edit).
 - **Yields:** packaging/reflow output counts illustrative. High binning follows source tier's completed route; T7 targets additionally require enclosure. Wet-Clean retains wafers; FOUP Cleaner explicitly destroys.
-- **Server sync:** Catalog sent on login/datapack reload/settings change. JEI refreshes changed pages; clears previous server's catalog on disconnect. Bundled: ~114 pages across 25 controller stations. Datapacks/settings can change this. Oversized/unsupported data fails closed to empty pages.
+- **Server sync:** Catalog sent on login/datapack reload/settings change. JEI refreshes changed pages; clears previous server's catalog on disconnect. Bundled: 117 pages across 26 controller stations. Datapacks/settings can change this. Oversized/unsupported data fails closed to empty pages.
 - **Verification:** Start with matching builds + supported JEI. Check all controller stations have processes. Find Pure Silicon Boule, patterned mask, UPW, Fab Hydrogen via JEI. Follow FOUP through T4 and T5–T7. Inspect normal/high-bin packaging and reflow failure outputs. Change recipe via datapack + `/reload`; check updates. Reconnect to second server; first server's overrides gone. Remove JEI → EUVCRAFT still starts and machines operate. No Ponder or auto-crafting.
 
 <a id="troubleshooting"></a>
@@ -285,47 +314,17 @@ Run these practical checks in order. Use Survival for costs, Creative for speed.
 4. **Cleanroom:** Build 9×7×11 outer / 7×5×9 inner. Power controller + filters. Verify PPM drops, room yield factor improves. Compare T5 yield inside vs. outside.
 5. **T6 full route:** Zone Refiner (pure boule + UPW → electronic-grade boule) → slicer → G2 Deposition → Coating Track (70 T6 resist, refill >64) → Scanner + Multi-Patterning Module (beam + diagnostic calib) → G2 Etch (1 charge) → Wet-Clean → Advanced Packager → Reflow (thermal calibration). Test compute core selection (1/2/4/8/12/24). High bin T5→T6 compute.
 6. **T7 full route:** Hydrogen Purifier (gas conduits) → G3 Reticle Writer (cleanroom affects reticle uses only) → Zone Refiner → slicer → G3 Deposition (in cleanroom) → Coating Track (80 T7 resist) → EUV Source (tin + Fab H₂ + pulse calibration) → EUV Scanner (in cleanroom, beam + diagnostic calib) → G3 Etch (1 charge) → Wet-Clean → Advanced Packager (in cleanroom) → Reflow (in cleanroom). High bin T6→T7 compute (requires cleanroom at packaging).
-7. **Breach/recovery:** Pause T7 run → break cleanroom wall → verify Contaminated FOUP → FOUP Cleaner → repair machine → fresh calibration → resume.
+7. **Breach/recovery:** Pause T7 run → break cleanroom wall → verify Contaminated FOUP → FOUP Cleaner → repair machine → fresh calibration → run a fresh lot.
 8. **Automation:** Two successive FOUPs per tier via Fab Item Ports + Arcforge conduits. Verify active wafers protected, empty carriers return.
 9. **JEI:** With JEI 31.14.0.72+, verify all controller stations appear, fluid entries correct, FOUP icons generic, mask use = 1/lot, server sync on reload/reconnect.
-10. **Recycler:** Craft recycler. Feed 64 Wafer Scrap / Chip Scrap / Assembly Scrap → 1 Silicon each. Verify 400 ticks @ 40 FE/t, no water, Fab Item Port works, hoppers ignored.
+10. **Recycler:** Craft recycler. Feed 64 Wafer Scrap / Chip Scrap / Assembly Scrap → 1 Silicon each. Verify 400 ticks @ 40 FE/t, no water, direct Arcforge item conduit transfer works, active input protected.
 11. **Config edits:** Change a recipe/timing/yield via JSON + `/reload`. Verify JEI updates, in-progress lots retain frozen budgets, new lots use new values. Check recovery loops.
 
 <a id="known-issues"></a>
-## Known issues
+## Known issues and deferred work
 
-**Open (current):**
-- Reflow controls/metrics clustering issue — do not adjust targets or present unverified workarounds.
-- Default recovery rates below 100%; config edits may create loops — verify after changes.
-- JEI catalog oversized/unsupported data fails closed to empty pages.
+The [issue index](issues/README.md) distinguishes one unreproduced reflow report, seven implemented T6 repairs awaiting explicit owner confirmation, and completed fixes. It is not a list of currently proven defects. Cleanroom resource-port repairs were owner-confirmed.
 
-**Fixed (awaiting owner confirmation / already resolved in current build):**
-- Game crash on shutdown — fixed.
-- Creative inventory search/grouping — fixed.
-- Panel placement/rendering — fixed.
-- FOUP tooltip stage/preparation hints — fixed.
-- Scanner ordinary water refusal — fixed.
-- Source pulse calibration persistence — fixed.
-- Cleanroom controller enclosed detection — fixed.
-- High binning route guards (T3→T4, T4→T5, T5→T6, T6→T7) — implemented per spec.
-- Central vacuum plant — implemented.
-- Coating Track resist tier commit / mask family commit — implemented.
-- Wet-Clean productive (retains wafers) vs FOUP Cleaner destructive — implemented.
-- T7 hard cleanroom enclosure for all wafer-processing stages — implemented.
-- G3 Deposition/Etch shared quality budget, room yield finalized once after Wet-Clean — implemented.
-- G3 Reticle Writer non-clean fewer uses, no downstream yield penalty — implemented.
+T8, NAND assembly, Encoded Logistics hardware/server progression, Ponder, airlocks/arbitrary rooms, equipment-bay remodeling and recovery of other raw materials remain separate work. Recheck material loops after changing wafer/chip/scrap/recovery settings.
 
-**Deferred (not in M1 scope):**
-- NAND assembly.
-- T8 progression.
-- Recycler extra outputs (beyond 3 scrap types → Silicon).
-- EL (Encoded Logistics) hardware integration beyond Arcforge conduit verification.
-- Ponder integration.
-- Airlocks / arbitrary room shapes.
-- Equipment bay model redesign.
-- Reflow oven model/layout redesign beyond 3×3×2 calibrated unit.
-- Global recipe rewrite to require assembled components.
-
----
-
-**Reporting problems:** Include tier, machine, visible status text, FOUP tooltip, exact inputs, power/fluid supply, and screenshots of the multiblock structure and GUI. Reference [issues/README.md](issues/README.md) for the issue template.
+Report version, tier/machine, exact status, FOUP tooltip, inputs, utility supply, settings/datapacks, structure/GUI screenshots and relevant latest.log/crash report. Private debug data is not required for normal play.
