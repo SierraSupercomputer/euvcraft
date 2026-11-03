@@ -10,12 +10,14 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
   - com.euvcraft.lithmod.core.multiblock (16 files)
   - com.euvcraft.lithmod.core.routing (4 files)
   - com.euvcraft.lithmod.core.t7 (11 files)
+  - com.euvcraft.lithmod.core.viewer (1 files)
   - com.euvcraft.lithmod.mc (23 files)
   - com.euvcraft.lithmod.mc.cleanroom (21 files)
   - com.euvcraft.lithmod.mc.compat (1 files)
+  - com.euvcraft.lithmod.mc.compat.jei (2 files)
   - com.euvcraft.lithmod.mc.compat.mixin (4 files)
   - com.euvcraft.lithmod.mc.data (14 files)
-  - com.euvcraft.lithmod.mc.gametest (44 files)
+  - com.euvcraft.lithmod.mc.gametest (45 files)
   - com.euvcraft.lithmod.mc.machine (4 files)
   - com.euvcraft.lithmod.mc.machine.cleaner (7 files)
   - com.euvcraft.lithmod.mc.machine.client (1 files)
@@ -44,6 +46,7 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
   - com.euvcraft.lithmod.mc.recipe (4 files)
   - com.euvcraft.lithmod.mc.registry (5 files)
   - com.euvcraft.lithmod.mc.routing (5 files)
+  - com.euvcraft.lithmod.mc.viewer (7 files)
 
 ## Generated API (compiled bytecode via tools/generate-m0-api.ps1 -M1)
 
@@ -1529,6 +1532,46 @@ public boolean processingAllowed();
 public boolean paused();
 ```
 
+### com.euvcraft.lithmod.core.viewer.ViewerPage$Ingredient
+```java
+public com.euvcraft.lithmod.core.viewer.ViewerPage$Ingredient(com.euvcraft.lithmod.core.viewer.ViewerPage$Kind, java.lang.String, int, java.lang.String, java.lang.String, int, int, int);
+public static com.euvcraft.lithmod.core.viewer.ViewerPage$Ingredient item(java.lang.String, int);
+public com.euvcraft.lithmod.core.viewer.ViewerPage$Ingredient labelled(java.lang.String);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public com.euvcraft.lithmod.core.viewer.ViewerPage$Kind kind();
+public java.lang.String id();
+public int amount();
+public java.lang.String label();
+public java.lang.String family();
+public int tier();
+public int cores();
+public int uses();
+```
+
+### com.euvcraft.lithmod.core.viewer.ViewerPage$Kind
+```java
+public static com.euvcraft.lithmod.core.viewer.ViewerPage$Kind[] values();
+public static com.euvcraft.lithmod.core.viewer.ViewerPage$Kind valueOf(java.lang.String);
+```
+
+### com.euvcraft.lithmod.core.viewer.ViewerPage
+```java
+public com.euvcraft.lithmod.core.viewer.ViewerPage(java.lang.String, java.lang.String, java.util.List<com.euvcraft.lithmod.core.viewer.ViewerPage$Ingredient>, java.util.List<com.euvcraft.lithmod.core.viewer.ViewerPage$Ingredient>, java.util.List<com.euvcraft.lithmod.core.viewer.ViewerPage$Ingredient>, java.util.List<java.lang.String>, long, long);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public java.lang.String id();
+public java.lang.String machine();
+public java.util.List<com.euvcraft.lithmod.core.viewer.ViewerPage$Ingredient> inputs();
+public java.util.List<com.euvcraft.lithmod.core.viewer.ViewerPage$Ingredient> outputs();
+public java.util.List<com.euvcraft.lithmod.core.viewer.ViewerPage$Ingredient> catalysts();
+public java.util.List<java.lang.String> notes();
+public long ticks();
+public long fePerTick();
+```
+
 ### com.euvcraft.lithmod.mc.ChipCatalog$Design
 ```java
 public com.euvcraft.lithmod.mc.ChipCatalog$Design(java.lang.String, int);
@@ -2060,6 +2103,38 @@ public void set(int, int);
 ### com.euvcraft.lithmod.mc.compat.TooltipLineWrapping
 ```java
 public static java.util.List<net.minecraft.network.chat.FormattedText> wrap(net.minecraft.client.StringSplitter, net.minecraft.network.chat.FormattedText, int, net.minecraft.network.chat.Style, boolean);
+```
+
+### com.euvcraft.lithmod.mc.compat.jei.EuvcraftJeiPlugin
+```java
+public com.euvcraft.lithmod.mc.compat.jei.EuvcraftJeiPlugin();
+public net.minecraft.resources.Identifier getPluginUid();
+public void registerItemSubtypes(mezz.jei.api.registration.ISubtypeRegistration);
+public void registerCategories(mezz.jei.api.registration.IRecipeCategoryRegistration);
+public void registerExtraIngredients(mezz.jei.api.registration.IExtraIngredientRegistration);
+public void registerRecipeCatalysts(mezz.jei.api.registration.IRecipeCatalystRegistration);
+public void registerRecipes(mezz.jei.api.registration.IRecipeRegistration);
+public void onRuntimeAvailable(mezz.jei.api.runtime.IJeiRuntime);
+public void onRuntimeUnavailable();
+```
+
+### com.euvcraft.lithmod.mc.compat.jei.ProcessCategory
+```java
+com.euvcraft.lithmod.mc.compat.jei.ProcessCategory(java.lang.String, mezz.jei.api.recipe.types.IRecipeType<com.euvcraft.lithmod.core.viewer.ViewerPage>, mezz.jei.api.helpers.IGuiHelper);
+public mezz.jei.api.recipe.types.IRecipeType<com.euvcraft.lithmod.core.viewer.ViewerPage> getRecipeType();
+public net.minecraft.network.chat.Component getTitle();
+public int getWidth();
+public int getHeight();
+public mezz.jei.api.gui.drawable.IDrawable getIcon();
+public net.minecraft.resources.Identifier getIdentifier(com.euvcraft.lithmod.core.viewer.ViewerPage);
+public void setRecipe(mezz.jei.api.gui.builder.IRecipeLayoutBuilder, com.euvcraft.lithmod.core.viewer.ViewerPage, mezz.jei.api.recipe.IFocusGroup);
+public static net.minecraft.world.item.ItemStack stack(com.euvcraft.lithmod.core.viewer.ViewerPage$Ingredient);
+public void draw(com.euvcraft.lithmod.core.viewer.ViewerPage, mezz.jei.api.gui.ingredient.IRecipeSlotsView, net.minecraft.client.gui.GuiGraphicsExtractor, double, double);
+public void getTooltip(mezz.jei.api.gui.builder.ITooltipBuilder, com.euvcraft.lithmod.core.viewer.ViewerPage, mezz.jei.api.gui.ingredient.IRecipeSlotsView, double, double);
+public net.minecraft.resources.Identifier getIdentifier(java.lang.Object);
+public void getTooltip(mezz.jei.api.gui.builder.ITooltipBuilder, java.lang.Object, mezz.jei.api.gui.ingredient.IRecipeSlotsView, double, double);
+public void draw(java.lang.Object, mezz.jei.api.gui.ingredient.IRecipeSlotsView, net.minecraft.client.gui.GuiGraphicsExtractor, double, double);
+public void setRecipe(mezz.jei.api.gui.builder.IRecipeLayoutBuilder, java.lang.Object, mezz.jei.api.recipe.IFocusGroup);
 ```
 
 ### com.euvcraft.lithmod.mc.compat.mixin.EncodedTooltipMixin
@@ -5764,6 +5839,52 @@ public boolean contaminated();
 ### com.euvcraft.lithmod.mc.routing.LinkedFabItems
 ```java
 public static net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.item.ItemResource> view(net.neoforged.neoforge.transfer.ResourceHandler<net.neoforged.neoforge.transfer.item.ItemResource>, java.util.function.BooleanSupplier);
+```
+
+### com.euvcraft.lithmod.mc.viewer.ViewerCatalog
+```java
+public static java.util.List<com.euvcraft.lithmod.core.viewer.ViewerPage> build();
+```
+
+### com.euvcraft.lithmod.mc.viewer.ViewerCatalogCodec
+```java
+public static java.lang.String encode(java.util.List<com.euvcraft.lithmod.core.viewer.ViewerPage>);
+public static java.util.List<com.euvcraft.lithmod.core.viewer.ViewerPage> decode(java.lang.String);
+```
+
+### com.euvcraft.lithmod.mc.viewer.ViewerClientEvents
+```java
+public static void register(net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent);
+public static void logout(net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent$LoggingOut);
+```
+
+### com.euvcraft.lithmod.mc.viewer.ViewerClientStore
+```java
+public static java.util.List<com.euvcraft.lithmod.core.viewer.ViewerPage> pages();
+public static void accept(java.lang.String);
+public static void clear();
+public static void listen(java.lang.Runnable);
+```
+
+### com.euvcraft.lithmod.mc.viewer.ViewerMachines
+```java
+```
+
+### com.euvcraft.lithmod.mc.viewer.ViewerPayload
+```java
+public com.euvcraft.lithmod.mc.viewer.ViewerPayload(java.lang.String);
+public net.minecraft.network.protocol.common.custom.CustomPacketPayload$Type<com.euvcraft.lithmod.mc.viewer.ViewerPayload> type();
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public java.lang.String json();
+```
+
+### com.euvcraft.lithmod.mc.viewer.ViewerSync
+```java
+public static void register(net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent);
+public static void sync(net.neoforged.neoforge.event.OnDatapackSyncEvent);
+public static void settingsChanged();
 ```
 
 ## Config: FabConfig (ModConfig.Type.LOCAL registered in EUVCRAFTMod.java, runtime run/config/lithmod-local.toml)
