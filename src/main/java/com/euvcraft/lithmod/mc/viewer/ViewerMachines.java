@@ -9,6 +9,7 @@ public final class ViewerMachines {
         var map=new LinkedHashMap<String,String>();
         for(var id:List.of("crystal_puller","wafer_slicer","pattern_generator","test_package","foup_cleaner","boule_purifier","ebeam_mask_writer","deposition_etcher","etch_cell","lithography_scanner","advanced_test_package","utility_plant","pick_and_place","zone_refiner","reflow_oven","hydrogen_purifier","central_vacuum_plant","g3_deposition_etcher","g3_etch_cell","g3_reticle_writer","coating_track","wet_cleaner"))map.put(id,"lithmod:"+id);
         map.put("process_cell","lithmod:process_cell_controller");
+        map.put("scrap_recycler","lithmod:scrap_recycler");
         map.put("lithography_scanner","lithmod:scanner_controller");
         map.put("euv_scanner","lithmod:euv_scanner_controller");
         map.put("euv_light_source","lithmod:euv_light_source_controller");

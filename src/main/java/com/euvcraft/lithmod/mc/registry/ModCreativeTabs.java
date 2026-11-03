@@ -91,6 +91,7 @@ public final class ModCreativeTabs {
     private static void populate(CreativeModeTab.ItemDisplayParameters parameters, CreativeModeTab.Output output) {
         // Silicon chain machines
         output.accept(ModItems.CRYSTAL_PULLER.get());
+        output.accept(ModItems.SCRAP_RECYCLER.get());
         output.accept(ModItems.WAFER_SLICER.get());
         // Pattern Generator
         output.accept(ModItems.PATTERN_GENERATOR.get());

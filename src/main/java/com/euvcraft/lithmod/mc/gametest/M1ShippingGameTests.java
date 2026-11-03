@@ -125,7 +125,7 @@ public final class M1ShippingGameTests {
         if (definitions != null) {
             helper.assertTrue(definitions.byId("test_machine").isEmpty(),
                 "test_machine definition must be absent when fixtures are off");
-            helper.assertValueEqual(30, definitions.size(),
+            helper.assertValueEqual(31, definitions.size(),
                 "production machine definition inventory when fixtures are off");
             for (String machineId : PRODUCTION_DEFINITIONS) {
                 helper.assertTrue(definitions.byId(machineId).isPresent(),
@@ -145,7 +145,7 @@ public final class M1ShippingGameTests {
                     "production recipes for '" + machineId + "' must be loaded");
             }
             // 4 production recipe JSONs remain once the two test_machine fixtures are filtered.
-            helper.assertValueEqual(21, recipes.size(),
+            helper.assertValueEqual(24, recipes.size(),
                 "production machine recipe inventory when fixtures are off");
         }
 

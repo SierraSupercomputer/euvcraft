@@ -40,7 +40,7 @@ class MachineTitleResourceTest {
 
     /** The production machine definition ids observed in data/lithmod/machines. */
     private static final Set<String> PRODUCTION_IDS = Set.of(
-            "coating_track", "wet_cleaner", "g3_etch_cell", "etch_cell", "crystal_puller", "wafer_slicer", "pattern_generator", "test_package", "process_cell",
+            "scrap_recycler", "coating_track", "wet_cleaner", "g3_etch_cell", "etch_cell", "crystal_puller", "wafer_slicer", "pattern_generator", "test_package", "process_cell",
             "boule_purifier", "ebeam_mask_writer", "deposition_etcher", "advanced_test_package", "lithography_scanner", "utility_plant", "pick_and_place", "cleanroom_controller", "cleanroom_filter", "foup_cleaner", "cleanroom_power_port", "cleanroom_fluid_port", "cleanroom_item_port", "zone_refiner", "reflow_oven", "g3_reticle_writer", "g3_deposition_etcher", "euv_scanner", "euv_light_source", "hydrogen_purifier", "central_vacuum_plant");
 
     @Test

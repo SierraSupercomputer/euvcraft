@@ -166,15 +166,15 @@ public final class PresentationGameTests {
     }
     private static void recipeRegistry(GameTestHelper h) {
         var vanilla = resources(h, "recipe");
-        h.assertValueEqual(171, vanilla.size(), "M1 vanilla recipe inventory");
+        h.assertValueEqual(172, vanilla.size(), "M1 vanilla recipe inventory");
         for (var entry : vanilla.entrySet()) {
             JsonObject source = json(entry.getValue());
             expectedOutput(h, source, assemble(h, entry.getKey(), source), entry.getKey().toString());
         }
         var custom = resources(h, "machine_recipes");
         var resolved = MachineRecipeLoader.getRegistry().all();
-        h.assertValueEqual(23, custom.size(), "Custom source inventory");
-        h.assertValueEqual(23, resolved.size(), "Resolved custom inventory");
+        h.assertValueEqual(26, custom.size(), "Custom source inventory");
+        h.assertValueEqual(26, resolved.size(), "Resolved custom inventory");
         Set<com.euvcraft.lithmod.core.MachineRecipeSpec> expected = new HashSet<>();
         for (var entry : custom.entrySet()) {
             var spec = MachineRecipeSpecCodec.CODEC.parse(JsonOps.INSTANCE, json(entry.getValue())).getOrThrow();
@@ -211,7 +211,7 @@ public final class PresentationGameTests {
                 cooking++;
             }
         }
-        h.assertValueEqual(169, crafting, "Crafting lookup inventory");
+        h.assertValueEqual(170, crafting, "Crafting lookup inventory");
         h.assertValueEqual(2, cooking, "Cooking lookup inventory");
         var sand = manager.getRecipeFor(RecipeType.SMELTING, new SingleRecipeInput(new ItemStack(Items.SAND)), h.getLevel()).orElseThrow();
         h.assertTrue(sand.value().assemble(new SingleRecipeInput(new ItemStack(Items.SAND))).is(Items.GLASS), "Sand must still smelt to glass");
@@ -511,7 +511,7 @@ public final class PresentationGameTests {
         fullExpected.add(ModItems.DIMM_T7.get());fullExpected.add(ModItems.RESIST_T7.get());fullExpected.add(ModItems.TIN_FEEDSTOCK.get());
         fullExpected.add(com.euvcraft.lithmod.mc.multiblock.euv.EuvMachines.LIGHT_SOURCE_PULSE_MODULE.get().asItem());
         fullExpected.add(com.euvcraft.lithmod.mc.multiblock.euv.EuvMachines.LIGHT_SOURCE_CALIBRATION_PANEL.get().asItem());
-          h.assertValueEqual(224, actualEntries.size(), "Creative catalog exact entry count");
+          h.assertValueEqual(225, actualEntries.size(), "Creative catalog exact entry count");
         for (int i = 0; i < 215; i++) {
             Item expected = fullExpected.get(i);
             Item actual = existingEntries.get(i).getItem();

@@ -46,6 +46,7 @@ public final class FabItemAccess {
 
     private static boolean canInsert(FabMachineBlockEntity machine,int slot,ItemStack stack){
         if(machine.isRemoved()||stack.isEmpty())return false;
+        if(machine instanceof com.euvcraft.lithmod.mc.machine.recycler.ScrapRecyclerBlockEntity recycler)return slot==0&&recycler.acceptsInput(stack);
         if(machine instanceof com.euvcraft.lithmod.mc.multiblock.linear.LinearStageBlockEntity stage){
             return slot==0?stage.canReceiveCarrier(stack):slot==1?stage.acceptsReagent(stack):slot==2&&stage.requiresRepair()&&stack.is(net.minecraft.world.item.Items.REDSTONE);
         }

@@ -1,0 +1,14 @@
+{
+  "machine": "scrap_recycler",
+  "ingredients": [
+    {
+      "item": "lithmod:wafer_scrap",
+      "count": 64
+    }
+  ],
+  "result": {
+    "item": "lithmod:silicon",
+    "count": 1
+  },
+  "ticks": 400
+}

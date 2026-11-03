@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "top": "lithmod:block/crystal_puller",
+    "side": "lithmod:block/crystal_puller",
+    "front": "lithmod:block/t4_unformed_controller"
+  }
+}

@@ -611,5 +611,7 @@
   "jei.lithmod.inputs": "Inputs",
   "jei.lithmod.outputs": "Outputs",
   "jei.lithmod.catalysts": "Reusable / installed",
-  "jei.lithmod.details": "Hover here for full process details"
+  "jei.lithmod.details": "Hover here for full process details",
+  "block.lithmod.scrap_recycler": "Scrap Recycler",
+  "item.lithmod.scrap_recycler": "Scrap Recycler"
 }

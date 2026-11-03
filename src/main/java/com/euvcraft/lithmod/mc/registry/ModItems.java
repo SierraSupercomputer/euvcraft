@@ -44,6 +44,7 @@ public final class ModItems {
 
     /** Registry of EUVCRAFT items. */
     public static final Items ITEMS = DeferredRegister.createItems(EUVCRAFTMod.MODID);
+    public static final DeferredItem<BlockItem> SCRAP_RECYCLER=ITEMS.registerSimpleBlockItem("scrap_recycler",()->com.euvcraft.lithmod.mc.machine.recycler.RecyclerMachines.BLOCK.get());
 
     /** Provisional craftable tin supply; its JSON recipe can be replaced by ore refining later. */
     public static final DeferredItem<Item> TIN_FEEDSTOCK = ITEMS.registerSimpleItem("tin_feedstock");

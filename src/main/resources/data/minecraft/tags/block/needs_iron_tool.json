@@ -55,6 +55,7 @@
     "lithmod:fab_upw_inlet",
     "lithmod:g3_etch_cell",
     "lithmod:g3_fab_item_port",
-    "lithmod:euv_fab_item_port"
+    "lithmod:euv_fab_item_port",
+    "lithmod:scrap_recycler"
   ]
 }

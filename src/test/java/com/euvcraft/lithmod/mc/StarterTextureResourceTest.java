@@ -305,6 +305,7 @@ class StarterTextureResourceTest {
         List<String> modelFiles = listResources(ITEM_MODELS, ".json");
         for (String modelFile : modelFiles) {
             String id = modelFile.substring(0, modelFile.length() - 5);
+            if(id.equals("scrap_recycler")) continue; // ScrapRecyclerResourceTest
             if(LinearLaterResourceTest.MODELS.contains(id)) continue; // strip .json
             if (Set.of("etch_cell","fab_item_port","etchant_charge").contains(id)) continue; // LinearFabResourceTest
             if(CleanroomAssetResourceTest.ITEM_MODELS.contains(id)||id.equals("foup_cleaner")) continue;
@@ -326,6 +327,7 @@ class StarterTextureResourceTest {
         List<String> modelFiles = listResources(BLOCK_MODELS, ".json");
         for (String modelFile : modelFiles) {
             String id = modelFile.substring(0, modelFile.length() - 5);
+            if(id.equals("scrap_recycler")) continue; // ScrapRecyclerResourceTest
             if(LinearLaterResourceTest.MODELS.contains(id)) continue;
             if(CleanroomAssetResourceTest.BLOCK_MODELS.contains(id)) continue;
             if (T6AssetResourceTest.BLOCKS.contains(id)||T7ProductResourceTest.MODELS.contains(id)||Set.of("etch_cell","fab_item_port","fab_item_port_formed").contains(id)) continue;

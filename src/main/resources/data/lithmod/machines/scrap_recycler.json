@@ -1,0 +1,6 @@
+{
+  "id": "scrap_recycler",
+  "energy_capacity": 40000,
+  "max_receive": 2000,
+  "energy_per_tick": 40
+}
