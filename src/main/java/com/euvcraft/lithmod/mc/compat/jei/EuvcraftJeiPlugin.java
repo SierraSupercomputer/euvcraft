@@ -29,6 +29,9 @@ public final class EuvcraftJeiPlugin implements IModPlugin {
         registration.registerSubtypeInterpreter(ModItems.MASK.get(),(stack,context)->{var mask=stack.get(ModDataComponents.MASK_DATA.get());return mask==null?null:mask.dieType()+"/"+mask.tierIndex();});
     }
     @Override public void registerCategories(IRecipeCategoryRegistration registration){TYPES.forEach((machine,type)->registration.addRecipeCategories(new ProcessCategory(machine,type,registration.getJeiHelpers().getGuiHelper())));}
+    @Override public void registerExtraIngredients(IExtraIngredientRegistration registration){
+        registration.addExtraIngredients(mezz.jei.api.neoforge.NeoForgeTypes.FLUID_STACK,List.of(new net.neoforged.neoforge.fluids.FluidStack(com.euvcraft.lithmod.mc.multiblock.utilities.UtilityFluids.ULTRAPURE_WATER.get(),1000),new net.neoforged.neoforge.fluids.FluidStack(com.euvcraft.lithmod.mc.multiblock.hydrogen.HydrogenFluids.FAB_HYDROGEN.get(),1000)));
+    }
     @Override public void registerRecipeCatalysts(IRecipeCatalystRegistration registration){
         TYPES.forEach((machine,type)->registration.addCraftingStation(type,BuiltInRegistries.ITEM.getValue(Identifier.parse(ViewerMachines.CONTROLLERS.get(machine)))));
     }

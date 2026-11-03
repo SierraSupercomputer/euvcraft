@@ -133,6 +133,7 @@ modEventBus.addListener(ComponentTooltipAppenders::register);
         modContainer.registerConfig(ModConfig.Type.LOCAL, FabConfig.getSpec());
         config = new FabConfig();
         config.addSettingsChangeListener(FabYieldService::onSettingsChanged);
+        config.addSettingsChangeListener(com.euvcraft.lithmod.mc.viewer.ViewerSync::settingsChanged);
 
         // Without these the spec values are never read back into FabSettings, so
         // FabConfig.getSettings() would keep returning the defaults forever.

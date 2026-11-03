@@ -101,6 +101,14 @@ config="lithmod.client.mixins.json"
     side="BOTH"
 
 # Features are specific properties of the game environment, that you may want to declare you require. This example declares
+[[dependencies.${mod_id}]]
+    modId="jei"
+    type="optional"
+    versionRange="[31.14.0.72,)"
+    ordering="AFTER"
+    side="CLIENT"
+
+# Features are specific properties of the game environment, that you may want to declare you require. This example declares
 # that your mod requires GL version 3.2 or higher. Other features will be added. They are side aware so declaring this won't
 # stop your mod loading on the server for example.
 #[features.${mod_id}]

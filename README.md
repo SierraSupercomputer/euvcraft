@@ -35,6 +35,8 @@ Install EUVCRAFT, Arcforge and Encoded Logistics in the client and server's mods
 
 ## Getting started
 
+- [JEI process pages](docs/jei.md): optional item/fluid production lookup, with multiblock controllers as crafting stations. Supports the Minecraft 26.3 / NeoForge JEI API starting at 31.14.0.72; the core mod also works without JEI.
+
 - [T1–T5 progression guide](docs/playtest-progression.md): the early production route, machine layouts, utilities, cleanrooms and assembly.
 - [T6 walkthrough](docs/manual-walkthrough-t6.md): electronic-grade silicon, multi-patterning and reflow assembly.
 - [Source pulse calibration](docs/manual-walkthrough-source-calibration.md): tin timing, laser amplitude and accepted source quality.

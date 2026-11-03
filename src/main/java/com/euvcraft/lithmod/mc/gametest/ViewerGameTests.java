@@ -26,7 +26,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class ViewerGameTests {
     private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS=DeferredRegister.create(Registries.TEST_FUNCTION,"lithmod");
     private static final Map<String,Consumer<GameTestHelper>> CASES=new LinkedHashMap<>();
-    static {add("viewer_catalog_registry",ViewerGameTests::catalog);add("viewer_catalog_authoritative_reload",ViewerGameTests::reload);add("viewer_catalog_wire_and_disconnect",ViewerGameTests::wire);add("viewer_linear_route_costs",ViewerGameTests::routes);}
+    static {add("viewer_catalog_registry",ViewerGameTests::catalog);add("viewer_catalog_authoritative_reload",ViewerGameTests::reload);add("viewer_catalog_wire_and_disconnect",ViewerGameTests::wire);add("viewer_linear_route_costs",ViewerGameTests::routes);add("viewer_zero_resist",ViewerGameTests::zeroResist);}
     private static void add(String name,Consumer<GameTestHelper> fn){CASES.put(name,fn);FUNCTIONS.register(name,()->fn);}
     public static void register(IEventBus bus){FUNCTIONS.register(bus);bus.addListener((Consumer<RegisterGameTestsEvent>)event->{for(var name:CASES.keySet()){var id=Identifier.fromNamespaceAndPath("lithmod",name);var env=event.registerEnvironment(id,new TestEnvironmentDefinition[0]);var data=new TestData<>(env,Level.OVERWORLD,Identifier.withDefaultNamespace("empty"),400,0,true,Rotation.NONE,false,1,1,false,0);event.registerTest(id,new FunctionGameTestInstance(ResourceKey.<Consumer<GameTestHelper>>create(Registries.TEST_FUNCTION,id),data));}});}
     private static ViewerPage find(List<ViewerPage> rows,String id){return rows.stream().filter(row->row.id().equals("lithmod:process/"+id)).findFirst().orElseThrow();}
@@ -65,6 +65,9 @@ public final class ViewerGameTests {
             check(h,find(pages,"clean/t"+tier).inputs().stream().anyMatch(i->i.id().equals("lithmod:ultrapure_water")),"Productive cleaning is discoverable from real UPW");
         }
         check(h,pages.stream().anyMatch(p->p.outputs().stream().anyMatch(i->i.id().equals("lithmod:fab_hydrogen"))),"Fab hydrogen has a searchable production output");h.succeed();
+    }
+    private static void zeroResist(GameTestHelper h){
+        int original=FabConfig.RESIST_PER_LAYER.get();try{FabConfig.RESIST_PER_LAYER.set(0);EUVCRAFTMod.config().onConfigReload();var pages=ViewerCatalog.build();ViewerCatalogCodec.encode(pages);for(int tier=5;tier<=7;tier++){var coat=find(pages,"coat/t"+tier);eq(h,1,coat.inputs().size(),"Zero-cost resist is not a consumed zero-count stack");check(h,coat.catalysts().size()==1&&coat.catalysts().getFirst().id().equals("lithmod:resist_t"+tier)&&coat.catalysts().getFirst().amount()==1,"Tier-selecting resist remains visible as reusable");}}finally{FabConfig.RESIST_PER_LAYER.set(original);EUVCRAFTMod.config().onConfigReload();}h.succeed();
     }
     private ViewerGameTests(){}
 }

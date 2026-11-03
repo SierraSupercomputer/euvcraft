@@ -9,10 +9,17 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 public final class ViewerSync {
     public static void register(RegisterPayloadHandlersEvent event){event.registrar("1").executesOn(net.neoforged.neoforge.network.registration.HandlerThread.MAIN).optional().playToClient(ViewerPayload.TYPE,ViewerPayload.CODEC);}
     public static void sync(OnDatapackSyncEvent event){
+        send(event.getRelevantPlayers());
+    }
+    public static void settingsChanged(com.euvcraft.lithmod.core.FabSettings ignored){
+        var server=net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        if(server!=null&&server.isRunning())server.execute(()->send(server.getPlayerList().getPlayers().stream()));
+    }
+    private static void send(java.util.stream.Stream<net.minecraft.server.level.ServerPlayer> players){
         ViewerPayload payload;
         try{payload=new ViewerPayload(ViewerCatalogCodec.encode(ViewerCatalog.build()));}
         catch(RuntimeException bad){EUVCRAFTMod.LOGGER.warn("Could not build recipe viewer catalog; hiding stale process pages",bad);payload=new ViewerPayload("[]");}
-        final var sent=payload;event.getRelevantPlayers().forEach(player->{if(player.connection.hasChannel(ViewerPayload.TYPE))PacketDistributor.sendToPlayer(player,sent);});
+        final var sent=payload;players.forEach(player->{if(player.connection.hasChannel(ViewerPayload.TYPE))PacketDistributor.sendToPlayer(player,sent);});
     }
     private ViewerSync(){}
 }
