@@ -11,7 +11,7 @@ public final class ViewerSync {
     public static void sync(OnDatapackSyncEvent event){
         send(event.getRelevantPlayers());
     }
-    public static void settingsChanged(com.euvcraft.lithmod.core.FabSettings ignored){
+    public static void settingsChanged(){
         var server=net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
         if(server!=null&&server.isRunning())server.execute(()->send(server.getPlayerList().getPlayers().stream()));
     }
