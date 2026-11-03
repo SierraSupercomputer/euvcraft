@@ -607,5 +607,9 @@
   "state.lithmod.linear.coating": "Coating resist",
   "state.lithmod.linear.baking": "Baking resist",
   "state.lithmod.linear.rinsing": "UPW rinse",
-  "state.lithmod.linear.drying": "Cleaning / drying"
+  "state.lithmod.linear.drying": "Cleaning / drying",
+  "jei.lithmod.inputs": "Inputs",
+  "jei.lithmod.outputs": "Outputs",
+  "jei.lithmod.catalysts": "Reusable / installed",
+  "jei.lithmod.details": "Hover here for full process details"
 }

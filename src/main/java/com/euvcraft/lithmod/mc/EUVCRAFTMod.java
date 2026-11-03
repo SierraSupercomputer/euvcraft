@@ -114,6 +114,7 @@ modEventBus.addListener(ComponentTooltipAppenders::register);
             com.euvcraft.lithmod.mc.gametest.T4RuntimeGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.LinearFabGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.LaterFabGameTests.register(modEventBus);
+            com.euvcraft.lithmod.mc.gametest.ViewerGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.ScannerGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.T5GameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.T6GameTests.register(modEventBus);
@@ -149,6 +150,8 @@ modEventBus.addListener(ComponentTooltipAppenders::register);
         NeoForge.EVENT_BUS.register(MachineDefinitionLoader.class);
         NeoForge.EVENT_BUS.register(MachineRecipeLoader.class);
         NeoForge.EVENT_BUS.register(SupportRecipeLoader.class);
+        modEventBus.addListener(com.euvcraft.lithmod.mc.viewer.ViewerSync::register);
+        NeoForge.EVENT_BUS.addListener(com.euvcraft.lithmod.mc.viewer.ViewerSync::sync);
         NeoForge.EVENT_BUS.register(com.euvcraft.lithmod.mc.data.HighBinningDataLoader.class);
 
         LOGGER.info("EUVCRAFT mod loading...");

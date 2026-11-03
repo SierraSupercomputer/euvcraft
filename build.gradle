@@ -27,6 +27,11 @@ sourceSets.main.resources {
 }
 
 repositories {
+    maven {
+        name = 'JEI'
+        url = 'https://maven.blamejared.com'
+        content { includeGroup 'mezz.jei' }
+    }
     // Add here additional repositories if required by some of the dependencies below.
     flatDir {
         dirs 'libs'
@@ -124,6 +129,9 @@ dependencies {
     implementation files("libs/encodedlogistics-1.5.0+26.3.jar")
     implementation files("libs/arcforge-2.8.1+26.3.jar")
     compileOnly files("libs/arcforge-api-1.2.0+26.3.jar")
+    // Optional viewer: compile against the API, never embed or require the full mod.
+    compileOnly "mezz.jei:jei-${minecraft_version}-common-api:31.14.0.72"
+    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:31.14.0.72"
 
     testCompileOnly files(sourceSets.main.compileClasspath)
     testRuntimeOnly files(sourceSets.main.runtimeClasspath)
