@@ -25,9 +25,9 @@ public final class HydrogenClientEvents {
     @SubscribeEvent
     public static void fluids(RegisterFluidModelsEvent event) {
         // Use a simple gas-like model for the fabricated hydrogen
-        var still = new Material(Identifier.withDefaultNamespace("block/gas_still"), true);
-        var flowing = new Material(Identifier.withDefaultNamespace("block/gas_flow"), true);
-        event.register(new FluidModel.Unbaked(still, flowing, null, (FluidTintSource) null), HydrogenFluids.FAB_HYDROGEN, HydrogenFluids.FLOWING);
+        var still = new Material(Identifier.withDefaultNamespace("block/water_still"), true);
+        var flowing = new Material(Identifier.withDefaultNamespace("block/water_flow"), true);
+        event.register(new FluidModel.Unbaked(still, flowing, null, (FluidTintSource)(state->0xff8eeedb)), HydrogenFluids.FAB_HYDROGEN, HydrogenFluids.FLOWING);
     }
 
     private HydrogenClientEvents() {}
