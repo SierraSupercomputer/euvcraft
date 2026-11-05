@@ -6,18 +6,18 @@ Deterministic output: source-root-relative paths only, stable ordinal ordering, 
 ## Package Layout (parsed from actual package declarations)
 
   - com.euvcraft.lithmod.core (61 files)
-  - com.euvcraft.lithmod.core.cleanroom (3 files)
+  - com.euvcraft.lithmod.core.cleanroom (4 files)
   - com.euvcraft.lithmod.core.multiblock (16 files)
   - com.euvcraft.lithmod.core.routing (4 files)
   - com.euvcraft.lithmod.core.t7 (11 files)
   - com.euvcraft.lithmod.core.viewer (1 files)
   - com.euvcraft.lithmod.mc (23 files)
-  - com.euvcraft.lithmod.mc.cleanroom (21 files)
+  - com.euvcraft.lithmod.mc.cleanroom (22 files)
   - com.euvcraft.lithmod.mc.compat (1 files)
   - com.euvcraft.lithmod.mc.compat.jei (2 files)
   - com.euvcraft.lithmod.mc.compat.mixin (4 files)
   - com.euvcraft.lithmod.mc.data (14 files)
-  - com.euvcraft.lithmod.mc.gametest (46 files)
+  - com.euvcraft.lithmod.mc.gametest (47 files)
   - com.euvcraft.lithmod.mc.machine (4 files)
   - com.euvcraft.lithmod.mc.machine.cleaner (7 files)
   - com.euvcraft.lithmod.mc.machine.client (1 files)
@@ -1134,6 +1134,49 @@ public int cleanPpm();
 public int dirtyPpm();
 ```
 
+### com.euvcraft.lithmod.core.cleanroom.FilterReport$Page
+```java
+public com.euvcraft.lithmod.core.cleanroom.FilterReport$Page(int, int, int, int, int, int, java.util.List<com.euvcraft.lithmod.core.cleanroom.FilterReport$Row>);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public int total();
+public int page();
+public int pages();
+public int working();
+public int attention();
+public int unavailable();
+public java.util.List<com.euvcraft.lithmod.core.cleanroom.FilterReport$Row> rows();
+```
+
+### com.euvcraft.lithmod.core.cleanroom.FilterReport$Row
+```java
+public com.euvcraft.lithmod.core.cleanroom.FilterReport$Row(int, int, int, com.euvcraft.lithmod.core.cleanroom.FilterReport$State, int, int, int, int);
+public final java.lang.String toString();
+public final int hashCode();
+public final boolean equals(java.lang.Object);
+public int x();
+public int y();
+public int z();
+public com.euvcraft.lithmod.core.cleanroom.FilterReport$State state();
+public int energy();
+public int capacity();
+public int spare();
+public int remainingTicks();
+```
+
+### com.euvcraft.lithmod.core.cleanroom.FilterReport$State
+```java
+public static com.euvcraft.lithmod.core.cleanroom.FilterReport$State[] values();
+public static com.euvcraft.lithmod.core.cleanroom.FilterReport$State valueOf(java.lang.String);
+public boolean attention();
+```
+
+### com.euvcraft.lithmod.core.cleanroom.FilterReport
+```java
+public static com.euvcraft.lithmod.core.cleanroom.FilterReport$Page page(java.util.List<com.euvcraft.lithmod.core.cleanroom.FilterReport$Row>, int);
+```
+
 ### com.euvcraft.lithmod.core.multiblock.AssemblyStructureMatcher
 ```java
 public static com.euvcraft.lithmod.core.multiblock.MatchResult match(com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.MultiblockDirection, java.util.function.Function<com.euvcraft.lithmod.core.multiblock.MultiblockPos, com.euvcraft.lithmod.core.multiblock.BlockKind>);
@@ -1851,6 +1894,7 @@ public int trend();
 public boolean powered();
 public java.lang.String fault();
 public net.minecraft.core.BlockPos faultPos();
+public java.util.List<net.minecraft.core.BlockPos> knownFilters();
 public void revalidate();
 public void validateKnown();
 public void serverTick();
@@ -1882,6 +1926,11 @@ public boolean canPlaceItem(int, net.minecraft.world.item.ItemStack);
 protected net.minecraft.world.inventory.AbstractContainerMenu createMachineMenu(int, net.minecraft.world.entity.player.Inventory, com.euvcraft.lithmod.mc.machine.FabMachineBlockEntity);
 protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput);
 protected void loadAdditional(net.minecraft.world.level.storage.ValueInput);
+```
+
+### com.euvcraft.lithmod.mc.cleanroom.CleanroomFilterDiagnostics
+```java
+public static java.util.List<com.euvcraft.lithmod.core.cleanroom.FilterReport$Row> snapshot(com.euvcraft.lithmod.mc.cleanroom.CleanroomControllerBlockEntity);
 ```
 
 ### com.euvcraft.lithmod.mc.cleanroom.CleanroomFilterItems
@@ -1916,6 +1965,18 @@ public com.euvcraft.lithmod.mc.cleanroom.CleanroomMenu(int, net.minecraft.world.
 protected void addMachineSlots();
 public boolean filter();
 public int value(int);
+protected net.minecraft.world.inventory.Slot addSlot(net.minecraft.world.inventory.Slot);
+public boolean filtersTab();
+public void setFiltersTab(boolean);
+public boolean clickMenuButton(net.minecraft.world.entity.player.Player, int);
+public void broadcastChanges();
+public int reportTotal();
+public int reportPage();
+public int reportPages();
+public int reportWorking();
+public int reportAttention();
+public int reportUnavailable();
+public java.util.List<com.euvcraft.lithmod.core.cleanroom.FilterReport$Row> reportRows();
 ```
 
 ### com.euvcraft.lithmod.mc.cleanroom.CleanroomPortBlock$PortRole
@@ -2028,6 +2089,11 @@ protected int progressBarY();
 protected int energyBarX();
 protected int energyBarY();
 protected boolean hasProgressBar();
+protected boolean hasEnergyBar();
+protected void init();
+public void containerTick();
+public boolean mouseScrolled(double, double, double, double);
+public void extractBackground(net.minecraft.client.gui.GuiGraphicsExtractor, int, int, float);
 protected void extractLabels(net.minecraft.client.gui.GuiGraphicsExtractor, int, int);
 ```
 
