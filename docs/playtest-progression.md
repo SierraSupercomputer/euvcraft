@@ -218,6 +218,14 @@ Cleanrooms are **hollow sealed cuboids** built from cleanroom floor, wall, and w
 - **Breach during T7 run:** Active wafers become **Contaminated FOUP**. Machine contamination persists through saves and controller pickup. Discard via FOUP Cleaner (returns Wafer Scrap). Repair via lower cabinet: 2 Utility Filters + 16 Redstone + 8,000 mB UPW + 200,000 FE (configurable). Repairs never restore contaminated wafers. Scanner also requires fresh beam + diagnostic calibration (targets change).
 - **Central Vacuum (exists):** 3×3×5 Central Vacuum Plant with Vacuum Casing, Service Outlet, Service Conduits. Connect to machine Vacuum Modules. Cleanroom Vacuum Port seals through walls. Plant: up to 20,000 service units/t at 350 FE/t vs. 200 FE/t per local pump. Isolated chambers fall back to local pump.
 
+### Filter maintenance from the controller
+
+Open the Cleanroom Controller and select **Filters**. The tab lists the room’s discovered filters with **absolute X/Y/Z coordinates**, status, stored/capacity FE, spare Filter Medium items and the remaining life of medium already in use (seconds, rounded up). A filter can have no spare items and still be filtering with its paid medium.
+
+Filters needing attention appear first; coordinate order breaks ties. Five rows fit per page. Scroll over the list with the mouse wheel or use the arrows. The summary counts the entire list, including filters on other pages. Values refresh about once per second while the tab is open. Return to **Room** for enclosure/PPM and the player inventory; a filter’s own GUI is unchanged.
+
+Previously discovered filters in unloaded chunks show **Chunk unavailable** and unknown resource values. Reporting never loads chunks; on a room rescan, removed filters disappear. The tab is read-only: refill medium and power at the filter or through its normal automation. Use matching updated EUVCRAFT builds on client and server. No world conversion is needed.
+
 <a id="automation"></a>
 ## Automation and item/fluid ports
 

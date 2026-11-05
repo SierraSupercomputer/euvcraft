@@ -117,6 +117,7 @@ modEventBus.addListener(ComponentTooltipAppenders::register);
             com.euvcraft.lithmod.mc.gametest.LaterFabGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.ViewerGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.RecyclerGameTests.register(modEventBus);
+            com.euvcraft.lithmod.mc.gametest.FilterMonitorGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.ScannerGameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.T5GameTests.register(modEventBus);
             com.euvcraft.lithmod.mc.gametest.T6GameTests.register(modEventBus);

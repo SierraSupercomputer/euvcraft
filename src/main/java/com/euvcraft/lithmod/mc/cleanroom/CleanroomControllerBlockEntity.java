@@ -16,6 +16,8 @@ public final class CleanroomControllerBlockEntity extends FabMachineBlockEntity 
  public CleanroomControllerBlockEntity(BlockPos p,BlockState s){super(CleanroomBlocks.CONTROLLER_BE.get(),p,s,0,0);}
  @Override protected String machineId(){return "cleanroom_controller";}
  public RoomBounds bounds(){return bounds;}public int state(){return state;}public int cleanliness(){return score;}public int ppm(){return CleanroomAtmosphere.ppm(score,CleanroomRulesLoader.rules());}public int roomYield(){return state==ENCLOSED?CleanroomAtmosphere.yieldPermille(score,CleanroomRulesLoader.rules()):CleanroomRulesLoader.rules().outsideYieldPermille();}public int doors(){return doors;}public int activeFilters(){return activeFilters;}public int filterCount(){return filters.size();}public int trend(){return trend;}public boolean powered(){return powered;}public String fault(){return fault;}public BlockPos faultPos(){return faultPos;}
+ /** Last discovered shell filters; reporting must never load their chunks. */
+ public List<BlockPos> knownFilters(){return List.copyOf(filters);}
  public void revalidate(){
   if(!(level instanceof ServerLevel server)||isRemoved())return;
   CleanroomRooms.register(this);var result=CleanroomTopology.discover(server,worldPosition);
