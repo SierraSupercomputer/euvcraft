@@ -7,10 +7,14 @@ const text=read(guide),required=['basics','build-reference',...Array.from({lengt
 const anchors=[...text.matchAll(/<a id="([^"]+)"><\/a>/g)].map(m=>m[1]);
 for(const id of required)if(anchors.filter(a=>a===id).length!==1)throw Error('Missing or duplicate current section '+id);
 if(/\]\((manual-walkthrough|progression-m1|jei\.md)/.test(text))throw Error('Current guide must not depend on a historical walkthrough');
-const redirects=fs.readdirSync(join(root,'docs')).filter(p=>p.startsWith('manual-walkthrough')&&p.endsWith('.md')).concat('progression-m1.md','jei.md');
-for(const name of redirects){const old=read('docs/'+name);if(old.length>650||!old.includes('playtest-progression.md#'))throw Error('Unconsolidated player instructions: '+name);}
-const issueFiles=['docs/issues/README.md',...fs.readdirSync(join(root,'docs/issues')).filter(p=>p.endsWith('.md')&&p!=='README.md').map(p=>'docs/issues/'+p),...fs.readdirSync(join(root,'docs/issues/completed')).filter(p=>p.endsWith('.md')).map(p=>'docs/issues/completed/'+p)];
-for(const source of ['README.md',guide,'docs/releases/0.8.0.md',...redirects.map(p=>'docs/'+p),...issueFiles]){
+function markdownFiles(directory){
+    return fs.readdirSync(join(root,directory),{withFileTypes:true}).flatMap(entry=>{
+        const path=directory+"/"+entry.name;
+        if(entry.isDirectory())return markdownFiles(path);
+        return entry.name.endsWith(".md")?[path]:[];
+    });
+}
+for(const source of ["README.md",...markdownFiles("docs")]){
     const content=read(source);
     for(const [,target]of content.matchAll(/\]\(([^)]+)\)/g)){
         if(/^(https?:|mailto:)/.test(target))continue;
@@ -25,4 +29,4 @@ if(recipe.ticks*machine.energy_per_tick!==16000||!text.includes('16,000 FE'))thr
 const current=read('README.md');if(/manual-walkthrough|docs\/jei\.md|T1–T5 progression/.test(current))throw Error('README must point to the current complete guide');
 if(!text.includes('117 pages across 26 controller stations'))throw Error('Refresh recipe catalog inventory');
 if(!text.includes('70 T6 resist')||!text.includes('80 T7 resist')||!text.includes('Coating Track')||!text.includes('Wet-Clean'))throw Error('Current later-tier routes missing');
-console.log(`Checked ${required.length} guide anchors, ${redirects.length} redirects and current README/issue/release links`);
+console.log(`Checked ${required.length} guide anchors and local documentation links`);

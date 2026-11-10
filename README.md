@@ -39,6 +39,8 @@ Install EUVCRAFT, Arcforge and Encoded Logistics in the client and server's mods
 - [Issue index](docs/issues/README.md): open reports, implemented repairs awaiting confirmation and completed fixes.
 - [0.8.0 release notes](docs/releases/0.8.0.md): additions and upgrade guidance.
 
+For building from source and running checks, see the [contributor testing guide](docs/testing.md).
+
 Optional JEI process pages use each multiblock controller as the crafting station. Tested with JEI 31.14.0.72 for Minecraft 26.3 / NeoForge and its required MezzConfig dependency; the core mod works without JEI.
 
 This remains an Alpha release. Report problems through [GitHub Issues](https://github.com/SierraSupercomputer/euvcraft/issues), including the mod version, reproduction steps and relevant logs.
