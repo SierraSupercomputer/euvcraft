@@ -1,6 +1,6 @@
 # EUVCRAFT playtest progression guide — T1 to T8
 
-Current guide for the **0.9.0 T8 development build**. This document replaces the separate historical walkthroughs. Back up worlds and finish active lots before updating. Older T4+ processed lots may lack paid-stage evidence: use fresh lots or discard and clean them. Existing worlds and panel geometry remain usable.
+Current guide for the **0.9.0 Alpha release**. This document replaces the separate historical walkthroughs. Back up worlds and finish active lots before updating. Older T4+ processed lots may lack paid-stage evidence: use fresh lots or discard and clean them. Existing worlds and panel geometry remain usable.
 
 Follow this route to test current progression. Use Survival to check crafting costs, or Creative to speed up construction. Keep chips from each generation: later recipes consume earlier chips. Exact crafting ingredients are in the [recipe reference](recipes.md); quantities below assume bundled defaults.
 
@@ -146,7 +146,7 @@ One default utility batch makes **8,000 mB UPW**, while a default T5 lot needs *
 <a id="tier-6"></a>
 ## Tier 6 — electronic-grade wafers and multi-patterning
 
-1. Build Zone Refiner, pipe UPW into its inlet and supply FE. Upper panel: Pure Silicon Boule → Electronic-Grade Boule. Default cost is 4,000 mB UPW and 600 paid ticks at 480 FE/t. Ordinary water is refused.
+1. Purify a **Silicon Boule** in the **Boule Purifier** with normal water first. Put the resulting **Pure Silicon Boule** in the left input slot of the upper **Zone Operating Panel**. Supply FE and pipe **ultrapure water** into the Zone Refiner’s water inlet. The default batch makes one **Electronic Grade Boule** in 600 paid ticks at 480 FE/t and uses 4,000 mB of UPW. If the input refuses a Pure Silicon Boule, check whether the panel shows an active batch. The slot stays locked while a batch is paused.
 2. Slice it into a FOUP. Its electronic-grade substrate is distinct from preparation: the T6 route correctly uses G2 preparation.
 3. Retrofit the T5 scanner with one Multi-Patterning Module in a spare middle-layer cell. Keep Immersion, water inlet and both calibration interfaces. Recalibrate.
 4. E-beam writer offers T6 compute, memory and NAND. Compute cores default to 1, 2, 4, 8, 12 or 24; select before writing. Masks retain this choice; memory/NAND have no core selection.
@@ -314,8 +314,8 @@ Requires **JEI 31.14.0.72+** for Minecraft 26.3 / NeoForge. Install JEI and its 
 - **Notes:** abbreviated; hover details for full explanation. FE/t and ticks reflect current server new-job settings. Variable/phase-specific costs in notes. Admitted lots retain frozen budgets (may differ after config edit).
 - **Yields:** packaging/reflow output counts illustrative. High binning follows source tier's completed route; T7 targets additionally require enclosure. Wet-Clean retains wafers; FOUP Cleaner explicitly destroys.
 - **Photomasks:** Search `mask` in JEI. Hover a Photomask entry to see its die family and tier. Press `R` to find the writer recipe or `U` to find the lithography or scanner step that uses it. EUV reflective reticles use the same Photomask item.
-- **Server sync:** Catalog sent on login/datapack reload/settings change. JEI refreshes changed pages; clears previous server's catalog on disconnect. Bundled: 117 pages across 26 controller stations. Datapacks/settings can change this. Oversized/unsupported data fails closed to empty pages.
-- **Verification:** Start with matching builds + supported JEI. Check all controller stations have processes. Find Pure Silicon Boule, patterned mask, UPW, Fab Hydrogen via JEI. Follow FOUP through T4 and T5–T7. Inspect normal/high-bin packaging and reflow failure outputs. Change recipe via datapack + `/reload`; check updates. Reconnect to second server; first server's overrides gone. Remove JEI → EUVCRAFT still starts and machines operate. No Ponder or auto-crafting.
+- **Server sync:** Catalog sent on login/datapack reload/settings change. JEI refreshes changed pages; clears previous server's catalog on disconnect. Bundled: 133 pages across 30 controller stations. Datapacks/settings can change this. Oversized/unsupported data fails closed to empty pages.
+- **Verification:** Start with matching builds + supported JEI. Check all controller stations have processes. Find Pure Silicon Boule, patterned mask, UPW, Fab Hydrogen via JEI. Follow FOUPs through T4–T8. Inspect normal/high-bin packaging and reflow failure outputs. Change recipe via datapack + `/reload`; check updates. Reconnect to second server; first server's overrides gone. Remove JEI → EUVCRAFT still starts and machines operate. No Ponder or auto-crafting.
 
 <a id="troubleshooting"></a>
 ## Troubleshooting
