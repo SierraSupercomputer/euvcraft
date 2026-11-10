@@ -27,7 +27,7 @@ public record ViewerPage(
     private static final long MAX_TICKS_FE = 1_000_000_000L;
     private static final int MAX_AMOUNT = 1_000_000;
     private static final int MAX_LABEL_LENGTH = 128;
-    private static final int MAX_TIER = 7;
+    private static final int MAX_TIER = 8;
     private static final int MAX_CORES = 64;
     private static final int MAX_USES = 1_000_000;
 

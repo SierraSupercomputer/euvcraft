@@ -208,6 +208,23 @@ public final class HighBinningRules {
         return new PackagingPlan(passFlags, chipsPerWafer, packagesPerWafer);
     }
 
+    /** A terminal trophy is judged from the original T8 compute wafer rolls. */
+    public static PackagingPlan judgeTrophy(FoupContents lot, Tier tier, int yieldPermille, int packagesPerWafer) {
+        if (tier.index() != 8 || lot.isEmpty() || lot.isContaminated() || lot.run() == null
+                || lot.run().tierIndex() != 8 || !DieTypes.COMPUTE.equals(lot.run().dieType())
+                || yieldPermille < 1 || yieldPermille > 1000
+                || lot.wafers().stream().anyMatch(wafer -> wafer.layerIndex() != tier.layers())) {
+            throw new IllegalArgumentException("God Chip requires a completed T8 compute lot");
+        }
+        var flags = new ArrayList<Boolean>(lot.size());
+        for (int index = 0; index < lot.size(); index++) {
+            double multiplier = yieldPermille / 1000.0 * PreparedYieldRules.multiplier(lot, index);
+            double threshold = PreparedYieldRules.threshold(lot.run(), multiplier);
+            flags.add(lot.wafers().get(index).cumulativeRoll() > threshold);
+        }
+        return new PackagingPlan(flags, 1, packagesPerWafer);
+    }
+
     /**
      * Immutable transition configuration for one high-binning step.
      *

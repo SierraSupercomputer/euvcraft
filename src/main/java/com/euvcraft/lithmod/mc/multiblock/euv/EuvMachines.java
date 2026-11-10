@@ -26,6 +26,10 @@ public final class EuvMachines {
 
     // ==================== EUV SCANNER (5x7x5) ====================
 
+    public static final DeferredBlock<EuvScannerControllerBlock> HIGH_NA_SCANNER =
+            BLOCKS.registerBlock("high_na_scanner_controller", EuvScannerControllerBlock::new,
+                    properties -> properties.strength(5.0f, 9.0f).requiresCorrectToolForDrops());
+
     public static final DeferredBlock<EuvScannerControllerBlock> SCANNER_CONTROLLER =
             BLOCKS.registerBlock("euv_scanner_controller", EuvScannerControllerBlock::new,
                     p -> p.strength(5.0f, 10.0f).requiresCorrectToolForDrops());
@@ -43,6 +47,8 @@ public final class EuvMachines {
             scannerMember("euv_scanner_exposure_module", BlockKind.EXPOSURE_MODULE);
     public static final DeferredBlock<EuvScannerMemberBlock> SCANNER_OPTICS_MODULE =
             scannerMember("euv_scanner_optics_module", BlockKind.OPTICS_MODULE);
+    public static final DeferredBlock<EuvScannerMemberBlock> HIGH_NA_OPTICS =
+            scannerMember("high_na_optics_module", BlockKind.OPTICS_MODULE);
     public static final DeferredBlock<EuvScannerMemberBlock> SCANNER_STAGE_MODULE =
             scannerMember("euv_scanner_stage_module", BlockKind.STAGE_MODULE);
     public static final DeferredBlock<EuvScannerMemberBlock> SCANNER_FILTRATION_MODULE =
@@ -62,13 +68,13 @@ public final class EuvMachines {
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EuvScannerControllerBlockEntity>> SCANNER_CONTROLLER_BE =
             BLOCK_ENTITIES.register("euv_scanner_controller",
-                    () -> new BlockEntityType<>(EuvScannerControllerBlockEntity::new, SCANNER_CONTROLLER.get()));
+                    () -> new BlockEntityType<>(EuvScannerControllerBlockEntity::new, SCANNER_CONTROLLER.get(), HIGH_NA_SCANNER.get()));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EuvScannerMemberBlockEntity>> SCANNER_MEMBER_BE =
             BLOCK_ENTITIES.register("euv_scanner_member",
                     () -> new BlockEntityType<>(EuvScannerMemberBlockEntity::new,
                             SCANNER_OPERATING_PANEL.get(), SCANNER_CALIBRATION_PANEL.get(),
-                            SCANNER_EXPOSURE_MODULE.get(), SCANNER_OPTICS_MODULE.get(),
+                            SCANNER_EXPOSURE_MODULE.get(), SCANNER_OPTICS_MODULE.get(), HIGH_NA_OPTICS.get(),
                             SCANNER_STAGE_MODULE.get(), SCANNER_FILTRATION_MODULE.get(),
                             SCANNER_METROLOGY_MODULE.get(), SCANNER_VACUUM_MODULE.get(),
                             SCANNER_DIAGNOSTIC_PANEL.get(), SCANNER_WATER_INLET.get(),

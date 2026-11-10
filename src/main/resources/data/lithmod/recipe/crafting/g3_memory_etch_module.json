@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "lithmod:g3_deposition_module",
+    "lithmod:memory_chip_t6",
+    "minecraft:redstone"
+  ],
+  "result": {
+    "id": "lithmod:g3_memory_etch_module",
+    "count": 1
+  }
+}

@@ -89,6 +89,7 @@ public record FoupRoutingData(FabProgress progress, String dieType, int cores, b
         FabProgress.Stage stage = progress.stage();
         boolean isPreExposure = stage == FabProgress.Stage.UNPROCESSED
             || stage == FabProgress.Stage.DEPOSITED
+            || stage == FabProgress.Stage.PLANARIZED
             || stage == FabProgress.Stage.COATED;
 
         if (isPreExposure) {

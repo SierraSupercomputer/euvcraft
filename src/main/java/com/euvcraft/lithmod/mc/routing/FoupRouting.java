@@ -23,9 +23,23 @@ public final class FoupRouting {
         }
         var matrix=SupportLineDataLoader.getMatrix();var tiers=TierDataLoader.getRegistry();
         if(data!=null&&matrix!=null&&tiers!=null){
-            var options=FabNextSteps.options(lot.publicView(),data.progress(),data.contaminated(),matrix,tiers,Set.of(4,5,6,7));
+            var options=FabNextSteps.options(lot.publicView(),data.progress(),data.contaminated(),matrix,tiers,Set.of(4,5,6,7,8));
             if(!data.contaminated()&&lot.run()!=null&&data.progress().stage().ordinal()<FabProgress.Stage.EXPOSED.ordinal()){
-                int tier=lot.run().tierIndex();options=Map.of(tier<=3?"process_cell_controller":tier==7?"euv_scanner_controller":"lithography_scanner",List.of(tier));
+                int tier=lot.run().tierIndex();options=Map.of(tier<=3?"process_cell_controller":tier==8?"high_na_scanner_controller":tier==7?"euv_scanner_controller":"lithography_scanner",List.of(tier));
+            }
+            if(options.containsKey("g3_etch_cell")){
+                String destination=switch(data.dieType()){
+                    case DieTypes.COMPUTE -> "g3_etch_compute";
+                    case DieTypes.MEMORY -> "g3_etch_memory";
+                    default -> "g3_etch_cell";
+                };
+                options=Map.of(destination,options.get("g3_etch_cell"));
+            }
+            if((options.containsKey("test_package")||options.containsKey("advanced_test_package"))
+                    &&lot.run()!=null&&packagingReady(stack)&&HighBinningDataLoader.supportsSource(lot.run())){
+                var alternatives=new LinkedHashMap<>(options);
+                alternatives.put("high_bin_test_package",List.of(lot.run().tierIndex()));
+                options=Collections.unmodifiableMap(alternatives);
             }
             if(!options.equals(stack.get(ModDataComponents.FOUP_NEXT_STEPS.get())))stack.set(ModDataComponents.FOUP_NEXT_STEPS.get(),options);
         }
@@ -60,8 +74,9 @@ public final class FoupRouting {
         return switch(data.progress().stage()){
             case UNPROCESSED -> lot.preparationGeneration()==1&&lot.run()==null;
             case DEPOSITED -> lot.isPrepared()&&lot.run()==null;
+            case PLANARIZED -> lot.isG3Prepared()&&lot.run()==null;
             case COATED -> lot.isPrepared()&&(lot.run()==null||lot.run().tierIndex()==data.progress().tier());
-            case EXPOSING,EXPOSED,ETCHED,CLEANED -> lot.run()!=null&&lot.run().tierIndex()==data.progress().tier()&&lot.run().dieType().equals(data.dieType())&&lot.run().cores()==data.cores();
+            case EXPOSING,EXPOSED,ETCHED,IMPLANTED,CLEANED -> lot.run()!=null&&lot.run().tierIndex()==data.progress().tier()&&lot.run().dieType().equals(data.dieType())&&lot.run().cores()==data.cores();
         };
     }
 
@@ -75,11 +90,12 @@ public final class FoupRouting {
         return data!=null&&data.progress().stage()==(lot.run().tierIndex()==4?FabProgress.Stage.ETCHED:FabProgress.Stage.CLEANED)&&matchesPrivateLot(stack);
     }
 
-    public static boolean canExpose(ItemStack stack,int tier){
+    public static boolean canExpose(ItemStack stack,int tier,String dieType){
         if(tier<4)return true;
         var lot=FoupItems.trustedContentsOf(stack);var data=stack.get(ModDataComponents.FOUP_ROUTING.get());
         if(lot==null||lot.run()!=null||!lot.isPrepared()||lot.isContaminated()||data==null||!matchesPrivateLot(stack))return false;
         if(tier==4)return data.progress().stage()==FabProgress.Stage.DEPOSITED;
+        if(tier==8 && DieTypes.MEMORY.equals(dieType)!=DieTypes.MEMORY.equals(data.dieType()))return false;
         var coating=stack.get(ModDataComponents.COATING_RECEIPT.get());var definition=TierDataLoader.getRegistry().byIndex(tier).orElse(null);
         return definition!=null&&coating!=null&&coating.tier()==tier&&coating.layers()==definition.layers()&&data.progress().stage()==FabProgress.Stage.COATED&&data.progress().tier()==tier;
     }

@@ -10,6 +10,8 @@
     "lithmod:g3_writing_module",
     "lithmod:g3_metrology_module",
     "lithmod:g3_deposition_module",
+    "lithmod:g3_compute_etch_module",
+    "lithmod:g3_memory_etch_module",
     "lithmod:g3_rinse_module",
     "lithmod:g3_vacuum_module",
     "lithmod:euv_scanner_controller",
@@ -56,6 +58,12 @@
     "lithmod:g3_etch_cell",
     "lithmod:g3_fab_item_port",
     "lithmod:euv_fab_item_port",
-    "lithmod:scrap_recycler"
+    "lithmod:scrap_recycler",
+    "lithmod:high_na_scanner_controller",
+    "lithmod:high_na_optics_module",
+    "lithmod:t8_planarizer",
+    "lithmod:t8_implanter",
+    "lithmod:t8_memory_uniformity_head",
+    "lithmod:t8_compute_dose_head"
   ]
 }

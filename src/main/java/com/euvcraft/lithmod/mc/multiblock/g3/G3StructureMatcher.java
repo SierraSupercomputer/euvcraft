@@ -99,7 +99,13 @@ public final class G3StructureMatcher {
     public static MatchResult matchDepositionEtcher(MultiblockPos controllerPos, MultiblockDirection facing,
             Function<MultiblockPos, BlockKind> blockKindAt) {
         return match(controllerPos, facing, DEPOSITION_ETCHER_SHAPE, blockKindAt,
-                new DepositionEtcherRequirements());
+                new DepositionEtcherRequirements(false));
+    }
+
+    public static MatchResult matchT8Stage(MultiblockPos controller, MultiblockDirection facing,
+            boolean planarizer, Function<MultiblockPos, BlockKind> lookup) {
+        var shape = planarizer ? WRITER_SHAPE : new StructureShape(5, 3, 7);
+        return match(controller, facing, shape, lookup, new DepositionEtcherRequirements(true));
     }
 
     /** Internal matcher with kind-specific requirements. */
@@ -221,6 +227,9 @@ public final class G3StructureMatcher {
         if (powerPortCount > 4) {
             return MatchResult.failure("expected at most four power ports, found " + powerPortCount);
         }
+        if (requirements.requiresWater() && waterInletCount != 1) {
+            return MatchResult.failure("expected one G3 water inlet");
+        }
         if (waterInletCount > 1) {
             return MatchResult.failure("expected at most one water inlet, found " + waterInletCount);
         }
@@ -250,6 +259,7 @@ public final class G3StructureMatcher {
 
     /** Interface for kind-specific structure requirements. */
     private interface G3Requirements {
+        default boolean requiresWater() { return false; }
         /** Returns the module kinds that must each appear at least once. */
         BlockKind[] requiredModuleKinds();
 
@@ -287,7 +297,8 @@ public final class G3StructureMatcher {
     }
 
     /** Requirements for the 5x5x7 deposition/etcher. */
-    private static final class DepositionEtcherRequirements implements G3Requirements {
+    private record DepositionEtcherRequirements(boolean t8) implements G3Requirements {
+        @Override public boolean requiresWater() { return t8; }
         @Override
         public BlockKind[] requiredModuleKinds() {
             return new BlockKind[]{
@@ -299,7 +310,7 @@ public final class G3StructureMatcher {
 
         @Override
         public boolean isMiddleLayer(int v) {
-            return v >= DEP_ETCH_MIDDLE_START && v <= DEP_ETCH_MIDDLE_END;
+            return t8 ? v == 1 : v >= DEP_ETCH_MIDDLE_START && v <= DEP_ETCH_MIDDLE_END;
         }
 
         @Override

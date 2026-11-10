@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "lithmod:g3_deposition_module",
+    "lithmod:memory_chip_t7",
+    "minecraft:diamond"
+  ],
+  "result": {
+    "id": "lithmod:t8_memory_uniformity_head",
+    "count": 1
+  }
+}

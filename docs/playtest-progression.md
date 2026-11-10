@@ -1,6 +1,6 @@
-# EUVCRAFT playtest progression guide — T1 to T7
+# EUVCRAFT playtest progression guide — T1 to T8
 
-Current guide for **0.8.0 Alpha**. This document replaces the separate historical walkthroughs. Back up worlds and finish active lots before updating. Older T4+ processed lots may lack paid-stage evidence: use fresh lots or discard and clean them. Existing worlds and panel geometry remain usable.
+Current guide for the **0.9.0 T8 development build**. This document replaces the separate historical walkthroughs. Back up worlds and finish active lots before updating. Older T4+ processed lots may lack paid-stage evidence: use fresh lots or discard and clean them. Existing worlds and panel geometry remain usable.
 
 Follow this route to test current progression. Use Survival to check crafting costs, or Creative to speed up construction. Keep chips from each generation: later recipes consume earlier chips. Exact crafting ingredients are in the [recipe reference](recipes.md); quantities below assume bundled defaults.
 
@@ -15,6 +15,7 @@ Follow this route to test current progression. Use Survival to check crafting co
 - [Tier 5 — ultrapure water and diagnostic tuning](#tier-5)
 - [Tier 6](#tier-6)
 - [Tier 7](#tier-7)
+- [Tier 8 — High-NA EUV](#tier-8)
 - [Calibration reference](#calibration)
 - [Cleanrooms](#cleanrooms)
 - [Automation and item/fluid ports](#automation)
@@ -47,9 +48,9 @@ Dimensions are **width × height × depth**, facing the front. Production multib
 | G2 Deposition Chamber / Etch Cell | 3×3×5 each | Advanced Operating Panel above the lower controller; lower cabinet is status-only. |
 | Coating Track, T5–T7 | 3×2×5 | Advanced Operating Panel above controller; Advanced Casing/Power Ports. |
 | Wet-Clean Station, T5–T7 | 2×2×3 | Advanced Operating Panel above controller; one Fab UPW Inlet required. |
-| G3 Deposition Chamber / G3 Etch Cell, T7 | 5×5×7 each | Existing G3 module/panel layout; separate controllers. |
+| G3 Deposition Chamber / G3 Etch Cell, T7 | 5×5×7 each | G3 Operating Panel above the cabinet. Tune compute and memory etch modules in the lower cabinet. |
 | Lithography Scanner | 3×3×5 | Scanner Operating Panel above cabinet; separate Calibration and Diagnostic Panels. |
-| Advanced Test & Package | 2×2×3 | Advanced Operating Panel above lower controller. |
+| Advanced Test & Package / High-Bin Test & Package | 2×2×3 each | Advanced Operating Panel above the matching lower controller. Shared Advanced Casings and Power Ports. |
 | Utility Plant | 2×2×3 | Controller contains inputs; no upper panel. |
 | Pick And Place | 2×2×2 | Controller; no upper panel. |
 | FOUP Cleaner | Single block | Machine itself |
@@ -120,11 +121,11 @@ Run this route:
 3. E-beam writer: write the desired T4 mask.
 4. Scanner Calibration Panel: adjust beam X, Y and Focus. Reach at least the default quality threshold of 50, then **Accept alignment**. Better alignment improves yield; changing modules invalidates calibration.
 5. Scanner upper panel: prepared FOUP + T4 mask + T4 resist.
-6. Etch Cell upper panel: exposed FOUP + one Etchant Charge → **Etched** FOUP. Then Advanced Test & Package upper panel: etched FOUP + Chip Packages. Leave **High Binning off** for normal production.
+6. Etch Cell upper panel: exposed FOUP + one Etchant Charge → **Etched** FOUP. Then Advanced Test & Package upper panel: etched FOUP + Chip Packages.
 
 **Pass:** Produce all four T4 chip families through the full scanner route. Follow this route for current progression.
 
-**Optional high binning:** The advanced packager can turn completed **T3 Logic/Compute lots into T4**, or **T4 Logic/Compute lots into T5**. Enable its toggle before admission. The default packaging time/energy doubles and the success threshold is only 0.15 times the source lot's effective yield: expect heavy losses. It reuses existing wafer rolls. Memory/NAND cannot be high-binned; logic stops at T5. This shortcut does not test the next tier's full machinery. T3→T4 follows the T3 source route; T4→T5 follows T4 etching without T5 coating/cleaning. T5→T6 compute requires the full T5 route; T6→T7 compute requires the full T6 route and T7 enclosure at packaging. There is no T7→T8 binning.
+**Optional high binning:** Route eligible finished FOUPs and Chip Packages to a dedicated **High-Bin Test & Package** to turn completed **T3 Logic/Compute lots into T4**, or **T4 Logic/Compute lots into T5**. Craft its controller from an Advanced Test & Package, two T3 Logic Chips, one T3 Compute Chip, four Gold Ingots and one Redstone Block. It uses the same Advanced frame and upper panel. The original Advanced Test & Package completes any high-bin queue already accepted before the update and processes new lots at their original tier. The default packaging time/energy doubles and the success threshold is only 0.15 times the source lot's effective yield: expect heavy losses. It reuses existing wafer rolls. Memory/NAND cannot be high-binned; logic stops at T5. This shortcut does not test the next tier's full machinery. T3→T4 follows the T3 source route; T4→T5 follows T4 etching without T5 coating/cleaning. T5→T6 compute requires the full T5 route; T6→T7 compute requires the full T6 route and T7 enclosure at packaging. There is no T7→T8 binning.
 
 <a id="tier-5"></a>
 ## Tier 5 — ultrapure water and diagnostic tuning
@@ -177,6 +178,12 @@ Connect the scanner Exposure Module by **1–16 straight, loaded Beamline blocks
 
 **Route:** Electronic-grade boule → slicer → G3 deposition → Coating Track (**80 T7 resist**) → EUV scanner → G3 Etch (**one Etchant Charge**) → Wet-Clean → advanced packaging → reflow.
 
+For compute or memory, replace the G3 Etch Cell’s standard Deposition Module with the matching G3 Compute or Memory Etch Module in any middle-layer module position. Keep the rinse and vacuum modules. The exposed FOUP tooltip names the required setup. Keep the standard module for NAND.
+
+Open the lower cabinet while the cell is idle. Use the minus and plus controls to bring depth error (compute) or center-to-edge error (memory) toward zero, then accept tuning. Compute tolerances tighten at higher core counts. Better memory tuning narrows the wafer-to-wafer yield variation. Swapping modules requires new tuning. Load the wafer FOUP at the upper panel and the Etchant Charge at the lower cabinet. T6-to-T7 compute high binning uses the dedicated High-Bin Test & Package inside a powered cleanroom and bypasses the T7 compute etch branch.
+
+Finish active T7 lots before updating and start fresh lots afterward. Finished chips and assemblies remain usable.
+
 Source takes no FOUP. Scanner takes coated G3-prepared FOUP + G3 T7 reticle, **no physical resist**. Eighty layers require ongoing FE/UPW/Fab Hydrogen/tin credit/pump service. Deposition and etch share the preparation quality budget; rinse is paid at productive cleaning, with room yield finalized once. Do not apply old combined-machine water/energy totals a second time. Shortages pause the admitted lot without rerolling calibration or source binding.
 
 ### Breach and repair
@@ -190,6 +197,22 @@ Starting repair bill: **2 Utility Filters +16 redstone +8,000 mB UPW +200,000 FE
 Build Central Vacuum Plant after local pumps work. Connect Service Outlet via Service Conduits to accessible Vacuum Modules. **Cleanroom Vacuum Port** seals wall crossings; ordinary service conduit does not. Each chamber retains pressure/reserve. Machine isolation falls back to its local pump. Default plant supplies up to20,000 service units/t at350 FE/t under load, versus three local pumps at200 FE/t each. Check demand/client status and disconnect a branch without disturbing others; networks do not load distant chunks.
 
 Pass: T7 compute/memory/NAND, retained CPU cores, calibrated source, shortage/reload recovery, and a deliberate test-world breach → disposal → repair → recalibration cycle.
+
+<a id="tier-8"></a>
+## Tier 8 — High-NA EUV
+
+Use electronic-grade wafers, G3 deposition, and the T7 cleanroom and utility network. There is no T7→T8 high-bin shortcut. All T8 wafer stations need a powered, enclosed cleanroom.
+
+1. **Planarize** deposited wafers in a **3×3×5 Chemical Mechanical Planarizer**. Use CMP Slurry and Polishing Pads in the lower cabinet and the FOUP in the upper panel. Install a Memory Uniformity Head for memory lots, or a standard G3 Deposition Module for compute and NAND. This commits the T8 route and the memory or standard program. Before running a production FOUP, load a separate G3-deposited electronic-grade FOUP in the cabinet’s Sample slot. Adjust pressure and platen speed, then use **Test polish** to see removal and center-to-edge errors. Each test spends one wafer and 1,500 FE at default settings. Tune both errors toward zero and accept the calibration. The memory head has a tighter edge tolerance. The remaining wafers and empty carrier are reusable. Replacing a head clears calibration, and replenishing slurry or pads leaves the accepted settings in place.
+2. **Coat** with Photoresist T8. A default full lot takes 90 resist. The G3 Reticle Writer's Tier button switches between T7 and T8. A T8 write takes two Blank Masks and a full stack of Redstone by default.
+3. **Expose** in a **5×5×7 High-NA EUV Scanner**. Use the EUV scanner structure, replacing its controller and optics with the High-NA versions. It shares the T7 light source, beamline and calibration workflow. Load the compatible T8 reticle and coated FOUP in the upper panel.
+4. **Etch** in the T7 G3 Etch Cell with the same family-specific modules and one Etchant Charge.
+5. **Implant and activate** in a **5×3×7 Ion Implant and Activation Cell**. Compute requires the Compute Precision-Dose Head. Memory and NAND use the standard G3 Deposition Module. Adjust dose error toward zero and accept tuning in the lower cabinet, load Dopant Charges there, then insert the FOUP in the upper panel.
+6. **Wet-clean**, then send the FOUP and Chip Packages to Advanced Test & Package. Compute and memory chips can go to the calibrated Reflow Oven for CPUs and DIMMs.
+
+The planarizer and implant cell both use G3 Casings, 1–4 G3 Power Ports, a G3 Operating Panel directly above the lower controller, one G3 Water Inlet, and a rinse module, vacuum module and process head in the middle layer. They use piped UPW. Their head can go in any free middle-layer module position.
+
+**God Chip challenge:** A cleaned T8 compute FOUP can instead go to the dedicated High-Bin Test & Package inside a powered cleanroom. It uses Chip Packages and the original wafer rolls with a much stricter, editable yield threshold. A passing wafer yields one God Chip, and a failure yields scrap. The trophy unlocks the God Chip Challenge advancement on pickup and has no production recipe.
 
 <a id="calibration"></a>
 ## Calibration reference
@@ -290,6 +313,7 @@ Requires **JEI 31.14.0.72+** for Minecraft 26.3 / NeoForge. Install JEI and its 
 - **FOUP icons:** generic stage-labelled carrier placeholders, not finished lots. Hover for stage/tier/substrate. Multiple compatible pages shown; private lot data never exposed.
 - **Notes:** abbreviated; hover details for full explanation. FE/t and ticks reflect current server new-job settings. Variable/phase-specific costs in notes. Admitted lots retain frozen budgets (may differ after config edit).
 - **Yields:** packaging/reflow output counts illustrative. High binning follows source tier's completed route; T7 targets additionally require enclosure. Wet-Clean retains wafers; FOUP Cleaner explicitly destroys.
+- **Photomasks:** Search `mask` in JEI. Hover a Photomask entry to see its die family and tier. Press `R` to find the writer recipe or `U` to find the lithography or scanner step that uses it. EUV reflective reticles use the same Photomask item.
 - **Server sync:** Catalog sent on login/datapack reload/settings change. JEI refreshes changed pages; clears previous server's catalog on disconnect. Bundled: 117 pages across 26 controller stations. Datapacks/settings can change this. Oversized/unsupported data fails closed to empty pages.
 - **Verification:** Start with matching builds + supported JEI. Check all controller stations have processes. Find Pure Silicon Boule, patterned mask, UPW, Fab Hydrogen via JEI. Follow FOUP through T4 and T5–T7. Inspect normal/high-bin packaging and reflow failure outputs. Change recipe via datapack + `/reload`; check updates. Reconnect to second server; first server's overrides gone. Remove JEI → EUVCRAFT still starts and machines operate. No Ponder or auto-crafting.
 
@@ -302,7 +326,7 @@ Requires **JEI 31.14.0.72+** for Minecraft 26.3 / NeoForge. Install JEI and its 
 | **No input slots** | Deposition/Etch/Advanced Packager use upper panel; lower cabinet status-only. Purifier, mask writer, utility plant use controller. |
 | **Input refused** | FOUP substrate/preparation, matching mask/resist tier, equipment formed, accepted calibration (T4+). T4+ needs large scanner + advanced packager. |
 | **Paused** | FE, resist, UPW, filter media, output space. Same-resist top-ups allowed; swapping resist mid-run not allowed. |
-| **Low yield** | Calibration quality, T5+ room cleanliness, High Binning off for normal production. Small batches vary. |
+| **Low yield** | Check calibration quality, T5+ room cleanliness, and whether the lot went to the dedicated High-Bin station. Small batches vary. |
 | **Scanner rejects water** | Must be UPW via Scanner Water Inlet; ordinary water refused. |
 | **Source won't test** | FE + Fab H₂ + tin credits all required; refusal with no partial payment. |
 | **Cleanroom not enclosed** | All 6 faces sealed, ceiling + corners, controller + filters powered, filter medium inserted, doors closed. |
@@ -333,6 +357,6 @@ Run these practical checks in order. Use Survival for costs, Creative for speed.
 
 The [issue index](issues/README.md) distinguishes one unreproduced reflow report, seven implemented T6 repairs awaiting explicit owner confirmation, and completed fixes. It is not a list of currently proven defects. Cleanroom resource-port repairs were owner-confirmed.
 
-T8, NAND assembly, Encoded Logistics hardware/server progression, Ponder, airlocks/arbitrary rooms, equipment-bay remodeling and recovery of other raw materials remain separate work. Recheck material loops after changing wafer/chip/scrap/recovery settings.
+NAND assembly, Encoded Logistics hardware/server progression, Ponder, airlocks/arbitrary rooms, equipment-bay remodeling and recovery of other raw materials remain separate work. Recheck material loops after changing wafer/chip/scrap/recovery settings.
 
 Report version, tier/machine, exact status, FOUP tooltip, inputs, utility supply, settings/datapacks, structure/GUI screenshots and relevant latest.log/crash report. Private debug data is not required for normal play.

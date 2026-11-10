@@ -1,0 +1,32 @@
+{
+  "id": "high_na_scanner",
+  "energy_capacity": 6400000,
+  "max_receive": 120000,
+  "energy_per_tick": 2400,
+  "params": {
+    "vacuum_pump_rate": 5000,
+    "vacuum_idle_leak": 100,
+    "vacuum_process_load": 3500,
+    "vacuum_operating_pressure": 10000,
+    "vacuum_reserve_capacity": 50000,
+    "vacuum_reserve_recharge": 1000,
+    "local_pump_fe_per_tick": 400,
+    "repair_upw_mb": 8000,
+    "repair_fe": 200000,
+    "repair_redstone": 16,
+    "repair_filter_medium": 2,
+    "contamination_ppm": 2500,
+    "contamination_ticks": 1200,
+    "calibration_min_quality": 50,
+    "calibration_min_multiplier_permille": 500,
+    "calibration_max_multiplier_permille": 1000,
+    "diagnostic_min_quality": 50,
+    "diagnostic_min_multiplier_permille": 500,
+    "diagnostic_max_multiplier_permille": 1000,
+    "upw_capacity_mb": 64000,
+    "upw_per_tick_mb": 8,
+    "beamline_max_length": 16,
+    "linear_upw_per_tick_mb": 8,
+    "linear_original_upw_per_tick": 10
+  }
+}

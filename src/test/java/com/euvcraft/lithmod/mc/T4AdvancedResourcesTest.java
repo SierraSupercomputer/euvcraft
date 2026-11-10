@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Independent registry-facing coverage of both shapes, every legal state and actual texture references. */
 class T4AdvancedResourcesTest {
- private static final List<String> IDS=List.of("deposition_etcher","advanced_test_package","advanced_casing","advanced_power_port","advanced_operating_panel");
+ private static final List<String> IDS=List.of("deposition_etcher","advanced_test_package","high_bin_test_package","advanced_casing","advanced_power_port","advanced_operating_panel");
  private static final String ASSET="/assets/lithmod/";
  private final Set<String> visitedModels=new HashSet<>(),visitedTextures=new HashSet<>();
  private JsonObject json(String path) throws Exception {
@@ -70,7 +70,7 @@ class T4AdvancedResourcesTest {
    }
   }
  }
- @Test void allFiveBlocksHaveTitlesClientDefinitionsLootMiningAndNonCircularRecipes() throws Exception {
+ @Test void allBlocksHaveTitlesClientDefinitionsLootMiningAndNonCircularRecipes() throws Exception {
   var lang=json(ASSET+"lang/en_us.json");
   var pickaxe=json("/data/minecraft/tags/block/mineable/pickaxe.json").getAsJsonArray("values");
   var tools=json("/data/minecraft/tags/block/needs_stone_tool.json").getAsJsonArray("values");

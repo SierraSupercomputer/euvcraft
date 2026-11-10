@@ -43,7 +43,7 @@ public abstract class LinearStageBlockEntity extends AdvancedControllerBlockEnti
     public boolean requiresRepair(){return condition.requiresRepair();}
     public int stageProgress(){return progress;}
     public int stageDuration(){return budget==null?0:coating()?Math.max(1,budget.coatTicks()):Math.max(1,budget.totalCleanTicks());}
-    public boolean acceptsReagent(ItemStack stack){return coating()&&ResistCatalog.tierOf(stack)>=5&&ResistCatalog.tierOf(stack)<=7||requiresRepair()&&stack.is(ModItems.UTILITY_FILTER.get());}
+    public boolean acceptsReagent(ItemStack stack){return coating()&&ResistCatalog.tierOf(stack)>=5&&ResistCatalog.tierOf(stack)<=8||requiresRepair()&&stack.is(ModItems.UTILITY_FILTER.get());}
     private int param(String key,int fallback){return definition().map(d->d.paramOrDefault(key,fallback)).orElse(fallback);}
     private int scaled(int fe){return (int)Math.clamp(Math.round(fe*EUVCRAFTMod.settings().fePowerMultiplier()),1,Integer.MAX_VALUE);}
     @Override public boolean large(){return coating();}
@@ -56,8 +56,8 @@ public abstract class LinearStageBlockEntity extends AdvancedControllerBlockEnti
         if(stack.isEmpty()||stack.getCount()!=1||!FoupItems.isFoup(stack)||!FoupRouting.matchesPrivateLot(stack))return false;
         var lot=FoupItems.trustedContentsOf(stack);var route=stack.get(ModDataComponents.FOUP_ROUTING.get());
         if(lot.isEmpty()||lot.isContaminated())return false;
-        return coating()?lot.run()==null&&route.progress().stage()==FabProgress.Stage.DEPOSITED:
-            lot.run()!=null&&route.progress().stage()==FabProgress.Stage.ETCHED&&route.progress().tier()>=5&&lot.roomYieldPermille()==0&&stack.has(ModDataComponents.COATING_RECEIPT.get());
+        return coating()?lot.run()==null&&(route.progress().stage()==FabProgress.Stage.DEPOSITED||route.progress().stage()==FabProgress.Stage.PLANARIZED):
+            lot.run()!=null&&route.progress().stage()==(route.progress().tier()==8?FabProgress.Stage.IMPLANTED:FabProgress.Stage.ETCHED)&&route.progress().tier()>=5&&lot.roomYieldPermille()==0&&stack.has(ModDataComponents.COATING_RECEIPT.get());
     }
     private @Nullable CoatingReceipt recipe(){
         if(!canReceiveCarrier(slot(0)))return null;
@@ -65,16 +65,18 @@ public abstract class LinearStageBlockEntity extends AdvancedControllerBlockEnti
             var receipt=slot(0).get(ModDataComponents.COATING_RECEIPT.get());var route=slot(0).get(ModDataComponents.FOUP_ROUTING.get());var lot=FoupItems.trustedContentsOf(slot(0));
             return receipt!=null&&receipt.tier()==route.progress().tier()&&lot.lotLayer()==receipt.layers()?receipt:null;
         }
-        int index=ResistCatalog.tierOf(slot(1));if(index<5||index>7)return null;
+        int index=ResistCatalog.tierOf(slot(1));if(index<5||index>8)return null;
+        var route=slot(0).get(ModDataComponents.FOUP_ROUTING.get());
+        if((index==8)!=(route.progress().stage()==FabProgress.Stage.PLANARIZED))return null;
         var tier=TierDataLoader.getRegistry().byIndex(index).orElse(null);var matrix=SupportLineDataLoader.getMatrix();var lot=FoupItems.trustedContentsOf(slot(0));
         if(tier==null||matrix==null||lot.grade().generation()<matrix.requiredGeneration(SupportLines.SUBSTRATE,tier)||lot.preparationGeneration()<matrix.requiredGeneration(SupportLines.DEPOSITION_ETCH,tier))return null;
-        var scanner=MachineDefinitionLoader.getRegistry().byId(index==7?"euv_scanner":"lithography_scanner").orElseThrow();
+        var scanner=MachineDefinitionLoader.getRegistry().byId(index==8?"high_na_scanner":index==7?"euv_scanner":"lithography_scanner").orElseThrow();
         int passes=index==6?scanner.paramOrDefault("multipattern_passes",2):1;
-        int oldWater=index==7?scanner.paramOrDefault("linear_original_upw_per_tick",5):scanner.paramOrDefault("linear_original_upw_per_tick",2);
-        int newWater=index==7?scanner.paramOrDefault("linear_upw_per_tick_mb",scanner.paramOrDefault("upw_per_tick_mb",5)):scanner.paramOrDefault("linear_upw_per_tick_mb",scanner.paramOrDefault("pure_water_per_tick_mb",2));
+        int oldWater=index>=7?scanner.paramOrDefault("linear_original_upw_per_tick",5):scanner.paramOrDefault("linear_original_upw_per_tick",2);
+        int newWater=index>=7?scanner.paramOrDefault("linear_upw_per_tick_mb",scanner.paramOrDefault("upw_per_tick_mb",5)):scanner.paramOrDefault("linear_upw_per_tick_mb",scanner.paramOrDefault("pure_water_per_tick_mb",2));
         var cleaner=MachineDefinitionLoader.getRegistry().byId("wet_cleaner").orElseThrow();
-        var plan=LinearBudget.calculate(tier.layers(),tier.layerTicks(EUVCRAFTMod.settings()),passes,EUVCRAFTMod.settings().resistPerLayer(),oldWater,newWater,param("coat_ticks_per_layer",5),cleaner.paramOrDefault("clean_ticks_per_layer",5),index==7?cleaner.paramOrDefault("t7_rinse_water_mb",4000):0);
-        return new CoatingReceipt(index,tier.layers(),passes,EUVCRAFTMod.settings().resistPerLayer(),plan,scanner.energyPerTick(tier,EUVCRAFTMod.settings()),index==7?cleaner.paramOrDefault("t7_rinse_duration",200):0,index==7?scaled(cleaner.paramOrDefault("t7_rinse_energy_per_tick",480)):1,newWater);
+        var plan=LinearBudget.calculate(tier.layers(),tier.layerTicks(EUVCRAFTMod.settings()),passes,EUVCRAFTMod.settings().resistPerLayer(),oldWater,newWater,param("coat_ticks_per_layer",5),cleaner.paramOrDefault("clean_ticks_per_layer",5),index>=7?cleaner.paramOrDefault("t7_rinse_water_mb",4000):0);
+        return new CoatingReceipt(index,tier.layers(),passes,EUVCRAFTMod.settings().resistPerLayer(),plan,scanner.energyPerTick(tier,EUVCRAFTMod.settings()),index>=7?cleaner.paramOrDefault("t7_rinse_duration",200):0,index>=7?scaled(cleaner.paramOrDefault("t7_rinse_energy_per_tick",480)):1,newWater);
     }
     private CleanroomRooms.Sample room(){return CleanroomRooms.sample((ServerLevel)level,footprint.isEmpty()?members():footprint);}
     private boolean enclosed(CleanroomRooms.Sample sample){return sample.available()&&sample.room()!=null&&sample.room().state()==CleanroomControllerBlockEntity.ENCLOSED;}
@@ -82,18 +84,18 @@ public abstract class LinearStageBlockEntity extends AdvancedControllerBlockEnti
     @Override public void serverTick(){
         super.serverTick();if(!(level instanceof ServerLevel)||isRemoved()||level.getBlockEntity(worldPosition)!=this)return;
         upw.resize(Math.clamp(param("water_capacity",32000),1000,WaterTank.MAX_CAPACITY));
-        if(!carrier.isEmpty()&&budget!=null&&budget.tier()==7&&!recovery){var sample=room();if(!sample.available()){status(Status.NO_ROOM);return;}if(!enclosed(sample)){condition=MachineContaminationState.contaminated(level.getGameTime());carrier.set(ModDataComponents.FOUP_CONTENTS.get(),FoupItems.trustedContentsOf(carrier).contaminated());FoupRouting.refresh(carrier);recovery=true;setChanged();}}
+        if(!carrier.isEmpty()&&budget!=null&&budget.tier()>=7&&!recovery){var sample=room();if(!sample.available()){status(Status.NO_ROOM);return;}if(!enclosed(sample)){condition=MachineContaminationState.contaminated(level.getGameTime());carrier.set(ModDataComponents.FOUP_CONTENTS.get(),FoupItems.trustedContentsOf(carrier).contaminated());FoupRouting.refresh(carrier);recovery=true;setChanged();}}
         if(recovery){if(slot(3).isEmpty()){setSlot(3,carrier);carrier=ItemStack.EMPTY;budget=null;footprint=List.of();recovery=false;setChanged();}status(requiresRepair()?Status.REPAIR:Status.RECOVERY);return;}
         if(!isFormed()){status(Status.UNFORMED);return;}if(requiresRepair()){status(Status.REPAIR);return;}if(definition().isEmpty()){status(Status.CONFIG);return;}
         if(carrier.isEmpty()){
             if(!slot(3).isEmpty()){status(Status.OUTPUT_BLOCKED);return;}if(slot(0).isEmpty()){status(Status.NO_FOUP);return;}if(!canReceiveCarrier(slot(0))){status(Status.WRONG_STAGE);return;}
-            if(coating()&&(ResistCatalog.tierOf(slot(1))<5||ResistCatalog.tierOf(slot(1))>7)){status(Status.NO_RESIST);return;}
+            if(coating()&&(ResistCatalog.tierOf(slot(1))<5||ResistCatalog.tierOf(slot(1))>8)){status(Status.NO_RESIST);return;}
             CoatingReceipt next;try{next=recipe();}catch(RuntimeException invalid){status(Status.CONFIG);return;}
             if(next==null){status(Status.WRONG_STAGE);return;}
             if(next.energyPerTick()>buffer().getCapacityAsInt()||next.rinseEnergyPerTick()>buffer().getCapacityAsInt()){status(Status.CONFIG);return;}
             int ticks=coating()?Math.max(1,next.coatTicks()):Math.max(1,next.totalCleanTicks());
             if(coating()&&((long)next.totalResist()+ticks-1)/ticks>64||!coating()&&((long)next.cleanWaterMb()+ticks-1)/ticks>upw.capacity()){status(Status.CONFIG);return;}
-            var sample=CleanroomRooms.sample((ServerLevel)level,members());if(!sample.available()||next.tier()==7&&!enclosed(sample)){status(Status.NO_ROOM);return;}
+            var sample=CleanroomRooms.sample((ServerLevel)level,members());if(!sample.available()||next.tier()>=7&&!enclosed(sample)){status(Status.NO_ROOM);return;}
             budget=next;carrier=slot(0).copy();clearSlot(0);footprint=List.copyOf(members());progress=resistPaid=waterPaid=0;setChanged();
         }
         if(!slot(3).isEmpty()){status(Status.OUTPUT_BLOCKED);return;}
@@ -110,7 +112,7 @@ public abstract class LinearStageBlockEntity extends AdvancedControllerBlockEnti
         var lot=FoupItems.trustedContentsOf(carrier);carrier.set(ModDataComponents.FOUP_CONTENTS.get(),lot.withRoomExposure(lot.roomExposure().sample(sample.yieldPermille()),0));progress=nextProgress;setChanged();status(coating()?(progress<=ticks/2?Status.COATING:Status.BAKING):(progress<=budget.rinseTicks()?Status.RINSING:Status.DRYING));
         if(progress==ticks){
             var route=carrier.get(ModDataComponents.FOUP_ROUTING.get());
-            if(coating()){carrier.set(ModDataComponents.COATING_RECEIPT.get(),budget);carrier.set(ModDataComponents.FOUP_ROUTING.get(),new FoupRoutingData(route.progress().coated(budget.tier()),"",0,false));}
+            if(coating()){carrier.set(ModDataComponents.COATING_RECEIPT.get(),budget);carrier.set(ModDataComponents.FOUP_ROUTING.get(),new FoupRoutingData(route.progress().coated(budget.tier()),route.dieType(),0,false));}
             else {var current=TierDataLoader.getRegistry().byIndex(budget.tier()).orElseThrow();var tier=new Tier(current.id(),current.index(),current.displayName(),current.lightSource(),current.resolutionNm(),current.overlayNm(),current.throughputWph(),budget.layers(),current.layerTicks(),current.defaultYieldPercent(),current.targetSpeedMhz(),current.comfortableCores(),current.optional());carrier.set(ModDataComponents.FOUP_CONTENTS.get(),CleanroomYield.finish(FoupItems.trustedContentsOf(carrier),tier));carrier.set(ModDataComponents.FOUP_ROUTING.get(),new FoupRoutingData(route.progress().cleaned(),route.dieType(),route.cores(),false));}
             FoupRouting.refresh(carrier);setSlot(3,carrier);carrier=ItemStack.EMPTY;budget=null;footprint=List.of();progress=0;setChanged();
         }

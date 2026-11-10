@@ -1,0 +1,10 @@
+{
+    groups: [
+        {
+            id: "lithmod_fab_progression",
+            title: "EUVCRAFT",
+            icon: "lithmod:logic_chip_t1",
+            order: 10
+        }
+    ]
+}

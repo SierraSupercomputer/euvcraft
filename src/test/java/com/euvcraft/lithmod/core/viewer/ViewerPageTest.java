@@ -249,7 +249,7 @@ class ViewerPageTest {
 
     @Test
     void ingredientRejectTierTooLarge() {
-        assertThrows(IllegalArgumentException.class, () -> new ViewerPage.Ingredient(ViewerPage.Kind.ITEM, "mod:item", 1, "", "", 8, 0, 0));
+        assertThrows(IllegalArgumentException.class, () -> new ViewerPage.Ingredient(ViewerPage.Kind.ITEM, "mod:item", 1, "", "", 9, 0, 0));
     }
 
     @Test

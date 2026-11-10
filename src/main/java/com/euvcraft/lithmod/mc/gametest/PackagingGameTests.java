@@ -591,7 +591,7 @@ public final class PackagingGameTests {
         if (machine == null) {
             return;
         }
-        Tier tier = tier(helper, 8);
+        Tier tier = tier(helper, 1);
         if (tier == null) {
             return;
         }
@@ -601,15 +601,8 @@ public final class PackagingGameTests {
             "the chip catalog now names a chip for compute at tier " + tier.index()
                 + ", so this case cannot prove a NO_CHIP_FOR_DIE refusal");
 
-        FoupContents complete;
-        try {
-            complete = processLot(level, tier, DieTypes.COMPUTE, 8,
-                EUVCRAFTMod.settings().foupCapacity(), 4);
-        } catch (RuntimeException refusedByTheCore) {
-            helper.fail("a compute lot at T" + tier.index() + " could not be built, so the "
-                + "NO_CHIP_FOR_DIE case cannot run: " + refusedByTheCore.getMessage());
-            return;
-        }
+        var complete = new FoupContents(java.util.UUID.randomUUID(), 25, List.of(new Wafer(tier.layers(), 1f, 0)),
+            new RunSpec(DieTypes.COMPUTE, tier.index(), 1, .8, tier.layers()));
         helper.assertTrue(complete.run() != null,
             "the compute fixture carries no run spec, so it would be refused for NO_SPEC");
         for (Wafer wafer : complete.wafers()) {

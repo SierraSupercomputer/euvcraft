@@ -11,6 +11,7 @@ const D = 'src/main/resources/data/lithmod/';
 const BLOCK_IDS = [
   'deposition_etcher',
   'advanced_test_package',
+  'high_bin_test_package',
   'advanced_casing',
   'advanced_power_port',
   'advanced_operating_panel'
@@ -20,6 +21,7 @@ const BLOCK_IDS = [
 const BLOCK_ROLES = {
   'deposition_etcher': ['controller'],
   'advanced_test_package': ['controller'],
+  'high_bin_test_package': ['controller'],
   'advanced_casing': ['casing'],
   'advanced_power_port': ['power_port'],
   'advanced_operating_panel': ['operating_panel']

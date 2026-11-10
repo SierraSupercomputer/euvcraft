@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:quartz",
+    "minecraft:redstone",
+    "lithmod:silicon"
+  ],
+  "result": {
+    "id": "lithmod:dopant_charge",
+    "count": 2
+  }
+}

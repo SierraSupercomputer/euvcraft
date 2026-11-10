@@ -197,14 +197,9 @@ public final class T3ContentGameTests {
         helper.assertTrue(ChipCatalog.chipFor(DieTypes.NAND, 3).get() == ModItems.NAND_CHIP_T3.get(),
             "ChipCatalog NAND T3 must be NAND_CHIP_T3");
 
-        // T6+ entries remain deferred
-        for (Tier tier : TierDataLoader.getRegistry().all()) {
-            if (tier.index() >= 8) {
-                for (String dieType : List.of(DieTypes.LOGIC, DieTypes.MEMORY, DieTypes.COMPUTE, DieTypes.NAND)) {
-                    helper.assertTrue(ChipCatalog.chipFor(dieType, tier.index()).isEmpty(),
-                        "ChipCatalog must not have " + dieType + " at " + tier.id());
-                }
-            }
+        helper.assertTrue(ChipCatalog.chipFor(DieTypes.LOGIC, 8).isEmpty(), "Logic still ends at T5");
+        for (String dieType : List.of(DieTypes.MEMORY, DieTypes.COMPUTE, DieTypes.NAND)) {
+            helper.assertTrue(ChipCatalog.chipFor(dieType, 8).isPresent(), "T8 produces " + dieType);
         }
 
         helper.succeed();

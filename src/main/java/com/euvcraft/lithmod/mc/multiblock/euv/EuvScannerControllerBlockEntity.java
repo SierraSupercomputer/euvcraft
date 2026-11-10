@@ -116,18 +116,32 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
         this.vacuumSpec = createVacuumSpec();
     }
 
+    public boolean highNa() {
+        return getBlockState().is(EuvMachines.HIGH_NA_SCANNER.get());
+    }
+
+    private int scannerTier() {
+        return highNa() ? 8 : 7;
+    }
+
+    @Override
+    protected LineLoadout lineLoadout(int maskTier) {
+        if (!highNa()) return super.lineLoadout(maskTier);
+        return LineLoadoutReader.highNa(super.lineLoadout(maskTier));
+    }
+
     private VacuumPumpSpec createVacuumSpec() {
         return new VacuumPumpSpec(p("vacuum_pump_rate",5000),p("vacuum_idle_leak",100),p("vacuum_process_load",2000),p("vacuum_operating_pressure",10000),p("vacuum_reserve_capacity",50000),p("vacuum_reserve_recharge",1000));
     }
 
     @Override
     protected String machineId() {
-        return "euv_scanner";
+        return highNa() ? "high_na_scanner" : "euv_scanner";
     }
 
     @Override
     public Component getDisplayName() {
-        return Component.translatable("block.lithmod.euv_scanner_controller");
+        return Component.translatable(highNa() ? "block.lithmod.high_na_scanner_controller" : "block.lithmod.euv_scanner_controller");
     }
 
     @Override
@@ -191,12 +205,12 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
 
     @Override
     protected int admissionPasses(Tier tier) {
-        return tier.index() == 7 ? 1 : 0; // Single exposure pass for EUV
+        return supportsTier(tier) ? 1 : 0;
     }
 
     @Override
     protected boolean supportsTier(Tier tier) {
-        return tier.index() == 7; // EUV only runs T7
+        return tier.index() == scannerTier();
     }
 
     @Override
@@ -243,7 +257,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
     @Override
     public FoupContents applyLayer(FoupContents lot, int layer, double defectFactor) {
         FoupContents next = super.applyLayer(lot,layer,defectFactor);
-        var tier = TierDataLoader.getRegistry().byIndex(7).orElseThrow();
+        var tier = TierDataLoader.getRegistry().byIndex(scannerTier()).orElseThrow();
         if(layer==tier.layers()&&!slot(0).has(ModDataComponents.COATING_RECEIPT.get()))next=CleanroomYield.finish(next,tier);
         storeRoomLot(next);
         return next;
@@ -257,7 +271,7 @@ public class EuvScannerControllerBlockEntity extends ProcessCellControllerBlockE
 
     @Override
     public FoupContents processingTick(FoupContents lot) {
-        if (tierIndex() != 7) return lot;
+        if (tierIndex() != scannerTier()) return lot;
         CleanroomRooms.Sample room = roomSample();
         if (!room.available()) {
             throw new IllegalStateException("Cleanroom chunk unavailable during EUV processing");

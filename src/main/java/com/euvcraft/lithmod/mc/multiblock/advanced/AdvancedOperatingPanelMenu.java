@@ -24,7 +24,8 @@ public class AdvancedOperatingPanelMenu extends FabMachineMenu {
   panel=machine!=null&&machine.getLevel().getBlockEntity(corePos.above()) instanceof AdvancedMemberBlockEntity p?p:null;
   formation=machine instanceof AdvancedOwner owner?owner.formation().data():new SimpleContainerData(1);
   queue=machine instanceof TestPackageBlockEntity pack?pack.queueData():new SimpleContainerData(3);
-  mode=machine instanceof AdvancedTestPackageControllerBlockEntity pack?pack.binningData():new SimpleContainerData(1);
+  mode=new SimpleContainerData(1);
+  if(machine instanceof HighBinTestPackageBlockEntity)mode.set(0,1);
   addDataSlots(formation);addDataSlots(queue);addDataSlots(mode);
  }
  public AdvancedOperatingPanelMenu(int id,Inventory inventory,RegistryFriendlyByteBuf buffer){
@@ -45,15 +46,10 @@ public class AdvancedOperatingPanelMenu extends FabMachineMenu {
  }
  public boolean deposition(){return deposition;}
  public boolean formed(){return formation.get(0)==1;}
- public boolean highBinning(){return mode.get(0)==1;}
- public boolean active(){return !deposition&&wafersTotal()>wafersDone();}
+ public boolean highBinningStation(){return mode.get(0)==1;}
  public int state(){return queue.get(0);}
  public int wafersDone(){return queue.get(1);}
  public int wafersTotal(){return queue.get(2);}
- @Override public boolean clickMenuButton(Player player,int button){
-  if(button!=1||!(player instanceof net.minecraft.server.level.ServerPlayer)||player.containerMenu!=this||!formed()||!stillValid(player)||!(blockEntity instanceof AdvancedTestPackageControllerBlockEntity pack))return false;
-  return pack.toggleHighBinning();
- }
  @Override public boolean stillValid(Player player){
   return super.stillValid(player)&&panel!=null&&blockEntity.getBlockPos().equals(corePos)
    &&blockEntity.getLevel().getBlockEntity(corePos.above())==panel

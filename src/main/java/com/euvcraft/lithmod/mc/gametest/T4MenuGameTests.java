@@ -18,7 +18,7 @@ final class T4MenuGameTests {
  static void run(GameTestHelper h){
   var cookie=CommonListenerCookie.createInitial(new GameProfile(UUID.randomUUID(),"t4-menu"),false);
   var player=new ServerPlayer(h.getLevel().getServer(),h.getLevel(),cookie.gameProfile(),cookie.clientInformation());
-  for(var kind:java.util.List.of(Kind.DEPOSITION,Kind.PACKAGING))try(var c=build(h,kind)){
+  for(var kind:java.util.List.of(Kind.DEPOSITION,Kind.PACKAGING,Kind.HIGH_BINNING))try(var c=build(h,kind)){
    player.setPos(c.anchor().getX()+.5,c.anchor().getY()+1,c.anchor().getZ()+.5);
    var cabinet=c.machine().createMenu(1,player.getInventory(),player);
    eq(h,36,cabinet.slots.size(),"Lower cabinet exposes only player slots");
@@ -32,13 +32,8 @@ final class T4MenuGameTests {
    check(h,!panel.getSlot(0).mayPlace(new ItemStack(Items.DIRT)),"FOUP slot rejects arbitrary items");
    check(h,panel.getSlot(1).mayPlace(new ItemStack(kind==Kind.DEPOSITION?ModItems.SILICON.get():ModItems.CHIP_PACKAGE.get())),"Correct reagent input");
    for(int n=2;n<machineSlots;n++)check(h,!panel.getSlot(n).mayPlace(new ItemStack(Items.DIRT)),"Output insertion refused");
-   if(kind==Kind.PACKAGING){
-    var machine=(AdvancedTestPackageControllerBlockEntity)c.machine();
-    check(h,panel.clickMenuButton(player,1)&&machine.highBinningEnabled(),"Open owned server panel can toggle high binning");
-    player.containerMenu=player.inventoryMenu;check(h,!panel.clickMenuButton(player,1)&&machine.highBinningEnabled(),"Closed panel cannot mutate mode");player.containerMenu=panel;
-    machine.setSlot(0,complete(3,DieTypes.LOGIC,0));machine.setSlot(1,new ItemStack(ModItems.CHIP_PACKAGE.get(),64));replenish(machine);machine.serverTick();
-    check(h,machine.isQueueActive()&&!panel.clickMenuButton(player,1)&&machine.highBinningEnabled(),"Active queue locks mode through actual menu RPC");
-   }
+   check(h,panel.highBinningStation()==(kind==Kind.HIGH_BINNING),"Only the dedicated station displays high binning");
+   check(h,!panel.clickMenuButton(player,1),"Old mode button packet cannot switch any station");
    c.level().setBlock(c.anchor().above(),Blocks.AIR.defaultBlockState(),3);
    check(h,!panel.stillValid(player)&&!panel.clickMenuButton(player,1),"Removed panel invalidates retained menu");
   }

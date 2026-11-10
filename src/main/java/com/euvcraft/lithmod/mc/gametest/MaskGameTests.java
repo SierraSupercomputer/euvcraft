@@ -1600,7 +1600,7 @@ public final class MaskGameTests {
                 maskFiltered.add(stack);
             }
         }
-        helper.assertValueEqual(11, maskFiltered.size(),
+        helper.assertValueEqual(14, maskFiltered.size(),
             "the main tab holds " + maskFiltered.size() + " mask-related entries rather than four");
 
         // Entry 0: blank mask

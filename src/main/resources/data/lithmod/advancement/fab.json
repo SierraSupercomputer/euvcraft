@@ -1,0 +1,21 @@
+{
+  "display": {
+    "icon": {
+      "id": "lithmod:silicon"
+    },
+    "title": {
+      "translate": "advancement.lithmod.root.title"
+    },
+    "description": {
+      "translate": "advancement.lithmod.root.description"
+    },
+    "background": "minecraft:gui/advancements/backgrounds/stone",
+    "show_toast": false,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "start": {
+      "trigger": "minecraft:tick"
+    }
+  }
+}

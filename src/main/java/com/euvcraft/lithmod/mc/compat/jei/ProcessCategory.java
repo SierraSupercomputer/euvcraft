@@ -55,7 +55,7 @@ public final class ProcessCategory implements IRecipeCategory<ViewerPage> {
     }
     public static ItemStack stack(Ingredient ingredient){
         var item=BuiltInRegistries.ITEM.getValue(Identifier.parse(ingredient.id()));var stack=new ItemStack(item,ingredient.amount());
-        if(!ingredient.family().isBlank()&&ingredient.tier()>0&&ingredient.id().equals("lithmod:mask"))stack.set(ModDataComponents.MASK_DATA.get(),new MaskData(ingredient.family(),ingredient.tier(),Math.max(1,ingredient.uses()),ingredient.tier()==7?3:ingredient.tier()>=3?2:1));
+        if(!ingredient.family().isBlank()&&ingredient.tier()>0&&ingredient.id().equals("lithmod:mask"))stack.set(ModDataComponents.MASK_DATA.get(),new MaskData(ingredient.family(),ingredient.tier(),Math.max(1,ingredient.uses()),ingredient.tier()>=7?3:ingredient.tier()>=3?2:1));
         if(ingredient.cores()>0)stack.set(ModDataComponents.CORE_COUNT.get(),ingredient.cores());return stack;
     }
     private static String cost(ViewerPage page){return (page.ticks()>0?page.ticks()+" ticks":"Variable time")+" | "+(page.fePerTick()>0?page.fePerTick()+" FE/t":"FE: see notes");}

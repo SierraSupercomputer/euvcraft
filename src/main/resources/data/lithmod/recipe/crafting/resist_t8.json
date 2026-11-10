@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "lithmod:resist_t7",
+    "minecraft:glowstone_dust",
+    "minecraft:quartz"
+  ],
+  "result": {
+    "id": "lithmod:resist_t8",
+    "count": 1
+  }
+}

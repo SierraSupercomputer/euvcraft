@@ -165,6 +165,23 @@ public final class HighBinningDataLoader
         return Optional.ofNullable(resolved);
     }
 
+    public static boolean trophyAvailable(com.euvcraft.lithmod.core.RunSpec spec) {
+        var machines = MachineDefinitionLoader.getRegistry();
+        return spec.tierIndex() == 8 && com.euvcraft.lithmod.core.DieTypes.COMPUTE.equals(spec.dieType())
+            && machines != null && machines.byId("high_bin_test_package")
+                .map(machine -> machine.paramOrDefault("god_chip_yield_permille", 10) > 0).orElse(false);
+    }
+
+    public static boolean supportsSource(com.euvcraft.lithmod.core.RunSpec spec) {
+        return trophyAvailable(spec) || forLot(spec).isPresent();
+    }
+
+    /** Resolves a source to a transition whose output is actually available. */
+    public static Optional<HighBinningRecipe> forLot(com.euvcraft.lithmod.core.RunSpec spec) {
+        return getRegistry().flatMap(registry -> registry.forSource(spec.dieType(), spec.tierIndex()))
+            .filter(recipe -> com.euvcraft.lithmod.mc.ChipCatalog.chipFor(spec.dieType(), recipe.transition().targetTier()).isPresent());
+    }
+
     /**
      * Immutable registry of high binning recipes, keyed by "family:sourceTier".
      */

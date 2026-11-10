@@ -45,6 +45,7 @@ public final class T4RuntimeGameTests {
   FUNCTIONS.register("t4_high_binning_compute",()->h->binning(h,DieTypes.COMPUTE));
   FUNCTIONS.register("t4_high_binning_refusals",()->T4RuntimeGameTests::binningRefusals);
   FUNCTIONS.register("t4_high_binning_frozen_reload",()->T4RuntimeGameTests::binningReload);
+  FUNCTIONS.register("t4_high_binning_legacy_queue",()->T4RuntimeGameTests::binningLegacyQueue);
  }
  public static void register(IEventBus bus){
   FUNCTIONS.register(bus);bus.addListener((Consumer<RegisterGameTestsEvent>)event->{
@@ -52,7 +53,7 @@ public final class T4RuntimeGameTests {
    var data=new TestData<>(env,Level.OVERWORLD,Identifier.withDefaultNamespace("empty"),300,0,true,Rotation.NONE,false,1,1,false,0);
    for(String name:List.of("t4_panel_authority","t4_full_chain_logic","t4_full_chain_memory","t4_full_chain_compute","t4_full_chain_nand","t4_advanced_geometry","t4_advanced_capabilities","t4_preparation_conservation",
      "t4_preparation_refusals","t4_preparation_pause_reload","t4_preparation_break","t4_high_binning_logic",
-     "t4_high_binning_compute","t4_high_binning_refusals","t4_high_binning_frozen_reload")){
+     "t4_high_binning_compute","t4_high_binning_refusals","t4_high_binning_frozen_reload","t4_high_binning_legacy_queue")){
     var id=Identifier.fromNamespaceAndPath("lithmod",name);
     event.registerTest(id,new FunctionGameTestInstance(ResourceKey.<Consumer<GameTestHelper>>create(Registries.TEST_FUNCTION,id),data));
    }
@@ -173,9 +174,12 @@ public final class T4RuntimeGameTests {
   return (int)lot.wafers().stream().filter(w->w.cumulativeRoll()>threshold).count();
  }
  private static void binning(GameTestHelper h,String family){
-  try(var c=build(h,Kind.PACKAGING)){
-   var machine=(AdvancedTestPackageControllerBlockEntity)c.machine();check(h,machine.toggleHighBinning(),"Idle mode can be selected");
+  try(var c=build(h,Kind.HIGH_BINNING)){
+   var machine=(HighBinTestPackageBlockEntity)c.machine();
    var source=complete(3,family,DieTypes.COMPUTE.equals(family)?1:0);var lot=FoupItems.trustedContentsOf(source);
+   com.euvcraft.lithmod.mc.routing.FoupRouting.exposureFinished(source);
+   var destinations=source.get(ModDataComponents.FOUP_NEXT_STEPS.get());
+   check(h,destinations.containsKey("test_package")&&destinations.containsKey("high_bin_test_package"),"Eligible FOUP offers normal and high-bin destinations");
    int passes=expectedPassing(source,true),chips=EUVCRAFTMod.settings().chipsPerWafer();
    int packages=machine.definition().orElseThrow().param("package_per_wafer").orElseThrow();
    var transition=HighBinningDataLoader.getRegistry().orElseThrow().forSource(family,3).orElseThrow().transition();
@@ -183,7 +187,7 @@ public final class T4RuntimeGameTests {
    int cost=transition.scaledEnergyPerTick(machine.definition().orElseThrow().energyPerTick(tier,EUVCRAFTMod.settings()));
    int ticks=transition.scaledTicksPerWafer(machine.definition().orElseThrow().param("ticks_per_wafer").orElseThrow());
    machine.setSlot(0,source);machine.setSlot(1,new ItemStack(ModItems.CHIP_PACKAGE.get(),64));replenish(machine);machine.serverTick();
-   check(h,machine.isQueueActive(),"High bin queue is admitted");check(h,!machine.toggleHighBinning(),"Active queue refuses mode changes");
+   check(h,machine.isQueueActive(),"Dedicated station admits a high-bin queue");
    var emptied=FoupItems.trustedContentsOf(machine.slot(0));check(h,emptied.isEmpty()&&!emptied.lotId().equals(lot.lotId()),"Lot consumed immediately with fresh empty carrier");
    eq(h,lot.capacity(),emptied.capacity(),"Empty carrier capacity preserved");eq(h,1,emptied.preparationGeneration(),"Empty carrier retains no preparation");
    var result=packageAll(h,machine,ChipCatalog.chipFor(family,4).orElseThrow(),lot.size());
@@ -193,8 +197,8 @@ public final class T4RuntimeGameTests {
   }h.succeed();
  }
  private static void binningRefusals(GameTestHelper h){
-  try(var c=build(h,Kind.PACKAGING)){
-   var machine=(AdvancedTestPackageControllerBlockEntity)c.machine();machine.toggleHighBinning();
+  try(var c=build(h,Kind.HIGH_BINNING)){
+   var machine=(HighBinTestPackageBlockEntity)c.machine();
    var client=complete(3,DieTypes.LOGIC,0);var buf=Unpooled.buffer();FoupContentsCodec.STREAM_CODEC.encode(buf,FoupItems.trustedContentsOf(client));
    client.set(ModDataComponents.FOUP_CONTENTS.get(),FoupContentsCodec.STREAM_CODEC.decode(buf));buf.release();
    for(var source:List.of(complete(3,DieTypes.MEMORY,0),complete(3,DieTypes.NAND,0),complete(5,DieTypes.LOGIC,0),fresh(3,WaferSubstrate.PURE),client,complete(3,DieTypes.COMPUTE,0))){
@@ -208,12 +212,12 @@ public final class T4RuntimeGameTests {
   double oldPower=FabConfig.FE_POWER_MULTIPLIER.get();int oldChips=FabConfig.CHIPS_PER_WAFER.get();
   var registryField=binningRegistryField();Object originalRegistry;
   try{originalRegistry=registryField.get(null);}catch(ReflectiveOperationException e){throw new RuntimeException(e);}
-  try(var c=build(h,Kind.PACKAGING)){
-   var machine=(AdvancedTestPackageControllerBlockEntity)c.machine();machine.toggleHighBinning();
+  try(var c=build(h,Kind.HIGH_BINNING)){
+   var machine=(HighBinTestPackageBlockEntity)c.machine();
    var source=complete(3,DieTypes.LOGIC,0);int passes=expectedPassing(source,true),count=FoupItems.trustedContentsOf(source).size();
    machine.setSlot(0,source);machine.setSlot(1,new ItemStack(ModItems.CHIP_PACKAGE.get(),64));replenish(machine);machine.serverTick();
    var tag=save(c.level(),machine);var state=c.level().getBlockState(c.anchor());c.level().removeBlockEntity(c.anchor());
-   var replacement=AdvancedMachines.ADVANCED_TEST_PACKAGE_CONTROLLER_BE.get().create(c.anchor(),state);c.level().setBlockEntity(replacement);
+   var replacement=AdvancedMachines.HIGH_BIN_CONTROLLER_BE.get().create(c.anchor(),state);c.level().setBlockEntity(replacement);
    load(c.level(),replacement,tag);replacement.revalidate();check(h,replacement.isQueueActive(),"Accepted plan survives actual save/load");
    FabConfig.FE_POWER_MULTIPLIER.set(oldPower<99?oldPower+1:oldPower-1);FabConfig.CHIPS_PER_WAFER.set(oldChips==1?2:1);EUVCRAFTMod.config().onConfigReload();
    try{
@@ -228,6 +232,27 @@ public final class T4RuntimeGameTests {
    replacement.setSlot(0,complete(3,DieTypes.LOGIC,0));replenish(replacement);replacement.serverTick();
    check(h,!replacement.isQueueActive()&&!FoupItems.trustedContentsOf(replacement.slot(0)).isEmpty(),"Removed transition blocks subsequent jobs without consuming source");
   } finally {try{registryField.set(null,originalRegistry);}catch(ReflectiveOperationException e){throw new RuntimeException(e);}FabConfig.FE_POWER_MULTIPLIER.set(oldPower);FabConfig.CHIPS_PER_WAFER.set(oldChips);EUVCRAFTMod.config().onConfigReload();}
+  h.succeed();
+ }
+ private static void binningLegacyQueue(GameTestHelper h){
+  net.minecraft.nbt.CompoundTag legacy;
+  try(var c=build(h,Kind.HIGH_BINNING)){
+   var machine=(HighBinTestPackageBlockEntity)c.machine();
+   machine.setSlot(0,complete(3,DieTypes.LOGIC,0));machine.setSlot(1,new ItemStack(ModItems.CHIP_PACKAGE.get(),64));
+   replenish(machine);machine.serverTick();
+   check(h,machine.isQueueActive(),"Seed a previously accepted high-bin queue");
+   legacy=save(c.level(),machine);
+   legacy.putString("id","lithmod:advanced_test_package");
+   legacy.putBoolean("t4_high_binning",true);
+  }
+  try(var c=build(h,Kind.PACKAGING)){
+   var machine=(AdvancedTestPackageControllerBlockEntity)c.machine();
+   load(c.level(),machine,legacy);
+   check(h,machine.isQueueActive(),"Regular packager restores a legacy high-bin queue");
+   check(h,packageAll(h,machine,ModItems.LOGIC_CHIP_T4.get(),3).chips()>0,"Legacy queue still emits its original T4 chips");
+   machine.setSlot(0,complete(3,DieTypes.LOGIC,0));
+   check(h,packageAll(h,machine,ModItems.LOGIC_CHIP_T3.get(),3).chips()>0,"Old saved toggle cannot start a new high-bin queue");
+  }
   h.succeed();
  }
  private static java.lang.reflect.Field binningRegistryField(){

@@ -33,7 +33,7 @@ public final class ViewerGameTests {
     private static void catalog(GameTestHelper h){
         var pages=ViewerCatalog.build();check(h,pages.size()>80,"All process families projected");check(h,pages.equals(ViewerCatalogCodec.decode(ViewerCatalogCodec.encode(pages))),"Public catalog codec roundtrip");
         for(var entry:ViewerMachines.CONTROLLERS.entrySet()){var item=BuiltInRegistries.ITEM.getValue(Identifier.parse(entry.getValue()));check(h,item instanceof BlockItem,"Crafting station is a real controller block: "+entry);check(h,pages.stream().anyMatch(p->p.machine().equals(entry.getKey())),"Station has process pages: "+entry);}
-        for(var row:pages){check(h,!row.machine().equals("test_machine")&&!row.id().contains("/t8"),"No fixtures or unimplemented T8 recipes");for(var i:java.util.stream.Stream.of(row.inputs(),row.outputs(),row.catalysts()).flatMap(List::stream).toList()){
+        for(var row:pages){check(h,!row.machine().equals("test_machine"),"No fixtures in public recipes");for(var i:java.util.stream.Stream.of(row.inputs(),row.outputs(),row.catalysts()).flatMap(List::stream).toList()){
             switch(i.kind()){
                 case ITEM->check(h,BuiltInRegistries.ITEM.getValue(Identifier.parse(i.id()))!=Items.AIR,"Registered display item: "+i.id());
                 case TAG->check(h,BuiltInRegistries.ITEM.getTagOrEmpty(TagKey.create(Registries.ITEM,Identifier.parse(i.id()))).iterator().hasNext(),"Live tag resolves");

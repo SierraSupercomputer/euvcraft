@@ -6,7 +6,7 @@ public final class CleanroomYield {
     public static FoupContents finish(FoupContents lot, Tier tier) {
         if(lot.roomYieldPermille()!=0)return lot;
         YieldRollEngine.requireCompleteLot(lot,tier);
-        if((tier.index()!=5&&tier.index()!=6&&tier.index()!=7)||lot.run()==null)return lot;
+        if((tier.index()<5||tier.index()>8)||lot.run()==null)return lot;
         int factor=lot.roomExposure().meanPermille();
         RunSpec old=lot.run();double nextYield=old.effectiveYield()*factor/1000.0;
         // Every layer uses the same frozen calibration and defect factor; the latter

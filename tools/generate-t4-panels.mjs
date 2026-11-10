@@ -30,6 +30,7 @@ const EXPECTED_OUTPUT = {
 const BLOCK_IDS = [
   'deposition_etcher',
   'advanced_test_package',
+  'high_bin_test_package',
   'advanced_casing',
   'advanced_power_port',
   'advanced_operating_panel'

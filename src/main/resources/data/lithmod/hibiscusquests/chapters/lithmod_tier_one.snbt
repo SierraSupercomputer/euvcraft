@@ -1,0 +1,87 @@
+{
+    id: "lithmod_tier_one",
+    group: "lithmod_fab_progression",
+    order: 0,
+    title: "T1 - Your First Logic Chip",
+    subtitle: "From quartz to a working chip fab",
+    icon: "lithmod:logic_chip_t1",
+    default_shape: "circle",
+    quests: [
+        {
+            id: "lithmod_t1_silicon",
+            title: "Start with Silicon",
+            icon: "lithmod:silicon",
+            description: [
+                "Smelt or blast Nether Quartz into Silicon. Make at least four Silicon for the first boule.",
+                "Set up a steady FE supply for the machines in this chapter. A full buffer may run out before a batch finishes."
+            ],
+            x: 0d,
+            y: 0d,
+            tasks: [{ type: "item", item: "lithmod:silicon" }]
+        },
+        {
+            id: "lithmod_t1_boule",
+            title: "Grow a Silicon Boule",
+            icon: "lithmod:silicon_boule",
+            description: [
+                "Place and power a Crystal Puller. Load four Silicon and collect the ordinary Silicon Boule from the output."
+            ],
+            x: 1.5d,
+            y: 0d,
+            dependencies: ["lithmod_t1_silicon"],
+            tasks: [{ type: "item", item: "lithmod:silicon_boule" }]
+        },
+        {
+            id: "lithmod_t1_carrier",
+            title: "Get a Wafer Carrier",
+            icon: "lithmod:foup_mk1",
+            description: [
+                "Craft a FOUP Mk1. This reusable carrier moves a whole wafer batch from machine to machine.",
+                "Place and power a Wafer Slicer. Load the boule and the empty FOUP. Take the filled carrier from the output and hover over it to check the wafer count."
+            ],
+            x: 3d,
+            y: 0d,
+            dependencies: ["lithmod_t1_boule"],
+            tasks: [{ type: "item", item: "lithmod:foup_mk1" }]
+        },
+        {
+            id: "lithmod_t1_mask",
+            title: "Write a Logic Mask",
+            icon: "lithmod:mask",
+            description: [
+                "Place and power a Pattern Generator. Load one Blank Mask and one Copper Ingot to write a T1 Logic Mask.",
+                "Check the finished mask's tooltip for T1 and Logic. Craft Photoresist T1 for the exposure step."
+            ],
+            x: 3d,
+            y: 1.5d,
+            tasks: [{ type: "item", item: "lithmod:mask" }]
+        },
+        {
+            id: "lithmod_t1_cell",
+            title: "Build a Process Cell",
+            icon: "lithmod:process_cell_controller",
+            description: [
+                "Build a filled Process Cell two blocks wide, two high, and three deep. Put the Equipment Cabinet in either bottom front position facing out. Put the Operating Panel directly above it.",
+                "With one Process Cell Power Port, fill the other nine spaces with Process Cell Casings. Connect FE to the port.",
+                "Open the lower cabinet and install a Mercury Lamp, Contact Plate, Manual Aligner, Basic Air Filter, and Optical Microscope. The upper panel is where the production supplies go."
+            ],
+            x: 3d,
+            y: 3d,
+            tasks: [{ type: "item", item: "lithmod:process_cell_controller" }]
+        },
+        {
+            id: "lithmod_t1_first_chip",
+            title: "Package Your First Logic Chip",
+            icon: "lithmod:logic_chip_t1",
+            description: [
+                "Open the upper Operating Panel. Load the filled wafer FOUP, T1 Logic Mask, and Photoresist T1. Exposure starts automatically when the cell is ready.",
+                "Move the finished FOUP into a powered Test and Package machine and supply Chip Packages. Some Chip Scrap is normal. Keep the empty FOUP for the next batch.",
+                "If work stops, check the machine status, FE supply, consumables, and output space. Hover over the FOUP to see its current state and where it goes next."
+            ],
+            x: 5d,
+            y: 1.5d,
+            dependencies: ["lithmod_t1_carrier", "lithmod_t1_mask", "lithmod_t1_cell"],
+            tasks: [{ type: "item", item: "lithmod:logic_chip_t1" }]
+        }
+    ]
+}

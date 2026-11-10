@@ -235,7 +235,7 @@ public final class ReflowControllerBlockEntity extends FabMachineBlockEntity imp
                 continue;
             }
             ItemStack product = recipe.assemble();
-            if((slot(SLOT_CHIP).is(com.euvcraft.lithmod.mc.registry.ModItems.COMPUTE_CHIP_T6.get())&&product.is(com.euvcraft.lithmod.mc.registry.ModItems.CPU_T6.get()))||(slot(SLOT_CHIP).is(com.euvcraft.lithmod.mc.registry.ModItems.COMPUTE_CHIP_T7.get())&&product.is(com.euvcraft.lithmod.mc.registry.ModItems.CPU_T7.get())))product.set(com.euvcraft.lithmod.mc.registry.ModDataComponents.CORE_COUNT.get(),slot(SLOT_CHIP).getOrDefault(com.euvcraft.lithmod.mc.registry.ModDataComponents.CORE_COUNT.get(),1));
+            if((slot(SLOT_CHIP).is(com.euvcraft.lithmod.mc.registry.ModItems.COMPUTE_CHIP_T6.get())&&product.is(com.euvcraft.lithmod.mc.registry.ModItems.CPU_T6.get()))||(slot(SLOT_CHIP).is(com.euvcraft.lithmod.mc.registry.ModItems.COMPUTE_CHIP_T7.get())&&product.is(com.euvcraft.lithmod.mc.registry.ModItems.CPU_T7.get()))||(slot(SLOT_CHIP).is(com.euvcraft.lithmod.mc.registry.ModItems.COMPUTE_CHIP_T8.get())&&product.is(com.euvcraft.lithmod.mc.registry.ModItems.CPU_T8.get())))product.set(com.euvcraft.lithmod.mc.registry.ModDataComponents.CORE_COUNT.get(),slot(SLOT_CHIP).getOrDefault(com.euvcraft.lithmod.mc.registry.ModDataComponents.CORE_COUNT.get(),1));
             if (product.isEmpty() || product.getCount() <= 0) {
                 continue;
             }

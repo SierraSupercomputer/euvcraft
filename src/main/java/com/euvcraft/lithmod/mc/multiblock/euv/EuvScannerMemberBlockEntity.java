@@ -72,7 +72,9 @@ public class EuvScannerMemberBlockEntity extends BlockEntity implements MenuProv
     }
 
     public boolean supportsOwner(EuvFormationOwner candidate) {
-        return candidate instanceof EuvScannerControllerBlockEntity;
+        return candidate instanceof EuvScannerControllerBlockEntity scanner
+                && (structureKind() != BlockKind.OPTICS_MODULE
+                    || scanner.highNa() == getBlockState().is(EuvMachines.HIGH_NA_OPTICS.get()));
     }
 
     public void serverTick() {
@@ -90,6 +92,8 @@ public class EuvScannerMemberBlockEntity extends BlockEntity implements MenuProv
 
     @Override
     public Component getDisplayName() {
+        var ownerScanner = scanner();
+        if (structureKind() == BlockKind.OPERATING_PANEL && ownerScanner != null && ownerScanner.highNa()) return ownerScanner.getDisplayName();
         String key = switch (structureKind()) {
             case DIAGNOSTIC_PANEL -> "euv_scanner_diagnostic_panel";
             case CALIBRATION_PANEL -> "euv_scanner_calibration_panel";

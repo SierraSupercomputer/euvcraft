@@ -1,0 +1,29 @@
+{
+  "parent": "lithmod:fab",
+  "display": {
+    "icon": {
+      "id": "lithmod:god_chip"
+    },
+    "title": {
+      "translate": "advancement.lithmod.god_chip.title"
+    },
+    "description": {
+      "translate": "advancement.lithmod.god_chip.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "trophy": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "lithmod:god_chip"
+          }
+        ]
+      }
+    }
+  }
+}

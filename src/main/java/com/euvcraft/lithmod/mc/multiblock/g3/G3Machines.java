@@ -92,6 +92,21 @@ public final class G3Machines {
             BLOCKS.registerBlock("g3_vacuum_module", G3VacuumModuleBlock::new,
                     properties -> properties.strength(3.5f, 7.0f).requiresCorrectToolForDrops());
 
+    public static final DeferredBlock<G3DepositionModuleBlock> COMPUTE_ETCH_MODULE =
+            BLOCKS.registerBlock("g3_compute_etch_module", G3DepositionModuleBlock::new,
+                    properties -> properties.strength(3.5f, 7.0f).requiresCorrectToolForDrops());
+
+    public static final DeferredBlock<G3DepositionModuleBlock> MEMORY_ETCH_MODULE =
+            BLOCKS.registerBlock("g3_memory_etch_module", G3DepositionModuleBlock::new,
+                    properties -> properties.strength(3.5f, 7.0f).requiresCorrectToolForDrops());
+
+    public static final DeferredBlock<G3DepositionModuleBlock> MEMORY_UNIFORMITY_HEAD =
+            BLOCKS.registerBlock("t8_memory_uniformity_head", G3DepositionModuleBlock::new,
+                    properties -> properties.strength(4, 8).requiresCorrectToolForDrops());
+    public static final DeferredBlock<G3DepositionModuleBlock> COMPUTE_DOSE_HEAD =
+            BLOCKS.registerBlock("t8_compute_dose_head", G3DepositionModuleBlock::new,
+                    properties -> properties.strength(4, 8).requiresCorrectToolForDrops());
+
     // ---------------------------------------------------------------- block entity types
 
     /** Shared member block entity for all non-controller G3 blocks. */
@@ -100,7 +115,8 @@ public final class G3Machines {
                     () -> new BlockEntityType<>(G3MemberBlockEntity::new,
                             CASING.get(), POWER_PORT.get(), OPERATING_PANEL.get(),
                             WATER_INLET.get(), WRITING_MODULE.get(), METROLOGY_MODULE.get(),
-                            DEPOSITION_MODULE.get(), RINSE_MODULE.get(), VACUUM_MODULE.get()));
+                            DEPOSITION_MODULE.get(), RINSE_MODULE.get(), VACUUM_MODULE.get(),
+                            COMPUTE_ETCH_MODULE.get(), MEMORY_ETCH_MODULE.get(), MEMORY_UNIFORMITY_HEAD.get(), COMPUTE_DOSE_HEAD.get()));
 
     /** Reticle writer controller block entity. */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<G3ReticleWriterControllerBlockEntity>> RETICLE_WRITER_CONTROLLER_BE =
@@ -120,6 +136,8 @@ public final class G3Machines {
     public static final DeferredHolder<MenuType<?>, MenuType<G3DepositionEtcherMenu>> DEPOSITION_ETCHER_MENU =
             MENU_TYPES.register("g3_deposition_etcher", () -> IMenuTypeExtension.create(G3DepositionEtcherMenu::new));
 
+    public static final DeferredHolder<MenuType<?>, MenuType<PlanarizerCabinetMenu>> PLANARIZER_CABINET_MENU =
+            MENU_TYPES.register("planarizer_cabinet", () -> IMenuTypeExtension.create(PlanarizerCabinetMenu::new));
     public static final DeferredHolder<MenuType<?>, MenuType<G3OperatingPanelMenu>> OPERATING_PANEL_MENU =
             MENU_TYPES.register("g3_operating_panel", () -> IMenuTypeExtension.create(G3OperatingPanelMenu::new));
 

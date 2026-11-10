@@ -16,7 +16,7 @@ import java.util.Objects;
  * <p>This record has no Minecraft or NeoForge dependencies.</p>
  *
  * @param stage  the current fabrication stage, never null
- * @param tier   the bound process tier, 0..7
+ * @param tier   the bound process tier, 0..8
  * @param version the schema version, must be {@link #CURRENT_VERSION}
  */
 public record FabProgress(Stage stage, int tier, int version) {
@@ -38,7 +38,9 @@ public record FabProgress(Stage stage, int tier, int version) {
         /** The developed pattern has been transferred into the material film by etching. */
         ETCHED,
         /** Post-etch clean has been performed. */
-        CLEANED
+        CLEANED,
+        PLANARIZED,
+        IMPLANTED
     }
 
     /** Current schema version for this record. */
@@ -48,10 +50,10 @@ public record FabProgress(Stage stage, int tier, int version) {
      * Creates a new fabrication progress state with validation.
      *
      * @param stage   the fabrication stage, must not be null
-     * @param tier    the bound tier, must be in range 0..7 and valid for the stage
+     * @param tier    the bound tier, must be in range 0..8 and valid for the stage
      * @param version the schema version, must be {@link #CURRENT_VERSION}
      * @throws NullPointerException     if stage is null
-     * @throws IllegalArgumentException if version is not 1, tier is outside 0..7,
+     * @throws IllegalArgumentException if version is not 1, tier is outside 0..8,
      *                                  or the tier is invalid for the given stage
      */
     public FabProgress {
@@ -59,8 +61,8 @@ public record FabProgress(Stage stage, int tier, int version) {
         if (version != CURRENT_VERSION) {
             throw new IllegalArgumentException("version must be " + CURRENT_VERSION + ", got " + version);
         }
-        if (tier < 0 || tier > 7) {
-            throw new IllegalArgumentException("tier must be in range 0..7, got " + tier);
+        if (tier < 0 || tier > 8) {
+            throw new IllegalArgumentException("tier must be in range 0..8, got " + tier);
         }
         switch (stage) {
             case UNPROCESSED, DEPOSITED -> {
@@ -69,23 +71,26 @@ public record FabProgress(Stage stage, int tier, int version) {
                 }
             }
             case COATED -> {
-                if (tier < 5 || tier > 7) {
-                    throw new IllegalArgumentException("COATED requires tier 5..7, got " + tier);
+                if (tier < 5 || tier > 8) {
+                    throw new IllegalArgumentException("COATED requires tier 5..8, got " + tier);
                 }
             }
             case EXPOSING, EXPOSED -> {
-                if (tier < 1 || tier > 7) {
-                    throw new IllegalArgumentException("EXPOSED requires tier 1..7, got " + tier);
+                if (tier < 1 || tier > 8) {
+                    throw new IllegalArgumentException("EXPOSED requires tier 1..8, got " + tier);
                 }
             }
             case ETCHED -> {
-                if (tier < 4 || tier > 7) {
-                    throw new IllegalArgumentException("ETCHED requires tier 4..7, got " + tier);
+                if (tier < 4 || tier > 8) {
+                    throw new IllegalArgumentException("ETCHED requires tier 4..8, got " + tier);
                 }
             }
+            case PLANARIZED, IMPLANTED -> {
+                if (tier != 8) throw new IllegalArgumentException(stage + " requires T8");
+            }
             case CLEANED -> {
-                if (tier < 5 || tier > 7) {
-                    throw new IllegalArgumentException("CLEANED requires tier 5..7, got " + tier);
+                if (tier < 5 || tier > 8) {
+                    throw new IllegalArgumentException("CLEANED requires tier 5..8, got " + tier);
                 }
             }
         }
@@ -119,14 +124,14 @@ public record FabProgress(Stage stage, int tier, int version) {
      * @param tier the coat tier, must be 5, 6 or 7
      * @return a new {@code FabProgress} at the coated stage with the bound tier
      * @throws IllegalStateException    if the current stage is not {@link Stage#DEPOSITED}
-     * @throws IllegalArgumentException if tier is not in range 5..7
+     * @throws IllegalArgumentException if tier is not in range 5..8
      */
     public FabProgress coated(int tier) {
-        if (stage != Stage.DEPOSITED) {
-            throw new IllegalStateException("coated() requires DEPOSITED, current stage is " + stage);
+        if (stage != (tier == 8 ? Stage.PLANARIZED : Stage.DEPOSITED)) {
+            throw new IllegalStateException("Wrong stage for coating T" + tier + ": " + stage);
         }
-        if (tier < 5 || tier > 7) {
-            throw new IllegalArgumentException("coated() tier must be 5..7, got " + tier);
+        if (tier < 5 || tier > 8) {
+            throw new IllegalArgumentException("coated() tier must be 5..8, got " + tier);
         }
         return new FabProgress(Stage.COATED, tier, CURRENT_VERSION);
     }
@@ -140,15 +145,15 @@ public record FabProgress(Stage stage, int tier, int version) {
      *   <li>Tier 5-7: requires {@link Stage#COATED} with matching bound tier</li>
      * </ul>
      *
-     * @param tier the exposure tier, must be 1..7
+     * @param tier the exposure tier, must be 1..8
      * @return a new {@code FabProgress} at the exposed stage with the bound tier
      * @throws IllegalStateException    if the current stage does not match the tier's requirement
-     * @throws IllegalArgumentException if tier is not in range 1..7, or if tier 5-7
+     * @throws IllegalArgumentException if tier is not in range 1..8, or if tier 5-7
      *                                  does not match the bound coat tier
      */
     public FabProgress exposed(int tier) {
-        if (tier < 1 || tier > 7) {
-            throw new IllegalArgumentException("exposed() tier must be 1..7, got " + tier);
+        if (tier < 1 || tier > 8) {
+            throw new IllegalArgumentException("exposed() tier must be 1..8, got " + tier);
         }
         if(stage==Stage.EXPOSING){
             if(this.tier!=tier)throw new IllegalArgumentException("Cannot rebind an active exposure program");
@@ -185,14 +190,14 @@ public record FabProgress(Stage stage, int tier, int version) {
      *
      * @return a new {@code FabProgress} at the etched stage with the same tier
      * @throws IllegalStateException if the current stage is not {@link Stage#EXPOSED}
-     *                               or the tier is not in range 4..7
+     *                               or the tier is not in range 4..8
      */
     public FabProgress etched() {
         if (stage != Stage.EXPOSED) {
             throw new IllegalStateException("etched() requires EXPOSED, current stage is " + stage);
         }
-        if (tier < 4 || tier > 7) {
-            throw new IllegalStateException("etched() requires EXPOSED tier 4..7, current tier is " + tier);
+        if (tier < 4 || tier > 8) {
+            throw new IllegalStateException("etched() requires EXPOSED tier 4..8, current tier is " + tier);
         }
         return new FabProgress(Stage.ETCHED, tier, CURRENT_VERSION);
     }
@@ -203,16 +208,26 @@ public record FabProgress(Stage stage, int tier, int version) {
      *
      * @return a new {@code FabProgress} at the cleaned stage with the same tier
      * @throws IllegalStateException if the current stage is not {@link Stage#ETCHED}
-     *                               or the tier is not in range 5..7
+     *                               or the tier is not in range 5..8
      */
     public FabProgress cleaned() {
-        if (stage != Stage.ETCHED) {
+        if (stage != (tier == 8 ? Stage.IMPLANTED : Stage.ETCHED)) {
             throw new IllegalStateException("cleaned() requires ETCHED, current stage is " + stage);
         }
-        if (tier < 5 || tier > 7) {
-            throw new IllegalStateException("cleaned() requires ETCHED tier 5..7, current tier is " + tier);
+        if (tier < 5 || tier > 8) {
+            throw new IllegalStateException("cleaned() requires ETCHED tier 5..8, current tier is " + tier);
         }
         return new FabProgress(Stage.CLEANED, tier, CURRENT_VERSION);
+    }
+
+    public FabProgress planarized() {
+        if (stage != Stage.DEPOSITED) throw new IllegalStateException("Planarization requires deposition");
+        return new FabProgress(Stage.PLANARIZED, 8, CURRENT_VERSION);
+    }
+
+    public FabProgress implanted() {
+        if (stage != Stage.ETCHED || tier != 8) throw new IllegalStateException("Implantation requires etched T8 wafers");
+        return new FabProgress(Stage.IMPLANTED, 8, CURRENT_VERSION);
     }
 
     /**
@@ -230,7 +245,7 @@ public record FabProgress(Stage stage, int tier, int version) {
         return switch (stage) {
             case EXPOSED -> tier >= 1 && tier <= 3;
             case ETCHED -> tier == 4;
-            case CLEANED -> tier >= 5 && tier <= 7;
+            case CLEANED -> tier >= 5 && tier <= 8;
             default -> false;
         };
     }

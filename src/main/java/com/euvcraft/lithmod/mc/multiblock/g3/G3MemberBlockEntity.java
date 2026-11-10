@@ -13,6 +13,7 @@ import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Shared behaviour of all G3 member blocks (casing, power port, operating panel, water inlet,
@@ -30,6 +31,27 @@ public class G3MemberBlockEntity extends BlockEntity implements com.euvcraft.lit
 
     private @Nullable G3ControllerBlockEntity controller;
     private boolean formed;
+    private @Nullable UUID polishInstallation;
+
+    public UUID polishInstallation() {
+        if (polishInstallation == null) {
+            polishInstallation = UUID.randomUUID();
+            setChanged();
+        }
+        return polishInstallation;
+    }
+
+    @Override
+    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput out) {
+        super.saveAdditional(out);
+        if (polishInstallation != null) out.store("polishInstallation", net.minecraft.core.UUIDUtil.CODEC, polishInstallation);
+    }
+
+    @Override
+    protected void loadAdditional(net.minecraft.world.level.storage.ValueInput in) {
+        super.loadAdditional(in);
+        polishInstallation = in.read("polishInstallation", net.minecraft.core.UUIDUtil.CODEC).orElse(null);
+    }
     private int part;
     private @Nullable Direction facing;
 
@@ -63,7 +85,7 @@ public class G3MemberBlockEntity extends BlockEntity implements com.euvcraft.lit
         if (block == G3Machines.WATER_INLET.get()) return BlockKind.WATER_INLET;
         if (block == G3Machines.WRITING_MODULE.get()) return BlockKind.WRITING_MODULE;
         if (block == G3Machines.METROLOGY_MODULE.get()) return BlockKind.METROLOGY_MODULE;
-        if (block == G3Machines.DEPOSITION_MODULE.get()) return BlockKind.DEPOSITION_MODULE;
+        if (block == G3Machines.DEPOSITION_MODULE.get() || specializedEtchModule() || t8Head()) return BlockKind.DEPOSITION_MODULE;
         if (block == G3Machines.RINSE_MODULE.get()) return BlockKind.RINSE_MODULE;
         if (block == G3Machines.VACUUM_MODULE.get()) return BlockKind.VACUUM_MODULE;
         if (block == G3Machines.CASING.get()) return BlockKind.CASING;
@@ -73,6 +95,16 @@ public class G3MemberBlockEntity extends BlockEntity implements com.euvcraft.lit
     /** The controller this member belongs to, or null when it belongs to none. */
     public @Nullable G3ControllerBlockEntity controller() {
         return this.controller;
+    }
+
+    private boolean specializedEtchModule() {
+        var state = getBlockState();
+        return state.is(G3Machines.COMPUTE_ETCH_MODULE.get()) || state.is(G3Machines.MEMORY_ETCH_MODULE.get());
+    }
+
+    private boolean t8Head() {
+        return getBlockState().is(G3Machines.MEMORY_UNIFORMITY_HEAD.get())
+                || getBlockState().is(G3Machines.COMPUTE_DOSE_HEAD.get());
     }
 
     /** Whether this member type can be owned by the given controller. */
@@ -91,6 +123,8 @@ public class G3MemberBlockEntity extends BlockEntity implements com.euvcraft.lit
                     || block == G3Machines.OPERATING_PANEL.get()
                     || block == G3Machines.WATER_INLET.get()
                     || block == G3Machines.DEPOSITION_MODULE.get()
+                    || (controller.etching() && specializedEtchModule())
+                    || (t8Head() && controller instanceof com.euvcraft.lithmod.mc.multiblock.linear.T8StageBlockEntity stage && stage.acceptsHead(block))
                     || block == G3Machines.RINSE_MODULE.get()
                     || block == G3Machines.VACUUM_MODULE.get();
         }

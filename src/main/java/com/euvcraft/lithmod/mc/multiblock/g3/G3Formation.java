@@ -110,6 +110,7 @@ public final class G3Formation {
                     MultiblockDirection.valueOf(facing.name()),
                     pos -> kind(new BlockPos(pos.x(), pos.y(), pos.z())));
 
+            machine.checkInstalledModule();
             if (!result.success()) {
                 failureReason = result.failureReason();
                 detach();
@@ -117,6 +118,11 @@ public final class G3Formation {
             }
 
             var next = result.memberPositions().stream().map(p -> new BlockPos(p.x(), p.y(), p.z())).toList();
+            if (!machine.observeModules(next)) {
+                failureReason = "Install exactly one supported process head";
+                detach();
+                return;
+            }
             for (var old : members) if (!next.contains(old)) clear(old);
             members.clear();
             members.addAll(next);

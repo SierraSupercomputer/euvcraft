@@ -34,6 +34,15 @@ public final class LinearMachines {
         public G3EtchBlock(Properties properties){super(properties);}
         @Override protected BlockEntity createBlockEntity(BlockPos pos,BlockState state){return new G3EtchCellBlockEntity(pos,state);}
     }
+    public static final DeferredBlock<T8StageBlock> PLANARIZER=BLOCKS.registerBlock("t8_planarizer",p->new T8StageBlock(p,true),p->p.strength(4,8).requiresCorrectToolForDrops());
+    public static final DeferredBlock<T8StageBlock> IMPLANTER=BLOCKS.registerBlock("t8_implanter",p->new T8StageBlock(p,false),p->p.strength(4,8).requiresCorrectToolForDrops());
+    public static final DeferredHolder<BlockEntityType<?>,BlockEntityType<T8StageBlockEntity>> PLANARIZER_BE=BES.register("t8_planarizer",()->new BlockEntityType<>((p,s)->new T8StageBlockEntity(p,s,true),PLANARIZER.get()));
+    public static final DeferredHolder<BlockEntityType<?>,BlockEntityType<T8StageBlockEntity>> IMPLANTER_BE=BES.register("t8_implanter",()->new BlockEntityType<>((p,s)->new T8StageBlockEntity(p,s,false),IMPLANTER.get()));
+    public static final class T8StageBlock extends com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlock {
+        private final boolean planarizer;
+        public T8StageBlock(Properties properties,boolean planarizer){super(properties);this.planarizer=planarizer;}
+        @Override protected BlockEntity createBlockEntity(BlockPos pos,BlockState state){return new T8StageBlockEntity(pos,state,planarizer);}
+    }
     public static final DeferredBlock<StageControllerBlock> COATING_TRACK=BLOCKS.registerBlock("coating_track",p->new StageControllerBlock(p,true),p->p.strength(3,6).requiresCorrectToolForDrops());
     public static final DeferredBlock<StageControllerBlock> WET_CLEANER=BLOCKS.registerBlock("wet_cleaner",p->new StageControllerBlock(p,false),p->p.strength(3,6).requiresCorrectToolForDrops());
     public static final DeferredBlock<FabUpwInletBlock> UPW_INLET=BLOCKS.registerBlock("fab_upw_inlet",FabUpwInletBlock::new,p->p.strength(3,6).requiresCorrectToolForDrops());

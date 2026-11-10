@@ -28,7 +28,7 @@ import net.minecraft.world.phys.AABB;
 
 /** Independent fixtures keep every orientation within a five-by-five footprint. */
 final class T4RuntimeFixtures {
- enum Kind { ETCH, DEPOSITION, PACKAGING, LITHOGRAPHY, SCANNER, PURIFIER, EBEAM }
+ enum Kind { ETCH, DEPOSITION, PACKAGING, HIGH_BINNING, LITHOGRAPHY, SCANNER, PURIFIER, EBEAM }
  record Cell(ServerLevel level,List<BlockPos> positions,BlockPos anchor,FabMachineBlockEntity machine) implements AutoCloseable {
   BlockPos port(){return positions.stream().filter(p->level.getBlockState(p).getBlock()==AdvancedMachines.ADVANCED_POWER_PORT.get()
       ||level.getBlockState(p).getBlock()==ModMultiblocks.PROCESS_CELL_POWER_PORT.get()
@@ -48,7 +48,7 @@ final class T4RuntimeFixtures {
  static void check(GameTestHelper h,boolean value,String message){h.assertTrue(value,message);}
  static void eq(GameTestHelper h,long expected,long actual,String message){h.assertTrue(expected==actual,message+" expected="+expected+" actual="+actual);}
  static Cell build(GameTestHelper h,Kind kind,Direction facing,int column){
-  boolean big=kind==Kind.ETCH||kind==Kind.DEPOSITION||kind==Kind.SCANNER,advanced=big||kind==Kind.PACKAGING,panel=advanced||kind==Kind.LITHOGRAPHY;
+  boolean big=kind==Kind.ETCH||kind==Kind.DEPOSITION||kind==Kind.SCANNER,advanced=big||kind==Kind.PACKAGING||kind==Kind.HIGH_BINNING,panel=advanced||kind==Kind.LITHOGRAPHY;
   int width=big?3:2,height=big?3:2,depth=big?5:3;
   int rx=switch(facing){case NORTH->1;case SOUTH->-1;default->0;};
   int rz=switch(facing){case EAST->1;case WEST->-1;default->0;};
@@ -70,6 +70,7 @@ final class T4RuntimeFixtures {
    case DEPOSITION->AdvancedMachines.DEPOSITION_ETCHER_CONTROLLER.get();
    case ETCH->com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines.ETCH_CELL.get();
    case PACKAGING->AdvancedMachines.ADVANCED_TEST_PACKAGE_CONTROLLER.get();
+   case HIGH_BINNING->AdvancedMachines.HIGH_BIN_CONTROLLER.get();
    case LITHOGRAPHY->ModMultiblocks.PROCESS_CELL_CONTROLLER.get();
    case PURIFIER->SupportMachines.BOULE_PURIFIER.get();
    case EBEAM->SupportMachines.E_BEAM_MASK_WRITER.get();

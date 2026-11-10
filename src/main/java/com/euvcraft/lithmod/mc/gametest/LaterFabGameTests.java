@@ -40,8 +40,10 @@ public final class LaterFabGameTests {
         add("later_g3_arcforge_cleanroom",LaterFabGameTests::g3Transport);
         add("later_disposal_resets_coating",LaterFabGameTests::dispose);
         add("later_stage_menu_authority",LaterFabGameTests::menuAuthority);
+        add("later_t8_god_chip",LaterFabGameTests::godChip);
+        add("later_t8_reticle",LaterFabGameTests::t8Reticle);
         for(var family:List.of(DieTypes.COMPUTE,DieTypes.MEMORY,DieTypes.NAND)){
-            add("later_t6_chain_"+family,h->t6Chain(h,family));add("later_t7_chain_"+family,h->t7Chain(h,family));
+            add("later_t6_chain_"+family,h->t6Chain(h,family));add("later_t7_chain_"+family,h->euvChain(h,family,7));add("later_t8_chain_"+family,h->euvChain(h,family,8));
         }
     }
     private static void add(String id,Consumer<GameTestHelper> fn){CASES.put(id,fn);FUNCTIONS.register(id,()->fn);}
@@ -130,16 +132,82 @@ public final class LaterFabGameTests {
         output=LaterFabFixtures.etched(h,output);var clean=LaterFabFixtures.process(h,output,6,false);output=clean.output();var tier=TierDataLoader.getRegistry().getByIndex(6);eq(h,(long)tier.layers()*tier.layerTicks(EUVCRAFTMod.settings())*2*2,water+clean.water(),"T6 UPW cost conserved across stages");eq(h,(long)tier.layers()*tier.layerTicks(EUVCRAFTMod.settings())*2*480,energy+coat.energy()+clean.energy(),"T6 primary process FE budget conserved");
         try(var c=build(h,Kind.PACKAGING)){var pack=(AdvancedTestPackageControllerBlockEntity)c.machine();pack.setSlot(0,output);pack.setSlot(1,new ItemStack(ModItems.CHIP_PACKAGE.get(),64));var result=packageAll(h,pack,ChipCatalog.chipFor(family,6).orElseThrow(),3);eq(h,3L*EUVCRAFTMod.settings().chipsPerWafer(),result.chips()+result.scrap(),"T6 final judgment conserves dies");}h.succeed();
     }
-    private static void t7Chain(GameTestHelper h,String family){
-        var dep=LaterFabFixtures.g3(h,T7RuntimeFixtures.lot(3,false),false);var depEvidence=FoupItems.trustedContentsOf(dep).g3Preparation();var coat=LaterFabFixtures.process(h,dep,7,true);eq(h,80,coat.resist(),"T7 resist moves upstream");ItemStack output;
+    private static void euvChain(GameTestHelper h,String family,int tier){
+        var dep=LaterFabFixtures.g3(h,T7RuntimeFixtures.lot(3,false),false);
+        if(tier==8)dep=LaterFabFixtures.t8Stage(h,dep,true,family.equals(DieTypes.MEMORY));
+        var depEvidence=FoupItems.trustedContentsOf(dep).g3Preparation();
+        var coat=LaterFabFixtures.process(h,dep,tier,true);
+        eq(h,tier==8?90:80,coat.resist(),"EUV resist moves upstream");
+        if(tier==8){
+            check(h,FoupRouting.canExpose(coat.output(),8,family),"Planarizer selects the correct T8 program");
+            check(h,!FoupRouting.canExpose(coat.output(),8,family.equals(DieTypes.MEMORY)?DieTypes.COMPUTE:DieTypes.MEMORY),"Incompatible T8 reticle refused");
+        }
+        ItemStack output;
         try(var arena=new LaterArena(h)){
-            var cell=arena.scanner();var source=arena.source();var room=T7RuntimeGameTests.prepareLine(arena,cell,source);var s=(com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerControllerBlockEntity)cell.machine();var light=(com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceControllerBlockEntity)source.machine();T7RuntimeFixtures.align(s);s.setSlot(0,coat.output());var mask=new ItemStack(ModItems.MASK.get());mask.set(ModDataComponents.MASK_DATA.get(),new MaskData(family,7,5,3));if(family.equals(DieTypes.COMPUTE))mask.set(ModDataComponents.CORE_COUNT.get(),8);s.setSlot(1,mask);s.clearSlot(2);
-            for(int i=0;i<20000&&s.processState()!=ProcessState.FINISHED;i++){room.controller().setStoredEnergy(200000);room.controller().serverTick();if(i%100==0){replenish(s);replenish(light);s.upwTank.fill(s.upwTank.capacity()-s.upwTank.amount(),false);light.hydrogenTank.fill(light.hydrogenTank.capacity()-light.hydrogenTank.amount(),false);}light.serverTick();s.serverTick();check(h,!s.aborted(),"T7 full route retains active source contract");}
+            var cell=arena.scanner(tier==8);var source=arena.source();var room=T7RuntimeGameTests.prepareLine(arena,cell,source);var s=(com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerControllerBlockEntity)cell.machine();var light=(com.euvcraft.lithmod.mc.multiblock.euv.EuvLightSourceControllerBlockEntity)source.machine();T7RuntimeFixtures.align(s);s.setSlot(0,coat.output());var mask=new ItemStack(ModItems.MASK.get());mask.set(ModDataComponents.MASK_DATA.get(),new MaskData(family,tier,5,3));if(family.equals(DieTypes.COMPUTE))mask.set(ModDataComponents.CORE_COUNT.get(),8);s.setSlot(1,mask);s.clearSlot(2);
+            for(int i=0;i<20000&&s.processState()!=ProcessState.FINISHED;i++){room.controller().setStoredEnergy(200000);room.controller().serverTick();if(i%100==0){replenish(s);replenish(light);s.upwTank.fill(s.upwTank.capacity()-s.upwTank.amount(),false);light.hydrogenTank.fill(light.hydrogenTank.capacity()-light.hydrogenTank.amount(),false);}light.serverTick();s.serverTick();
+                if(tier==8&&family.equals(DieTypes.COMPUTE)&&i==1000){
+                    check(h,s.inputsLocked(),"High-NA run active before reload");
+                    var snapshot=save(arena.level,s);
+                    arena.level.removeBlockEntity(cell.anchor());
+                    s=new com.euvcraft.lithmod.mc.multiblock.euv.EuvScannerControllerBlockEntity(cell.anchor(),arena.level.getBlockState(cell.anchor()));
+                    arena.level.setBlockEntity(s);
+                    load(arena.level,s,snapshot);
+                    s.revalidate();
+                }
+                check(h,!s.aborted(),"EUV full route retains active source contract");}
             check(h,s.processState()==ProcessState.FINISHED&&s.slot(2).isEmpty(),"Pre-coated EUV lot finishes");eq(h,4,s.slot(1).get(ModDataComponents.MASK_DATA.get()).usesRemaining(),"One reflective reticle use");output=s.slot(0).copy();s.clearSlot(0);
         }
-        var exposed=FoupItems.trustedContentsOf(output);check(h,exposed.g3Preparation().equals(depEvidence),"Exposure preserves saved deposition evidence");output=LaterFabFixtures.g3(h,output,true);var etched=FoupItems.trustedContentsOf(output);check(h,etched.wafers().equals(exposed.wafers())&&etched.run().equals(exposed.run()),"G3 etch never rerolls exposure or calibration");check(h,etched.g3Preparation().factorCount()==3,"One combined preparation factor per wafer");output=LaterFabFixtures.cleaned(h,output,7);check(h,FoupRouting.packagingReady(output),"Only productive cleaning finishes T7 route");
+        var exposed=FoupItems.trustedContentsOf(output);check(h,exposed.g3Preparation().equals(depEvidence),"Exposure preserves saved deposition evidence");output=LaterFabFixtures.g3(h,output,true);var etched=FoupItems.trustedContentsOf(output);check(h,etched.wafers().equals(exposed.wafers())&&etched.run().equals(exposed.run()),"G3 etch never rerolls exposure or calibration");check(h,etched.g3Preparation().factorCount()==3,"One combined preparation factor per wafer");if(tier==8){
+            check(h,!FoupRouting.packagingReady(output),"T8 etch alone cannot authorize packaging");
+            output=LaterFabFixtures.t8Stage(h,output,false,family.equals(DieTypes.COMPUTE));
+            check(h,!FoupRouting.packagingReady(output),"Implanted T8 still requires wet cleaning");
+        }
+        output=LaterFabFixtures.cleaned(h,output,tier);check(h,FoupRouting.packagingReady(output),"Only productive cleaning finishes the EUV route");
+        check(h,FoupItems.trustedContentsOf(output).roomYieldPermille()>0,"Cleaning finalizes the room yield for both EUV tiers");
         try(var arena=new LaterArena(h)){
-            var cell=arena.box(arena.anchor(),2,2,3,AdvancedMachines.ADVANCED_CASING.get(),AdvancedMachines.ADVANCED_TEST_PACKAGE_CONTROLLER.get(),AdvancedMachines.ADVANCED_OPERATING_PANEL.get(),Map.of(new BlockPos(1,0,0),AdvancedMachines.ADVANCED_POWER_PORT.get()));arena.room(cell,2,2,3);var pack=(AdvancedTestPackageControllerBlockEntity)cell.machine();pack.setSlot(0,output);pack.setSlot(1,new ItemStack(ModItems.CHIP_PACKAGE.get(),64));var result=packageAll(h,pack,ChipCatalog.chipFor(family,7).orElseThrow(),3);eq(h,3L*EUVCRAFTMod.settings().chipsPerWafer(),result.chips()+result.scrap(),"T7 final judgment conserves dies");
+            var cell=arena.box(arena.anchor(),2,2,3,AdvancedMachines.ADVANCED_CASING.get(),AdvancedMachines.ADVANCED_TEST_PACKAGE_CONTROLLER.get(),AdvancedMachines.ADVANCED_OPERATING_PANEL.get(),Map.of(new BlockPos(1,0,0),AdvancedMachines.ADVANCED_POWER_PORT.get()));arena.room(cell,2,2,3);var pack=(AdvancedTestPackageControllerBlockEntity)cell.machine();pack.setSlot(0,output);pack.setSlot(1,new ItemStack(ModItems.CHIP_PACKAGE.get(),64));var result=packageAll(h,pack,ChipCatalog.chipFor(family,tier).orElseThrow(),3);eq(h,3L*EUVCRAFTMod.settings().chipsPerWafer(),result.chips()+result.scrap(),"T7 final judgment conserves dies");
         }h.succeed();
+    }
+    private static void t8Reticle(GameTestHelper h){
+        try(var arena=new LaterArena(h)){
+            var writer=(com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity)arena.writer().machine();
+            check(h,writer.isFormed()&&writer.switchWriterTier()&&writer.writerTier()==8,"Existing G3 writer selects T8");
+            writer.setSlot(0,new ItemStack(ModItems.BLANK_MASK.get(),2));
+            writer.setSlot(1,new ItemStack(Items.REDSTONE,64));
+            replenish(writer);
+            check(h,writer.startWriterJob("lithmod:g3_compute_t8",8)&&!writer.switchWriterTier(),"T8 write reserves resources and locks its tier");
+            for(int i=0;i<6000&&writer.slot(2).isEmpty();i++){replenish(writer);writer.serverTick();}
+            var mask=writer.slot(2).get(ModDataComponents.MASK_DATA.get());
+            check(h,mask!=null&&mask.tierIndex()==8&&mask.shopGeneration()==3,"Writer outputs a real T8 reflective reticle");
+            eq(h,8,writer.slot(2).getOrDefault(ModDataComponents.CORE_COUNT.get(),0),"T8 writer retains core selection");
+        }
+        h.succeed();
+    }
+
+    private static void godChip(GameTestHelper h){
+        try(var arena=new LaterArena(h)){
+            var cell=arena.box(arena.anchor(),2,2,3,AdvancedMachines.ADVANCED_CASING.get(),AdvancedMachines.HIGH_BIN_CONTROLLER.get(),
+                AdvancedMachines.ADVANCED_OPERATING_PANEL.get(),Map.of(new BlockPos(1,0,0),AdvancedMachines.ADVANCED_POWER_PORT.get()));
+            var station=(HighBinTestPackageBlockEntity)cell.machine();
+            var tier=TierDataLoader.getRegistry().getByIndex(8);
+            var foup=T7RuntimeFixtures.lot(1,true);
+            var lot=FoupItems.trustedContentsOf(foup).withProcessedWafers(List.of(new Wafer(tier.layers(),1f,0)))
+                .withRun(new RunSpec(DieTypes.COMPUTE,8,8,.8,tier.layers()));
+            foup.set(ModDataComponents.FOUP_CONTENTS.get(),lot);
+            foup=LaterFabFixtures.completedRouteFixture(foup);
+            station.setSlot(0,foup);station.setSlot(1,new ItemStack(ModItems.CHIP_PACKAGE.get(),4));
+            replenish(station);station.serverTick();
+            check(h,!station.isQueueActive(),"The trophy route requires a powered room");
+            var room=arena.room(cell,2,2,3);
+            room.controller().setStoredEnergy(200000);room.controller().serverTick();
+            var packed=packageAll(h,station,ModItems.GOD_CHIP.get(),1);
+            eq(h,1,packed.chips(),"A passing wafer yields exactly one trophy");
+            eq(h,3,station.slot(1).getCount(),"Trophy consumed one normal chip package");
+            var advancement=h.getLevel().getServer().getAdvancements().get(Identifier.parse("lithmod:god_chip"));
+            check(h,advancement!=null&&advancement.value().display().orElseThrow().type()==net.minecraft.advancements.AdvancementType.CHALLENGE,
+                "God Chip registers a Challenge advancement");
+        }
+        h.succeed();
     }
 }

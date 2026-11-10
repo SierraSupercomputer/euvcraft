@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "lithmod:euv_scanner_optics_module",
+    "lithmod:memory_chip_t7",
+    "minecraft:diamond",
+    "minecraft:amethyst_shard"
+  ],
+  "result": {
+    "id": "lithmod:high_na_optics_module",
+    "count": 1
+  }
+}

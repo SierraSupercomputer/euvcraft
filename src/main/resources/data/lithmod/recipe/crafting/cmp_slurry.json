@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:clay_ball",
+    "minecraft:quartz",
+    "minecraft:glass_bottle"
+  ],
+  "result": {
+    "id": "lithmod:cmp_slurry",
+    "count": 2
+  }
+}

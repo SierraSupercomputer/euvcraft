@@ -239,6 +239,7 @@ public final class ModItems {
      * Each has a lower controller and upper operating panel. They share casing and power port blocks.
      * Same {@code registerSimpleBlockItem} rule as other multiblocks.</p>
      */
+    public static final DeferredItem<BlockItem> HIGH_BIN_TEST_PACKAGE=ITEMS.registerSimpleBlockItem("high_bin_test_package",com.euvcraft.lithmod.mc.multiblock.advanced.AdvancedMachines.HIGH_BIN_CONTROLLER);
     public static final DeferredItem<BlockItem> G3_FAB_ITEM_PORT=ITEMS.registerSimpleBlockItem("g3_fab_item_port",()->com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines.G3_ITEM_PORT.get());
     public static final DeferredItem<BlockItem> EUV_FAB_ITEM_PORT=ITEMS.registerSimpleBlockItem("euv_fab_item_port",()->com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines.EUV_ITEM_PORT.get());
     public static final DeferredItem<BlockItem> G3_ETCH_CELL=ITEMS.registerSimpleBlockItem("g3_etch_cell",()->com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines.G3_ETCH.get());
@@ -442,6 +443,18 @@ public final class ModItems {
     public static final DeferredItem<Item> NAND_CHIP_T7 = ITEMS.registerSimpleItem("nand_chip_t7");
     public static final DeferredItem<Item> CPU_T7 = ITEMS.registerSimpleItem("cpu_t7");
     public static final DeferredItem<Item> DIMM_T7 = ITEMS.registerSimpleItem("dimm_t7");
+    public static final DeferredItem<Item> COMPUTE_CHIP_T8 = ITEMS.registerSimpleItem("compute_chip_t8");
+    public static final DeferredItem<Item> MEMORY_CHIP_T8 = ITEMS.registerSimpleItem("memory_chip_t8");
+    public static final DeferredItem<Item> NAND_CHIP_T8 = ITEMS.registerSimpleItem("nand_chip_t8");
+    public static final DeferredItem<Item> CPU_T8 = ITEMS.registerSimpleItem("cpu_t8");
+    public static final DeferredItem<Item> DIMM_T8 = ITEMS.registerSimpleItem("dimm_t8");
+    public static final DeferredItem<Item> CMP_SLURRY = ITEMS.registerSimpleItem("cmp_slurry");
+    public static final DeferredItem<Item> POLISH_PAD = ITEMS.registerSimpleItem("polish_pad");
+    public static final DeferredItem<Item> DOPANT_CHARGE = ITEMS.registerSimpleItem("dopant_charge");
+    public static final DeferredItem<Item> GOD_CHIP = ITEMS.registerSimpleItem("god_chip", p -> p.rarity(net.minecraft.world.item.Rarity.EPIC));
+    public static final DeferredItem<Item> RESIST_T8 = ITEMS.registerSimpleItem("resist_t8", p -> p.component(ModDataComponents.RESIST_TIER, 8));
+    public static final DeferredItem<BlockItem> T8_PLANARIZER = ITEMS.registerSimpleBlockItem("t8_planarizer",com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines.PLANARIZER);
+    public static final DeferredItem<BlockItem> T8_IMPLANTER = ITEMS.registerSimpleBlockItem("t8_implanter",com.euvcraft.lithmod.mc.multiblock.linear.LinearMachines.IMPLANTER);
     public static final DeferredItem<Item> RESIST_T7 = ITEMS.registerSimpleItem("resist_t7", p -> p.component(ModDataComponents.RESIST_TIER, 7));
 
     public static final DeferredItem<LineComponentItem> EUV_LIGHT_SOURCE = ITEMS.registerItem("euv_light_source", p -> new LineComponentItem(p,"light_source",7), p -> p.stacksTo(1));

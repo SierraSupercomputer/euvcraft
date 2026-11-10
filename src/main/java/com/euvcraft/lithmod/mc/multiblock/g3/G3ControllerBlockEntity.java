@@ -25,7 +25,7 @@ import org.jspecify.annotations.Nullable;
 /** Frozen G3 jobs own real reserved stacks; no readiness check or simulation mutates inputs. */
 public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity implements G3ControllerOwner,VacuumConsumer {
     public enum PrepPhase { IDLE,VACUUM_DEP_ETCH,UPW_RINSE,POWERED_DRY,COMPLETE }
-    public enum Status { IDLE,UNFORMED,NO_ROOM,NO_INPUT,OUTPUT_BLOCKED,NO_POWER,NO_UPW,VACUUM,REPAIR,WORKING,RECOVERY }
+    public enum Status { IDLE,UNFORMED,NO_ROOM,NO_INPUT,OUTPUT_BLOCKED,NO_POWER,NO_UPW,VACUUM,REPAIR,WORKING,RECOVERY,WRONG_ETCH_MODULE,ETCH_CALIBRATION_REQUIRED,NO_REAGENT }
     private final G3Formation formation=new G3Formation(this);
     private final G3MachineKind kind;
     protected final WaterTank waterTank=new WaterTank(16000);
@@ -58,14 +58,18 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
     public boolean hasJob(){return jobRunning||!carrier.isEmpty()||!input0.isEmpty()||!input1.isEmpty();}
     public int corePreference(){return cores;}
     public int selectedDesign(){return selection;}
+    private int writerTier=7;
+    public int writerTier(){return writerTier;}
+    public boolean switchWriterTier(){if(kind!=G3MachineKind.RETICLE_WRITER||hasJob())return false;writerTier=writerTier==7?8:7;setChanged();return true;}
     public boolean coresSelectable(){return !hasJob()&&selection==0&&isFormed();}
     public boolean cycleCores(){if(!coresSelectable())return false;var options=EUVCRAFTMod.settings().coreCountOptions();if(options.isEmpty())return false;cores=options.get((options.indexOf(cores)+1)%options.size());setChanged();return true;}
     public boolean selectDesign(int index){if(kind!=G3MachineKind.RETICLE_WRITER||hasJob()||index<0||index>2)return false;selection=index;if(index!=0)cores=1;setChanged();return true;}
     public boolean toggleIsolation(){isolated=!isolated;grant=0;setChanged();return true;}
-    private int p(String key,int fallback){return definition().map(d->d.paramOrDefault(key,fallback)).orElse(fallback);}
-    private int fe(int raw){return (int)Math.clamp(Math.round(raw*EUVCRAFTMod.settings().fePowerMultiplier()),1,Integer.MAX_VALUE);}
+    protected final int p(String key,int fallback){return definition().map(d->d.paramOrDefault(key,fallback)).orElse(fallback);}
+    protected final int fe(int raw){return (int)Math.clamp(Math.round(raw*EUVCRAFTMod.settings().fePowerMultiplier()),1,Integer.MAX_VALUE);}
     private CleanroomRooms.Sample room(){return CleanroomRooms.sample((ServerLevel)level,footprint.isEmpty()?members():footprint);}
     private boolean enclosed(CleanroomRooms.Sample sample){return sample.available()&&sample.room()!=null&&sample.room().state()==CleanroomControllerBlockEntity.ENCLOSED;}
+    protected final boolean hasPoweredRoom(){return level instanceof ServerLevel&&enclosed(room());}
     @Override public void serverTick(){
         if(!(level instanceof ServerLevel)||isRemoved()||level.getBlockEntity(worldPosition)!=this)return;
         refreshDefinition();revalidate();waterTank.resize(Math.clamp(p("water_capacity",32000),1000,WaterTank.MAX_CAPACITY));
@@ -82,16 +86,16 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         if(large())tickPrep();else tickWriter();sync();
     }
     private void sync(){data().set(DATA_ENERGY,buffer().getAmountAsInt());data().set(DATA_CAPACITY,buffer().getCapacityAsInt());data().set(DATA_PROGRESS,large()?phaseProgress:jobProgress);data().set(DATA_TICKS,large()?phaseDuration:jobDuration);}
-    public int publicData(int i){return switch(i){case 0->isFormed()?1:0;case 1->prepPhase.ordinal();case 2->jobPaused?1:0;case 3->waterTank.amount();case 4->waterTank.capacity();case 5->vacuumState.pressureMicroTorr();case 6->vacuumSpec.operatingPressureMicroTorr();case 7->contaminationState.phase().ordinal();case 8->selection;case 9->cores;case 10->hasJob()?1:0;case 11->isolated?1:0;case 12->phaseProgress;case 13->phaseDuration;case 14->status.ordinal();case 15->buffer().getAmountAsInt();case 16->buffer().getCapacityAsInt();case 17->jobProgress;case 18->jobDuration;default->0;};}
+    public int publicData(int i){return switch(i){case 0->isFormed()?1:0;case 1->prepPhase.ordinal();case 2->jobPaused?1:0;case 3->waterTank.amount();case 4->waterTank.capacity();case 5->vacuumState.pressureMicroTorr();case 6->vacuumSpec.operatingPressureMicroTorr();case 7->contaminationState.phase().ordinal();case 8->selection;case 9->cores;case 10->hasJob()?1:0;case 11->isolated?1:0;case 12->phaseProgress;case 13->phaseDuration;case 14->status.ordinal();case 15->buffer().getAmountAsInt();case 16->buffer().getCapacityAsInt();case 17->jobProgress;case 18->jobDuration;case 24->writerTier;default->0;};}
     public boolean startWriterJob(String recipeId,int coreCount){
         if(kind!=G3MachineKind.RETICLE_WRITER||hasJob()||!isFormed()||definition().isEmpty()||!(level instanceof ServerLevel))return false;
-        var families=List.of("compute","memory","nand");int index=-1;for(int i=0;i<3;i++)if(recipeId.equals("lithmod:g3_"+families.get(i)+"_t7"))index=i;if(index<0)return false;
+        var families=List.of("compute","memory","nand");int index=-1;for(int i=0;i<3;i++)if(recipeId.equals("lithmod:g3_"+families.get(i)+"_t"+writerTier))index=i;if(index<0)return false;
         var recipes=SupportRecipeLoader.getRegistry();if(recipes==null)return false;var resolved=recipes.byId(Identifier.parse(recipeId)).orElse(null);if(resolved==null||!resolved.recipe().machine().equals(machineId()))return false;
         var recipe=resolved.recipe();int blank=recipe.input().count(),red=recipe.secondary()==null?0:recipe.secondary().count(),cost=fe(recipe.energyPerTick());
         if(blank<1||red<1||slot(0).getCount()<blank||!slot(0).is(resolved.inputItem())||!slot(1).is(Items.REDSTONE)||slot(1).getCount()<red||!slot(2).isEmpty()||buffer().getAmountAsLong()<cost)return false;
         int count=index==0?coreCount:1;if(count<1||!EUVCRAFTMod.settings().coreCountOptions().contains(count))return false;
         input0=slot(0).split(blank);if(slot(0).isEmpty())clearSlot(0);input1=slot(1).split(red);if(slot(1).isEmpty())clearSlot(1);
-        product=new ItemStack(resolved.outputItem(),recipe.outputCount());product.set(ModDataComponents.MASK_DATA.get(),new MaskData(families.get(index),7,1,3));if(index==0)product.set(ModDataComponents.CORE_COUNT.get(),count);
+        product=new ItemStack(resolved.outputItem(),recipe.outputCount());product.set(ModDataComponents.MASK_DATA.get(),new MaskData(families.get(index),writerTier,1,3));if(index==0)product.set(ModDataComponents.CORE_COUNT.get(),count);
         maskMin=Math.clamp(p("mask_min_uses_permille",250),1,1000);maskMax=Math.clamp(p("mask_max_uses_permille",1000),maskMin,1000);
         selection=index;cores=count;frozenUses=Math.max(1,EUVCRAFTMod.settings().maskUses());jobDuration=recipe.duration();jobEnergyPerTick=cost;jobProgress=0;paidSamples=paidYieldSum=0;jobRunning=true;setChanged();return true;
     }
@@ -100,33 +104,67 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
         if(!slot(2).isEmpty()){status=Status.OUTPUT_BLOCKED;jobPaused=true;return;}
         var sample=room();if(!sample.available()){status=Status.NO_ROOM;jobPaused=true;return;}
         if(jobProgress<jobDuration){if(energySource().draw(jobEnergyPerTick)!=jobEnergyPerTick){status=Status.NO_POWER;jobPaused=true;return;}jobProgress++;paidYieldSum+=sample.yieldPermille();paidSamples++;setChanged();}
-        if(jobProgress>=jobDuration){int quality=(int)(paidYieldSum/Math.max(1,paidSamples));quality=Math.clamp(quality,maskMin,maskMax);var mask=product.get(ModDataComponents.MASK_DATA.get());product.set(ModDataComponents.MASK_DATA.get(),new MaskData(mask.dieType(),7,Math.max(1,(int)((long)frozenUses*quality/1000)),3));setSlot(2,product);product=input0=input1=ItemStack.EMPTY;jobRunning=false;setChanged();}else status=Status.WORKING;
+        if(jobProgress>=jobDuration){int quality=(int)(paidYieldSum/Math.max(1,paidSamples));quality=Math.clamp(quality,maskMin,maskMax);var mask=product.get(ModDataComponents.MASK_DATA.get());product.set(ModDataComponents.MASK_DATA.get(),new MaskData(mask.dieType(),mask.tierIndex(),Math.max(1,(int)((long)frozenUses*quality/1000)),3));setSlot(2,product);product=input0=input1=ItemStack.EMPTY;jobRunning=false;setChanged();}else status=Status.WORKING;
     }
     protected boolean etching(){return false;}
+    protected Status prepSetupStatus(FoupContents lot){return Status.IDLE;}
+    protected int freezeEtchSetup(FoupContents lot,int baseDrawFloor){return baseDrawFloor;}
+    protected int etchQualityPermille(){return 1000;}
+    protected boolean activeEtchSetupMatches(){return true;}
     public boolean canReceiveCarrier(ItemStack stack){
+        return validPrepCarrier(stack)&&prepSetupStatus(FoupItems.trustedContentsOf(stack))!=Status.WRONG_ETCH_MODULE;
+    }
+    protected boolean observeModules(List<BlockPos> members){return true;}
+    protected void checkInstalledModule(){}
+    protected int expectedFootprint(){return 175;}
+    protected boolean validPrepCarrier(ItemStack stack){
         if(stack.isEmpty()||stack.getCount()!=1||!FoupItems.isFoup(stack)||!com.euvcraft.lithmod.mc.routing.FoupRouting.matchesPrivateLot(stack))return false;
         var lot=FoupItems.trustedContentsOf(stack);if(lot.isEmpty()||lot.isContaminated()||lot.grade()!=WaferSubstrate.ELECTRONIC_GRADE)return false;
         if(!etching())return !lot.isStarted()&&lot.preparationGeneration()==1&&lot.wafers().stream().allMatch(w->w.layerIndex()==0&&w.cumulativeRoll()==Wafer.NO_ROLLS&&w.flags()==0);
         var route=stack.get(ModDataComponents.FOUP_ROUTING.get());var coating=stack.get(ModDataComponents.COATING_RECEIPT.get());
-        return lot.preparationGeneration()==3&&lot.run()!=null&&route.progress().stage()==com.euvcraft.lithmod.core.routing.FabProgress.Stage.EXPOSED&&route.progress().tier()==7&&coating!=null&&coating.tier()==7&&lot.lotLayer()==coating.layers();
+        return lot.preparationGeneration()==3&&lot.run()!=null&&route.progress().stage()==com.euvcraft.lithmod.core.routing.FabProgress.Stage.EXPOSED&&route.progress().tier()>=7&&coating!=null&&coating.tier()==route.progress().tier()&&lot.lotLayer()==coating.layers();
+    }
+    protected boolean prepReagentsAvailable() {
+        if(!etching())return true;
+        int count=p("etchant_per_lot",1);
+        return count>=1&&count<=64&&slot(1).is(ModItems.ETCHANT_CHARGE.get())&&slot(1).getCount()>=count;
+    }
+    protected final void consumePrepReagent(int slot,int count) {
+        slot(slot).shrink(count);
+        if(slot(slot).isEmpty())clearSlot(slot);
+    }
+    protected void reservePrepReagents() {
+        if(etching())consumePrepReagent(1,p("etchant_per_lot",1));
+    }
+    public boolean acceptsPrepReagent(int slot,ItemStack stack) {
+        return slot==1&&etching()&&stack.is(ModItems.ETCHANT_CHARGE.get());
     }
     public boolean startPrepJob(){
         if(!large()||hasJob()||!isFormed()||definition().isEmpty()||!contaminationState.isOperational()||!(level instanceof ServerLevel))return false;
         var sample=room();if(!enclosed(sample)||!slot(3).isEmpty())return false;var stack=slot(0);var lot=FoupItems.trustedContentsOf(stack);
-        if(!canReceiveCarrier(stack))return false;
-        int etchant=p("etchant_per_lot",1);if(etching()&&(etchant<1||etchant>64||!slot(1).is(ModItems.ETCHANT_CHARGE.get())||slot(1).getCount()<etchant))return false;
+        if(!validPrepCarrier(stack)||prepSetupStatus(lot)!=Status.IDLE)return false;
+        if(!prepReagentsAvailable())return false;
         int duration=p("linear_vacuum_duration",p("vacuum_duration",400)),cost=fe(p("vacuum_energy_per_tick",960)),water=p("linear_rinse_moved",1)==1?0:p("rinse_water_mb",4000);
         if(waterTank.amount()<water||buffer().getAmountAsLong()<cost||lot.size()>64)return false;
-        drawFloor=Math.clamp(p("preparation_min_draw_permille",900),1,1000);
         rinseDuration=p("linear_rinse_moved",1)==1?0:p("rinse_duration",200);rinseFe=fe(p("rinse_energy_per_tick",480));rinseWater=water;dryDuration=p("linear_dry_duration",p("dry_duration",200));dryFe=fe(p("dry_energy_per_tick",960));pumpFe=fe(p("local_pump_fe_per_tick",200));
         vacuumSpec=new VacuumPumpSpec(p("vacuum_pump_rate",5000),p("vacuum_idle_leak",100),p("vacuum_process_load",2000),p("vacuum_operating_pressure",10000),p("vacuum_reserve_capacity",50000),p("vacuum_reserve_recharge",1000));
         if(duration<1||duration>72000||rinseDuration<0||rinseDuration>72000||water<0||dryDuration<1||dryDuration>72000)return false;
-        carrier=stack.copy();clearSlot(0);if(etching()){slot(1).shrink(etchant);if(slot(1).isEmpty())clearSlot(1);}footprint=List.copyOf(members());paidSamples=paidYieldSum=0;prepPhase=PrepPhase.VACUUM_DEP_ETCH;phaseProgress=0;phaseDuration=duration;phaseEnergyPerTick=cost;phaseWaterMb=0;jobRunning=true;setChanged();return true;
+        drawFloor=freezeEtchSetup(lot,Math.clamp(p("preparation_min_draw_permille",900),1,1000));
+        carrier=stack.copy();clearSlot(0);reservePrepReagents();footprint=List.copyOf(members());paidSamples=paidYieldSum=0;prepPhase=PrepPhase.VACUUM_DEP_ETCH;phaseProgress=0;phaseDuration=duration;phaseEnergyPerTick=cost;phaseWaterMb=0;jobRunning=true;setChanged();return true;
     }
     private void tickPrep(){
         if(prepPhase==PrepPhase.COMPLETE){finishCarrier();return;}
         if(!contaminationState.isOperational()){status=Status.REPAIR;return;}
-        if(carrier.isEmpty()){if(!startPrepJob()){status=slot(0).isEmpty()?Status.NO_INPUT:Status.NO_ROOM;}return;}
+        if(carrier.isEmpty()){
+            if(validPrepCarrier(slot(0))){
+                status=prepSetupStatus(FoupItems.trustedContentsOf(slot(0)));
+                if(status!=Status.IDLE)return;
+                if(!prepReagentsAvailable()){status=Status.NO_REAGENT;return;}
+            }
+            if(!startPrepJob())status=slot(0).isEmpty()?Status.NO_INPUT:Status.NO_ROOM;
+            return;
+        }
+        if(!activeEtchSetupMatches()){status=Status.WRONG_ETCH_MODULE;jobPaused=true;return;}
         var sample=room();if(!enclosed(sample)){status=Status.NO_ROOM;jobPaused=true;return;}
         if(prepPhase==PrepPhase.VACUUM_DEP_ETCH&&!vacuumState.canProcess(vacuumSpec)){status=Status.VACUUM;jobPaused=true;return;}
         if(prepPhase==PrepPhase.UPW_RINSE&&phaseProgress==0&&waterTank.amount()<rinseWater){status=Status.NO_UPW;jobPaused=true;return;}
@@ -138,12 +176,24 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
             if(prepPhase==PrepPhase.VACUUM_DEP_ETCH){prepPhase=rinseDuration>0?PrepPhase.UPW_RINSE:PrepPhase.POWERED_DRY;phaseDuration=rinseDuration>0?rinseDuration:dryDuration;phaseEnergyPerTick=rinseDuration>0?rinseFe:dryFe;phaseWaterMb=rinseDuration>0?rinseWater:0;phaseProgress=0;}
             else if(prepPhase==PrepPhase.UPW_RINSE){prepPhase=PrepPhase.POWERED_DRY;phaseDuration=dryDuration;phaseEnergyPerTick=dryFe;phaseWaterMb=0;phaseProgress=0;}
             else {var lot=FoupItems.trustedContentsOf(carrier);int[] draws=new int[lot.size()];for(int i=0;i<draws.length;i++)draws[i]=ThreadLocalRandom.current().nextInt(drawFloor,1001);int mean=(int)Math.clamp(paidYieldSum/Math.max(1,paidSamples),1,1000);
-                if(!etching())carrier.set(ModDataComponents.FOUP_CONTENTS.get(),lot.preparedG3(mean,draws));
-                else {var combined=com.euvcraft.lithmod.core.routing.G3StageQuality.combine(lot.g3Preparation(),G3Preparation.commit(mean,draws));carrier.set(ModDataComponents.FOUP_CONTENTS.get(),new FoupContents(lot.lotId(),lot.capacity(),lot.wafers(),lot.run(),lot.grade(),lot.preparationGeneration(),lot.roomExposure(),lot.roomYieldPermille(),combined));var route=carrier.get(ModDataComponents.FOUP_ROUTING.get());carrier.set(ModDataComponents.FOUP_ROUTING.get(),new com.euvcraft.lithmod.mc.routing.FoupRoutingData(route.progress().etched(),route.dieType(),route.cores(),false));}prepPhase=PrepPhase.COMPLETE;jobRunning=false;finishCarrier();}
+                completePreparation(carrier,lot,mean,draws);
+                prepPhase=PrepPhase.COMPLETE;jobRunning=false;finishCarrier();}
         }
         setChanged();
     }
-    private void finishCarrier(){if(carrier.isEmpty()){prepPhase=PrepPhase.IDLE;return;}if(!slot(3).isEmpty()){status=Status.OUTPUT_BLOCKED;return;}if(!FoupItems.trustedContentsOf(carrier).isContaminated()&&!etching()&&FoupItems.trustedContentsOf(carrier).isPrepared())com.euvcraft.lithmod.mc.routing.FoupRouting.deposited(carrier);else com.euvcraft.lithmod.mc.routing.FoupRouting.refresh(carrier);setSlot(3,carrier);carrier=ItemStack.EMPTY;prepPhase=PrepPhase.IDLE;jobRunning=false;footprint=List.of();setChanged();}
+    protected void completePreparation(ItemStack carrier,FoupContents lot,int mean,int[] draws) {
+        if(!etching()) {
+            carrier.set(ModDataComponents.FOUP_CONTENTS.get(),lot.preparedG3(mean,draws));
+            com.euvcraft.lithmod.mc.routing.FoupRouting.deposited(carrier);
+            return;
+        }
+        int tuning=etchQualityPermille();
+                    if(tuning<1000){
+                        for(int i=0;i<draws.length;i++)draws[i]=Math.max(1,(draws[i]*tuning+500)/1000);
+                    }
+                    var combined=com.euvcraft.lithmod.core.routing.G3StageQuality.combine(lot.g3Preparation(),G3Preparation.commit(mean,draws));carrier.set(ModDataComponents.FOUP_CONTENTS.get(),new FoupContents(lot.lotId(),lot.capacity(),lot.wafers(),lot.run(),lot.grade(),lot.preparationGeneration(),lot.roomExposure(),lot.roomYieldPermille(),combined));var route=carrier.get(ModDataComponents.FOUP_ROUTING.get());carrier.set(ModDataComponents.FOUP_ROUTING.get(),new com.euvcraft.lithmod.mc.routing.FoupRoutingData(route.progress().etched(),route.dieType(),route.cores(),false));
+    }
+    private void finishCarrier(){if(carrier.isEmpty()){prepPhase=PrepPhase.IDLE;return;}if(!slot(3).isEmpty()){status=Status.OUTPUT_BLOCKED;return;}com.euvcraft.lithmod.mc.routing.FoupRouting.refresh(carrier);setSlot(3,carrier);carrier=ItemStack.EMPTY;prepPhase=PrepPhase.IDLE;jobRunning=false;footprint=List.of();setChanged();}
     public boolean notifyStructuralBreach(long tick){if(!large()||carrier.isEmpty())return false;var lot=FoupItems.trustedContentsOf(carrier);if(lot==null||lot.isContaminated())return false;contaminationState=MachineContaminationState.contaminated(tick);carrier.set(ModDataComponents.FOUP_CONTENTS.get(),lot.contaminated());prepPhase=PrepPhase.COMPLETE;jobRunning=false;setChanged();return true;}
     public boolean repair(){
         if(!large()||!isFormed()||!contaminationState.requiresRepair()||!enclosed(room()))return false;
@@ -173,15 +223,15 @@ public abstract class G3ControllerBlockEntity extends FabMachineBlockEntity impl
     }
     @Override protected void dropExtraContents(@Nullable Level world,BlockPos pos){dropContainer(world,pos,new SimpleContainer(carrier,input0,input1));carrier=input0=input1=product=ItemStack.EMPTY;jobRunning=false;}
     @Override protected void saveAdditional(ValueOutput out){
-        super.saveAdditional(out);out.putInt("g3MaskMin",maskMin);out.putInt("g3MaskMax",maskMax);out.putInt("g3Water",waterTank.amount());out.putInt("g3Pressure",vacuumState.pressureMicroTorr());out.putInt("g3Reserve",vacuumState.reserveMicroTorr());out.putInt("g3Contamination",contaminationState.phase().ordinal());out.putLong("g3Breach",contaminationState.lastBreachTick());out.putInt("g3DrawFloor",drawFloor);out.putInt("g3Selection",selection);out.putInt("g3Cores",cores);out.putBoolean("g3Isolated",isolated);
+        super.saveAdditional(out);out.putInt("g3WriterTier",writerTier);out.putInt("g3MaskMin",maskMin);out.putInt("g3MaskMax",maskMax);out.putInt("g3Water",waterTank.amount());out.putInt("g3Pressure",vacuumState.pressureMicroTorr());out.putInt("g3Reserve",vacuumState.reserveMicroTorr());out.putInt("g3Contamination",contaminationState.phase().ordinal());out.putLong("g3Breach",contaminationState.lastBreachTick());out.putInt("g3DrawFloor",drawFloor);out.putInt("g3Selection",selection);out.putInt("g3Cores",cores);out.putBoolean("g3Isolated",isolated);
         out.store("g3Carrier",ItemStack.OPTIONAL_CODEC,carrier);out.store("g3Input0",ItemStack.OPTIONAL_CODEC,input0);out.store("g3Input1",ItemStack.OPTIONAL_CODEC,input1);out.store("g3Product",ItemStack.OPTIONAL_CODEC,product);out.store("g3Footprint",BlockPos.CODEC.listOf(),footprint);out.putBoolean("g3Running",jobRunning);out.putBoolean("g3Recovery",recovery);out.putLong("g3Samples",paidSamples);out.putLong("g3YieldSum",paidYieldSum);
         out.store("g3Frozen",Codec.INT.listOf(),List.of(prepPhase.ordinal(),phaseProgress,phaseDuration,phaseEnergyPerTick,phaseWaterMb,rinseDuration,rinseFe,rinseWater,dryDuration,dryFe,pumpFe,jobProgress,jobDuration,jobEnergyPerTick,frozenUses,vacuumSpec.pumpRateMicroTorrPerTick(),vacuumSpec.idleLeakMicroTorrPerTick(),vacuumSpec.processLoadMicroTorrPerTick(),vacuumSpec.operatingPressureMicroTorr(),vacuumSpec.reserveCapacityMicroTorr(),vacuumSpec.reserveRechargeMicroTorrPerTick()));
     }
     @Override protected void loadAdditional(ValueInput in){
-        super.loadAdditional(in);maskMin=Math.clamp(in.getIntOr("g3MaskMin",250),1,1000);maskMax=Math.clamp(in.getIntOr("g3MaskMax",1000),maskMin,1000);waterTank.restoreAmount(Math.clamp(in.getIntOr("g3Water",0),0,WaterTank.MAX_CAPACITY));vacuumState=VacuumChamberState.at(Math.clamp(in.getIntOr("g3Pressure",0),0,VacuumChamberState.MAX_PRESSURE_MICROTORR),Math.clamp(in.getIntOr("g3Reserve",0),0,1000000));int condition=Math.clamp(in.getIntOr("g3Contamination",0),0,2);contaminationState=new MachineContaminationState(MachineContaminationState.Phase.values()[condition],condition==0?-1:Math.max(0,in.getLongOr("g3Breach",0)));drawFloor=Math.clamp(in.getIntOr("g3DrawFloor",900),1,1000);selection=Math.clamp(in.getIntOr("g3Selection",-1),-1,2);cores=Math.clamp(in.getIntOr("g3Cores",1),1,256);isolated=in.getBooleanOr("g3Isolated",false);
+        super.loadAdditional(in);writerTier=in.getIntOr("g3WriterTier",7)==8?8:7;maskMin=Math.clamp(in.getIntOr("g3MaskMin",250),1,1000);maskMax=Math.clamp(in.getIntOr("g3MaskMax",1000),maskMin,1000);waterTank.restoreAmount(Math.clamp(in.getIntOr("g3Water",0),0,WaterTank.MAX_CAPACITY));vacuumState=VacuumChamberState.at(Math.clamp(in.getIntOr("g3Pressure",0),0,VacuumChamberState.MAX_PRESSURE_MICROTORR),Math.clamp(in.getIntOr("g3Reserve",0),0,1000000));int condition=Math.clamp(in.getIntOr("g3Contamination",0),0,2);contaminationState=new MachineContaminationState(MachineContaminationState.Phase.values()[condition],condition==0?-1:Math.max(0,in.getLongOr("g3Breach",0)));drawFloor=Math.clamp(in.getIntOr("g3DrawFloor",900),1,1000);selection=Math.clamp(in.getIntOr("g3Selection",-1),-1,2);cores=Math.clamp(in.getIntOr("g3Cores",1),1,256);isolated=in.getBooleanOr("g3Isolated",false);
         carrier=in.read("g3Carrier",ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);input0=in.read("g3Input0",ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);input1=in.read("g3Input1",ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);product=in.read("g3Product",ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);footprint=in.read("g3Footprint",BlockPos.CODEC.listOf()).orElse(List.of());jobRunning=in.getBooleanOr("g3Running",false);recovery=in.getBooleanOr("g3Recovery",false);paidSamples=Math.clamp(in.getLongOr("g3Samples",0),0,3000000);paidYieldSum=Math.clamp(in.getLongOr("g3YieldSum",0),0,1000L*paidSamples);
         var f=in.read("g3Frozen",Codec.INT.listOf()).orElse(List.of());
-        try{if(f.size()!=21)throw new IllegalArgumentException();prepPhase=PrepPhase.values()[f.get(0)];phaseProgress=f.get(1);phaseDuration=f.get(2);phaseEnergyPerTick=f.get(3);phaseWaterMb=f.get(4);rinseDuration=f.get(5);rinseFe=f.get(6);rinseWater=f.get(7);dryDuration=f.get(8);dryFe=f.get(9);pumpFe=f.get(10);jobProgress=f.get(11);jobDuration=f.get(12);jobEnergyPerTick=f.get(13);frozenUses=f.get(14);vacuumSpec=new VacuumPumpSpec(f.get(15),f.get(16),f.get(17),f.get(18),f.get(19),f.get(20));if(jobRunning&&(large()?(carrier.isEmpty()||footprint.size()!=175||phaseDuration<1||phaseEnergyPerTick<1||rinseDuration<0||rinseFe<1||rinseWater<0||dryDuration<1||dryFe<1||phaseProgress<0||phaseProgress>=phaseDuration):(input0.isEmpty()||input1.isEmpty()||product.isEmpty()||jobDuration<1||jobEnergyPerTick<1||jobProgress<0||jobProgress>jobDuration)))throw new IllegalArgumentException();}
+        try{if(f.size()!=21)throw new IllegalArgumentException();prepPhase=PrepPhase.values()[f.get(0)];phaseProgress=f.get(1);phaseDuration=f.get(2);phaseEnergyPerTick=f.get(3);phaseWaterMb=f.get(4);rinseDuration=f.get(5);rinseFe=f.get(6);rinseWater=f.get(7);dryDuration=f.get(8);dryFe=f.get(9);pumpFe=f.get(10);jobProgress=f.get(11);jobDuration=f.get(12);jobEnergyPerTick=f.get(13);frozenUses=f.get(14);vacuumSpec=new VacuumPumpSpec(f.get(15),f.get(16),f.get(17),f.get(18),f.get(19),f.get(20));if(jobRunning&&(large()?(carrier.isEmpty()||footprint.size()!=expectedFootprint()||phaseDuration<1||phaseEnergyPerTick<1||rinseDuration<0||rinseFe<1||rinseWater<0||dryDuration<1||dryFe<1||phaseProgress<0||phaseProgress>=phaseDuration):(input0.isEmpty()||input1.isEmpty()||product.isEmpty()||jobDuration<1||jobEnergyPerTick<1||jobProgress<0||jobProgress>jobDuration)))throw new IllegalArgumentException();}
         catch(RuntimeException invalid){jobRunning=false;product=ItemStack.EMPTY;recovery=true;prepPhase=carrier.isEmpty()?PrepPhase.IDLE:PrepPhase.COMPLETE;}
         grant=0;grantTick=consumedGrantTick=Long.MIN_VALUE;sync();
     }

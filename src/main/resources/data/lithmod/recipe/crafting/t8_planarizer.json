@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CMC",
+    "PBP",
+    "CMC"
+  ],
+  "key": {
+    "C": "lithmod:g3_casing",
+    "M": "lithmod:memory_chip_t7",
+    "P": "lithmod:compute_chip_t7",
+    "B": "lithmod:g3_deposition_etcher"
+  },
+  "result": {
+    "id": "lithmod:t8_planarizer",
+    "count": 1
+  }
+}

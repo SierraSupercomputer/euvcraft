@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "GCG",
+    "LPL",
+    "GRG"
+  ],
+  "key": {
+    "G": "minecraft:gold_ingot",
+    "C": "lithmod:compute_chip_t3",
+    "L": "lithmod:logic_chip_t3",
+    "P": "lithmod:advanced_test_package",
+    "R": "minecraft:redstone_block"
+  },
+  "result": {
+    "id": "lithmod:high_bin_test_package",
+    "count": 1
+  }
+}

@@ -34,10 +34,10 @@ class FabProgressTest {
         }
 
         @Test
-        @DisplayName("rejects tier outside 0..7")
+        @DisplayName("rejects tier outside 0..8")
         void tierOutOfRangeRejected() {
             assertThrows(IllegalArgumentException.class, () -> new FabProgress(FabProgress.Stage.UNPROCESSED, -1, FabProgress.CURRENT_VERSION));
-            assertThrows(IllegalArgumentException.class, () -> new FabProgress(FabProgress.Stage.UNPROCESSED, 8, FabProgress.CURRENT_VERSION));
+            assertThrows(IllegalArgumentException.class, () -> new FabProgress(FabProgress.Stage.UNPROCESSED, 9, FabProgress.CURRENT_VERSION));
         }
 
         @Test
@@ -55,34 +55,34 @@ class FabProgressTest {
         }
 
         @Test
-        @DisplayName("COATED requires tier 5..7")
+        @DisplayName("COATED requires tier 5..8")
         void coatedRequiresTierFiveToSeven() {
             assertThrows(IllegalArgumentException.class, () -> new FabProgress(FabProgress.Stage.COATED, 0, FabProgress.CURRENT_VERSION));
             assertThrows(IllegalArgumentException.class, () -> new FabProgress(FabProgress.Stage.COATED, 4, FabProgress.CURRENT_VERSION));
-            assertThrows(IllegalArgumentException.class, () -> new FabProgress(FabProgress.Stage.COATED, 8, FabProgress.CURRENT_VERSION));
+            assertThrows(IllegalArgumentException.class, () -> new FabProgress(FabProgress.Stage.COATED, 9, FabProgress.CURRENT_VERSION));
         }
 
         @Test
-        @DisplayName("EXPOSED requires tier 1..7")
+        @DisplayName("EXPOSED requires tier 1..8")
         void exposedRequiresTierOneToSeven() {
             assertThrows(IllegalArgumentException.class, () -> new FabProgress(FabProgress.Stage.EXPOSED, 0, FabProgress.CURRENT_VERSION));
-            assertThrows(IllegalArgumentException.class, () -> new FabProgress(FabProgress.Stage.EXPOSED, 8, FabProgress.CURRENT_VERSION));
+            assertThrows(IllegalArgumentException.class, () -> new FabProgress(FabProgress.Stage.EXPOSED, 9, FabProgress.CURRENT_VERSION));
         }
 
         @Test
-        @DisplayName("ETCHED requires tier 4..7")
+        @DisplayName("ETCHED requires tier 4..8")
         void etchedRequiresTierFourToSeven() {
             assertThrows(IllegalArgumentException.class, () -> new FabProgress(FabProgress.Stage.ETCHED, 0, FabProgress.CURRENT_VERSION));
             assertThrows(IllegalArgumentException.class, () -> new FabProgress(FabProgress.Stage.ETCHED, 3, FabProgress.CURRENT_VERSION));
-            assertThrows(IllegalArgumentException.class, () -> new FabProgress(FabProgress.Stage.ETCHED, 8, FabProgress.CURRENT_VERSION));
+            assertThrows(IllegalArgumentException.class, () -> new FabProgress(FabProgress.Stage.ETCHED, 9, FabProgress.CURRENT_VERSION));
         }
 
         @Test
-        @DisplayName("CLEANED requires tier 5..7")
+        @DisplayName("CLEANED requires tier 5..8")
         void cleanedRequiresTierFiveToSeven() {
             assertThrows(IllegalArgumentException.class, () -> new FabProgress(FabProgress.Stage.CLEANED, 0, FabProgress.CURRENT_VERSION));
             assertThrows(IllegalArgumentException.class, () -> new FabProgress(FabProgress.Stage.CLEANED, 4, FabProgress.CURRENT_VERSION));
-            assertThrows(IllegalArgumentException.class, () -> new FabProgress(FabProgress.Stage.CLEANED, 8, FabProgress.CURRENT_VERSION));
+            assertThrows(IllegalArgumentException.class, () -> new FabProgress(FabProgress.Stage.CLEANED, 9, FabProgress.CURRENT_VERSION));
         }
 
         @Test
@@ -98,19 +98,19 @@ class FabProgressTest {
                 assertEquals(t, new FabProgress(FabProgress.Stage.COATED, t, FabProgress.CURRENT_VERSION).tier());
             }
 
-            // EXPOSED at tiers 1..7
+            // EXPOSED at tiers 1..8
             for (int t = 1; t <= 7; t++) {
                 assertEquals(FabProgress.Stage.EXPOSED, new FabProgress(FabProgress.Stage.EXPOSED, t, FabProgress.CURRENT_VERSION).stage());
                 assertEquals(t, new FabProgress(FabProgress.Stage.EXPOSED, t, FabProgress.CURRENT_VERSION).tier());
             }
 
-            // ETCHED at tiers 4..7
+            // ETCHED at tiers 4..8
             for (int t = 4; t <= 7; t++) {
                 assertEquals(FabProgress.Stage.ETCHED, new FabProgress(FabProgress.Stage.ETCHED, t, FabProgress.CURRENT_VERSION).stage());
                 assertEquals(t, new FabProgress(FabProgress.Stage.ETCHED, t, FabProgress.CURRENT_VERSION).tier());
             }
 
-            // CLEANED at tiers 5..7
+            // CLEANED at tiers 5..8
             for (int t = 5; t <= 7; t++) {
                 assertEquals(FabProgress.Stage.CLEANED, new FabProgress(FabProgress.Stage.CLEANED, t, FabProgress.CURRENT_VERSION).stage());
                 assertEquals(t, new FabProgress(FabProgress.Stage.CLEANED, t, FabProgress.CURRENT_VERSION).tier());
@@ -556,18 +556,18 @@ class FabProgressTest {
     class EdgeCaseTest {
 
         @Test
-        @DisplayName("exposed() tier out of range 1..7 rejected")
+        @DisplayName("exposed() tier out of range 1..8 rejected")
         void exposedTierOutOfRange() {
             assertThrows(IllegalArgumentException.class, () -> FabProgress.initial().exposed(0));
-            assertThrows(IllegalArgumentException.class, () -> FabProgress.initial().exposed(8));
+            assertThrows(IllegalArgumentException.class, () -> FabProgress.initial().exposed(9));
         }
 
         @Test
-        @DisplayName("coated() tier out of range 5..7 rejected")
+        @DisplayName("coated() tier out of range 5..8 rejected")
         void coatedTierOutOfRange() {
             FabProgress deposited = FabProgress.initial().deposited();
             assertThrows(IllegalArgumentException.class, () -> deposited.coated(4));
-            assertThrows(IllegalArgumentException.class, () -> deposited.coated(8));
+            assertThrows(IllegalArgumentException.class, () -> deposited.coated(9));
         }
 
         @Test

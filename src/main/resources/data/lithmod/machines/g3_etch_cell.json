@@ -30,6 +30,12 @@
     "linear_vacuum_duration": 200,
     "linear_dry_duration": 100,
     "linear_rinse_moved": 1,
-    "etchant_per_lot": 1
+    "etchant_per_lot": 1,
+    "etch_calibration_min_permille": 500,
+    "compute_depth_tolerance": 12,
+    "compute_cores_per_tolerance_step": 3,
+    "compute_depth_yield_floor_permille": 550,
+    "memory_uniformity_tolerance": 14,
+    "memory_max_uniformity_spread_permille": 250
   }
 }

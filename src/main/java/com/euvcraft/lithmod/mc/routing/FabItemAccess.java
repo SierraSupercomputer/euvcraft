@@ -51,7 +51,8 @@ public final class FabItemAccess {
             return slot==0?stage.canReceiveCarrier(stack):slot==1?stage.acceptsReagent(stack):slot==2&&stage.requiresRepair()&&stack.is(net.minecraft.world.item.Items.REDSTONE);
         }
         if(machine instanceof com.euvcraft.lithmod.mc.multiblock.g3.G3ControllerBlockEntity g3){
-            return slot==0?g3.canReceiveCarrier(stack):slot==1?(g3 instanceof com.euvcraft.lithmod.mc.multiblock.linear.G3EtchCellBlockEntity&&stack.is(ModItems.ETCHANT_CHARGE.get())||g3.contaminationState().requiresRepair()&&stack.is(ModItems.UTILITY_FILTER.get())):slot==2&&g3.contaminationState().requiresRepair()&&stack.is(net.minecraft.world.item.Items.REDSTONE);
+            return slot==0?g3.canReceiveCarrier(stack):g3.acceptsPrepReagent(slot,stack)
+                ||g3.contaminationState().requiresRepair()&&(slot==1&&stack.is(ModItems.UTILITY_FILTER.get())||slot==2&&stack.is(net.minecraft.world.item.Items.REDSTONE));
         }
         if(machine instanceof DepositionEtcherControllerBlockEntity process){
             return slot==0?process.canReceiveCarrier(stack):slot==1&&process.acceptsReagent(stack);
@@ -68,7 +69,9 @@ public final class FabItemAccess {
             if(slot==1)return TestPackageBlockEntity.isPackage(stack);
             var lot=FoupItems.trustedContentsOf(stack);
             var route=stack.get(ModDataComponents.FOUP_ROUTING.get());
-            return slot==0&&lot!=null&&!lot.isEmpty()&&!lot.isContaminated()&&lot.run()!=null&&route!=null&&route.progress().stage().ordinal()>=FabProgress.Stage.EXPOSED.ordinal()&&FoupRouting.packagingReady(stack);
+            return slot==0&&lot!=null&&!lot.isEmpty()&&!lot.isContaminated()&&lot.run()!=null&&route!=null&&route.progress().stage().ordinal()>=FabProgress.Stage.EXPOSED.ordinal()&&FoupRouting.packagingReady(stack)
+                &&(!(machine instanceof com.euvcraft.lithmod.mc.multiblock.advanced.HighBinTestPackageBlockEntity)
+                    ||com.euvcraft.lithmod.mc.data.HighBinningDataLoader.supportsSource(lot.run()));
         }
         return false;
     }

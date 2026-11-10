@@ -13,7 +13,9 @@ import org.jspecify.annotations.Nullable;
 public class AdvancedControllerBlock extends AdvancedCasingBlock {
     public AdvancedControllerBlock(BlockBehaviour.Properties properties){super(properties);}
     @Override public BlockEntity newBlockEntity(BlockPos pos,BlockState state){
-        return this==AdvancedMachines.DEPOSITION_ETCHER_CONTROLLER.get()?new DepositionEtcherControllerBlockEntity(pos,state):new AdvancedTestPackageControllerBlockEntity(pos,state);
+        if (this == AdvancedMachines.DEPOSITION_ETCHER_CONTROLLER.get()) return new DepositionEtcherControllerBlockEntity(pos,state);
+        if (this == AdvancedMachines.HIGH_BIN_CONTROLLER.get()) return new HighBinTestPackageBlockEntity(pos,state);
+        return new AdvancedTestPackageControllerBlockEntity(pos,state);
     }
     @Override public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level level,BlockState state,BlockEntityType<T> type){
         return level.isClientSide()?null:(l,p,s,b)->{if(b instanceof FabMachineBlockEntity machine)machine.serverTick();};

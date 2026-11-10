@@ -131,9 +131,8 @@ public final class ProcessCellRunPersistence {
             Objects.requireNonNull(foupTemplate, "foupTemplate must not be null");
             Objects.requireNonNull(grade, "grade must not be null");
 
-            // Validate tier index (M1 playable: 1, 2, or 3)
-            if (tier.index() < 1 || tier.index() > 7) {
-                throw new IllegalArgumentException("tier index must be 1 through 7, got " + tier.index());
+            if (tier.index() < 1 || tier.index() > 8) {
+                throw new IllegalArgumentException("tier index must be 1 through 8, got " + tier.index());
             }
 
             // Validate die type
@@ -301,6 +300,7 @@ public final class ProcessCellRunPersistence {
                     resistTemplate,
                     maskData.tierIndex()
             );
+            if (tier.index() == 8) loadout = LineLoadoutReader.highNa(loadout);
             LineComponents lineComponents = loadout.toLineComponents();
             StatRules statRules = new DefaultStatRules(tierRegistry);
             LineStats computedStats = statRules.stats(lineComponents, tier.index());

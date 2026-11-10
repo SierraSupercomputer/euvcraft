@@ -119,6 +119,7 @@ public final class ModCreativeTabs {
         output.accept(ModItems.FAB_UPW_INLET.get());
         output.accept(ModItems.ADVANCED_OPERATING_PANEL.get());
         output.accept(ModItems.ADVANCED_TEST_PACKAGE_CONTROLLER.get());
+        output.accept(ModItems.HIGH_BIN_TEST_PACKAGE.get());
         output.accept(ModItems.ADVANCED_CASING.get());
         output.accept(ModItems.ADVANCED_POWER_PORT.get());
         output.accept(ModItems.FAB_ITEM_PORT.get());
@@ -277,6 +278,21 @@ public final class ModCreativeTabs {
         output.accept(ModItems.TIN_FEEDSTOCK.get());
         output.accept(com.euvcraft.lithmod.mc.multiblock.euv.EuvMachines.LIGHT_SOURCE_PULSE_MODULE.get());
         output.accept(com.euvcraft.lithmod.mc.multiblock.euv.EuvMachines.LIGHT_SOURCE_CALIBRATION_PANEL.get());
+        output.accept(ModItems.COMPUTE_CHIP_T8.get());
+        output.accept(ModItems.MEMORY_CHIP_T8.get());
+        output.accept(ModItems.NAND_CHIP_T8.get());
+        output.accept(ModItems.CPU_T8.get());
+        output.accept(ModItems.DIMM_T8.get());
+        output.accept(ModItems.CMP_SLURRY.get());
+        output.accept(ModItems.POLISH_PAD.get());
+        output.accept(ModItems.DOPANT_CHARGE.get());
+        output.accept(ModItems.GOD_CHIP.get());
+        output.accept(ModItems.RESIST_T8.get());
+        output.accept(ModItems.T8_PLANARIZER.get());
+        output.accept(ModItems.T8_IMPLANTER.get());
+        output.accept(sampleMask(DieTypes.COMPUTE, 8));
+        output.accept(sampleMask(DieTypes.MEMORY, 8));
+        output.accept(sampleMask(DieTypes.NAND, 8));
     }
 
     /**
@@ -301,7 +317,7 @@ public final class ModCreativeTabs {
     private static ItemStack sampleMask(String dieType, int tierIndex) {
         ItemStack mask = new ItemStack(ModItems.MASK.get());
         mask.set(ModDataComponents.MASK_DATA.get(),
-            new MaskData(dieType, tierIndex, EUVCRAFTMod.settings().maskUses(), tierIndex >= 3 ? 2 : 1));
+            new MaskData(dieType, tierIndex, EUVCRAFTMod.settings().maskUses(), tierIndex >= 7 ? 3 : tierIndex >= 3 ? 2 : 1));
         return mask;
     }
 

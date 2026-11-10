@@ -32,4 +32,4 @@ These repairs passed automated checks. Recheck the reported behavior before movi
 
 ## Deferred features
 
-T8 progression, NAND assembly, Encoded Logistics hardware/server integration, Ponder construction scenes, arbitrary cleanroom shapes/airlocks, equipment-bay remodeling and recycler recovery of other materials remain separate work. Reflow mechanics are unchanged in this increment.
+NAND assembly, Encoded Logistics hardware/server integration, Ponder construction scenes, arbitrary cleanroom shapes/airlocks, equipment-bay remodeling and recycler recovery of other materials remain separate work. Reflow mechanics are unchanged in this increment.

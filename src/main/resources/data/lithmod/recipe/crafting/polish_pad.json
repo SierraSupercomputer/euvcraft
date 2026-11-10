@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:leather",
+    "minecraft:white_wool",
+    "minecraft:iron_nugget"
+  ],
+  "result": {
+    "id": "lithmod:polish_pad",
+    "count": 2
+  }
+}

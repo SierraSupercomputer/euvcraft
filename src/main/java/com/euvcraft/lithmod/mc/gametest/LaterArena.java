@@ -5,10 +5,17 @@ import net.minecraft.gametest.framework.GameTestHelper;
 
 /** Keep large new fixtures in their already-forced chunks, above baseline fixtures and each other. */
 final class LaterArena extends T7RuntimeFixtures.Arena {
-    private static final Map<GameTestHelper,Integer> LEVELS=new WeakHashMap<>();
-    private static int next;
-    private final int offset;
+    private static final BitSet OCCUPIED = new BitSet();
+    private final int slot;
     LaterArena(GameTestHelper h){this(h,Direction.NORTH);}
-    LaterArena(GameTestHelper h,Direction facing){super(h,facing);offset=LEVELS.computeIfAbsent(h,key->{if(next>=24)throw new IllegalStateException("Later-test isolation levels exhausted");return 32+11*next++;});}
-    @Override BlockPos anchor(){return super.anchor().above(offset);}
+    LaterArena(GameTestHelper h,Direction facing){
+        super(h,facing);
+        slot=OCCUPIED.nextClearBit(0);
+        if(slot>=24)throw new IllegalStateException("Later-test isolation levels exhausted");
+        OCCUPIED.set(slot);
+    }
+    @Override BlockPos anchor(){return super.anchor().above(32+11*slot);}
+    @Override public void close(){
+        try{super.close();}finally{OCCUPIED.clear(slot);}
+    }
 }

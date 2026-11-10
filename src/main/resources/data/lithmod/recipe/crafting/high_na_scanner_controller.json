@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CMC",
+    "PBP",
+    "CMC"
+  ],
+  "key": {
+    "C": "lithmod:euv_scanner_casing",
+    "M": "lithmod:memory_chip_t7",
+    "P": "lithmod:compute_chip_t7",
+    "B": "lithmod:euv_scanner_controller"
+  },
+  "result": {
+    "id": "lithmod:high_na_scanner_controller",
+    "count": 1
+  }
+}

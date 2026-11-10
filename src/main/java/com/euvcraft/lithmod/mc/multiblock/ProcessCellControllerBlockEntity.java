@@ -312,6 +312,11 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         return stack.getCount() == 1 && FoupItems.isFoup(stack) ? FoupItems.trustedContentsOf(stack) : null;
     }
 
+    protected LineLoadout lineLoadout(int maskTier) {
+        return LineLoadoutReader.read(equipment(SLOT_LIGHT_SOURCE), equipment(SLOT_OPTICS),
+            equipment(SLOT_STAGE), equipment(SLOT_CLEANROOM), equipment(SLOT_METROLOGY), processingResist(), maskTier);
+    }
+
     private void tryStartRun() {
         FoupContents lot = trustedLot();
         if (lot == null) { lastRefusal = RefusalReason.NO_LOT; return; }
@@ -323,11 +328,19 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         }
         var registry = TierDataLoader.getRegistry();
         Tier tier = registry.byIndex(mask.tierIndex()).orElse(null);
-        if (tier == null || tier.index() > 7) { lastRefusal = RefusalReason.NO_MASK; return; }
+        if (tier == null || tier.index() > 8) { lastRefusal = RefusalReason.NO_MASK; return; }
 
         // Admission hooks: structural formation, tier support, readiness, refusal
         if (!supportsTier(tier)) { lastRefusal = RefusalReason.LINE_CANNOT_RUN_TIER; return; }
-        if(!com.euvcraft.lithmod.mc.routing.FoupRouting.canExpose(slot(SLOT_FOUP),tier.index())){lastRefusal=new RefusalReason(tier.index()>=5?RefusalReason.Code.COATING_REQUIRED:RefusalReason.Code.PROCESS_STEP_REQUIRED);return;}
+        if (tier.index() == 8) {
+            var route = slot(SLOT_FOUP).get(ModDataComponents.FOUP_ROUTING.get());
+            if (route != null && route.progress().stage() == com.euvcraft.lithmod.core.routing.FabProgress.Stage.COATED
+                    && route.progress().tier() == 8 && DieTypes.MEMORY.equals(mask.dieType()) != DieTypes.MEMORY.equals(route.dieType())) {
+                lastRefusal = new RefusalReason(RefusalReason.Code.PLANARIZATION_PROGRAM_MISMATCH);
+                return;
+            }
+        }
+        if(!com.euvcraft.lithmod.mc.routing.FoupRouting.canExpose(slot(SLOT_FOUP),tier.index(),mask.dieType())){lastRefusal=new RefusalReason(tier.index()>=5?RefusalReason.Code.COATING_REQUIRED:RefusalReason.Code.PROCESS_STEP_REQUIRED);return;}
         var blocker = admissionBlocker(tier);
         if (blocker != null) { lastRefusal = blocker; return; }
         if (!structureFormed()) { lastRefusal = RefusalReason.LINE_CANNOT_RUN_TIER; return; }
@@ -347,8 +360,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
             return;
         }
 
-        LineLoadout loadout = LineLoadoutReader.read(equipment(SLOT_LIGHT_SOURCE), equipment(SLOT_OPTICS),
-            equipment(SLOT_STAGE), equipment(SLOT_CLEANROOM), equipment(SLOT_METROLOGY), processingResist(), mask.tierIndex());
+        LineLoadout loadout = lineLoadout(mask.tierIndex());
         DefaultStatRules rules = new DefaultStatRules(registry);
         FabSettings settings = EUVCRAFTMod.settings();
         int passes=admissionPasses(tier);
@@ -434,7 +446,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
         if (contract == null) return null;
         Tier tier = contract.tier();
         if (!DieTypes.COMPUTE.equals(contract.dieType()) || tier.index() < 3) return null;
-        if (tier.index() > 7) return null;
+        if (tier.index() > 8) return null;
         if (tier.index() <= 5) return 1;
         return contract.mask().getOrDefault(ModDataComponents.CORE_COUNT.get(), 1);
     }
@@ -512,7 +524,7 @@ public class ProcessCellControllerBlockEntity extends FabMachineBlockEntity impl
     /** The upstream coating receipt supplies the resist type for stats; no phantom consumable is paid here. */
     protected ItemStack processingResist(){
         var receipt=slot(SLOT_FOUP).get(ModDataComponents.COATING_RECEIPT.get());
-        if(receipt!=null)return new ItemStack(switch(receipt.tier()){case 5->ModItems.RESIST_T5.get();case 6->ModItems.RESIST_T6.get();default->ModItems.RESIST_T7.get();});
+        if(receipt!=null)return new ItemStack(switch(receipt.tier()){case 5->ModItems.RESIST_T5.get();case 6->ModItems.RESIST_T6.get();case 8->ModItems.RESIST_T8.get();default->ModItems.RESIST_T7.get();});
         return slot(SLOT_RESIST);
     }
     public boolean canTopUpResist(ItemStack stack) {

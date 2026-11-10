@@ -11,7 +11,7 @@ class FabNextStepsTest {
 
     @Test void freshChoicesAreNotAssignedATier(){
         var pure=next(WaferSubstrate.PURE,1,FabProgress.initial());assertEquals(List.of(1,2,3),pure.get("process_cell_controller"));assertEquals(List.of(4,5),pure.get("deposition_etcher"));
-        var electronic=next(WaferSubstrate.ELECTRONIC_GRADE,1,FabProgress.initial());assertEquals(List.of(4,5,6),electronic.get("deposition_etcher"));assertEquals(List.of(7),electronic.get("g3_deposition_etcher"));assertTrue(electronic.values().stream().flatMap(List::stream).noneMatch(t->t==8));
+        var electronic=next(WaferSubstrate.ELECTRONIC_GRADE,1,FabProgress.initial());assertEquals(List.of(4,5,6),electronic.get("deposition_etcher"));assertEquals(List.of(7,8),electronic.get("g3_deposition_etcher"));
     }
     @Test void depositedWafersStillHaveOptionsUntilCoatingOrExposure(){
         var progress=FabProgress.initial().deposited();var pure=next(WaferSubstrate.PURE,2,progress);assertEquals(List.of(4),pure.get("lithography_scanner"));assertEquals(List.of(5),pure.get("coating_track"));
@@ -20,6 +20,19 @@ class FabNextStepsTest {
     @Test void downstreamAdviceRequiresEtchAndCleaningBeforePackaging(){
         var exposed4=FabProgress.initial().deposited().exposed(4);assertEquals(Map.of("etch_cell",List.of(4)),next(WaferSubstrate.PURE,2,exposed4));assertEquals(Map.of("advanced_test_package",List.of(4)),next(WaferSubstrate.PURE,2,exposed4.etched()));
         var exposed7=FabProgress.initial().deposited().coated(7).exposed(7);assertEquals(Map.of("g3_etch_cell",List.of(7)),next(WaferSubstrate.ELECTRONIC_GRADE,3,exposed7));assertEquals(Map.of("wet_cleaner",List.of(7)),next(WaferSubstrate.ELECTRONIC_GRADE,3,exposed7.etched()));assertEquals(Map.of("advanced_test_package",List.of(7)),next(WaferSubstrate.ELECTRONIC_GRADE,3,exposed7.etched().cleaned()));
+    }
+    @Test void t8CannotSkipPlanarizationOrImplantation(){
+        var deposited=FabProgress.initial().deposited();
+        assertThrows(IllegalStateException.class,()->deposited.coated(8));
+        var polished=deposited.planarized();
+        assertEquals(Map.of("coating_track",List.of(8)),next(WaferSubstrate.ELECTRONIC_GRADE,3,polished));
+        assertThrows(IllegalStateException.class,()->polished.coated(7));
+        var coated=polished.coated(8);
+        assertEquals(Map.of("high_na_scanner_controller",List.of(8)),next(WaferSubstrate.ELECTRONIC_GRADE,3,coated));
+        var etched=coated.exposed(8).etched();
+        assertThrows(IllegalStateException.class,etched::cleaned);
+        assertEquals(Map.of("t8_implanter",List.of(8)),next(WaferSubstrate.ELECTRONIC_GRADE,3,etched));
+        assertTrue(etched.implanted().cleaned().readyForPackaging());
     }
     @Test void actualMatrixChangesAndDisposalAreRespected(){
         var lot=new FoupPublicView(25,1,0,WaferSubstrate.PURE,1);assertEquals(List.of(4),FabNextSteps.options(lot,FabProgress.initial(),false,matrix(true),tiers()).get("deposition_etcher"));

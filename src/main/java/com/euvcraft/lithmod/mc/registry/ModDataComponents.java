@@ -98,8 +98,8 @@ public final class ModDataComponents {
     public static final DeferredHolder<DataComponentType<?>,DataComponentType<com.euvcraft.lithmod.mc.routing.CoatingReceipt>> COATING_RECEIPT=
         DATA_COMPONENTS.registerComponentType("coating_receipt",builder->builder.persistent(com.euvcraft.lithmod.mc.routing.CoatingReceipt.CODEC).networkSynchronized(com.euvcraft.lithmod.mc.routing.CoatingReceipt.STREAM_CODEC));
     private static final Codec<java.util.Map<String,java.util.List<Integer>>> NEXT_STEPS_CODEC =
-        Codec.unboundedMap(Codec.STRING,Codec.intRange(1,7).listOf()).comapFlatMap(map->{
-            if(map.size()>8||map.entrySet().stream().anyMatch(e->!e.getKey().matches("[a-z0-9_]{1,64}")||e.getValue().size()>7||e.getValue().stream().distinct().count()!=e.getValue().size()))return com.mojang.serialization.DataResult.error(()->"Invalid next-step summary");
+        Codec.unboundedMap(Codec.STRING,Codec.intRange(1,8).listOf()).comapFlatMap(map->{
+            if(map.size()>8||map.entrySet().stream().anyMatch(e->!e.getKey().matches("[a-z0-9_]{1,64}")||e.getValue().size()>8||e.getValue().stream().distinct().count()!=e.getValue().size()))return com.mojang.serialization.DataResult.error(()->"Invalid next-step summary");
             var copy=new java.util.LinkedHashMap<String,java.util.List<Integer>>();map.forEach((k,v)->copy.put(k,java.util.List.copyOf(v)));return com.mojang.serialization.DataResult.success(java.util.Collections.unmodifiableMap(copy));
         },java.util.function.Function.identity());
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<java.util.Map<String,java.util.List<Integer>>>> FOUP_NEXT_STEPS =

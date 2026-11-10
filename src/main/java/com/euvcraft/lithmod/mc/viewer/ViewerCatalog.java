@@ -20,11 +20,11 @@ import net.minecraft.world.item.ItemStack;
 public final class ViewerCatalog {
     private static final List<String> FAMILIES=List.of("logic","compute","memory","nand");
     private static final String WATER="minecraft:water",UPW="lithmod:ultrapure_water";
-    private static final Pattern DESIGN=Pattern.compile("(?:ebeam|g3)_(logic|compute|memory|nand)_t([1-7])");
+    private static final Pattern DESIGN=Pattern.compile("(?:ebeam|g3)_(logic|compute|memory|nand)_t([1-8])");
     private final List<ViewerPage> pages=new ArrayList<>();
     private final FabSettings settings=EUVCRAFTMod.settings();
     public static List<ViewerPage> build(){
-        var c=new ViewerCatalog();c.loadedRecipes();c.utilities();c.slicingAndPreparation();c.waferRoutes();c.binning();
+        var c=new ViewerCatalog();c.loadedRecipes();c.utilities();c.slicingAndPreparation();c.t8Stages();c.waferRoutes();c.binning();
         c.pages.sort(Comparator.comparing(ViewerPage::id));return List.copyOf(c.pages);
     }
     private MachineDefinition definition(String id){return MachineDefinitionLoader.getRegistry().byId(id).orElseThrow();}
@@ -86,36 +86,53 @@ public final class ViewerCatalog {
         page("disposal","foup_cleaner",List.of(foup("Any unwanted or contaminated wafer lot"),fluid(WATER,param("foup_cleaner","water_mb",1000))),List.of(foup("Same empty carrier"),item("wafer_scrap",param("foup_cleaner","scrap_per_wafer",1)).labelled("Per discarded wafer")),List.of(),List.of("Discard & Clean destroys EVERY wafer in the carrier; this is not productive Wet-Clean processing.","Scrap amount equals wafer count times scrap-per-wafer. No Chip Packages or UPW required."),param("foup_cleaner","duration",200),fe("foup_cleaner"));
     }
     private void g3(String machine,boolean etch){
-        var inputs=new ArrayList<Ingredient>();inputs.add(foup(etch?"Exposed T7 wafers, G3 preparation":"Fresh electronic-grade wafers"));if(etch)inputs.add(item("etchant_charge",param(machine,"etchant_per_lot",1)));
+        var inputs=new ArrayList<Ingredient>();inputs.add(foup(etch?"Exposed T7 or T8 wafers, G3 preparation":"Fresh electronic-grade wafers"));if(etch)inputs.add(item("etchant_charge",param(machine,"etchant_per_lot",1)));
         int rinse=param(machine,"linear_rinse_moved",1)==1?0:param(machine,"rinse_duration",200);if(rinse>0)inputs.add(fluid(UPW,param(machine,"rinse_water_mb",4000)));
         long ticks=(long)param(machine,"linear_vacuum_duration",param(machine,"vacuum_duration",400))+rinse+param(machine,"linear_dry_duration",param(machine,"dry_duration",200));
-        page(machine,machine,inputs,List.of(foup(etch?"Etched T7; next: Wet-Clean Station":"G3 film deposited; next: Coating Track")),List.of(),List.of("Requires enclosed cleanroom and vacuum. Pump-down and auxiliary pumping add variable time/FE.","Phase FE and preparation quality come from the loaded machine definition; exposure rolls are preserved."),ticks,0);
+        var notes=new ArrayList<>(List.of("Requires enclosed cleanroom and vacuum. Pump-down and auxiliary pumping add variable time/FE.","Phase FE and preparation quality come from the loaded machine definition; exposure rolls are preserved."));
+        if(etch)notes.add("Match the module to the FOUP family. Tune compute or memory in the lower cabinet. NAND uses the standard module.");
+        page(machine,machine,inputs,List.of(foup(etch?"Etched T7 goes to Wet-Clean; etched T8 goes to Implantation":"G3 film deposited; next: Coating Track")),List.of(),notes,ticks,0);
+    }
+    private void t8Stages() {
+        for (String machine : List.of("t8_planarizer", "t8_implanter")) {
+            boolean polish = machine.equals("t8_planarizer");
+            var inputs = new ArrayList<Ingredient>();
+            inputs.add(foup(polish ? "G3 deposited electronic-grade FOUP" : "Etched T8 FOUP"));
+            inputs.add(item(polish ? "cmp_slurry" : "dopant_charge",param(machine,"reagent_per_lot",1)));
+            if(polish)inputs.add(item("polish_pad",param(machine,"pads_per_lot",1)));
+            inputs.add(fluid(UPW,param(machine,"rinse_water_mb",6000)));
+            var notes=List.of("Requires a powered cleanroom and vacuum.",polish
+                ?"Use the Memory Uniformity Head for T8 memory. The standard head prepares compute or NAND."
+                :"Use the Compute Precision-Dose Head for compute. Tune the implant dose in the cabinet.");
+            page(machine,machine,inputs,List.of(foup(polish ? "Planarized T8; next: coating" : "Activated T8; next: wet clean")),
+                List.of(),notes,0,0);
+        }
     }
     private LinearBudget budget(Tier tier){
-        String scanner=tier.index()==7?"euv_scanner":"lithography_scanner";int passes=tier.index()==6?param(scanner,"multipattern_passes",2):1;
-        return LinearBudget.calculate(tier.layers(),tier.layerTicks(settings),passes,settings.resistPerLayer(),param(scanner,"linear_original_upw_per_tick",tier.index()==7?5:2),param(scanner,"linear_upw_per_tick_mb",tier.index()==7?4:1),param("coating_track","coat_ticks_per_layer",5),param("wet_cleaner","clean_ticks_per_layer",5),tier.index()==7?param("wet_cleaner","t7_rinse_water_mb",4000):0);
+        String scanner=tier.index()==8?"high_na_scanner":tier.index()==7?"euv_scanner":"lithography_scanner";int passes=tier.index()==6?param(scanner,"multipattern_passes",2):1;
+        return LinearBudget.calculate(tier.layers(),tier.layerTicks(settings),passes,settings.resistPerLayer(),param(scanner,"linear_original_upw_per_tick",tier.index()>=7?5:2),param(scanner,"linear_upw_per_tick_mb",tier.index()>=7?4:1),param("coating_track","coat_ticks_per_layer",5),param("wet_cleaner","clean_ticks_per_layer",5),tier.index()>=7?param("wet_cleaner","t7_rinse_water_mb",4000):0);
     }
     private void waferRoutes(){
         var tiers=TierDataLoader.getRegistry();var rules=DieRulesDataLoader.getRules();if(tiers==null||rules==null)return;
-        for(int t=1;t<=7;t++){
-            var tier=tiers.byIndex(t).orElseThrow();String scanner=t<=3?"process_cell":t==7?"euv_scanner":"lithography_scanner";var plan=t>=5?budget(tier):null;
+        for(int t=1;t<=8;t++){
+            var tier=tiers.byIndex(t).orElseThrow();String scanner=t<=3?"process_cell":t==8?"high_na_scanner":t==7?"euv_scanner":"lithography_scanner";var plan=t>=5?budget(tier):null;
             int exposureFe=definition(scanner).energyPerTick(tier,settings);long scanTicks=(long)tier.layers()*(plan==null?tier.layerTicks(settings):plan.scannerTicksPerLayer());
             if(t>=5){
-                var coatInputs=new ArrayList<Ingredient>();coatInputs.add(foup((t==7?"G3":"G2")+" film deposited; unassigned"));if(plan.resistTotal()>0)coatInputs.add(item("resist_t"+t,plan.resistTotal()));
+                var coatInputs=new ArrayList<Ingredient>();coatInputs.add(foup(t==8?"Planarized T8 FOUP":(t==7?"G3":"G2")+" film deposited; unassigned"));if(plan.resistTotal()>0)coatInputs.add(item("resist_t"+t,plan.resistTotal()));
                 var coatCatalysts=plan.resistTotal()==0?List.of(item("resist_t"+t,1).labelled("Selects tier; not consumed with zero-resist configuration")):List.<Ingredient>of();
                 page("coat/t"+t,"coating_track",coatInputs,List.of(foup("Coated T"+t+"; next: scanner")),coatCatalysts,List.of("Resist commits the tier; the mask later chooses family/cores. Refill stacks above 64.","Resist is paid here once. Scanner costs are split across coating, exposure and wet cleaning.","T7 requires enclosed cleanroom; T5/T6 may run outside with a room yield penalty."),Math.max(1,plan.coatTicks()),exposureFe);
-                int rinse=t==7?param("wet_cleaner","t7_rinse_duration",200):0;
-                var cleanInputs=new ArrayList<Ingredient>();cleanInputs.add(foup("Etched T"+t+" wafers"));if(plan.cleanWaterMb()>0)cleanInputs.add(fluid(UPW,plan.cleanWaterMb()));
-                page("clean/t"+t,"wet_cleaner",cleanInputs,List.of(foup("Cleaned T"+t+"; next: advanced packaging")),List.of(),List.of("Productive clean: keeps the wafers. Requires the paid coating/etch route; no new exposure roll.","Costs shown for a newly coated lot; admitted lots retain frozen costs.",t==7?"Rinse: "+rinse+" ticks at "+scaled(param("wet_cleaner","t7_rinse_energy_per_tick",480))+" FE/t; dry: "+plan.cleanDryTicks()+" ticks at "+exposureFe+" FE/t.":"Room exposure is finalized once here. T5/T6 outside-room operation reduces yield."),(long)rinse+plan.cleanDryTicks(),t==7?0:exposureFe);
+                int rinse=t>=7?param("wet_cleaner","t7_rinse_duration",200):0;
+                var cleanInputs=new ArrayList<Ingredient>();cleanInputs.add(foup(t==8?"Implanted and activated T8 wafers":"Etched T"+t+" wafers"));if(plan.cleanWaterMb()>0)cleanInputs.add(fluid(UPW,plan.cleanWaterMb()));
+                page("clean/t"+t,"wet_cleaner",cleanInputs,List.of(foup("Cleaned T"+t+"; next: advanced packaging")),List.of(),List.of("Productive clean: keeps the wafers. Requires the paid coating/etch route; no new exposure roll.","Costs shown for a newly coated lot; admitted lots retain frozen costs.",t>=7?"Rinse: "+rinse+" ticks at "+scaled(param("wet_cleaner","t7_rinse_energy_per_tick",480))+" FE/t; dry: "+plan.cleanDryTicks()+" ticks at "+exposureFe+" FE/t.":"Room exposure is finalized once here. T5/T6 outside-room operation reduces yield."),(long)rinse+plan.cleanDryTicks(),t>=7?0:exposureFe);
             }
             if(t>=4&&t<=6)page("etch/t"+t,"etch_cell",List.of(foup("Exposed T"+t+" wafers"),item("etchant_charge",param("etch_cell","etchant_per_lot",1))),List.of(foup("Etched T"+t+"; next: "+(t==4?"advanced packaging":"Wet-Clean Station"))),List.of(),List.of("Retains wafer identity, preparation and exposure rolls; no mask use or second exposure."),param("etch_cell","duration",400),fe("etch_cell"));
             for(var family:FAMILIES){
                 if(!rules.canMake(family,t)||rules.effectiveTier(family,t)!=t)continue;
                 var in=new ArrayList<Ingredient>();in.add(foup(t<=3?"Fresh compatible wafers":t==4?"G2 film deposited":"Coated T"+t+" wafers"));
                 if(t<=4&&settings.resistPerLayer()>0)in.add(item("resist_t"+t,tier.layers()*settings.resistPerLayer()));
-                if(t>=5)in.add(fluid(UPW,Math.toIntExact(scanTicks*param(scanner,"linear_upw_per_tick_mb",t==7?4:1))));
+                if(t>=5)in.add(fluid(UPW,Math.toIntExact(scanTicks*param(scanner,"linear_upw_per_tick_mb",t>=7?4:1))));
                 var catalysts=new ArrayList<Ingredient>();catalysts.add(mask(family,t));if(t<=4&&settings.resistPerLayer()==0)catalysts.add(item("resist_t"+t,1).labelled("Matching resist still required; not consumed in zero-resist configuration"));
-                page("expose/t"+t+"/"+family,scanner,in,List.of(foup("Exposed T"+t+" "+family+"; "+(t>=4?"next: etch":"next: packaging"))),catalysts,List.of("Requires matching line equipment/modules and accepted calibration where applicable.",t>=5?"No resist in scanner: paid upstream in Coating Track. T6 has two internal passes by default.":"Resist consumed per layer; one mask use per completed lot.",t==7?"Requires enclosed cleanroom, vacuum and a calibrated connected EUV light source.":"Yields vary with calibration, process quality and applicable cleanroom conditions."),scanTicks,exposureFe);
+                page("expose/t"+t+"/"+family,scanner,in,List.of(foup("Exposed T"+t+" "+family+"; "+(t>=4?"next: etch":"next: packaging"))),catalysts,List.of("Requires matching line equipment/modules and accepted calibration where applicable.",t>=5?"No resist in scanner: paid upstream in Coating Track. T6 has two internal passes by default.":"Resist consumed per layer; one mask use per completed lot.",t>=7?"Requires enclosed cleanroom, vacuum and a calibrated connected EUV light source.":"Yields vary with calibration, process quality and applicable cleanroom conditions."),scanTicks,exposureFe);
                 String packager=t<=3?"test_package":"advanced_test_package";
                 page("package/t"+t+"/"+family,packager,List.of(foup((t<=3?"Processed":t==4?"Etched":"Cleaned")+" T"+t+" "+family),item("chip_package",param(packager,"package_per_wafer",1)).labelled("Consumed per successful wafer")),List.of(item(family+"_chip_t"+t,1).labelled("Chip output; quantity depends on lot yield"),item("chip_scrap",1).labelled("Failure output; amount varies")),List.of(),List.of("Normal binning. Output quantities are illustrative; wafer rolls and server settings determine yield.","Returns the same empty FOUP. Each wafer takes "+param(packager,"ticks_per_wafer",10)+" ticks; masks are not consumed by packaging."),0,definition(packager).energyPerTick(tier,settings));
             }
@@ -123,9 +140,14 @@ public final class ViewerCatalog {
     }
     private void binning(){
         var registry=HighBinningDataLoader.getRegistry().orElse(null);if(registry==null)return;
+        int trophy=param("high_bin_test_package","god_chip_yield_permille",10);
+        if(trophy>0)page("high_bin/god_chip","high_bin_test_package",List.of(foup("Cleaned T8 compute lot"),item("chip_package",param("high_bin_test_package","package_per_wafer",1))),
+            List.of(item("god_chip",1).labelled("Rare trophy"),item("chip_scrap",1).labelled("Failed wafer")),List.of(),
+            List.of("Complete the full T8 compute route first. Requires an enclosed powered cleanroom.",
+                "This uses the original wafer rolls. One trophy can be earned per passing wafer."),0,0);
         for(var recipe:registry.all()){
             var transition=recipe.transition();int source=transition.sourceTier(),target=transition.targetTier();if(target>7)continue;
-            page("high_bin/"+recipe.dieType()+"/t"+source,"advanced_test_package",List.of(foup((source<=3?"Processed":source==4?"Etched":"Cleaned")+" T"+source+" "+recipe.dieType()),item("chip_package",param("advanced_test_package","package_per_wafer",1)).labelled("Per successful wafer")),List.of(item(recipe.dieType()+"_chip_t"+target,1).labelled("High-bin success; low yield"),item("chip_scrap",1).labelled("Failures; variable amount")),List.of(),List.of("Enable High Binning before admission. Follow the SOURCE tier's complete wafer route.","Uses the loaded high-binning yield/core rules; no new exposure rolls. Output is not guaranteed.",target==7?"Target T7 additionally requires the packager to be inside an enclosed cleanroom.":"Only logic/compute support high binning; logic ends at T5."),0,definition("advanced_test_package").energyPerTick(TierDataLoader.getRegistry().getByIndex(source),settings));
+            page("high_bin/"+recipe.dieType()+"/t"+source,"high_bin_test_package",List.of(foup((source<=3?"Processed":source==4?"Etched":"Cleaned")+" T"+source+" "+recipe.dieType()),item("chip_package",param("high_bin_test_package","package_per_wafer",1)).labelled("Per successful wafer")),List.of(item(recipe.dieType()+"_chip_t"+target,1).labelled("High-bin success; low yield"),item("chip_scrap",1).labelled("Failures; variable amount")),List.of(),List.of("Use the dedicated High-Bin station after the source tier's complete wafer route. Time shown is per wafer.","Uses the loaded high-binning yield/core rules; no new exposure rolls. Output is not guaranteed.",target==7?"Target T7 additionally requires the packager to be inside an enclosed cleanroom.":"Only logic/compute support high binning; logic ends at T5."),transition.scaledTicksPerWafer(param("high_bin_test_package","ticks_per_wafer",10)),transition.scaledEnergyPerTick(definition("high_bin_test_package").energyPerTick(TierDataLoader.getRegistry().getByIndex(source),settings)));
         }
     }
     private ViewerCatalog(){}

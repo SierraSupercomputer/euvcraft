@@ -65,7 +65,8 @@ public enum CreativeTabCategory {
             return true;
         }
         // Tin feedstock
-        if (path.equals("tin_feedstock") || path.equals("etchant_charge")) {
+        if (path.equals("tin_feedstock") || path.equals("etchant_charge")
+            || path.equals("cmp_slurry") || path.equals("polish_pad") || path.equals("dopant_charge")) {
             return true;
         }
         // Burn paper and thermal coupons

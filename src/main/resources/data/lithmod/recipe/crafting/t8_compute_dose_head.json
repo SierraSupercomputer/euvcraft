@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "lithmod:g3_deposition_module",
+    "lithmod:compute_chip_t7",
+    "minecraft:redstone_block"
+  ],
+  "result": {
+    "id": "lithmod:t8_compute_dose_head",
+    "count": 1
+  }
+}

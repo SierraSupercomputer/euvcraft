@@ -211,6 +211,7 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
     protected boolean processingAllowed() { return true; }
     protected boolean highBinningEnabled() { return false; }
     private boolean acceptedHighBinning;
+    private boolean acceptedTrophy;
     private int acceptedSourceTier;
 
     @Override
@@ -452,12 +453,10 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
         if(refusal!=null)return refusal;
         int targetTier = spec.tierIndex();
         if(highBinningEnabled()){
-            var recipe=com.euvcraft.lithmod.mc.data.HighBinningDataLoader.getRegistry()
-                .flatMap(registry->registry.forSource(spec.dieType(),spec.tierIndex()));
-            if(installedGeneration()<2||recipe.isEmpty()
-                ||ChipCatalog.chipFor(spec.dieType(),recipe.get().transition().targetTier()).isEmpty())
+            if(installedGeneration()<2||!com.euvcraft.lithmod.mc.data.HighBinningDataLoader.supportsSource(spec))
                 return PackagingRefusalReason.NO_CHIP_FOR_DIE;
-            targetTier = recipe.orElseThrow().transition().targetTier();
+            if(!com.euvcraft.lithmod.mc.data.HighBinningDataLoader.trophyAvailable(spec))
+                targetTier = com.euvcraft.lithmod.mc.data.HighBinningDataLoader.forLot(spec).orElseThrow().transition().targetTier();
         }
         if (targetTier >= 7 && !enclosedForT7()) return PackagingRefusalReason.CLEANROOM_REQUIRED;
         return null;
@@ -495,10 +494,18 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
         PackagingRun queue;
         int outputTier=spec.tierIndex();
         boolean high=highBinningEnabled();
+        boolean trophy=high&&com.euvcraft.lithmod.mc.data.HighBinningDataLoader.trophyAvailable(spec);
         try {
-            if(high){
-                var recipe=com.euvcraft.lithmod.mc.data.HighBinningDataLoader.getRegistry()
-                    .flatMap(registry->registry.forSource(spec.dieType(),spec.tierIndex())).orElseThrow();
+            if(trophy){
+                var machine=definition().orElseThrow();
+                int cost=Math.multiplyExact(perTick,Math.clamp(machine.paramOrDefault("god_chip_energy_multiplier",2),1,1000));
+                if(cost>buffer().getCapacityAsInt()||buffer().getAmountAsLong()<cost){paused=true;return false;}
+                int ticks=Math.multiplyExact(params.ticksPerWafer(),Math.clamp(machine.paramOrDefault("god_chip_ticks_multiplier",2),1,1000));
+                judged=com.euvcraft.lithmod.core.HighBinningRules.judgeTrophy(lot,tier,
+                    Math.clamp(machine.paramOrDefault("god_chip_yield_permille",10),1,1000),params.packagesPerWafer());
+                queue=new PackagingRun(judged,ticks,cost);
+            }else if(high){
+                var recipe=com.euvcraft.lithmod.mc.data.HighBinningDataLoader.forLot(spec).orElseThrow();
                 var transition=recipe.transition();
                 int cost=transition.scaledEnergyPerTick(perTick);
                 if(cost>buffer().getCapacityAsInt()||buffer().getAmountAsLong()<cost){paused=true;return false;}
@@ -529,7 +536,7 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
         // accepted: a T5 to T6 high-binning queue inherits the source spec's count (1 for
         // T5 compute); ordinary T6 compute carries its own count; every other design has none.
         this.designCores = RunSpec.coresOrZero(spec.coresOrNull());
-        this.acceptedSourceTier=spec.tierIndex();this.acceptedHighBinning=high;
+        this.acceptedSourceTier=spec.tierIndex();this.acceptedHighBinning=high;this.acceptedTrophy=trophy;
         this.refusal = null;
         this.paused = false;
 
@@ -557,7 +564,7 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
             return false;
         }
 
-        Item chipItem = ChipCatalog.chipFor(this.designDieType, this.designTierIndex).orElse(null);
+        Item chipItem = acceptedTrophy ? ModItems.GOD_CHIP.get() : ChipCatalog.chipFor(this.designDieType, this.designTierIndex).orElse(null);
         if (chipItem == null) {
             // The catalog lost the design the queue was accepted under: pause rather than
             // write anything, because there is no item to write.
@@ -805,6 +812,7 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
         state.putInt(TIER_KEY, this.designTierIndex);
         state.putInt(CORES_KEY, this.designCores);
         state.putBoolean("high_binning",acceptedHighBinning);
+        if(acceptedTrophy)state.putBoolean("god_chip",true);
         state.putInt("source_tier",acceptedSourceTier);
     }
 
@@ -875,11 +883,14 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
 
             boolean high=state.getBooleanOr("high_binning",false);
             int sourceTier=state.getIntOr("source_tier",tierIndex);
-            if(high&&(installedGeneration()<2||sourceTier<3||tierIndex!=sourceTier+1
+            boolean trophy=state.getBooleanOr("god_chip",false);
+            if(trophy&&(!high||!highBinningEnabled()||sourceTier!=8||tierIndex!=8||!computeDesign))
+                throw new IllegalArgumentException("Invalid God Chip snapshot");
+            if(high&&!trophy&&(installedGeneration()<2||sourceTier<3||tierIndex!=sourceTier+1
                 ||!(DieTypes.LOGIC.equals(dieType)||DieTypes.COMPUTE.equals(dieType))
                 ||DieTypes.LOGIC.equals(dieType)&&tierIndex>5))throw new IllegalArgumentException("Invalid binning snapshot");
             if(!high&&sourceTier!=tierIndex)throw new IllegalArgumentException("Invalid normal snapshot");
-            this.acceptedHighBinning=high;this.acceptedSourceTier=sourceTier;
+            this.acceptedHighBinning=high;this.acceptedSourceTier=sourceTier;this.acceptedTrophy=trophy;
             this.plan = restoredPlan;
             this.run = restoredRun;
             this.designDieType = dieType;
@@ -917,6 +928,7 @@ public class TestPackageBlockEntity extends FabMachineBlockEntity {
 
     /** Drops the queue and everything derived from it. Never consumes or restores a lot. */
     private void clearQueue() {
+        acceptedTrophy=false;
         this.run = null;
         this.plan = null;
         this.designDieType = null;
